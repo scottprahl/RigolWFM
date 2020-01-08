@@ -1,0 +1,11 @@
+include CHANGELOG.txt
+include LICENSE.txt
+include MANIFEST.in
+include README.md
+
+include doc/*.ipynb
+include rigol_wfm/__init__.py
+include rigol_wfm/wfm.py
+
+include wfm_files/*.wfm
+include scripts/*.py
