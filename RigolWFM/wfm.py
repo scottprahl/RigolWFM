@@ -1,6 +1,4 @@
 # Copyright (c) 2013, Matthias Blaicher
-# Copyright (c) 2014, Michał Szkutnik
-# Copyright (c) 2020, Scott Prahl
 #
 # All rights reserved.
 #
