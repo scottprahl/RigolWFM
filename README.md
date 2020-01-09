@@ -1,4 +1,6 @@
-# Rigol DS1000Z series oscilloscopes waveform library & utilities for Python 3.4
+# Rigol DS1000Z series oscilloscope waveform library
+
+This is a fork of the work done by Blaicher and Szkutnik to create a command-line utility for converting Rigol waveform files to other formats.  The primary purpose of this fork is to allow the code to be installed as a module via pip so that it can easily be used in Jupyter notebooks.
 
 *Important! This library can not calculate correct voltage values from raw data. I could not (yet?) locate all the data necessary to do that in the WFM files. Use --raw parameter to use raw data for plots and CSV files. Any help with file format is welcome!*
 

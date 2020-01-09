@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name
+
 from __future__ import print_function
 
 import collections
@@ -7,20 +9,21 @@ import struct
 import array
 import sys
 import os
+import numpy as np
 
 # Copyright (c) 2013, Matthias Blaicher
 # Copyright (c) 2014, Michał Szkutnik
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met: 
-# 
+# modification, are permitted provided that the following conditions are met:
+#
 # 1. Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer. 
+#   list of conditions and the following disclaimer.
 # 2. Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution. 
-# 
+#   and/or other materials provided with the distribution.
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -40,13 +43,13 @@ class FormatError(Exception):
 def _parseFile(f, description, leading="<", strict = True):
   """
   Parse a binary file according to the provided description.
-  
+
   The description is a list of triples, which contain the fieldname, datatype
   and a test condition.
   """
-  
+
   data = collections.OrderedDict()
-  
+
   for field, t, test, *optionals in description:
     optionals = optionals[0] if len(optionals) > 0 else {}
 
@@ -66,7 +69,7 @@ def _parseFile(f, description, leading="<", strict = True):
       tmp = f.read(struct.calcsize(binary_format))
       value = struct.unpack(binary_format, tmp)[0]
       data[field] = value
-      
+
       if "transform" in optionals:
         transform = optionals["transform"]
         assert callable(transform)
@@ -74,17 +77,17 @@ def _parseFile(f, description, leading="<", strict = True):
 
       if test:
         scope, condition, match = test
-        
+
         assert scope in ("expect", "require")
         assert condition  in ("==", ">=", "<=", "<", ">", "in", "!=")
         matches = eval("value %s match" % condition)
-        
+
         if not matches and scope == "require":
           raise FormatError("Field %s %s %s not met, got %s" % (field, condition, match, value))
-        
+
         if strict and not matches and scope == "expect":
           raise FormatError("Field %s %s %s not met, got %s" % (field, condition, match, value))
-        
+
   return data
 
 def decodeNullTerminatedStr(string):
@@ -110,20 +113,20 @@ def getCenterValue(range):
 
 def parseRigolWFM(f, strict=True):
   """
-  Parse a file object which has opened a Rigol WFM file in read-binary 
+  Parse a file object which has opened a Rigol WFM file in read-binary
   mode (rb).
-  
+
   The parser has been developed based on reverse engineering RIGOL DS1054Z WFM files
   and is far from complete!
 
   The result of the parsing is a nested dictionary containing all relevant data.
-  
+
   """
-  
+
   # # # #
   # First read in all the known fields and data of the waveform file. It is
   # interpreted later on.
-  
+
 
   chan_header  = (
     ("enabled",   "?", None),
@@ -149,7 +152,7 @@ def parseRigolWFM(f, strict=True):
   wfm_header = (
     ("unknown1",    "H",   ("require", "==", 0xFF01)),
     ("unknown2",    "6s",  None),
-    
+
     ("model",      "20s",  None, { "transform": decodeNullTerminatedStr }),
     ("fwVersion",  "20s",   None, { "transform": decodeNullTerminatedStr }),
     ("unknown3",   "16s",   None),
@@ -198,13 +201,13 @@ def parseRigolWFM(f, strict=True):
   )
 
   fileHdr = _parseFile(f, wfm_header, strict=strict)
-  
+
   # Add some simple access helpers for the repeating fields
   fileHdr["channels"] = (fileHdr["channel1"], fileHdr["channel2"], fileHdr["channel3"], fileHdr["channel4"])
   fileHdr["channels2"] = (fileHdr["channel1_head2"], fileHdr["channel2_head2"], fileHdr["channel3_head2"], fileHdr["channel4_head2"])
   for  channel in range(4):
-    fileHdr["channels2"][channel]["integerRange"] = fileHdr["ch{0}Range".format(channel+1)];
-    fileHdr["channels2"][channel]["integerShift"] = fileHdr["ch{0}Shift".format(channel+1)];
+    fileHdr["channels2"][channel]["integerRange"] = fileHdr["ch{0}Range".format(channel+1)]
+    fileHdr["channels2"][channel]["integerShift"] = fileHdr["ch{0}Shift".format(channel+1)]
 
   # Read in the sample data from the scope
   fileHdr["enabledChannels"] = [x for x in range(4) if fileHdr["channels"][x]['enabled']]
@@ -306,7 +309,7 @@ def describeScopeData(scopeData):
     ('samplerate'         , ("Sampling rate", "%e samples/s")),
     ('enabledChannels'         , ("Enabled channels", "%s (zero-based indexes)")),
     )
-  
+
   channelDsc = (
     ('label'           , ("Label", "%s")),
     ('enabled'           , ("Enabled", "%s")),
@@ -321,14 +324,82 @@ def describeScopeData(scopeData):
     )
 
   tmp = ""
-  
+
   tmp = tmp + header("General")
   tmp = tmp + describeDict(scopeData, headerDsc, ljust=25)
-  
+
   for i in range(4):
     channelDict = scopeData["channel"][i+1]
-    
+
     tmp = tmp + header("Channel %s" % channelDict["channelName"])
     tmp = tmp + describeDict(channelDict, channelDsc, ljust=25)
-  
+
   return tmp
+
+
+def data(wfm_filename):
+    """
+    Returns the time and voltage data from the Rigol wfm file.
+
+    The result will have 2, 3 or 4 elements depending on the scope channels that
+    were enabled at the moment the data was captured.
+
+        2: [time, voltage]
+        3: [time, voltage_channel_1, voltage_channel_2]
+        4: [time_channel_1, voltage_channel_1, time_channel_2, voltage_channel_2]
+
+    All the time data is in seconds and the voltage data is in volts.
+    """
+
+    try:
+        f = open(wfm_filename, 'rb')
+    except (OSError, IOError) as e:
+        print('Unable to open %s for reading.' % filename)
+        return
+
+    try:
+        scopeData = parseRigolWFM(f)
+    except wfm.FormatError:
+        print("Format does not follow the known file format.")
+        return
+
+    f.close()
+
+    if scopeData["alternateTrigger"]:
+        data = np.zeros(4, dtype=np.array)
+        data[0] = np.array(scopeData["channel"][1]["samples"]["time"])
+        data[1] = np.array(scopeData["channel"][1]["samples"]["volts"])
+        data[2] = np.array(scopeData["channel"][2]["samples"]["time"])
+        data[3] = np.array(scopeData["channel"][2]["samples"]["volts"])
+        return data
+
+    channels = []
+    for channel in range(1,3):
+        if scopeData["channel"][channel]["enabled"]:
+            channels.append(channel)
+
+    data = []
+    data.append(scopeData["channel"][channels[0]]["samples"]["time"])
+    for channel in channels:
+        data.append(scopeData["channel"][channel]["samples"]["volts"])
+
+    return data
+
+def describe(wfm_filename):
+    """Returns a string describing the contents of a Rigol wfm file."""
+
+    try:
+        f = open(wfm_filename, 'rb')
+    except (OSError, IOError) as e:
+        print('Unable to open %s for reading.' % filename)
+        return
+
+    try:
+        scopeData = wfm.parseRigolWFM(f)
+    except wfm.FormatError:
+        print("Format does not follow the known file format.", file=sys.stderr)
+        return
+
+    desc = describeScopeData(scopeData)
+    f.close()
+    return desc
