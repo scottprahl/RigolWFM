@@ -33,7 +33,7 @@ Extract signals or description from Rigol Oscilloscope waveform file.
 Use like this::
 
     import RigolWFM.wfm as wfm
-    
+
     signals = wfm.signals("filename.wfm")
     if len(signals) == 2:
         t,v = signals
@@ -225,7 +225,7 @@ def parseRigolWFM(f, strict=True):
     nBytes = fileHdr["sampleCount"] * struct.calcsize("B") * recordLength
     sampleData = array.array('B')
     sampleData.fromfile(f, nBytes)
-    
+
     # Channel samples are interleaved and are stored in descending channel number order
     # Depending on number of enabled channels 1, 2 or 4 samples are stored for each clock tick
     if fileHdr["enabledChannelsCount"] == 1:

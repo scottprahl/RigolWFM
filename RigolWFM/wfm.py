@@ -33,22 +33,22 @@ Extract signals or description from Rigol Oscilloscope waveform file.
 Use like this::
 
     import RigolWFM.wfm as wfm
-    
+
     signals = wfm.signals("filename.wfm")
     if len(signals) == 2:
         t,v = signals
 """
 
+import numpy as np
+
 import RigolWFM.wfm1052
 import RigolWFM.wfm1054
 
-import numpy as np
-
 def read_and_parse_file(wfm_filename):
     """Return a scopeData structure."""
-    
+
     model = 0
-    
+
     try:
         f = open(wfm_filename, 'rb')
     except (OSError, IOError):
@@ -58,7 +58,7 @@ def read_and_parse_file(wfm_filename):
     try:
         scopeData = RigolWFM.wfm1052.parseRigolWFM(f)
         model = 1052
-        
+
     except RigolWFM.wfm1052.FormatError:
         try:
             scopeData = RigolWFM.wfm1054.parseRigolWFM(f)
@@ -87,9 +87,9 @@ def signals(wfm_filename):
 
     model, scopeData = read_and_parse_file(wfm_filename)
 
-    if model==0:
+    if model == 0:
         return []
-        
+
     if scopeData["alternateTrigger"]:
         data = np.zeros(4, dtype=np.array)
         data[0] = np.array(scopeData["channel"][1]["samples"]["time"])
@@ -115,13 +115,13 @@ def describe(wfm_filename):
 
     model, scopeData = read_and_parse_file(wfm_filename)
 
-    if model==0:
+    if model == 0:
         desc = ''
 
-    elif model==1052:
+    elif model == 1052:
         desc = RigolWFM.wfm1052.describeScopeData(scopeData)
-        
-    elif model==1054:
+
+    elif model == 1054:
         desc = RigolWFM.wfm1054.describeScopeData(scopeData)
 
     return desc
