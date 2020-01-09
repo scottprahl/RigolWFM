@@ -39,8 +39,8 @@ Use like this::
         t,v = signals
 """
 
-import wfm1052
-import wfm1054
+import RigolWFM.wfm1052
+import RigolWFM.wfm1054
 
 import numpy as np
 
@@ -56,18 +56,18 @@ def read_and_parse_file(wfm_filename):
         return None, None
 
     try:
-        scopeData = wfm1052.parseRigolWFM(f)
+        scopeData = RigolWFM.wfm1052.parseRigolWFM(f)
         model = 1052
         
-    except wfm1052.FormatError:
+    except RigolWFM.wfm1052.FormatError:
         try:
-            scopeData = wfm1054.parseRigolWFM(f)
+            scopeData = RigolWFM.wfm1054.parseRigolWFM(f)
             model = 1054
-        except wfm1054.FormatError:
+        except RigolWFM.wfm1054.FormatError:
             print("Format is not DS1052 or DS1054 format.  Sorry.")
 
     f.close()
-    return model
+    return model, scopeData
 
 
 def signals(wfm_filename):
@@ -116,7 +116,12 @@ def describe(wfm_filename):
     model, scopeData = read_and_parse_file(wfm_filename)
 
     if model==0:
-        return ''
+        desc = ''
+
+    elif model==1052:
+        desc = RigolWFM.wfm1052.describeScopeData(scopeData)
         
-    desc = describeScopeData(scopeData)
+    elif model==1054:
+        desc = RigolWFM.wfm1054.describeScopeData(scopeData)
+
     return desc
