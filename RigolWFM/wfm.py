@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
-
-from __future__ import print_function
+# pylint: disable=eval-used
 
 import collections
 import struct
 import array
-import sys
-import os
 import numpy as np
 
 # Copyright (c) 2013, Matthias Blaicher
 # Copyright (c) 2014, Michał Szkutnik
+# Copyright (c) 2020, Scott Prahl
+#
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,10 +36,9 @@ import numpy as np
 
 
 class FormatError(Exception):
-    pass
+    """Definition for malformed/misunderstood waveform format."""
 
-
-def _parseFile(f, description, leading="<", strict = True):
+def _parseFile(f, description, leading="<", strict=True):
     """
     Parse a binary file according to the provided description.
 
@@ -54,7 +52,7 @@ def _parseFile(f, description, leading="<", strict = True):
         optionals = optionals[0] if len(optionals) > 0 else {}
 
         if "if" in optionals:
-            fieldTested, condition, match = optionals["if"]
+            _, condition, match = optionals["if"]
 
             assert condition  in ("==", ">=", "<=", "<", ">", "in", "!=")
             doParse = eval("data[fieldTested] %s match" % condition)
@@ -91,25 +89,26 @@ def _parseFile(f, description, leading="<", strict = True):
     return data
 
 def decodeNullTerminatedStr(string):
+    """Return a python string given a null-terminated C-string."""
     return string.decode('ascii').partition('\x00')[0]
 
 def getRecordLength(enabledChannelsCount):
+    """Return number of arrays that will be created."""
     if enabledChannelsCount <= 2:
         return enabledChannelsCount
-    else:
-        return 4
+    return 4
 
-def getCenterValue(range):
-    if abs(range - 0.5) < 0.001:
+def getCenterValue(channel_scale):
+    """Returns an integer needed to calculate voltage for trace?"""
+    if abs(channel_scale - 0.5) < 0.001:
         return 125
-    elif abs(range - 1) < 0.001:
+    if abs(channel_scale - 1) < 0.001:
         return 95
-    elif abs(range - 2) < 0.001:
+    if abs(channel_scale - 2) < 0.001:
         return 115
-    elif abs(range - 10) < 0.001:
+    if abs(channel_scale - 10) < 0.001:
         return 125
-    else:
-        return 128
+    return 128
 
 def parseRigolWFM(f, strict=True):
     """
@@ -128,76 +127,76 @@ def parseRigolWFM(f, strict=True):
     # interpreted later on.
 
 
-    chan_header  = (
-        ("enabled",   "?", None),
-      ("unknown1",  "7s", None),
-      ("scale",     "f", None),
-      ("shift",     "f", None),
-      ("inverted",  "?", None),
-      ("unknown2",  "11s", None),
+    chan_header = (
+        ("enabled", "?", None),
+        ("unknown1", "7s", None),
+        ("scale", "f", None),
+        ("shift", "f", None),
+        ("inverted", "?", None),
+        ("unknown2", "11s", None),
     )
 
-    chan_header2  = (
-        ("unknown1",  "3s", None),
-      ("enabled",   "?", None),
-      ("unknown2",  "7s", None),
-      ("inverted",  "?", None),
-      ("unknown3",  "10s", None),
-      ("probeAttenTimesRange",  "q", None),
-      ("unknown4",  "16s", None),
-      ("label",     "4s", None, { "transform": decodeNullTerminatedStr }),
-      ("unknown5",  "10s", None),
+    chan_header2 = (
+        ("unknown1", "3s", None),
+        ("enabled", "?", None),
+        ("unknown2", "7s", None),
+        ("inverted", "?", None),
+        ("unknown3", "10s", None),
+        ("probeAttenTimesRange", "q", None),
+        ("unknown4", "16s", None),
+        ("label", "4s", None, {"transform": decodeNullTerminatedStr}),
+        ("unknown5", "10s", None),
     )
 
     wfm_header = (
-        ("unknown1",    "H",   ("require", "==", 0xFF01)),
-      ("unknown2",    "6s",  None),
+        ("unknown1", "H", ("require", "==", 0xFF01)),
+        ("unknown2", "6s", None),
 
-      ("model",      "20s",  None, { "transform": decodeNullTerminatedStr }),
-      ("fwVersion",  "20s",   None, { "transform": decodeNullTerminatedStr }),
-      ("unknown3",   "16s",   None),
+        ("model", "20s", None, {"transform": decodeNullTerminatedStr}),
+        ("fwVersion", "20s", None, {"transform": decodeNullTerminatedStr}),
+        ("unknown3", "16s", None),
 
-      ("scaleD",       "q", None),
-      ("timeDelay", "q", None),
-      ("unknown4",     "40s", None),
-      ("smpRate",      "f", ("require", ">=", 0), { "transform": lambda x: x * 1e9 }),
+        ("scaleD", "q", None),
+        ("timeDelay", "q", None),
+        ("unknown4", "40s", None),
+        ("smpRate", "f", ("require", ">=", 0), {"transform": lambda x: x * 1e9}),
 
-      ("channel1", "nested", chan_header),
+        ("channel1", "nested", chan_header),
 
-      ("channel2", "nested", chan_header),
+        ("channel2", "nested", chan_header),
 
-      ("channel3", "nested", chan_header),
+        ("channel3", "nested", chan_header),
 
-      ("channel4", "nested", chan_header),
+        ("channel4", "nested", chan_header),
 
-      ("unknown5", "1759s", None),
-      ("unknown5.1", "40s", None, { "if": ("fwVersion", "==", "00.04.02.SP4") }),
-      ("unknown5.1", "55s", None, { "if": ("fwVersion", "==", "00.04.03.SP2")}),
+        ("unknown5", "1759s", None),
+        ("unknown5.1", "40s", None, {"if": ("fwVersion", "==", "00.04.02.SP4")}),
+        ("unknown5.1", "55s", None, {"if": ("fwVersion", "==", "00.04.03.SP2")}),
 
-      ("channel4_head2", "nested", chan_header2),
-      ("channel3_head2", "nested", chan_header2),
-      ("channel2_head2", "nested", chan_header2),
-      ("channel1_head2", "nested", chan_header2),
+        ("channel4_head2", "nested", chan_header2),
+        ("channel3_head2", "nested", chan_header2),
+        ("channel2_head2", "nested", chan_header2),
+        ("channel1_head2", "nested", chan_header2),
 
-      ("unknown6", "475s", None),
+        ("unknown6", "475s", None),
 
-      ("ch1Range", "L",  ("require", ">=", 0)),
-      ("ch2Range", "L",  ("require", ">=", 0)),
-      ("ch3Range", "L",  ("require", ">=", 0)),
-      ("ch4Range", "L",  ("require", ">=", 0)),
+        ("ch1Range", "L", ("require", ">=", 0)),
+        ("ch2Range", "L", ("require", ">=", 0)),
+        ("ch3Range", "L", ("require", ">=", 0)),
+        ("ch4Range", "L", ("require", ">=", 0)),
 
-      ("ch1Shift", "q",  None),
-      ("ch2Shift", "q",  None),
-      ("ch3Shift", "q",  None),
-      ("ch4Shift", "q",  None),
+        ("ch1Shift", "q", None),
+        ("ch2Shift", "q", None),
+        ("ch3Shift", "q", None),
+        ("ch4Shift", "q", None),
 
-      ("unknown7", "248s", None, { "if" : ("fwVersion", "!=", "00.04.01.SP2") }),
-      ("unknown7", "244s", None, { "if" : ("fwVersion", "==", "00.04.01.SP2") }),
+        ("unknown7", "248s", None, {"if" : ("fwVersion", "!=", "00.04.01.SP2")}),
+        ("unknown7", "244s", None, {"if" : ("fwVersion", "==", "00.04.01.SP2")}),
 
-      ("sampleCount", "L",  ("require", ">=", 0)),
+        ("sampleCount", "L", ("require", ">=", 0)),
 
-      ("unknown8", "148s", None, { "if" : ("fwVersion", "!=", "00.04.01.SP2") }),
-      ("unknown8", "152s", None, { "if" : ("fwVersion", "==", "00.04.01.SP2") }),
+        ("unknown8", "148s", None, {"if" : ("fwVersion", "!=", "00.04.01.SP2")}),
+        ("unknown8", "152s", None, {"if" : ("fwVersion", "==", "00.04.01.SP2")}),
     )
 
     fileHdr = _parseFile(f, wfm_header, strict=strict)
@@ -265,7 +264,7 @@ def parseRigolWFM(f, strict=True):
 
             channelDict["samples"] = {'raw' : fileHdr["channels"][channel]['data']}
 
-            channelDict["samples"]["volts"] =  [((x-getCenterValue(channelDict["scale"]))/20.)*channelDict["scale"]  - channelDict["shift"] for x in channelDict["samples"]["raw"]]
+            channelDict["samples"]["volts"] = [((x-getCenterValue(channelDict["scale"]))/20.)*channelDict["scale"]  - channelDict["shift"] for x in channelDict["samples"]["raw"]]
 
             samples = len(channelDict["samples"]["raw"])
             channelDict["nsamples"] = samples
@@ -298,29 +297,29 @@ def describeScopeData(scopeData):
                 tmp = tmp + "%s: %s\n" % (desc[0].ljust(ljust), desc[1] % d[item])
         return tmp
 
-    def header(header_name, sep = '='):
+    def header(header_name, sep='='):
         return "\n%s\n%s\n" % (header_name, sep*len(header_name))
 
     headerDsc = (
-        ('model'           , ("Device model", "%s")),
-      ('fwVersion'       , ("Firmware version", "%s")),
-      ('scaleD'          , ("Horizontal scale", "%d ps")),
-      ('timeDelay'       , ("Time delay", "%d ps")),
-      ('samplerate'         , ("Sampling rate", "%e samples/s")),
-      ('enabledChannels'         , ("Enabled channels", "%s (zero-based indexes)")),
+        ('model', ("Device model", "%s")),
+        ('fwVersion', ("Firmware version", "%s")),
+        ('scaleD', ("Horizontal scale", "%d ps")),
+        ('timeDelay', ("Time delay", "%d ps")),
+        ('samplerate', ("Sampling rate", "%e samples/s")),
+        ('enabledChannels', ("Enabled channels", "%s (zero-based indexes)")),
         )
 
     channelDsc = (
-        ('label'           , ("Label", "%s")),
-      ('enabled'           , ("Enabled", "%s")),
-      ('probeAttenuation'  , ("Probe attenuation", "%.3fx")),
-      ('scale'             , ("Y grid scale", "%0.3e V/div")),
-      ('shift'             , ("Y shift", "%0.3e V")),
-      ('inverted'          , ("Y inverted", "%s")),
-      ('timeDiv'           , ("Time grid scale", "%0.3e s/div")),
-      ('samplerate'        , ("Sampling rate", "%0.3e samples/s")),
-      ('timeDelay'         , ("Time delay", "%0.3e s")),
-      ('nsamples'          , ("No. of recorded samples", "%i")),
+        ('label', ("Label", "%s")),
+        ('enabled', ("Enabled", "%s")),
+        ('probeAttenuation', ("Probe attenuation", "%.3fx")),
+        ('scale', ("Y grid scale", "%0.3e V/div")),
+        ('shift', ("Y shift", "%0.3e V")),
+        ('inverted', ("Y inverted", "%s")),
+        ('timeDiv', ("Time grid scale", "%0.3e s/div")),
+        ('samplerate', ("Sampling rate", "%0.3e samples/s")),
+        ('timeDelay', ("Time delay", "%0.3e s")),
+        ('nsamples', ("No. of recorded samples", "%i")),
         )
 
     tmp = ""
@@ -337,13 +336,14 @@ def describeScopeData(scopeData):
     return tmp
 
 
-def data(wfm_filename):
+def signals(wfm_filename):
     """
-    Returns the time and voltage data from the Rigol wfm file.
+    Returns the time and voltage signal data from the Rigol wfm file.
 
-    The result will have 2, 3 or 4 elements depending on the scope channels that
+    The result will have 0, 2, 3 or 4 elements depending on the scope channels that
     were enabled at the moment the data was captured.
 
+        0: []               # error parsing
         2: [time, voltage]
         3: [time, voltage_channel_1, voltage_channel_2]
         4: [time_channel_1, voltage_channel_1, time_channel_2, voltage_channel_2]
@@ -351,17 +351,19 @@ def data(wfm_filename):
     All the time data is in seconds and the voltage data is in volts.
     """
 
+    data = []
+
     try:
         f = open(wfm_filename, 'rb')
-    except (OSError, IOError) as e:
-        print('Unable to open %s for reading.' % filename)
-        return
+    except (OSError, IOError):
+        print('Unable to open %s for reading.' % wfm_filename)
+        return data
 
     try:
         scopeData = parseRigolWFM(f)
-    except wfm.FormatError:
+    except FormatError:
         print("Format does not follow the known file format.")
-        return
+        return data
 
     f.close()
 
@@ -374,11 +376,10 @@ def data(wfm_filename):
         return data
 
     channels = []
-    for channel in range(1,3):
+    for channel in range(1, 3):
         if scopeData["channel"][channel]["enabled"]:
             channels.append(channel)
 
-    data = []
     data.append(scopeData["channel"][channels[0]]["samples"]["time"])
     for channel in channels:
         data.append(scopeData["channel"][channel]["samples"]["volts"])
@@ -390,15 +391,15 @@ def describe(wfm_filename):
 
     try:
         f = open(wfm_filename, 'rb')
-    except (OSError, IOError) as e:
-        print('Unable to open %s for reading.' % filename)
-        return
+    except (OSError, IOError):
+        print('Unable to open %s for reading.' % wfm_filename)
+        return ''
 
     try:
-        scopeData = wfm.parseRigolWFM(f)
-    except wfm.FormatError:
-        print("Format does not follow the known file format.", file=sys.stderr)
-        return
+        scopeData = parseRigolWFM(f)
+    except FormatError:
+        print("Format does not follow the known file format.")
+        return ''
 
     desc = describeScopeData(scopeData)
     f.close()
