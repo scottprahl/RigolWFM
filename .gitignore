@@ -1,3 +1,4 @@
 doc/.ipynb_checkpoints
 .DS_Store
 RigolWFM.egg-info/*
+RigolWFM/__pycache__/*
