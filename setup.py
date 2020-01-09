@@ -27,8 +27,8 @@
 from setuptools import setup
 
 setup(
-	name='rigol_wfm',
-	packages=['rigol_wfm'],
+	name='RigolWFM',
+	packages=['RigolWFM'],
 	version='0.1.0',
 	description='Read and parse Rigol Oscilloscope WFM files',
 	url='https://github.com/scottprahl/rigol_fm.git',  
@@ -42,7 +42,7 @@ setup(
 		'Programming Language :: Python',
 		'Topic :: Scientific/Engineering :: Physics',
 	],
-	keywords=['rigol', 'wfm', 'DS1052E'],
+	keywords=['rigol', 'wfm', 'DS1052E', 'DS1102E'],
 	install_requires=['numpy','matplotlib'],
 	long_description=
 	"""
