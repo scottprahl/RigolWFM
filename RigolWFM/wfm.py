@@ -104,9 +104,9 @@ def signals(wfm_filename):
             channels.append(channel)
 
     data = []
-    data.append(scopeData["channel"][channels[0]]["samples"]["time"])
+    data.append(np.array(scopeData["channel"][channels[0]]["samples"]["time"]))
     for channel in channels:
-        data.append(scopeData["channel"][channel]["samples"]["volts"])
+        data.append(np.array(scopeData["channel"][channel]["samples"]["volts"]))
 
     return data
 
