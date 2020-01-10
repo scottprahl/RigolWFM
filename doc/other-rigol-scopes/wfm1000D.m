@@ -1,3 +1,8 @@
+%
+% from https://www.mathworks.com/matlabcentral/fileexchange/18999-read-binary-rigol-waveforms
+% tested with Rigol DS1102D scope waveforms
+%
+
 function varargout = readRigolWaveform(filename, varargin)
 %Reads a binary waveform (.wfm) file stored by a Rigol oscilloscope.
 %

@@ -14,7 +14,7 @@ setup(
     url='https://github.com/scottprahl/RigolWFM.git',  
     author='Scott Prahl',
     author_email='scott.prahl@oit.edu',
-    license='MIT',
+    license='BSD',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: BSD License',

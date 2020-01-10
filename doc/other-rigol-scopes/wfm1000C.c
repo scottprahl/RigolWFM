@@ -1,4 +1,5 @@
-//http://nsweb.tn.tudelft.nl/~gsteele/rigol2dat/rigol2dat.C
+//from http://nsweb.tn.tudelft.nl/~gsteele/rigol2dat/rigol2dat.C
+//tested with a Rigol DS1022C datafiles
 //
 // Compile with, for example:
 //
@@ -155,10 +156,3 @@ int main(int argc, char **argv)
   
   fclose(fp);
 }
-  
-  
-    
-  
-  
-  
-  
