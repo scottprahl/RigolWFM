@@ -29,7 +29,7 @@ from setuptools import setup
 setup(
 	name='RigolWFM',
 	packages=['RigolWFM'],
-	version='0.1.0',
+	version='0.1.1',
 	description='Read and parse Rigol Oscilloscope WFM files',
 	url='https://github.com/scottprahl/rigol_fm.git',  
 	author='Scott Prahl',
