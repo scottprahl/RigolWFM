@@ -6,5 +6,4 @@ include README.md
 include doc/*.ipynb
 include doc/DS1052E.wfm
 include doc/DS1102E.wfm
-include wfm_files/*.wfm
 include scripts/*.py
