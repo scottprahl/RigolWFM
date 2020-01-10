@@ -26,6 +26,6 @@ A checklist for eleasing a new version
 # test the install by removing local developer version
 # installing, then uninstalling, then restoring developer version
   conda develop -u .
-  pip install rigol_wfm
-  pip uninstall rigol_wfm
+  pip install RigolWFM
+  pip uninstall RigolWFM
   conda develop .
