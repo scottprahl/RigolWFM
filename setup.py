@@ -1,25 +1,29 @@
 from setuptools import setup
 
+# use README as the long description
+from os import path
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
+
 setup(
-	name='RigolWFM',
-	packages=['RigolWFM'],
-	version='0.1.3',
-	description='Read and parse Rigol Oscilloscope WFM files',
-	url='https://github.com/scottprahl/RigolWFM.git',  
-	author='Scott Prahl',
-	author_email='scott.prahl@oit.edu',
-	license='MIT',
-	classifiers=[
-		'Development Status :: 3 - Alpha',
-		'License :: OSI Approved :: BSD License',
-		'Intended Audience :: Science/Research',
-		'Programming Language :: Python :: 3',
-		'Topic :: Scientific/Engineering',
-	],
-	keywords=['rigol', 'wfm', 'DS1052E', 'DS1102E'],
-	install_requires=['numpy','matplotlib'],
-	long_description=
-	"""
-	A basic package for working with Rigol waveform (.wfm) files.
-	""",
+    name='RigolWFM',
+    packages=['RigolWFM'],
+    version='0.2.0',
+    description='Read and parse Rigol Oscilloscope WFM files',
+    url='https://github.com/scottprahl/RigolWFM.git',  
+    author='Scott Prahl',
+    author_email='scott.prahl@oit.edu',
+    license='MIT',
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'License :: OSI Approved :: BSD License',
+        'Intended Audience :: Science/Research',
+        'Programming Language :: Python :: 3',
+        'Topic :: Scientific/Engineering',
+    ],
+    keywords=['Rigol', 'wfm', 'DS1052E', 'DS1102E'],
+    install_requires=['numpy','matplotlib'],
+    long_description=long_description,
+    long_description_content_type='text/markdown'
 )
