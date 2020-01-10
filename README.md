@@ -25,33 +25,22 @@ The parsing code to read these `.wfm` files from these scopes is written by Blai
 
 ## Rigol DS1000Z
 
-The parsing code to read these `.wfm` files from these scopes is written by Szkutnik at (pyRigolWFM)[https://github.com/mabl/pyRigolWFM].  Since I don't have one of these scopes the code is currently untested.  However, since I really did not touch the parsing code I expect it should still work. Szkutnik does make a couple of point
+The parsing code to read these `.wfm` files from these scopes is written by Szkutnik at (pyRigolWFM)[https://github.com/mabl/pyRigolWFM].  Since I don't have one of these scopes this exact code is currently untested but since I did not touch the parsing code I expect it should still work. Szkutnik does mention
 
 1. the calculated voltage values are wrong
-2. the WFM file format changes with firm.  Only versions 00.04.01.SP2, 00.04.02.SP4 and 00.04.03.SP2 have been tested by Szkutnik
+2. the WFM file format can change with firmware.  Only versions 00.04.01.SP2, 00.04.02.SP4 and 00.04.03.SP2 have been tested by Szkutnik with a DS1054Z
 3. the logic analyzer functions
-
-The DS1000Z should cover encompass following Rigol devices:
-
-* DS1054Z
-* DS1074Z
-* DS1104Z
-* DS1074Z-S
-* DS1104Z-S
-* MSO1074Z
-* MSO1104Z
-* MSO1074Z-S
-* MSO1104Z-S
 
 ## Rigol DS1000C and DS1000D
 
-Unfortunately there is no python code, but in the `doc` directory are C and Matlab codes to parse `.wfm` files for those scopes.
-
+Unfortunately there is no python code, but in the `doc` directory are C and Matlab codes to parse `.wfm` files for those scopes.  Anyone decides to put together python parses might want consider using (wfm_view)[http://meteleskublesku.cz/wfm_view/] although this was created specifically to reverse engineer the DS1052E.
 
 ## License
     
 Copyright (c) 2013, Matthias Blaicher
+
 Copyright (c) 2014, Michał Szkutnik
+
 Copyright (c) 2020, Scott Prahl
 
 All rights reserved.
