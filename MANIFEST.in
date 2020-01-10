@@ -6,9 +6,8 @@ include README.md
 include doc/*.ipynb
 include doc/DS1052E.wfm
 include doc/DS1102E.wfm
-
-doc/other-rigol-scopes/wfm1000C.c
-doc/other-rigol-scopes/wfm1000D.m
-doc/other-rigol-scopes/wfm1000D.py
+include doc/other-rigol-scopes/wfm1000C.c
+include doc/other-rigol-scopes/wfm1000D.m
+include doc/other-rigol-scopes/wfm1000D.py
 
 include scripts/*.py
