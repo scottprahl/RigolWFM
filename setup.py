@@ -1,6 +1,7 @@
 from setuptools import setup
 
 # use README as the long description
+# make sure to use the syntax that works in both ReST and markdown
 from os import path
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
@@ -23,7 +24,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Topic :: Scientific/Engineering',
     ],
-    keywords=['Rigol', 'wfm', 'DS1052E', 'DS1102E'],
+    keywords=['Rigol', 'wfm', 'DS1052E', 'DS1102E', 'DS1054Z'],
     install_requires=['numpy','matplotlib'],
     long_description=long_description,
     long_description_content_type='text/markdown'
