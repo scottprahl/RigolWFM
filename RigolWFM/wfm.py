@@ -37,34 +37,64 @@ Use like this::
         t,v = signals
 """
 
+import tempfile
+import requests
 import numpy as np
 
 import RigolWFM.wfm1052
 import RigolWFM.wfm1054
 
+class ReadWFMError(Exception):
+    """Generic Read Error."""
+
+class ParseWFMError(Exception):
+    """Generic Parse Error."""
+
 def read_and_parse_file(wfm_filename):
     """Return a scopeData structure."""
 
     model = 0
+    scopeData = None
 
     try:
-        f = open(wfm_filename, 'rb')
-    except (OSError, IOError):
-        print('Unable to open %s for reading.' % wfm_filename)
-        return None, None
+        if wfm_filename.startswith('http://') or wfm_filename.startswith('https://'):
+            # need a local file for conversion, download url and save as tempfile
 
-    try:
-        scopeData = RigolWFM.wfm1052.parseRigolWFM(f)
-        model = 1052
+            r = requests.get(wfm_filename, allow_redirects=True)
+            if not r.ok:
+                error_string = "Downloading URL '%s' failed: '%s'" % (wfm_filename, r.reason)
+                raise ReadWFMError(error_string)
 
-    except RigolWFM.wfm1052.FormatError:
+            f = tempfile.TemporaryFile()
+            f.write(r.content)
+            f.seek(0)
+
+        else:
+            try:
+                f = open(wfm_filename, 'rb')
+
+            except IOError as e:
+                raise ReadWFMError(e)
+
         try:
-            scopeData = RigolWFM.wfm1054.parseRigolWFM(f)
-            model = 1054
-        except RigolWFM.wfm1054.FormatError:
-            print("Format is not DS1052 or DS1054 format.  Sorry.")
+            scopeData = RigolWFM.wfm1052.parseRigolWFM(f)
+            model = 1052
+            f.close()
 
-    f.close()
+        except RigolWFM.wfm1052.FormatError:
+            try:
+                scopeData = RigolWFM.wfm1054.parseRigolWFM(f)
+                model = 1054
+                f.close()
+            except RigolWFM.wfm1054.FormatError:
+                raise ParseWFMError("File format is not DS1052E or DS1054Z.  Sorry.")
+
+    except ReadWFMError as e:
+        print(e)
+
+    except ParseWFMError as e:
+        print(e)
+
     return model, scopeData
 
 
@@ -113,13 +143,13 @@ def describe(wfm_filename):
 
     model, scopeData = read_and_parse_file(wfm_filename)
 
-    if model == 0:
-        desc = ''
-
-    elif model == 1052:
+    if model == 1052:
         desc = RigolWFM.wfm1052.describeScopeData(scopeData)
 
     elif model == 1054:
         desc = RigolWFM.wfm1054.describeScopeData(scopeData)
+
+    else:
+        desc = ''
 
     return desc
