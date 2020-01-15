@@ -3,8 +3,10 @@ py:
 	kaitai-struct-compiler -t python --outdir RigolWFM ksy/wfm1022c.ksy
 	kaitai-struct-compiler -t python --outdir RigolWFM ksy/wfm1102d.ksy
 	kaitai-struct-compiler -t python --outdir RigolWFM ksy/wfm4022c.ksy
+	kaitai-struct-compiler -t python --outdir RigolWFM ksy/wfm1102e.ksy
 
 check:
+	ksylint ksy/wfm1102e.ksy
 	ksylint ksy/wfm1020cd.ksy
 	ksylint ksy/wfm1022c.ksy
 	ksylint ksy/wfm1102d.ksy
