@@ -10,7 +10,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 setup(
     name='RigolWFM',
     packages=['RigolWFM'],
-    version='0.3.0',
+    version='0.4.0',
     description='Read and parse Rigol Oscilloscope WFM files',
     url='https://github.com/scottprahl/RigolWFM.git',  
     author='Scott Prahl',
@@ -25,7 +25,7 @@ setup(
         'Topic :: Scientific/Engineering',
     ],
     keywords=['Rigol', 'wfm', 'DS1052E', 'DS1102E', 'DS1054Z'],
-    install_requires=['numpy','matplotlib'],
+    install_requires=['kaitaistruct', 'enum', 'numpy','matplotlib'],
     long_description=long_description,
     long_description_content_type='text/markdown'
 )
