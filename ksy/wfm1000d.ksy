@@ -1,5 +1,5 @@
 meta:
-  id: wfm1020cd
+  id: wfm1000d
   title: Rigol DS1020CD oscilloscope waveform file format
   file-extension: wfm
   endian: le

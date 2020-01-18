@@ -1,5 +1,5 @@
 meta:
-  id: wfm4022c
+  id: wfm4000c
   file-extension: wfm
   endian: le
 

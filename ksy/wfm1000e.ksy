@@ -1,5 +1,5 @@
 meta:
-  id: wfm1102e
+  id: wfm1000e
   title: Rigol DS1102E oscilloscope waveform file format
   file-extension: wfm
   endian: le
