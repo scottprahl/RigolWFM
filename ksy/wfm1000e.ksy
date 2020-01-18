@@ -7,14 +7,6 @@ meta:
 doc: |
   Rigol DS1102E scope .wmf format abstracted from a python script
 
-doc-ref: !
-  The Matlab script is from
-  https://www.mathworks.com/matlabcentral/fileexchange/18999-read-binary-rigol-waveforms
-  The Pascal program is from
-  https://sourceforge.net/projects/wfmreader/files/WFMReaderV2_FullSourceWithReqLibsAndCompiledDemo.zip
-  The DS4000 parser is from
-  https://github.com/Cat-Ion/rigol-ds4000-wfm
-
 instances:
   header:
     pos: 0
