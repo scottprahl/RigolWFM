@@ -30,9 +30,14 @@ def main():
     else:
         target = wfm1000z.Wfm1000z.from_file(args.filename)
 
+    print("Target")
+    pprint(dir(target.header))
+    print()
+
     print("Header")
     print("----------")
     print(hex(target.header.magic[0]), hex(target.header.magic[1]))
+
 
     print("Header")
     pprint(vars(target.header))
