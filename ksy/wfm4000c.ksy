@@ -9,118 +9,71 @@ instances:
     type: header
   data:
     pos: 20972
-    type: channel_data
+    type: raw_data
 
 types:
   header:
     seq:
       - id: magic
         contents: [0xa5,0xa5,0x38,0x00]
-      - id: scope_info
-        type: scope_info
+        
+      - id: serial
+        size: 16
+        type: str
+        terminator: 0
+        encoding: ascii
+        
+      - id: unknown_0
+        size: 4
+        
+      - id: firmware_version
+        size: 16
+        type: str
+        terminator: 0
+        encoding: ascii
+        
       - id: unknown_1
         type: u4
         repeat: expr
         repeat-expr: 6
+        
       - id: enabled
         type: channel_mask
       - id: unknown_2
         size: 3
+        
       - id: unknown_3
         type: u4
         repeat: expr
-        repeat-expr: 6
-      - id: unknown_2_p7
-        size: 4
-        doc: "[0x00,0x00,0x00,0x00]"
+        repeat-expr: 7
+        
       - id: mem_depth
         type: u4
-      - id: samp_rate
+        
+      - id: sample_rate
         type: f4
+        
       - id: unknown_8
         size: 4
-        doc: "[0x00,0x00,0x00,0x00]"
+        
       - id: time_per_div_ps
         type: u4
+        
       - id: unknown_9
         type: u4
         repeat: expr
-        repeat-expr: 5
-      - id: unknown_11
-        type: f4
-      - id: unknown_12
-        type: u4
+        repeat-expr: 4
+        
+      - id: channel_subhead
+        type: channel_subheader
         repeat: expr
-        repeat-expr: 2
-      - id: unknown_13
-        size: 4
-        doc: "[0xc0,0xe1,0xe4,0x00]"
-      - id: unknown_14
-        size: 4
-        doc: "[0x00,0x2d,0x31,0x01]"
-      - id: unknown_15
-        type: u4
-        repeat: expr
-        repeat-expr: 2
-      - id: unknown_17
-        type: f4
-      - id: unknown_18
-        type: u4
-        repeat: expr
-        repeat-expr: 2
-      - id: unknown_19
-        type: u4
-        doc: "[0xc0,0xe1,0xe4,0], 15M"
-      - id: unknown_20
-        type: u4
-        doc: "[0x00,0x2d,0x31,0x01], 20M"
-      - id: unknown_21
-        type: u4
-        repeat: expr
-        repeat-expr: 2
-      - id: unknown_22
-        type: f4
-      - id: unknown_23
-        type: u4
-        repeat: expr
-        repeat-expr: 2
-      - id: unknown_24
-        type: u4
-        doc: "[0xc0,0xe1,0xe4,0x00] or 15M"
-      - id: unknown_25
-        type: u4
-        doc: "[0x00,0x2d,0x31,0x01] or 20M"
-      - id: unknown_26
-        type: u4
-        repeat: expr
-        repeat-expr: 2
-      - id: unknown_27
-        type: f4
-      - id: unknown_28
-        type: f4
-      - id: unknown_29
-        size: 4
-      - id: unknown_30
-        type: u4
-        doc: "[0xc0,0xe1,0xe4,0x00] or 15M"
-      - id: unknown_31
-        type: u4
-        doc: "[0x00,0x2d,0x31,0x01] or 20M"
-      - id: unknown_32
-        size: 4
-        doc: "[0x00,0x00,0x00,0x00]"
+        repeat-expr: 4
+        
       - id: unknown_33
-        size: 4
-        doc: "[0x78,0x05,0x00,0x00]"
-      - id: unknown_34
-        size: 4
-        doc: "[0x78,0x05,0x00,0x00]"
-      - id: unknown_35
-        size: 8
-        doc: "[0x00,0x50,0x00,0x00,0xe4,0x01,0x00,0x00]"
-      - id: unknown_36
-        size: 4
-        doc: "[0xec,0x51,0x00,0x00]"
+        type: u4
+        repeat: expr
+        repeat-expr: 5
+        
       - id: mem_depth_2 
         type: u4
         doc: "Seems to always be a copy of mem_depth"
@@ -222,11 +175,12 @@ types:
         type: u8
       - id: unknown_5
         type: u4
+        repeat: expr
+        repeat-expr: 4
       - id: unknown_6
-        size: 14
-        doc: "[0,0,0,0,0,0,0,0,0,0,0,0,1,0]"
-      - id: unknown_7
         type: u2
+      - id: unknown_7
+        type: u1
         
   channel_header:
     seq:
@@ -250,7 +204,7 @@ types:
         doc: "[0x01,0x00]"
       - id: probe_impedance
         type: u1
-        enum: probe_impedance
+#        enum: probe_impedance
       - id: scale_index
         type: u1
         enum: channel_scale
@@ -258,12 +212,10 @@ types:
         size: 1
         doc: "[0x02]"
       - id: label
-        type: str
-        encoding: ascii
         size: 10
-      - id: unknown_5
-        size: 12
-        doc: "[0,0,0,0,0,0,0,0,0,0,0,0]"
+        type: str
+        terminator: 0
+        encoding: ascii
       - id: unknown_6
         type: u4
         doc: "[0xc0,0xe1,0xe4,0x00] or 15M"
@@ -280,8 +232,27 @@ types:
       - id: unknown_9
         type: s2
       - id: unknown_10
-        size: 2
+        size: 1
         
+  channel_subheader:
+    seq:
+      - id: unknown_0
+        type: u4
+      - id: unknown_1
+        type: f4
+      - id: unknown_2
+        type: u4
+      - id: unknown_3
+        type: u4
+      - id: unknown_4
+        type: u4
+        doc: "[0xc0,0xe1,0xe4,0x00] or 15M"
+      - id: unknown_5
+        type: u4
+        doc: "[0x00,0x2d,0x31,0x01] or 20M"
+      - id: unknown_6
+        type: u4
+
   channel_mask:
     seq:
       - id: unused
@@ -295,22 +266,7 @@ types:
       - id: channel_1
         type: b1
         
-  scope_info:
-    seq:
-      - id: serial
-        size: 16
-        type: str
-        terminator: 0
-        encoding: ascii
-      - id: unknown_1
-        size: 4
-      - id: firmware_version
-        size: 16
-        type: str
-        terminator: 0
-        encoding: ascii
-        
-  channel_data:
+  raw_data:
     seq:
       - id: channel_1
         type: u1
