@@ -17,9 +17,9 @@ types:
   wfm_header:
     seq:
       - id: magic
-        contents: [0xff,0x01]
+        contents: [0x01,0xff,0xff,0xff]
       - id: unknown_2
-        size: 6
+        type: u4
       - id: model
         type: str
         size: 20
@@ -33,7 +33,7 @@ types:
       - id: unknown_3
         size: 16
 
-      - id: scale_d
+      - id: scale_display
         type: s8
       - id: time_delay
         type: s8
