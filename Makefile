@@ -16,6 +16,8 @@ test:
 	python3 RigolWFM/wfm_parser.py -t c wfm/DS4022-A.wfm
 	python3 RigolWFM/wfm_parser.py -t c wfm/DS4022-B.wfm
 	python3 RigolWFM/wfm_parser.py -t z wfm/MSO1104.wfm
+	python3 RigolWFM/wfm_parser.py -t z wfm/DS1074Z-A.wfm 
+	python3 RigolWFM/wfm_parser.py -t z wfm/DS1074Z-B.wfm 
 
 clean:
 	rm -f RigolWFM/wfm1000d.py 

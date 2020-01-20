@@ -1,0 +1,120 @@
+Model:DS1074Z
+SN:DS1ZA172115145
+Manufacturer:RIGOL TECHNOLOGIES
+Board Ver:0.1.1
+Firmware Ver:0.2.3.11
+BOOT Ver:0.0.1.3
+CPLD Ver:1.1
+SoftWare Ver:00.04.04.SP3
+
+
+	DSO Vertical System 
+CH1:On
+Scale:0.050000V
+Position:0.000000V
+Coupling:AC
+Bandwidth Limit:20M
+Probe Ratio:1X
+Unit:V
+
+CH2:On
+Scale:0.500000V
+Position:0.000000V
+Coupling:AC
+Bandwidth Limit:20M
+Probe Ratio:1X
+Unit:V
+
+CH3:On
+Scale:0.200000V
+Position:0.000000V
+Coupling:AC
+Bandwidth Limit:20M
+Probe Ratio:1X
+Unit:V
+
+CH4:Off
+Scale:0.200000V
+Position:0.000000V
+Coupling:AC
+Bandwidth Limit:20M
+Probe Ratio:1X
+Unit:V
+
+	DSO Horizontal System
+Delay:Off
+Time Mode:YT
+Time Scale:2.000000e-03s
+Delay Time Scale:2.000000e-05s
+Time Offset:1.000000e-02s
+Delay Time Offset:8.760000e-04s
+
+	DSO Acquire System
+Acquire Mode:Average
+Memory Depth:3000000pts
+Average Num:64
+Sampling Rate:125000000Sa/s
+
+	DSO Trigger System
+Trigger Mode:Edge
+Trigger Source:CH4
+Trigger Edge Slope:Rising
+Trigger Sweep:Single
+Trigger Coupling:DC
+Trigger Noise Reject:Off
+Trigger HoldOff:1.600000e-08s
+
+CH1 Level:0.000000V
+CH2 Level:0.000000V
+CH3 Level:0.000000V
+CH4 Level:0.088000V
+
+Pulse Condition:Positive More
+Pulse High Time:0.000002s
+Pulse Low Time:0.000001s
+
+Slope Condition:Positive More
+Slope High Time:0.000002s
+Slope Low Time:0.000001s
+Slope Win:Win Up
+Slope Level1:0.400000V
+Slope Level2:0.000000V
+
+Video Polarity:Positive
+Video Sync:All Lines
+Video Standard:NTSC
+Video Line:1
+
+RS232 Source:CH4
+RS232 Type:Frame Start
+RS232 Stop Bit:1
+RS232 Parity:None
+RS232 Data Bit:8
+RS232 Baudrate:9600
+RS232 Data:90
+
+IIC Clock Source:CH1
+IIC Data Source:CH2
+IIC Type:Start
+IIC Address:1
+IIC Direction:Read
+IIC Address Length:7
+IIC Byte Length:1
+IIC Data:82
+
+SPI SCLK:CH1
+SPI SDIO:CH2
+SPI Mode:CS
+SPI CS Mode:Low
+SPI Edge:Rise
+SPI Timeout:0.000001s
+SPI Data Length:8
+SPI Data:82
+
+	LA System
+D0~D7  Threshold Type:TTL
+D0~D7  Threshold Value:1.400000V
+D8~D15 Threshold Type:TTL
+D8~D15 Threshold Value:1.400000V
+D0~D7  Status:0000 0000
+D8~D15 Stauts:0000 0000
