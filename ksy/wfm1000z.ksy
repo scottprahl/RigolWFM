@@ -44,9 +44,9 @@ types:
 
   wfm_header:
     seq:
-      - id: time_scale
+      - id: time_scale_ps
         type: u8
-      - id: time_offset
+      - id: time_offset_ps
         type: s8
       - id: crc
         type: u4
@@ -88,7 +88,7 @@ types:
         enum: time_mode_enum
       - id: memory_depth
         type: u4
-      - id: sample_rate
+      - id: sample_rate_ghz
         type: f4
 
       - id: ch1
@@ -130,6 +130,14 @@ types:
         value: "total_channels == 3 ? 4 : total_channels"
       points:
         value: memory_depth/stride
+      sample_rate: 
+        value: sample_rate_ghz * 1e9
+      time_scale: 
+        value: time_scale_ps * 1e-12
+      time_offset: 
+        value: time_offset_ps * 1e-12
+      delta_t: 
+        value: 1/sample_rate
 
   channel_head:
     seq:
