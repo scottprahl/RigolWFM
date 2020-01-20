@@ -18,15 +18,9 @@ types:
   header:
     seq:
       - id: magic
-        contents: [0xa5,0xa5]
-      - id: blank_1
-        contents: [0x00,0x00]
-      - id: unused_1
-        contents: [0x00,0x00,0x00,0x00]
-      - id: unused_2
-        contents: [0x00,0x00,0x00,0x00]
-      - id: unused_3
-        contents: [0x00,0x00,0x00,0x00]
+        contents: [0xa5,0xa5,0x00,0x00]
+      - id: blank_12
+        contents: [0,0,0,0,0,0,0,0,0,0,0,0]
       - id: adc_mode
         type: u1
       - id: padding_2
@@ -80,19 +74,23 @@ types:
                 _root.header.ch2_points_tmp"
         doc: Use ch1_points when ch2_points is not written
 
-      ch1_scale:
-        value: _root.header.ch1.scale_m * _root.header.ch1.probe * 1e-6
-      ch1_shift:
-        value: _root.header.ch1.shift_m * _root.header.ch1_scale / 25
-      ch1_length:
+      ch1_volt_scale:
+        value: '_root.header.ch1.invert_m ?
+                -4e-8 * _root.header.ch1.scale_m * _root.header.ch1.probe:
+                +4e-8 * _root.header.ch1.scale_m * _root.header.ch1.probe'
+      ch1_volt_shift:
+        value: _root.header.ch1.shift_m * _root.header.ch1_volt_scale
+      ch1_volt_length:
         value: _root.header.ch1_points - _root.header.roll_stop
         doc: In rolling mode, not all samples are valid otherwise use all samples
 
-      ch2_scale:
-        value: _root.header.ch2.scale_m * _root.header.ch2.probe * 1e-6
-      ch2_shift:
-        value: _root.header.ch2.shift_m * _root.header.ch2_scale / 25
-      ch2_length:
+      ch2_volt_scale:
+        value: '_root.header.ch2.invert_m ?
+                -4e-8 * _root.header.ch2.scale_m * _root.header.ch2.probe:
+                +4e-8 * _root.header.ch2.scale_m * _root.header.ch2.probe'
+      ch2_volt_shift:
+        value: _root.header.ch2.shift_m * _root.header.ch2_volt_scale
+      ch2_volt_length:
         value: _root.header.ch2_points - _root.header.roll_stop
         doc: In rolling mode, not all samples are valid otherwise use all samples
 
@@ -116,11 +114,13 @@ types:
       - id: shift_d
         type: s2
       - id: unknown_1
-        size: 2
+        type: u2
       - id: probe
         type: f4
+      - id: unused_bits_0
+        type: b7
       - id: invert_d
-        type: u1
+        type: b1
       - id: unused_bits_1
         type: b7
       - id: enabled
@@ -130,7 +130,7 @@ types:
       - id: invert_m
         type: b1
       - id: unknown_2
-        size: 1
+        type: u1
       - id: scale_m
         type: s4
       - id: shift_m
@@ -215,13 +215,13 @@ types:
   raw_data:
     seq:
       - id: ch1
-        type: u1
+        type: s1
         if: _root.header.ch1.enabled
         repeat: expr
         repeat-expr: _root.header.ch1_points
 
       - id: ch2
-        type: u1
+        type: s1
         if: _root.header.ch2.enabled
         repeat: expr
         repeat-expr: _root.header.ch2_points
