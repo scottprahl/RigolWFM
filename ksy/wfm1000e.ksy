@@ -68,6 +68,8 @@ types:
         repeat: expr
         repeat-expr: 1
     instances:
+      sample_rate: 
+        value: time1.sample_rate
       ch2_points:
         value: "_root.header.ch2.enabled and _root.header.ch2_points_tmp == 0 ? 
                 _root.header.ch1_points :
@@ -75,9 +77,9 @@ types:
         doc: Use ch1_points when ch2_points is not written
 
       ch1_volt_scale:
-        value: '_root.header.ch1.invert_m ?
-                -4e-8 * _root.header.ch1.scale_m * _root.header.ch1.probe:
-                +4e-8 * _root.header.ch1.scale_m * _root.header.ch1.probe'
+        value: '_root.header.ch1.invert_measured ?
+                -1e-6 * _root.header.ch1.scale_measured * _root.header.ch1.probe:
+                +1e-6 * _root.header.ch1.scale_measured * _root.header.ch1.probe'
       ch1_volt_shift:
         value: _root.header.ch1.shift_m * _root.header.ch1_volt_scale
       ch1_volt_length:
@@ -85,9 +87,9 @@ types:
         doc: In rolling mode, not all samples are valid otherwise use all samples
 
       ch2_volt_scale:
-        value: '_root.header.ch2.invert_m ?
-                -4e-8 * _root.header.ch2.scale_m * _root.header.ch2.probe:
-                +4e-8 * _root.header.ch2.scale_m * _root.header.ch2.probe'
+        value: '_root.header.ch2.invert_measured ?
+                -1e-6 * _root.header.ch2.scale_measured * _root.header.ch2.probe:
+                +1e-6 * _root.header.ch2.scale_measured * _root.header.ch2.probe'
       ch2_volt_shift:
         value: _root.header.ch2.shift_m * _root.header.ch2_volt_scale
       ch2_volt_length:
@@ -95,23 +97,23 @@ types:
         doc: In rolling mode, not all samples are valid otherwise use all samples
 
       ch1_time_scale:
-        value: 1.0 / _root.header.time1.sample_rate
+        value: 1.0e-12 * _root.header.time1.scale_measured
       ch1_time_delay:
-        value: 1.0e-12 * _root.header.time1.delay_m
+        value: 1.0e-12 * _root.header.time1.delay_measured
       ch2_time_scale:
         value: "_root.header.trigger_mode == trigger_mode_enum::alt ? 
-                 1.0 / _root.header.time2.sample_rate : 
+                 1.0e-12 * _root.header.time2.scale_measured : 
                  _root.header.ch1_time_scale"
       ch2_time_delay:
         value: "_root.header.trigger_mode == trigger_mode_enum::alt ? 
-                 1.0e-12 * _root.header.time2.delay_m : 
+                 1.0e-12 * _root.header.time2.delay_measured : 
                  _root.header.ch1_time_delay"
 
   channel_header:
     seq:
-      - id: scale_d
+      - id: scale_display
         type: s4
-      - id: shift_d
+      - id: shift_display
         type: s2
       - id: unknown_1
         type: u2
@@ -119,7 +121,7 @@ types:
         type: f4
       - id: unused_bits_0
         type: b7
-      - id: invert_d
+      - id: invert_display
         type: b1
       - id: unused_bits_1
         type: b7
@@ -127,26 +129,26 @@ types:
         type: b1
       - id: unused_bits_2
         type: b7
-      - id: invert_m
+      - id: invert_measured
         type: b1
       - id: unknown_2
         type: u1
-      - id: scale_m
+      - id: scale_measured
         type: s4
       - id: shift_m
         type: s2
 
   time_header:
     seq:
-      - id: scale_d
+      - id: scale_display
         type: s8
-      - id: delay_d
+      - id: delay_display
         type: s8
       - id: sample_rate
         type: f4
-      - id: scale_m
+      - id: scale_measured
         type: s8
-      - id: delay_m
+      - id: delay_measured
         type: s8
 
   trigger_header:
