@@ -81,7 +81,7 @@ types:
                 -1e-6 * _root.header.ch1.scale_measured * _root.header.ch1.probe:
                 +1e-6 * _root.header.ch1.scale_measured * _root.header.ch1.probe'
       ch1_volt_shift:
-        value: _root.header.ch1.shift_m * _root.header.ch1_volt_scale
+        value: _root.header.ch1.shift_measured * _root.header.ch1_volt_scale
       ch1_volt_length:
         value: _root.header.ch1_points - _root.header.roll_stop
         doc: In rolling mode, not all samples are valid otherwise use all samples
@@ -91,7 +91,7 @@ types:
                 -1e-6 * _root.header.ch2.scale_measured * _root.header.ch2.probe:
                 +1e-6 * _root.header.ch2.scale_measured * _root.header.ch2.probe'
       ch2_volt_shift:
-        value: _root.header.ch2.shift_m * _root.header.ch2_volt_scale
+        value: _root.header.ch2.shift_measured * _root.header.ch2_volt_scale
       ch2_volt_length:
         value: _root.header.ch2_points - _root.header.roll_stop
         doc: In rolling mode, not all samples are valid otherwise use all samples
@@ -135,7 +135,7 @@ types:
         type: u1
       - id: scale_measured
         type: s4
-      - id: shift_m
+      - id: shift_measured
         type: s2
 
   time_header:
