@@ -51,11 +51,11 @@ class Channel():
     def __init__(self):
         self.channel_number = 1
         self.enabled = False
-        self.volt_scale = 1    # s/div
-        self.volt_offset = 0   # s
-        self.time_scale = 1    # s/div
-        self.time_delta = 0.1  # s
-        self.time_offset = 0   # s
+        self.volts_per_division = 1  # V/div
+        self.volts_offset = 0        # V
+        self.time_scale = 1          # s/div
+        self.time_per_point = 0.1    # s/point
+        self.time_offset = 0         # s
         self.points = 0
         self.raw = None
 
@@ -64,8 +64,8 @@ class Channel():
         s += "    Enabled:   %s\n" % self.enabled
         s += "    Roll Stop: %s\n" % self.roll_stop
         s += "    Voltage:\n"
-        s += "        Scale  = " + engineering_string(self.volt_scale) + "V/div\n"
-        s += "        Offset = " + engineering_string(self.volt_offset) + "V\n"
+        s += "        Scale  = " + engineering_string(self.volts_per_division) + "V/div\n"
+        s += "        Offset = " + engineering_string(self.volts_offset) + "V\n"
         s += "    Time:\n"
         s += "        Scale  = " + engineering_string(self.time_scale) + "s/div\n"
         s += "        Delay  = " + engineering_string(self.time_offset) + "s\n"

@@ -14,7 +14,6 @@ def main():
     )
     parser.add_argument('filename')
     args = parser.parse_args()
-    print(args.filename)
     
     channels = wfme.parse(args.filename)
     for ch in channels:
