@@ -12,6 +12,7 @@ instances:
     pos: 0
     type: header
   data:
+    pos: 276
     type: raw_data
 
 types:
@@ -65,8 +66,7 @@ types:
       - id: la_sample_rate
         doc: This does not exist in early file formats, unsure how to detect if missing
         type: f4
-        repeat: expr
-        repeat-expr: 1
+
     instances:
       sample_rate: 
         value: time1.sample_rate
@@ -76,22 +76,26 @@ types:
                 _root.header.ch2_points_tmp"
         doc: Use ch1_points when ch2_points is not written
 
-      ch1_volt_scale:
+      ch1_volts_per_division:
         value: '_root.header.ch1.invert_measured ?
                 -1e-6 * _root.header.ch1.scale_measured * _root.header.ch1.probe:
                 +1e-6 * _root.header.ch1.scale_measured * _root.header.ch1.probe'
-      ch1_volt_shift:
-        value: _root.header.ch1.shift_measured * _root.header.ch1_volt_scale
+        doc: Voltage scale in volts per division.
+      ch1_volts_offset:
+        value: _root.header.ch1.shift_measured * _root.header.ch1_volts_per_division / 25.0
+        doc: Voltage offset in volts.
       ch1_volt_length:
         value: _root.header.ch1_points - _root.header.roll_stop
         doc: In rolling mode, not all samples are valid otherwise use all samples
 
-      ch2_volt_scale:
+      ch2_volts_per_division:
         value: '_root.header.ch2.invert_measured ?
                 -1e-6 * _root.header.ch2.scale_measured * _root.header.ch2.probe:
                 +1e-6 * _root.header.ch2.scale_measured * _root.header.ch2.probe'
-      ch2_volt_shift:
-        value: _root.header.ch2.shift_measured * _root.header.ch2_volt_scale
+        doc: Voltage scale in volts per division.
+      ch2_volts_offset:
+        value: _root.header.ch2.shift_measured * _root.header.ch2_volts_per_division / 25.0
+        doc: Voltage offset in volts.
       ch2_volt_length:
         value: _root.header.ch2_points - _root.header.roll_stop
         doc: In rolling mode, not all samples are valid otherwise use all samples
@@ -135,8 +139,10 @@ types:
         type: u1
       - id: scale_measured
         type: s4
+        doc: Units are microvolts per division.
       - id: shift_measured
         type: s2
+        doc: Units are 1/25th of a division.
 
   time_header:
     seq:
@@ -217,20 +223,20 @@ types:
   raw_data:
     seq:
       - id: ch1
-        type: s1
+        type: u1
         if: _root.header.ch1.enabled
         repeat: expr
         repeat-expr: _root.header.ch1_points
 
       - id: ch2
-        type: s1
+        type: u1
         if: _root.header.ch2.enabled
         repeat: expr
         repeat-expr: _root.header.ch2_points
         
       - id: logic
         doc: Not clear where the LA length is stored assume same as ch1_points
-        type: u1
+        type: u2
         repeat: expr
         repeat-expr: '_root.header.logic.enabled ? _root.header.ch1_points : 0'
         

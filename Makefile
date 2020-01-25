@@ -1,7 +1,17 @@
-py:
+python_parsers = RigolWFM/wfm1000d.py RigolWFM/wfm1000e.py RigolWFM/wfm1000z.py RigolWFM/wfm4000c.py
+
+all: $(python_parsers)
+
+RigolWFM/wfm1000d.py: ksy/wfm1000d.ksy
 	kaitai-struct-compiler -t python --outdir RigolWFM ksy/wfm1000d.ksy
+
+RigolWFM/wfm1000e.py: ksy/wfm1000e.ksy
 	kaitai-struct-compiler -t python --outdir RigolWFM ksy/wfm1000e.ksy
+
+RigolWFM/wfm1000z.py: ksy/wfm1000z.ksy
 	kaitai-struct-compiler -t python --outdir RigolWFM ksy/wfm1000z.ksy
+
+RigolWFM/wfm4000c.py: ksy/wfm4000c.ksy
 	kaitai-struct-compiler -t python --outdir RigolWFM ksy/wfm4000c.ksy
 
 check:
@@ -11,7 +21,7 @@ check:
 	ksylint ksy/wfm4000c.ksy
 
 test:
-	python3 RigolWFM/wfm_parser.py -t e wfm/DS1102E.wfm
+	python3 RigolWFM/wfm_parser.py -t e wfm/DS1102E-A.wfm
 	python3 RigolWFM/wfm_parser.py -t e wfm/DS1102E-B.wfm
 	python3 RigolWFM/wfm_parser.py -t e wfm/DS1102E-C.wfm
 	python3 RigolWFM/wfm_parser.py -t e wfm/DS1102E-D.wfm
@@ -23,8 +33,11 @@ test:
 	python3 RigolWFM/wfm_parser.py -t z wfm/DS1074Z-B.wfm 
 
 test2:
+	python3 RigolWFM/wfm_parser2.py -t e wfm/DS1102E-A.wfm
 	python3 RigolWFM/wfm_parser2.py -t e wfm/DS1102E-B.wfm
+	python3 RigolWFM/wfm_parser2.py -t e wfm/DS1102E-C.wfm
 	python3 RigolWFM/wfm_parser2.py -t e wfm/DS1102E-D.wfm
+	python3 RigolWFM/wfm_parser2.py -t e wfm/DS1052E.wfm
 
 clean:
 	rm -f RigolWFM/wfm1000d.py 
@@ -35,4 +48,4 @@ clean:
 	rm -rf RigolWFM.egg-info
 	rm -rf RigolWFM/__pycache__
 	
-.PHONY: clean test check
+.PHONY: clean test check all
