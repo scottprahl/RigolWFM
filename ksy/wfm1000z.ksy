@@ -44,9 +44,9 @@ types:
 
   wfm_header:
     seq:
-      - id: time_scale_ps
+      - id: picoseconds_per_division
         type: u8
-      - id: time_offset_ps
+      - id: picoseconds_offset
         type: s8
       - id: crc
         type: u4
@@ -66,13 +66,13 @@ types:
         type: b1
       - id: unused_mask_bytes
         size: 3
-      - id: ch1_offset
+      - id: ch1_file_offset
         type: u4
-      - id: ch2_offset
+      - id: ch2_file_offset
         type: u4
-      - id: ch3_offset
+      - id: ch3_file_offset
         type: u4
-      - id: ch4_offset
+      - id: ch4_file_offset
         type: u4
       - id: la_offset
         type: u4
@@ -130,14 +130,14 @@ types:
         value: "total_channels == 3 ? 4 : total_channels"
       points:
         value: memory_depth/stride
-      sample_rate: 
+      sample_rate_hz: 
         value: sample_rate_ghz * 1e9
-      time_scale: 
-        value: time_scale_ps * 1e-12
+      seconds_per_division: 
+        value: picoseconds_per_division * 1e-12
       time_offset: 
-        value: time_offset_ps * 1e-12
-      delta_t: 
-        value: 1/sample_rate
+        value: picoseconds_offset * 1e-12
+      seconds_per_point: 
+        value: 1/sample_rate_hz
 
   channel_head:
     seq:

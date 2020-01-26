@@ -18,6 +18,7 @@ import requests
 import numpy as np
 
 import RigolWFM.wfm1000e
+import RigolWFM.wfm1000z
 
 
 def engineering_string(number):
@@ -54,7 +55,7 @@ class Channel():
         self.volts_per_division = 1  # V/div
         self.volts_offset = 0        # V
         self.time_scale = 1          # s/div
-        self.time_per_point = 0.1    # s/point
+        self.seconds_per_point = 0.1    # s/point
         self.time_offset = 0         # s
         self.points = 0
         self.raw = None
@@ -62,14 +63,13 @@ class Channel():
     def __str__(self):
         s = "Channel %d\n" % self.channel_number
         s += "    Enabled:   %s\n" % self.enabled
-        s += "    Roll Stop: %s\n" % self.roll_stop
         s += "    Voltage:\n"
         s += "        Scale  = " + engineering_string(self.volts_per_division) + "V/div\n"
         s += "        Offset = " + engineering_string(self.volts_offset) + "V\n"
         s += "    Time:\n"
         s += "        Scale  = " + engineering_string(self.time_scale) + "s/div\n"
         s += "        Delay  = " + engineering_string(self.time_offset) + "s\n"
-        s += "        Delta  = " + engineering_string(self.time_per_point) + "s/point\n"
+        s += "        Delta  = " + engineering_string(self.seconds_per_point) + "s/point\n"
         s += "    Data:\n"
         s += "        Points = %d\n" % self.points
         if self.enabled:
@@ -88,8 +88,7 @@ class ChannelE(Channel):
     def __init__(self, w, ch=1):
         super().__init__()
         self.channel_number = ch
-        self.roll_stop = w.header.roll_stop
-        self.time_per_point = 1/w.header.sample_rate
+        self.seconds_per_point = w.header.seconds_per_point
 
         if ch == 1:
             self.enabled = w.header.ch1.enabled
@@ -101,7 +100,7 @@ class ChannelE(Channel):
             if self.enabled:
                 self.raw = np.array(w.data.ch1)
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
-                self.times  = np.arange(self.points) * self.time_per_point
+                self.times  = np.arange(self.points) * self.seconds_per_point
 
                 
         elif ch == 2:
@@ -114,8 +113,27 @@ class ChannelE(Channel):
             if self.enabled:
                 self.raw = np.array(w.data.ch2)
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
-                self.times  = np.arange(self.points) * self.time_per_point
+                self.times  = np.arange(self.points) * self.seconds_per_point
 
+class ChannelZ(Channel):
+    """Base class for a single channel from 1000Z series scopes."""
+
+    def __init__(self, w, ch=1):
+        super().__init__()
+        self.channel_number = ch
+        self.seconds_per_point = w.header.seconds_per_point
+
+        if ch == 1:
+            self.enabled = w.header.ch1.enabled
+            self.volts_per_division = w.header.ch1_volts_per_division
+            self.volts_offset = w.header.ch1_volts_offset
+            self.time_offset = w.header.ch1_time_delay
+            self.time_scale = w.header.ch1_time_scale
+            self.points = w.header.ch1_points
+            if self.enabled:
+                self.raw = np.array(w.data.ch1)
+                self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
+                self.times  = np.arange(self.points) * self.seconds_per_point
 
 class ReadWFMError(Exception):
     """Generic Read Error."""
@@ -125,17 +143,28 @@ class ParseWFMError(Exception):
     """Generic Parse Error."""
 
 
-def parse(wfm_filename):
+def parse(wfm_filename, kind='1000E'):
     """Return a list of channels."""
 
-    channels = [None, None]
 
-    try:
-        w = RigolWFM.wfm1000e.Wfm1000e.from_file(wfm_filename)
-        channels = [ChannelE(w, i) for i in [1,2]]
-        return channels
+    if kind == '1000e' or kind == '1000E':
+        channels = [None, None]
+        try:
+            w = RigolWFM.wfm1000e.Wfm1000e.from_file(wfm_filename)
+            channels = [ChannelE(w, i) for i in [1,2]]
+            return channels
 
-    except:
-        raise ParseWFMError("File format is not 1000E.  Sorry.")
+        except:
+            raise ParseWFMError("File format is not 1000E.  Sorry.")
+
+    if kind == '1000z' or kind == '1000Z':
+        channels = [None, None, None, None]
+        try:
+            w = RigolWFM.wfm1000z.Wfm1000z.from_file(wfm_filename)
+            channels = [ChannelZ(w, i) for i in [1,2,3,4]]
+            return channels
+
+        except:
+            raise ParseWFMError("File format is not 1000Z.  Sorry.")
 
     return channels

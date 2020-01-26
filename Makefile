@@ -32,12 +32,15 @@ test:
 	python3 RigolWFM/wfm_parser.py -t z wfm/DS1074Z-A.wfm 
 	python3 RigolWFM/wfm_parser.py -t z wfm/DS1074Z-B.wfm 
 
-test2:
-	python3 RigolWFM/wfm_parser2.py -t e wfm/DS1102E-A.wfm
-	python3 RigolWFM/wfm_parser2.py -t e wfm/DS1102E-B.wfm
-	python3 RigolWFM/wfm_parser2.py -t e wfm/DS1102E-C.wfm
-	python3 RigolWFM/wfm_parser2.py -t e wfm/DS1102E-D.wfm
-	python3 RigolWFM/wfm_parser2.py -t e wfm/DS1052E.wfm
+teste:
+	python3 RigolWFM/wfm_parser2.py -t 1000e wfm/DS1102E-A.wfm
+	python3 RigolWFM/wfm_parser2.py -t 1000e wfm/DS1102E-B.wfm
+	python3 RigolWFM/wfm_parser2.py -t 1000e wfm/DS1102E-C.wfm
+	python3 RigolWFM/wfm_parser2.py -t 1000e wfm/DS1102E-D.wfm
+	python3 RigolWFM/wfm_parser2.py -t 1000e wfm/DS1052E.wfm
+
+testz:
+	python3 RigolWFM/wfm_parser2.py -t 1000z wfm/MSO1104.wfm
 
 clean:
 	rm -f RigolWFM/wfm1000d.py 

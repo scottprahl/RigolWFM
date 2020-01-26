@@ -68,8 +68,11 @@ types:
         type: f4
 
     instances:
-      sample_rate: 
-        value: time1.sample_rate
+      sample_rate_hz: 
+        value: time1.sample_rate_hz
+      seconds_per_point:
+        value: 1/sample_rate_hz
+        
       ch2_points:
         value: "_root.header.ch2.enabled and _root.header.ch2_points_tmp == 0 ? 
                 _root.header.ch1_points :
@@ -150,7 +153,7 @@ types:
         type: s8
       - id: delay_display
         type: s8
-      - id: sample_rate
+      - id: sample_rate_hz
         type: f4
       - id: scale_measured
         type: s8
