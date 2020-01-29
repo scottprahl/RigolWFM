@@ -122,18 +122,27 @@ class ChannelZ(Channel):
         super().__init__()
         self.channel_number = ch
         self.seconds_per_point = w.header.seconds_per_point
+        self.time_scale = w.header.seconds_per_division
+        self.time_offset = w.header.time_offset
+        self.points = w.header.points
 
         if ch == 1:
             self.enabled = w.header.ch1.enabled
             self.volts_per_division = w.header.ch1_volts_per_division
             self.volts_offset = w.header.ch1_volts_offset
-            self.time_offset = w.header.ch1_time_delay
-            self.time_scale = w.header.ch1_time_scale
-            self.points = w.header.ch1_points
             if self.enabled:
-                self.raw = np.array(w.data.ch1)
-                self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
-                self.times  = np.arange(self.points) * self.seconds_per_point
+                if w.header.stride == 1:
+                    self.raw = np.array(w.data.raw1)
+                    self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
+                    self.times  = np.arange(self.points) * self.seconds_per_point
+                if w.header.stride == 2:
+                    self.raw = np.array(w.data.raw2) & 0xF0
+                    self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
+                    self.times  = np.arange(self.points) * self.seconds_per_point
+                if w.header.stride == 2:
+                    self.raw = np.array(w.data.raw4) & 0xF000
+                    self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
+                    self.times  = np.arange(self.points) * self.seconds_per_point
 
 class ReadWFMError(Exception):
     """Generic Read Error."""

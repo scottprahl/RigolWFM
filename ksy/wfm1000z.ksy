@@ -8,14 +8,14 @@ doc: |
   Rigol DS1000Z scope .wmf file format.
 
 instances:
-  header:
+  preheader:
     pos: 0
     type: file_header
-  info:
+  header:
     pos: 64
     type: wfm_header
   data:
-    pos: 304 + _root.info.setup_size + _root.info.horizontal_size
+    pos: 304 + _root.header.setup_size + _root.header.horizontal_size
     type: raw_data
 
 types:
@@ -138,6 +138,14 @@ types:
         value: picoseconds_offset * 1e-12
       seconds_per_point: 
         value: 1/sample_rate_hz
+      ch1_volts_per_division:
+        value: '_root.header.ch1.inverted ?
+                _root.header.ch1.scale * _root.header.ch1.probe_value:
+                _root.header.ch1.scale * _root.header.ch1.probe_value'
+        doc: Voltage scale in volts per division.
+      ch1_volts_offset:
+        value: _root.header.ch1.shift * _root.header.ch1_volts_per_division / 25.0
+        doc: Voltage offset in volts.
 
   channel_head:
     seq:
@@ -169,6 +177,24 @@ types:
         type: b1
       - id: unknown_2
         size: 11
+    instances:
+      probe_value:
+        value: "(probe_ratio == probe_enum::x0_01 ? 0.01 :
+                probe_ratio == probe_enum::x0_02 ? 0.02 :
+                probe_ratio == probe_enum::x0_05 ? 0.05 :
+                probe_ratio == probe_enum::x0_1 ? 0.1 :
+                probe_ratio == probe_enum::x0_2 ? 0.2 :
+                probe_ratio == probe_enum::x0_5 ? 0.5 :
+                probe_ratio == probe_enum::x1 ? 1.0 :
+                probe_ratio == probe_enum::x2 ? 2.0 :
+                probe_ratio == probe_enum::x5 ? 5.0 :
+                probe_ratio == probe_enum::x10 ? 10.0 :
+                probe_ratio == probe_enum::x20 ? 20.0 :
+                probe_ratio == probe_enum::x50 ? 50.0 :
+                probe_ratio == probe_enum::x100 ? 100.0 :
+                probe_ratio == probe_enum::x200 ? 200.0 :
+                probe_ratio == probe_enum::x500 ? 500.0 :
+                1000.0)"
 
   channel_subhead:
     seq:
@@ -203,20 +229,20 @@ types:
       - id: raw1
         type: u1
         repeat: expr
-        repeat-expr: _root.info.points
-        if: _root.info.stride == 1
+        repeat-expr: _root.header.points
+        if: _root.header.stride == 1
 
       - id: raw2
         type: u2
         repeat: expr
-        repeat-expr: _root.info.points
-        if: _root.info.stride == 2
+        repeat-expr: _root.header.points
+        if: _root.header.stride == 2
 
       - id: raw4
         type: u4
         repeat: expr
-        repeat-expr: _root.info.points
-        if: _root.info.stride == 4
+        repeat-expr: _root.header.points
+        if: _root.header.stride == 4
 
 enums:
   acq_mode_enum:
