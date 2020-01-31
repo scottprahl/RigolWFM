@@ -115,34 +115,89 @@ class ChannelE(Channel):
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
                 self.times  = np.arange(self.points) * self.seconds_per_point
 
+
 class ChannelZ(Channel):
     """Base class for a single channel from 1000Z series scopes."""
 
-    def __init__(self, w, ch=1):
+    def channel_bytes(self, enabled_count, data):
+        """
+        Return right series of bytes for a channel.
+        
+        Waveform points are interleaved stored in memory when two or more 
+        channels are enabled:
+        
+        Only one channel enabled:
+            CH1CH1CH1CH1
+            
+        Two channels Enabled:
+            CH2CH1CH2CH1
+            
+        Three or Four channels enabled:
+            CH4CH3CH2CH1
+            
+        Args:
+            enabled_count: the number of enabled channels before this one
+            data:          object containing the raw data structures
+        Returns
+            byte array for a particular channel
+        """
+        
+        if self.stride == 1:
+            bytes = np.array(data.raw1, dtype=np.uint8)
+            
+        if self.stride == 2:
+            if enabled_count == 0:
+                bytes = np.array(data.raw2 & 0x00FF, dtype=np.uint8)
+            else:
+                bytes = np.array((data.raw2 & 0xFF00) >> 8, dtype=np.uint8)
+            
+        if self.stride == 4:
+            if enabled_count == 0:
+                bytes = np.array(np.uint32(data.raw4) & 0x000000FF, dtype=np.uint8)
+            elif enabled_count == 1:
+                bytes = np.array((np.uint32(data.raw4) & 0x0000FF00) >> 8, dtype=np.uint8)
+            elif enabled_count == 2:
+                bytes = np.array((np.uint32(data.raw4) & 0x00FF0000) >> 16, dtype=np.uint8)
+            else:
+                bytes = np.array((np.uint32(data.raw4) & 0xFF000000) >> 24, dtype=np.uint8)
+        
+        return bytes
+            
+    def __init__(self, w, ch, enabled_count):
         super().__init__()
         self.channel_number = ch
         self.seconds_per_point = w.header.seconds_per_point
         self.time_scale = w.header.seconds_per_division
         self.time_offset = w.header.time_offset
         self.points = w.header.points
-
+        self.stride = w.header.stride
+        
         if ch == 1:
             self.enabled = w.header.ch1.enabled
+#            self.volts_per_division = w.header.ch1_volts_per_division
+#            self.volts_offset = w.header.ch1_volts_offset
+        if ch == 2:
+            self.enabled = w.header.ch2.enabled
+#            self.volts_per_division = w.header.ch2_volts_per_division
+#            self.volts_offset = w.header.ch2_volts_offset
+        if ch == 3:
+            self.enabled = w.header.ch3.enabled
+#            self.volts_per_division = w.header.ch3_volts_per_division
+#            self.volts_offset = w.header.ch3_volts_offset
+        elif ch == 4:
+            self.enabled = w.header.ch4.enabled
+#            self.volts_per_division = w.header.ch4_volts_per_division
+#            self.volts_offset = w.header.ch4_volts_offset
+
+        if self.enabled:
+            self.raw = self.channel_bytes(enabled_count, w.data)
             self.volts_per_division = w.header.ch1_volts_per_division
             self.volts_offset = w.header.ch1_volts_offset
-            if self.enabled:
-                if w.header.stride == 1:
-                    self.raw = np.array(w.data.raw1)
-                    self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
-                    self.times  = np.arange(self.points) * self.seconds_per_point
-                if w.header.stride == 2:
-                    self.raw = np.array(w.data.raw2) & 0xF0
-                    self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
-                    self.times  = np.arange(self.points) * self.seconds_per_point
-                if w.header.stride == 2:
-                    self.raw = np.array(w.data.raw4) & 0xF000
-                    self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
-                    self.times  = np.arange(self.points) * self.seconds_per_point
+            self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
+            self.times  = np.arange(self.points) * self.seconds_per_point
+
+            self.volts_per_division = w.header.ch1_volts_per_division
+            self.volts_offset = w.header.ch1_volts_offset
 
 class ReadWFMError(Exception):
     """Generic Read Error."""
@@ -167,12 +222,14 @@ def parse(wfm_filename, kind='1000E'):
             raise ParseWFMError("File format is not 1000E.  Sorry.")
 
     if kind == '1000z' or kind == '1000Z':
+        enabled_channels = 0
         channels = [None, None, None, None]
         try:
             w = RigolWFM.wfm1000z.Wfm1000z.from_file(wfm_filename)
-            channels = [ChannelZ(w, i) for i in [1,2,3,4]]
-            return channels
-
+            for i in range(4):
+                channels[i] = ChannelZ(w, i+1, enabled_channels)
+                if channels[i].enabled:
+                    enabled_channels += 1
         except:
             raise ParseWFMError("File format is not 1000Z.  Sorry.")
 
