@@ -193,13 +193,10 @@ class ChannelZ(Channel):
             self.volts_per_division = w.header.ch4.scale
             self.volts_offset = w.header.ch4.shift
 
-        print("probe=%.2f" % self.probe)
-# [((x-getCenterValue(channelDict["scale"]))/20.)*channelDict["scale"]  - channelDict["shift"]
-
         if self.enabled:
             self.raw = self.channel_bytes(enabled_count, w.data)
-            self.volts = self.volts_per_division * self.raw - self.volts_offset
-            self.times  = np.arange(self.points) * self.seconds_per_point
+            self.volts = self.volts_per_division/25.0 * (self.raw - 127.0) - self.volts_offset
+            self.times  = np.arange(self.points) * self.seconds_per_point - self.time_scale
 
 class ReadWFMError(Exception):
     """Generic Read Error."""
