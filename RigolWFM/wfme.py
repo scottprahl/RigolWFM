@@ -152,11 +152,11 @@ class ChannelZ(Channel):
                 bytes = np.array((data.raw2 & 0xFF00) >> 8, dtype=np.uint8)
             
         if self.stride == 4:
-            if enabled_count == 0:
+            if enabled_count == 3:
                 bytes = np.array(np.uint32(data.raw4) & 0x000000FF, dtype=np.uint8)
-            elif enabled_count == 1:
-                bytes = np.array((np.uint32(data.raw4) & 0x0000FF00) >> 8, dtype=np.uint8)
             elif enabled_count == 2:
+                bytes = np.array((np.uint32(data.raw4) & 0x0000FF00) >> 8, dtype=np.uint8)
+            elif enabled_count == 1:
                 bytes = np.array((np.uint32(data.raw4) & 0x00FF0000) >> 16, dtype=np.uint8)
             else:
                 bytes = np.array((np.uint32(data.raw4) & 0xFF000000) >> 24, dtype=np.uint8)
@@ -174,30 +174,32 @@ class ChannelZ(Channel):
         
         if ch == 1:
             self.enabled = w.header.ch1.enabled
-#            self.volts_per_division = w.header.ch1_volts_per_division
-#            self.volts_offset = w.header.ch1_volts_offset
+            self.probe = w.header.ch1.probe_value
+            self.volts_per_division = w.header.ch1.scale
+            self.volts_offset = w.header.ch1.shift
         if ch == 2:
             self.enabled = w.header.ch2.enabled
-#            self.volts_per_division = w.header.ch2_volts_per_division
-#            self.volts_offset = w.header.ch2_volts_offset
+            self.probe = w.header.ch2.probe_value
+            self.volts_per_division = w.header.ch2.scale
+            self.volts_offset = w.header.ch2.shift
         if ch == 3:
             self.enabled = w.header.ch3.enabled
-#            self.volts_per_division = w.header.ch3_volts_per_division
-#            self.volts_offset = w.header.ch3_volts_offset
+            self.probe = w.header.ch3.probe_value
+            self.volts_per_division = w.header.ch3.scale
+            self.volts_offset = w.header.ch3.shift
         elif ch == 4:
             self.enabled = w.header.ch4.enabled
-#            self.volts_per_division = w.header.ch4_volts_per_division
-#            self.volts_offset = w.header.ch4_volts_offset
+            self.probe = w.header.ch4.probe_value
+            self.volts_per_division = w.header.ch4.scale
+            self.volts_offset = w.header.ch4.shift
+
+        print("probe=%.2f" % self.probe)
+# [((x-getCenterValue(channelDict["scale"]))/20.)*channelDict["scale"]  - channelDict["shift"]
 
         if self.enabled:
             self.raw = self.channel_bytes(enabled_count, w.data)
-            self.volts_per_division = w.header.ch1_volts_per_division
-            self.volts_offset = w.header.ch1_volts_offset
-            self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
+            self.volts = self.volts_per_division * self.raw - self.volts_offset
             self.times  = np.arange(self.points) * self.seconds_per_point
-
-            self.volts_per_division = w.header.ch1_volts_per_division
-            self.volts_offset = w.header.ch1_volts_offset
 
 class ReadWFMError(Exception):
     """Generic Read Error."""
