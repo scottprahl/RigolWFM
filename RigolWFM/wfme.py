@@ -19,6 +19,7 @@ import numpy as np
 
 import RigolWFM.wfm1000e
 import RigolWFM.wfm1000z
+import RigolWFM.wfm4000c
 
 
 def engineering_string(number):
@@ -198,6 +199,37 @@ class ChannelZ(Channel):
             self.volts = self.volts_per_division/25.0 * (self.raw - 127.0) - self.volts_offset
             self.times  = np.arange(self.points) * self.seconds_per_point - self.time_scale
 
+class Channel4(Channel):
+    """Base class for a single channel from 4000C series scopes."""
+
+    def __init__(self, w, ch=1):
+        super().__init__()
+        self.channel_number = ch
+        self.seconds_per_point = w.header.seconds_per_point
+        self.time_offset = w.header.time_delay
+        self.time_scale = w.header.time_scale
+        self.points = w.header.points
+
+        if ch == 1:
+            self.enabled = w.header.enabled.channel_1
+            self.volts_per_division = w.header.channel[0].volts_per_division
+            self.volts_offset = w.header.channel[0].volts_offset
+            if self.enabled:
+                self.raw = np.array(w.data.channel_1)
+                self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
+                self.times  = np.arange(self.points) * self.seconds_per_point
+
+                
+        elif ch == 2:
+            self.enabled = w.header.enabled.channel_2
+            self.volts_per_division = w.header.channel[1].volts_per_division
+            self.volts_offset = w.header.channel[1].volts_offset
+            if self.enabled:
+                self.raw = np.array(w.data.channel_2)
+                self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
+                self.times  = np.arange(self.points) * self.seconds_per_point
+
+
 class ReadWFMError(Exception):
     """Generic Read Error."""
 
@@ -231,5 +263,17 @@ def parse(wfm_filename, kind='1000E'):
                     enabled_channels += 1
         except:
             raise ParseWFMError("File format is not 1000Z.  Sorry.")
+
+    if kind == '4000c':
+        enabled_channels = 0
+        channels = [None, None, None, None]
+        try:
+            w = RigolWFM.wfm4000c.Wfm4000c.from_file(wfm_filename)
+            for i in range(4):
+                channels[i] = Channel4(w, i+1)
+                if channels[i].enabled:
+                    enabled_channels += 1
+        except:
+            raise ParseWFMError("File format is not 4000C.  Sorry.")
 
     return channels

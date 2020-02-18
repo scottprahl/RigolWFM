@@ -50,7 +50,7 @@ types:
       - id: mem_depth
         type: u4
         
-      - id: sample_rate
+      - id: sample_rate_hz
         type: f4
         
       - id: unknown_8
@@ -145,12 +145,21 @@ types:
       - id: unknown_61
         size: 16
         doc: "[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0]"
-      - id: time_header
+      - id: time
         type: time_header
-      - id: channel_header
+      - id: channel
         type: channel_header
         repeat: expr
         repeat-expr: 4
+    instances:
+      seconds_per_point:
+        value: 1/sample_rate_hz
+      time_scale:
+        value: 1.0e-12 * _root.header.time.time_per_div_ps
+      time_delay:
+        value: 1.0e-12 * _root.header.time.delay_ps
+      points:
+        value: _root.header.mem_depth
         
   time_header:
     seq:
@@ -233,6 +242,13 @@ types:
         type: s2
       - id: unknown_10
         size: 1
+    instances:
+      volts_per_division:
+        value: 1e-6 * scale_microvolt
+        doc: Voltage scale in volts per division.
+      volts_offset:
+        value: 1e-6 * offset_uv
+        doc: Voltage offset in volts.  
         
   channel_subheader:
     seq:
