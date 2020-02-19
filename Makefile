@@ -1,4 +1,5 @@
-python_parsers = RigolWFM/wfm1000d.py RigolWFM/wfm1000e.py RigolWFM/wfm1000z.py RigolWFM/wfm4000c.py
+python_parsers = RigolWFM/wfm1000d.py RigolWFM/wfm1000e.py RigolWFM/wfm1000z.py \
+                 RigolWFM/wfm4000c.py RigolWFM/wfm6000.py
 
 all: $(python_parsers)
 
@@ -14,11 +15,15 @@ RigolWFM/wfm1000z.py: ksy/wfm1000z.ksy
 RigolWFM/wfm4000c.py: ksy/wfm4000c.ksy
 	kaitai-struct-compiler -t python --outdir RigolWFM ksy/wfm4000c.ksy
 
+RigolWFM/wfm6000.py: ksy/wfm6000.ksy
+	kaitai-struct-compiler -t python --outdir RigolWFM ksy/wfm6000.ksy
+
 check:
 	ksylint ksy/wfm1000d.ksy
 	ksylint ksy/wfm1000e.ksy
-	ksylint ksy/wfm1000z.ksy
+#	ksylint ksy/wfm1000z.ksy
 	ksylint ksy/wfm4000c.ksy
+	ksylint ksy/wfm6000.ksy
 
 test:
 	python3 RigolWFM/wfm_parser.py -t e wfm/DS1102E-A.wfm
@@ -53,6 +58,7 @@ clean:
 	rm -f RigolWFM/wfm1000e.py 
 	rm -f RigolWFM/wfm1000z.py 
 	rm -f RigolWFM/wfm4000c.py
+	rm -f RigolWFM/wfm6000.py
 	rm -rf dist
 	rm -rf RigolWFM.egg-info
 	rm -rf RigolWFM/__pycache__

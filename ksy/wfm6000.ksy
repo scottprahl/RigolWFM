@@ -7,9 +7,8 @@ instances:
   header:
     pos: 0
     type: header
-    WfmInfoStru 56 funcStoreBlockStru 416 CTag 428 Setup 436
   data:
-    pos: 20972
+    pos: 20916
     type: raw_data
 
 types:
@@ -28,166 +27,186 @@ types:
         terminator: 0
         encoding: ascii
         
-      - id: version
+      - id: firmware_version
         size: 20
         type: str
         terminator: 0
         encoding: ascii
+
+      - id: block_num
+        type: u2
+
+      - id: file_version
+        type: u2
         
-      - id: enabled
-        type: channel_mask
+      - id: unused_1
+        size: 18
+    
+      - id: unused_bits
+        type: b4
+      - id: ch4_enabled
+        type: b1
+      - id: ch3_enabled
+        type: b1
+      - id: ch2_enabled
+        type: b1
+      - id: ch1_enabled
+        type: b1
         
-      - id: unknown_2
-        size: 3
-        
-      - id: unknown_3
+      - id: channel_offset
         type: u4
         repeat: expr
-        repeat-expr: 7
-        
+        repeat-expr: 4
+
+      - id: acquistion_mode
+        type: u1
+        enum: acquistion_enum
+
+      - id: average_time
+        type: u2
+        doc: average time 0-2048
+ 
+      - id: sample_mode
+        type: u2
+        doc: equ or real
+
       - id: mem_depth
         type: u4
-        
+        doc: storage depth
+      
       - id: sample_rate_hz
         type: f4
         
-      - id: unknown_8
-        size: 4
+      - id: time_mode
+        type: u2
+        enum: time_enum
         
-      - id: time_per_div_ps
-        type: u4
+      - id: time_scale_ps
+        type: u8
+        doc: horizontal timebase in picoseconds
         
-      - id: unknown_9
-        type: u4
-        repeat: expr
-        repeat-expr: 4
+      - id: time_offset_ps
+        type: s8
+        doc: horizontal offset in picoseconds
         
-      - id: channel_subhead
-        type: channel_subheader
-        repeat: expr
-        repeat-expr: 4
-        
-      - id: unknown_33
-        type: u4
-        repeat: expr
-        repeat-expr: 5
-        
-      - id: mem_depth_2 
-        type: u4
-        doc: "Seems to always be a copy of mem_depth"
-      - id: unknown_37
-        size: 4
-        doc: "[0x00,0x00,0x00,0x00]"
-      - id: mem_depth_3
-        type: u4
-        doc: "Seems to always be a copy of mem_depth"
-      - id: unknown_38
-        type: u4
-        repeat: expr
-        repeat-expr: 7
-      - id: unknown_40_data_len_p 
-        type: u4
-        doc: "Seems to be related to the memory depth"
-      - id: unknown_41_data_len_p 
-        type: u4
-        doc: "Seems to be related to the memory depth"
-      - id: bytes_per_channel_1
-        type: u4
-      - id: bytes_per_channel_2 
-        type: u4
-        doc: "Copy of the first bytes_per_channel_1?"
-      - id: unknown_42
-        type: u4
-        repeat: expr
-        repeat-expr: 21
-      - id: unknown_49
-        size: 4
-        doc: "[0x00,0x00,0x00,0x00]"
-      - id: unknown_50
-        type: u4
-      - id: unknown_51
-        size: 8
-        doc: "[0x00,0x00,0x00,0x06,0x00,0x00,0x00,0x00]"
-      - id: unknown_52
-        type: u4
-        repeat: expr
-        repeat-expr: 4
-      - id: unknown_53
-        size: 16
-        doc: "[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]"
-      - id: unknown_54
-        size: 16
-        doc: "[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]"
-      - id: unknown_55
-        type: u4
-        repeat: expr
-        repeat-expr: 4
-      - id: total_samples
-        type: u4
-      - id: unknown_56
-        size: 4
-        doc: "[0,80,0,0]"
-      - id: unknown_57
-        type: u4
-        repeat: expr
-        repeat-expr: 2
-      - id: unknown_59
-        size: 4
-        doc: "[0,0,0,0]"
-      - id: mem_depth_enum
-        type: u1
-        enum: mem_depth
-      - id: unknown_60
-        size: 11
-        doc: "[0,0,0,0,32,0,0,4,0,0,0]"
-      - id: unknown_61
-        size: 16
-        doc: "[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0]"
-      - id: time
-        type: time_header
       - id: channel
         type: channel_header
         repeat: expr
         repeat-expr: 4
+
+      - id: setup_size
+        type: u4
+      - id: setup_offset
+        type: u4
+      - id: wfm_offset
+        type: u4
+      - id: storage_depth
+        type: u4
+      - id: z_pt_offset
+        type: u4
+        doc: offset that valid waveform data compared with the start of storage waveform data
+  
+      - id: wfm_len
+        type: u4
+        doc: real waveform storage depth
+        
+      - id: mem_offset
+        type: u2
+        repeat: expr
+        repeat-expr: 2
+        
+      - id: equ_coarse
+        type: u2
+        repeat: expr
+        repeat-expr: 2
+        
+      - id: equ_fine
+        type: u2
+        repeat: expr
+        repeat-expr: 2
+  
+      - id: mem_last_addr
+        type: u4
+        repeat: expr
+        repeat-expr: 2
+        
+      - id: mem_length
+        type: u4
+        repeat: expr
+        repeat-expr: 2
+        
+      - id: mem_start_addr
+        type: u4
+        repeat: expr
+        repeat-expr: 2
+        
+      - id: bank_size
+        type: u4
+        repeat: expr
+        repeat-expr: 2
+        
+      - id: roll_scrn_wave_length
+        type: u2
+      - id: analog_interp_en
+        type: u1
+      - id: main_force_analog_trig
+        type: u1
+      - id: zoom_force_analog_trig
+        type: u1
+      - id: horiz_slow_force_stop_frame
+        type: u1
+      - id: get_spu_dig_data_status
+        type: u1
+      - id: main_mem_offset
+        type: s8
+      - id: mem_view_offset
+        type: s8
+      - id: slow_deta_wave_length
+        type: s8
+      - id: slow_deta_wave_length_no_delay
+        type: s8
+      - id: real_sa_dot_period
+        type: u8
+      - id: trig_type_deta_delay
+        type: s4
+      - id: chnl1_2_max_delay
+        type: s4
+      - id: chnl3_4_max_delay
+        type: s4
+      - id: chnl_dly_to_mem_len
+        type: u4
+      - id: spu_mem_depth_deta
+        type: u4
+      - id: spu_mem_depth_rema
+        type: u4
+      - id: mem_offset_base
+        type: u4
+      - id: spu_mem_bank_size
+        type: u4
+      - id: s16_adc1__clock_delay
+        type: u2
+      - id: s16_adc2__clock_delay
+        type: u2
+      - id: max_main_scrn_chnl_delay
+        type: u2
+      - id: max_zoom_scrn_chnl_delay
+        type: u2
+      - id: main_dgtl_trig_data_offset
+        type: u2
+      - id: zoom_dgtl_trig_data_offset
+        type: u2
+      - id: record_frame_index
+        type: u4
+        
     instances:
       seconds_per_point:
         value: 1/sample_rate_hz
       time_scale:
-        value: 1.0e-12 * _root.header.time.time_per_div_ps
+        value: 1.0e-12 * time_scale_ps
       time_delay:
-        value: 1.0e-12 * _root.header.time.delay_ps
+        value: 1.0e-12 * time_offset_ps
       points:
         value: _root.header.mem_depth
-        
-  time_header:
-    seq:
-      - id: unknown_1
-        type: u2
-      - id: unknown_2
-        size: 10
-        doc: "[0,0,6,0,0,0,26,0,0,0]"
-      - id: index
-        type: u4
-      - id: time_per_div_ps
-        type: u4
-      - id: unknown_3a
-        size: 4
-      - id: unknown_3b
-        type: u4
-      - id: unknown_4
-        type: u4
-        repeat: expr
-        repeat-expr: 3
-      - id: delay_ps
-        type: u8
-      - id: unknown_5
-        type: u4
-        repeat: expr
-        repeat-expr: 4
-      - id: unknown_6
-        type: u2
-      - id: unknown_7
-        type: u1
         
   channel_header:
     seq:
@@ -241,25 +260,6 @@ types:
         value: 1e-6 * offset
         doc: Voltage offset in volts.  
         
-  channel_subheader:
-    seq:
-      - id: unknown_0
-        type: u4
-      - id: unknown_1
-        type: f4
-      - id: unknown_2
-        type: u4
-      - id: unknown_3
-        type: u4
-      - id: unknown_4
-        type: u4
-        doc: "[0xc0,0xe1,0xe4,0x00] or 15M"
-      - id: unknown_5
-        type: u4
-        doc: "[0x00,0x2d,0x31,0x01] or 20M"
-      - id: unknown_6
-        type: u4
-
   channel_mask:
     seq:
       - id: unused
@@ -279,62 +279,45 @@ types:
         type: u1
         repeat: expr
         repeat-expr: _root.header.mem_depth
-        if: _root.header.enabled.channel_1
+        if: _root.header.ch1_enabled
       - id: padding_1
         size: _root.header.bytes_per_channel_1 - _root.header.mem_depth
-        if: _root.header.enabled.channel_1
+        if: _root.header.ch1_enabled
         
       - id: channel_2
         type: u1
         repeat: expr
         repeat-expr: _root.header.mem_depth
-        if: _root.header.enabled.channel_2
+        if: _root.header.ch2_enabled
       - id: padding_2
         size: _root.header.bytes_per_channel_1 - _root.header.mem_depth
-        if: _root.header.enabled.channel_2
+        if: _root.header.ch2_enabled
         
       - id: channel_3
         type: u1
         repeat: expr
         repeat-expr: _root.header.mem_depth
-        if: _root.header.enabled.channel_3
+        if: _root.header.ch3_enabled
       - id: padding_3
         size: _root.header.bytes_per_channel_1 - _root.header.mem_depth
-        if: _root.header.enabled.channel_3
+        if: _root.header.ch3_enabled
         
       - id: channel_4
         type: u1
         repeat: expr
         repeat-expr: _root.header.mem_depth
-        if: _root.header.enabled.channel_4
+        if: _root.header.ch4_enabled
       - id: padding_4
         size: _root.header.bytes_per_channel_1 - _root.header.mem_depth
-        if: _root.header.enabled.channel_4
+        if: _root.header.ch4_enabled
 
 enums:
-  channel_scale:
-    0: mv_1
-    1: mv_2
-    2: mv_5
-    3: mv_10
-    4: mv_20
-    5: mv_50
-    6: mv_100
-    7: mv_200
-    8: mv_500
-    9: mv_1000
-    10: mv_2000
-    11: mv_5000
-
-  coupling_enum:
-    0: dc
-    1: ac
-    2: gnd
-
-  impedance_enum:
-    0: ohm_50
-    1: ohm_1meg
-
+  acquistion_enum:
+    0: normal
+    1: average
+    2: peak
+    3: high_resolution
+    
   bandwidth_enum:
     0: none
     1: mhz_20
@@ -342,9 +325,33 @@ enums:
     3: mhz_200
     4: mhz_250
 
-  probe_type_enum:
-    0: normal
-    1: diff
+  coupling_enum:
+    0: dc
+    1: ac
+    2: gnd
+
+  filter_enum:
+    0: low_pass
+    1: high_pass
+    2: band_pass
+    3: band_reject
+    
+  impedance_enum:
+    0: ohm_50
+    1: ohm_1meg
+
+  mem_depth:
+    0: auto
+    1: p_7k
+    2: p_70k
+    3: p_700k
+    4: p_7m
+    5: p_70m
+    6: p_14k
+    7: p_140k
+    8: p_1m4
+    9: p_14m
+    10: p_140m
 
   probe_enum:
     0: single
@@ -368,21 +375,18 @@ enums:
     14: x500
     15: x1000
 
+  probe_type_enum:
+    0: normal
+    1: diff
+
+  time_enum:
+    0: yt
+    1: xy
+    2: roll
+
   unit_enum:
     0: watts
     1: amps
     2: volts
     3: unknown
     
-  mem_depth:
-    0: auto
-    1: p_7k
-    2: p_70k
-    3: p_700k
-    4: p_7m
-    5: p_70m
-    6: p_14k
-    7: p_140k
-    8: p_1m4
-    9: p_14m
-    10: p_140m

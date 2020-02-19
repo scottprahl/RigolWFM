@@ -78,7 +78,7 @@ types:
         type: u4
       - id: acq_mode
         type: u1
-        enum: acq_mode_enum
+        enum: acquistion_enum
       - id: average_time
         type: u1
       - id: sample_mode
@@ -245,7 +245,7 @@ types:
         if: _root.header.stride == 4
 
 enums:
-  acq_mode_enum:
+  acquistion_enum:
     0: normal
     1: peak
     2: average
