@@ -212,15 +212,19 @@ types:
     seq:
       - id: enabled
         type: u1
+        
       - id: coupling
         type: u1
         enum: coupling_enum
+        
       - id: bandwidth_limit
         type: u1
         enum: bandwidth_enum
+        
       - id: probe_type
         size: u1
         enum: probe_type_enum
+        
       - id: probe_ratio
         size: u1
         enum: probe_ratio_enun
@@ -234,9 +238,9 @@ types:
         type: u1
         enum: impedance_enum
 
-      - id: scale
+      - id: volts_per_division
         type: f4
-      - id: offset
+      - id: volts_offset
         type: f4
       - id: invert
         type: u1
@@ -253,12 +257,23 @@ types:
       - id: filter_low
         type: u4
     instances:
-      volts_per_division:
-        value: 1e-6 * scale
-        doc: Voltage scale in volts per division.
-      volts_offset:
-        value: 1e-6 * offset
-        doc: Voltage offset in volts.  
+      probe_value:
+        value: "(probe_ratio == probe_enum::x0_01 ? 0.01 :
+                probe_ratio == probe_enum::x0_02 ? 0.02 :
+                probe_ratio == probe_enum::x0_05 ? 0.05 :
+                probe_ratio == probe_enum::x0_1 ? 0.1 :
+                probe_ratio == probe_enum::x0_2 ? 0.2 :
+                probe_ratio == probe_enum::x0_5 ? 0.5 :
+                probe_ratio == probe_enum::x1 ? 1.0 :
+                probe_ratio == probe_enum::x2 ? 2.0 :
+                probe_ratio == probe_enum::x5 ? 5.0 :
+                probe_ratio == probe_enum::x10 ? 10.0 :
+                probe_ratio == probe_enum::x20 ? 20.0 :
+                probe_ratio == probe_enum::x50 ? 50.0 :
+                probe_ratio == probe_enum::x100 ? 100.0 :
+                probe_ratio == probe_enum::x200 ? 200.0 :
+                probe_ratio == probe_enum::x500 ? 500.0 :
+                1000.0)"
         
   channel_mask:
     seq:
@@ -319,7 +334,7 @@ enums:
     3: high_resolution
     
   bandwidth_enum:
-    0: none
+    0: no_limit
     1: mhz_20
     2: mhz_100
     3: mhz_200
@@ -339,19 +354,6 @@ enums:
   impedance_enum:
     0: ohm_50
     1: ohm_1meg
-
-  mem_depth:
-    0: auto
-    1: p_7k
-    2: p_70k
-    3: p_700k
-    4: p_7m
-    5: p_70m
-    6: p_14k
-    7: p_140k
-    8: p_1m4
-    9: p_14m
-    10: p_140m
 
   probe_enum:
     0: single
@@ -376,8 +378,8 @@ enums:
     15: x1000
 
   probe_type_enum:
-    0: normal
-    1: diff
+    0: normal_type
+    1: differential
 
   time_enum:
     0: yt
@@ -387,6 +389,5 @@ enums:
   unit_enum:
     0: watts
     1: amps
-    2: volts
+    2: voltage
     3: unknown
-    

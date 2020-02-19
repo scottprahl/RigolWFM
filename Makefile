@@ -16,7 +16,7 @@ RigolWFM/wfm4000c.py: ksy/wfm4000c.ksy
 	kaitai-struct-compiler -t python --outdir RigolWFM ksy/wfm4000c.ksy
 
 RigolWFM/wfm6000.py: ksy/wfm6000.ksy
-	kaitai-struct-compiler -t python --outdir RigolWFM ksy/wfm6000.ksy
+	kaitai-struct-compiler -t python --verbose=all --outdir RigolWFM ksy/wfm6000.ksy --debug
 
 check:
 	ksylint ksy/wfm1000d.ksy
