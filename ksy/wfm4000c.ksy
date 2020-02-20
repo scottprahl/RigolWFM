@@ -16,18 +16,16 @@ types:
     seq:
       - id: magic
         contents: [0xa5,0xa5,0x38,0x00]
-        
-      - id: serial
-        size: 16
+        doc: the second two bytes is the size of the header
+
+      - id: model
+        size: 20
         type: str
         terminator: 0
         encoding: ascii
         
-      - id: unknown_0
-        size: 4
-        
       - id: firmware_version
-        size: 16
+        size: 20
         type: str
         terminator: 0
         encoding: ascii
@@ -35,10 +33,12 @@ types:
       - id: unknown_1
         type: u4
         repeat: expr
-        repeat-expr: 6
+        repeat-expr: 5
         
       - id: enabled
         type: channel_mask
+        doc: one byte with lower bits indicating which channels are active
+        
       - id: unknown_2
         size: 3
         
@@ -152,6 +152,8 @@ types:
         repeat: expr
         repeat-expr: 4
     instances:
+      vertical_scale_factor:
+        value: 'model.substring(2,3) == "2" ? 25 : 32'
       seconds_per_point:
         value: 1/sample_rate_hz
       time_scale:

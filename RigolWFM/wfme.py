@@ -219,7 +219,6 @@ class Channel4(Channel):
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
                 self.times  = np.arange(self.points) * self.seconds_per_point
 
-                
         elif ch == 2:
             self.enabled = w.header.enabled.channel_2
             self.volts_per_division = w.header.channel[1].volts_per_division
