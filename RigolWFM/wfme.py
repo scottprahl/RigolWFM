@@ -19,7 +19,8 @@ import numpy as np
 
 import RigolWFM.wfm1000e
 import RigolWFM.wfm1000z
-import RigolWFM.wfm4000c
+import RigolWFM.wfm4000
+import RigolWFM.wfm6000
 
 
 def engineering_string(number):
@@ -200,7 +201,7 @@ class ChannelZ(Channel):
             self.times  = np.arange(self.points) * self.seconds_per_point - self.time_scale
 
 class Channel4(Channel):
-    """Base class for a single channel from 4000C series scopes."""
+    """Base class for a single channel from 4000 series scopes."""
 
     def __init__(self, w, ch=1):
         super().__init__()
@@ -263,16 +264,16 @@ def parse(wfm_filename, kind='1000E'):
         except:
             raise ParseWFMError("File format is not 1000Z.  Sorry.")
 
-    if kind == '4000c':
+    if kind == '4000':
         enabled_channels = 0
         channels = [None, None, None, None]
         try:
-            w = RigolWFM.wfm4000c.Wfm4000c.from_file(wfm_filename)
+            w = RigolWFM.wfm4000.Wfm4000.from_file(wfm_filename)
             for i in range(4):
                 channels[i] = Channel4(w, i+1)
                 if channels[i].enabled:
                     enabled_channels += 1
         except:
-            raise ParseWFMError("File format is not 4000C.  Sorry.")
+            raise ParseWFMError("File format is not 4000.  Sorry.")
 
     return channels

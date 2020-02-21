@@ -8,7 +8,7 @@ def main():
     )
     parser.add_argument(
         '-t',
-        choices=('4000c', '1000d', '1000e', '1000z'),
+        choices=( '1000d', '1000e', '1000z', '4000', '6000'),
         required=True,
         help='the type of Rigol WFM file'
     )
