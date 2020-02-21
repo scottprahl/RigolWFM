@@ -4,6 +4,8 @@ python_parsers = RigolWFM/wfm1000d.py RigolWFM/wfm1000e.py RigolWFM/wfm1000z.py 
 KSY_OPTIONS = --verbose=all --outdir RigolWFM
 KSY_OPTIONS = --outdir RigolWFM
 
+YAML_LINT_OPTIONS = -d "{extends: default, rules: {document-start: disable}}"
+
 all: $(python_parsers)
 
 RigolWFM/wfm1000d.py: ksy/wfm1000d.ksy
@@ -22,11 +24,11 @@ RigolWFM/wfm6000.py: ksy/wfm6000.ksy
 	kaitai-struct-compiler -t python $(KSY_OPTIONS) ksy/wfm6000.ksy
 
 yamlcheck:
-	yamllint ksy/wfm1000d.ksy
-	yamllint ksy/wfm1000e.ksy
-	yamllint ksy/wfm1000z.ksy
-	yamllint ksy/wfm4000.ksy
-	yamllint ksy/wfm6000.ksy
+	yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000d.ksy
+	yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000e.ksy
+	yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000z.ksy
+	yamllint $(YAML_LINT_OPTIONS) ksy/wfm4000.ksy
+	yamllint $(YAML_LINT_OPTIONS) ksy/wfm6000.ksy
 
 ksycheck:
 	ksylint ksy/wfm1000d.ksy
@@ -35,7 +37,11 @@ ksycheck:
 	ksylint ksy/wfm4000.ksy
 	ksylint ksy/wfm6000.ksy
 
-test:
+check:
+	make yamlcheck
+	make ksycheck
+
+oldtest:
 	python3 RigolWFM/wfm_parser.py -t e wfm/DS1102E-A.wfm
 	python3 RigolWFM/wfm_parser.py -t e wfm/DS1102E-B.wfm
 	python3 RigolWFM/wfm_parser.py -t e wfm/DS1102E-C.wfm
@@ -57,12 +63,17 @@ teste:
 testz:
 	python3 RigolWFM/wfm_parser2.py -t 1000z wfm/MSO1104.wfm
 	python3 RigolWFM/wfm_parser2.py -t 1000z wfm/DS1074Z-A.wfm
-#	python3 RigolWFM/wfm_parser2.py -t 1000z wfm/DS1074Z-B.wfm
+	python3 RigolWFM/wfm_parser2.py -t 1000z wfm/DS1074Z-B.wfm
 
 test4:
 	python3 RigolWFM/wfm_parser2.py -t 4000 wfm/DS4022-A.wfm
 	python3 RigolWFM/wfm_parser2.py -t 4000 wfm/DS4022-B.wfm
 
+test:
+	make teste
+	make testz
+	make test4
+	
 clean:
 	rm -f RigolWFM/wfm1000d.py 
 	rm -f RigolWFM/wfm1000e.py 
@@ -73,4 +84,4 @@ clean:
 	rm -rf RigolWFM.egg-info
 	rm -rf RigolWFM/__pycache__
 	
-.PHONY: clean test check all
+.PHONY: clean test check all ksycheck yamlcheck teste testz test4 test
