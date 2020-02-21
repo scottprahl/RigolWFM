@@ -16,9 +16,9 @@ types:
     seq:
       - id: magic
         contents: [0xa5,0xa5,0x38,0x00]
-        doc: the second two bytes is the size of the header
+        doc: The last two bytes is the size of the header 0x38=56
 
-      - id: model
+      - id: serial_number
         size: 20
         type: str
         terminator: 0
@@ -153,7 +153,7 @@ types:
         repeat-expr: 4
     instances:
       vertical_scale_factor:
-        value: 'model.substring(2,3) == "2" ? 25 : 32'
+        value: 'serial_number.substring(2,3) == "2" ? 25 : 32'
       seconds_per_point:
         value: 1/sample_rate_hz
       time_scale:
@@ -256,9 +256,9 @@ types:
     seq:
       - id: unknown_0
         type: u4
-      - id: unknown_1
+      - id: volt_scale
         type: f4
-      - id: unknown_2
+      - id: volt_offset
         type: u4
       - id: unknown_3
         type: u4

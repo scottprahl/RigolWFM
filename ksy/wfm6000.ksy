@@ -15,13 +15,10 @@ types:
   header:
     seq:
       - id: magic
-        contents: [0xa5,0xa5]
+        contents: [0xa5,0xa5,0x38,0x00]
+        doc: The last two bytes is the size of the header 0x38=56
         
-      - id: structure_size
-        type: u2
-        doc: size of this structure, should be 0x38
-        
-      - id: model
+      - id: serial_number
         size: 20
         type: str
         terminator: 0
@@ -60,7 +57,7 @@ types:
 
       - id: acquistion_mode
         type: u1
-        enum: acquistion_enum
+#        enum: acquistion_enum
 
       - id: average_time
         type: u2
@@ -79,7 +76,7 @@ types:
         
       - id: time_mode
         type: u2
-        enum: time_enum
+#        enum: time_enum
         
       - id: time_scale_ps
         type: u8
@@ -222,12 +219,12 @@ types:
         enum: bandwidth_enum
         
       - id: probe_type
-        size: u1
+        type: u1
         enum: probe_type_enum
         
       - id: probe_ratio
-        size: u1
-        enum: probe_ratio_enun
+        type: u1
+        enum: probe_ratio_enum
       - id: probe_diff
         type: u1
         enum: probe_enum
@@ -258,22 +255,22 @@ types:
         type: u4
     instances:
       probe_value:
-        value: "(probe_ratio == probe_enum::x0_01 ? 0.01 :
-                probe_ratio == probe_enum::x0_02 ? 0.02 :
-                probe_ratio == probe_enum::x0_05 ? 0.05 :
-                probe_ratio == probe_enum::x0_1 ? 0.1 :
-                probe_ratio == probe_enum::x0_2 ? 0.2 :
-                probe_ratio == probe_enum::x0_5 ? 0.5 :
-                probe_ratio == probe_enum::x1 ? 1.0 :
-                probe_ratio == probe_enum::x2 ? 2.0 :
-                probe_ratio == probe_enum::x5 ? 5.0 :
-                probe_ratio == probe_enum::x10 ? 10.0 :
-                probe_ratio == probe_enum::x20 ? 20.0 :
-                probe_ratio == probe_enum::x50 ? 50.0 :
-                probe_ratio == probe_enum::x100 ? 100.0 :
-                probe_ratio == probe_enum::x200 ? 200.0 :
-                probe_ratio == probe_enum::x500 ? 500.0 :
-                1000.0)"
+        value: "(probe_ratio == probe_ratio_enum::x0_01 ? 0.01 :
+               probe_ratio == probe_ratio_enum::x0_02 ? 0.02 :
+               probe_ratio == probe_ratio_enum::x0_05 ? 0.05 :
+               probe_ratio == probe_ratio_enum::x0_1 ? 0.1 :
+               probe_ratio == probe_ratio_enum::x0_2 ? 0.2 :
+               probe_ratio == probe_ratio_enum::x0_5 ? 0.5 :
+               probe_ratio == probe_ratio_enum::x1 ? 1.0 :
+               probe_ratio == probe_ratio_enum::x2 ? 2.0 :
+               probe_ratio == probe_ratio_enum::x5 ? 5.0 :
+               probe_ratio == probe_ratio_enum::x10 ? 10.0 :
+               probe_ratio == probe_ratio_enum::x20 ? 20.0 :
+               probe_ratio == probe_ratio_enum::x50 ? 50.0 :
+               probe_ratio == probe_ratio_enum::x100 ? 100.0 :
+               probe_ratio == probe_ratio_enum::x200 ? 200.0 :
+               probe_ratio == probe_ratio_enum::x500 ? 500.0 :
+               1000.0)"
         
   channel_mask:
     seq:
@@ -295,17 +292,11 @@ types:
         repeat: expr
         repeat-expr: _root.header.mem_depth
         if: _root.header.ch1_enabled
-      - id: padding_1
-        size: _root.header.bytes_per_channel_1 - _root.header.mem_depth
-        if: _root.header.ch1_enabled
         
       - id: channel_2
         type: u1
         repeat: expr
         repeat-expr: _root.header.mem_depth
-        if: _root.header.ch2_enabled
-      - id: padding_2
-        size: _root.header.bytes_per_channel_1 - _root.header.mem_depth
         if: _root.header.ch2_enabled
         
       - id: channel_3
@@ -313,17 +304,11 @@ types:
         repeat: expr
         repeat-expr: _root.header.mem_depth
         if: _root.header.ch3_enabled
-      - id: padding_3
-        size: _root.header.bytes_per_channel_1 - _root.header.mem_depth
-        if: _root.header.ch3_enabled
         
       - id: channel_4
         type: u1
         repeat: expr
         repeat-expr: _root.header.mem_depth
-        if: _root.header.ch4_enabled
-      - id: padding_4
-        size: _root.header.bytes_per_channel_1 - _root.header.mem_depth
         if: _root.header.ch4_enabled
 
 enums:
