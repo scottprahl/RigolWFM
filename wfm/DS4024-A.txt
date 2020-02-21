@@ -1,0 +1,194 @@
+Model:DS4024
+SN:DS4A200500078
+Manufacturer:RIGOL TECHNOLOGIES
+Hardware Ver:1.3
+Firmware:00.02.03.02.00
+Status:
+L:[HEX] 0000 0000	[BIN] 0000 0000 0000 0000 0000 0000 0000 0000
+H:[HEX] 0000 0000	[BIN] 0000 0000 0000 0000 0000 0000 0000 0000
+2011:6:28 21:48:58
+
+	DSO Vertical System 
+CH1:On
+Scale:1.000e+03mV/
+Position:-5.760e+02mV
+Coupling:DC
+Invert:Off
+Bandwidth Limit:OFF
+Probe Type:Normal
+Probe Head:Differential
+Signal Type:Single
+Probe Ratio:1X
+Impedance:1M
+Unit:V
+User Cal:0ps
+
+CH2:On
+Scale:2.000e+02mV/
+Position:0.000e+00mV
+Coupling:DC
+Invert:Off
+Bandwidth Limit:OFF
+Probe Type:Normal
+Probe Head:Differential
+Signal Type:Single
+Probe Ratio:1X
+Impedance:1M
+Unit:V
+User Cal:0ps
+
+CH3:Off
+Scale:5.000e+01mV/
+Position:0.000e+00mV
+Coupling:DC
+Invert:Off
+Bandwidth Limit:OFF
+Probe Type:Normal
+Probe Head:Differential
+Signal Type:Single
+Probe Ratio:10X
+Impedance:1M
+Unit:V
+User Cal:0ps
+
+CH4:Off
+Scale:2.000e+03mV/
+Position:0.000e+00mV
+Coupling:AC
+Invert:On
+Bandwidth Limit:OFF
+Probe Type:Normal
+Probe Head:Differential
+Signal Type:Single
+Probe Ratio:10X
+Impedance:1M
+Unit:V
+User Cal:0ps
+
+	DSO Horizontal System
+Delay:Off
+Time Vernier:Off
+Time Mode:YT
+Time Scale:2.000000e-04s
+Delay Time Scale:1.000000e-04s
+Time Offset:-8.800000e-05s
+Delay Time Offset:0.000000e+00s
+
+	DSO Acquire System
+Acquire Mode:Normal
+Memory Depth:700000
+Average Num:8192
+Sampling Rate:2.500e+08
+
+	DSO Normal Trigger System
+Trigger Mode:Edge
+Trigger Source:CH1
+Trigger Coupling:DC
+Trigger Noise Reject:On
+Trigger HoldOff:1.000000e-07s
+CH1 Level:1.196000
+CH2 Level:0.023000
+CH3 Level:0.060000
+CH4 Level:0.045400
+Ext Level:-0.018000V
+Trigger Edge Slope:Rising
+Pulse Condition:Negative More
+Pulse High:6.006600e-04s
+Pulse Low:7.204190e-01s
+Runt Positive:Positive
+Runt Condition:None
+Runt High:6.007e-04
+Runt Low:7.204e-01
+Nth Edge Slope:Positive
+Idle Time:8.590e-07
+Edge N:1
+Slope Condition:Positive Less
+Slope High:0.004876s
+Slope Low:0.000630s
+Slope Level1:-8.700e-05V
+Slope Level2:-5.327e-02V
+Video Polarity:Negative
+Video Sync:All Lines
+Video Standard:NTSC
+Video Line:1
+Pattern HL:[HEX] 0000 0004	[BIN] 0000 0000 0000 0000 0000 0000 0000 0100
+Pattern Mask:[HEX] 0000 0004	[BIN] 0000 0000 0000 0000 0000 0000 0000 0100
+Pattern Edge:[HEX] 0000 0004	[BIN] 0000 0000 0000 0000 0000 0000 0000 0100
+Pattern Edge Mask:[HEX] 0000 0000	[BIN] 0000 0000 0000 0000 0000 0000 0000 0000
+	DSO Advanced Trigger System
+I2C Trigger
+Clock Source:CH1
+Data Source:CH2
+I2C Type:Start
+Address:1
+Data Qualifier:Equal
+Address Qualifier:Equal
+Direction:Read
+Address Length:7
+Byte Length:1
+
+Data:[HEX] 0000 0000 0000 0000	[BIN] 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000
+Mask:[HEX] 0000 0000 0000 0000	[BIN] 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000
+
+RS232 Trigger
+RS232 Source:CH1
+RS232 Type:Data
+RS232 Stop Bit:1
+RS232 Parity:None
+RS232 Data Bit:8
+RS232 Baudrate:19200
+RS232 User Baudrate:9600
+RS232 Data:70
+
+SPI Trigger
+CLK:CH1
+MISO/MOSI:CH2
+CS:CH3
+Mode:Timeout
+CS Mode:High
+Edge:Rise
+Timeout:1.000e-06
+Data Length:8
+Data:[HEX] 0000 0000	[BIN] 0000 0000 0000 0000 0000 0000 0000 0000
+Mask:[HEX] 0000 0000	[BIN] 0000 0000 0000 0000 0000 0000 0000 0000
+
+CAN Trigger
+CAN Type:Start
+Frame:Data
+Signal:Rx
+Speed:10K
+User Speed(KB):50.000000
+Sampling Point:50
+Error:Bit Fill
+Standard ID:true
+Setting ID:false
+Data Length:1
+ID:1
+Data:[HEX] 0000 0000 0000 0000	[BIN] 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000
+Data:[HEX] 0000 0000 0000 0000	[BIN] 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000
+
+Flexray Trigger
+Type:TSS
+Speed:2.5M
+
+USB Trigger
+Type:SOP
+DP:CH1
+DN:CH2
+Speed:Low
+
+LIN Trigger
+Type:Sync
+Version:1.x
+DataType:=
+ErryType:Sync
+BaudRate:19200
+BaudRateUser:19200
+
+1553B Trigger
+Type:Start
+ErrorType:Sync
+Format:Data
+Polarity:Negative
+Idle:>
+
