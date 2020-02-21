@@ -39,16 +39,8 @@ types:
       - id: unused_1
         size: 18
     
-      - id: unused_bits
-        type: b4
-      - id: ch4_enabled
-        type: b1
-      - id: ch3_enabled
-        type: b1
-      - id: ch2_enabled
-        type: b1
-      - id: ch1_enabled
-        type: b1
+      - id: enabled
+        type: channel_mask
         
       - id: channel_offset
         type: u4
@@ -291,25 +283,25 @@ types:
         type: u1
         repeat: expr
         repeat-expr: _root.header.mem_depth
-        if: _root.header.ch1_enabled
+        if: _root.header.enabled.channel_1
         
       - id: channel_2
         type: u1
         repeat: expr
         repeat-expr: _root.header.mem_depth
-        if: _root.header.ch2_enabled
+        if: _root.header.enabled.channel_2
         
       - id: channel_3
         type: u1
         repeat: expr
         repeat-expr: _root.header.mem_depth
-        if: _root.header.ch3_enabled
+        if: _root.header.enabled.channel_3
         
       - id: channel_4
         type: u1
         repeat: expr
         repeat-expr: _root.header.mem_depth
-        if: _root.header.ch4_enabled
+        if: _root.header.enabled.channel_4
 
 enums:
   acquistion_enum:
