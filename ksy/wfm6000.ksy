@@ -248,21 +248,20 @@ types:
     instances:
       probe_value:
         value: "(probe_ratio == probe_ratio_enum::x0_01 ? 0.01 :
-               probe_ratio == probe_ratio_enum::x0_02 ? 0.02 :
-               probe_ratio == probe_ratio_enum::x0_05 ? 0.05 :
-               probe_ratio == probe_ratio_enum::x0_1 ? 0.1 :
-               probe_ratio == probe_ratio_enum::x0_2 ? 0.2 :
-               probe_ratio == probe_ratio_enum::x0_5 ? 0.5 :
-               probe_ratio == probe_ratio_enum::x1 ? 1.0 :
-               probe_ratio == probe_ratio_enum::x2 ? 2.0 :
-               probe_ratio == probe_ratio_enum::x5 ? 5.0 :
-               probe_ratio == probe_ratio_enum::x10 ? 10.0 :
-               probe_ratio == probe_ratio_enum::x20 ? 20.0 :
-               probe_ratio == probe_ratio_enum::x50 ? 50.0 :
-               probe_ratio == probe_ratio_enum::x100 ? 100.0 :
-               probe_ratio == probe_ratio_enum::x200 ? 200.0 :
-               probe_ratio == probe_ratio_enum::x500 ? 500.0 :
-               1000.0)"
+                 probe_ratio == probe_ratio_enum::x0_02 ? 0.02 :
+                 probe_ratio == probe_ratio_enum::x0_05 ? 0.05 :
+                 probe_ratio == probe_ratio_enum::x0_1 ? 0.1 :
+                 probe_ratio == probe_ratio_enum::x0_2 ? 0.2 :
+                 probe_ratio == probe_ratio_enum::x0_5 ? 0.5 :
+                 probe_ratio == probe_ratio_enum::x1 ? 1.0 :
+                 probe_ratio == probe_ratio_enum::x2 ? 2.0 :
+                 probe_ratio == probe_ratio_enum::x5 ? 5.0 :
+                 probe_ratio == probe_ratio_enum::x10 ? 10.0 :
+                 probe_ratio == probe_ratio_enum::x20 ? 20.0 :
+                 probe_ratio == probe_ratio_enum::x50 ? 50.0 :
+                 probe_ratio == probe_ratio_enum::x100 ? 100.0 :
+                 probe_ratio == probe_ratio_enum::x200 ? 200.0 :
+                 probe_ratio == probe_ratio_enum::x500 ? 500.0 : 1000.0)"
 
   channel_mask:
     seq:
