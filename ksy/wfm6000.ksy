@@ -15,15 +15,15 @@ types:
   header:
     seq:
       - id: magic
-        contents: [0xa5,0xa5,0x38,0x00]
+        contents: [0xa5, 0xa5, 0x38, 0x00]
         doc: The last two bytes is the size of the header 0x38=56
-        
+
       - id: serial_number
         size: 20
         type: str
         terminator: 0
         encoding: ascii
-        
+
       - id: firmware_version
         size: 20
         type: str
@@ -35,13 +35,13 @@ types:
 
       - id: file_version
         type: u2
-        
+
       - id: unused_1
         size: 18
-    
+
       - id: enabled
         type: channel_mask
-        
+
       - id: channel_offset
         type: u4
         repeat: expr
@@ -49,12 +49,12 @@ types:
 
       - id: acquistion_mode
         type: u1
-#        enum: acquistion_enum
+        enum: acquistion_enum
 
       - id: average_time
         type: u2
         doc: average time 0-2048
- 
+
       - id: sample_mode
         type: u2
         doc: equ or real
@@ -62,22 +62,22 @@ types:
       - id: mem_depth
         type: u4
         doc: storage depth
-      
+
       - id: sample_rate_hz
         type: f4
-        
+
       - id: time_mode
         type: u2
-#        enum: time_enum
-        
+        enum: time_enum
+
       - id: time_scale_ps
         type: u8
         doc: horizontal timebase in picoseconds
-        
+
       - id: time_offset_ps
         type: s8
         doc: horizontal offset in picoseconds
-        
+
       - id: channel
         type: channel_header
         repeat: expr
@@ -93,47 +93,47 @@ types:
         type: u4
       - id: z_pt_offset
         type: u4
-        doc: offset that valid waveform data compared with the start of storage waveform data
-  
+        doc: offset of valid waveform relative to start of storage waveform
+
       - id: wfm_len
         type: u4
         doc: real waveform storage depth
-        
+
       - id: mem_offset
         type: u2
         repeat: expr
         repeat-expr: 2
-        
+
       - id: equ_coarse
         type: u2
         repeat: expr
         repeat-expr: 2
-        
+
       - id: equ_fine
         type: u2
         repeat: expr
         repeat-expr: 2
-  
+
       - id: mem_last_addr
         type: u4
         repeat: expr
         repeat-expr: 2
-        
+
       - id: mem_length
         type: u4
         repeat: expr
         repeat-expr: 2
-        
+
       - id: mem_start_addr
         type: u4
         repeat: expr
         repeat-expr: 2
-        
+
       - id: bank_size
         type: u4
         repeat: expr
         repeat-expr: 2
-        
+
       - id: roll_scrn_wave_length
         type: u2
       - id: analog_interp_en
@@ -186,7 +186,7 @@ types:
         type: u2
       - id: record_frame_index
         type: u4
-        
+
     instances:
       seconds_per_point:
         value: 1/sample_rate_hz
@@ -196,24 +196,24 @@ types:
         value: 1.0e-12 * time_offset_ps
       points:
         value: _root.header.mem_depth
-        
+
   channel_header:
     seq:
       - id: enabled
         type: u1
-        
+
       - id: coupling
         type: u1
         enum: coupling_enum
-        
+
       - id: bandwidth_limit
         type: u1
         enum: bandwidth_enum
-        
+
       - id: probe_type
         type: u1
         enum: probe_type_enum
-        
+
       - id: probe_ratio
         type: u1
         enum: probe_ratio_enum
@@ -263,7 +263,7 @@ types:
                probe_ratio == probe_ratio_enum::x200 ? 200.0 :
                probe_ratio == probe_ratio_enum::x500 ? 500.0 :
                1000.0)"
-        
+
   channel_mask:
     seq:
       - id: unused
@@ -276,7 +276,7 @@ types:
         type: b1
       - id: channel_1
         type: b1
-        
+
   raw_data:
     seq:
       - id: channel_1
@@ -284,19 +284,19 @@ types:
         repeat: expr
         repeat-expr: _root.header.mem_depth
         if: _root.header.enabled.channel_1
-        
+
       - id: channel_2
         type: u1
         repeat: expr
         repeat-expr: _root.header.mem_depth
         if: _root.header.enabled.channel_2
-        
+
       - id: channel_3
         type: u1
         repeat: expr
         repeat-expr: _root.header.mem_depth
         if: _root.header.enabled.channel_3
-        
+
       - id: channel_4
         type: u1
         repeat: expr
@@ -309,7 +309,7 @@ enums:
     1: average
     2: peak
     3: high_resolution
-    
+
   bandwidth_enum:
     0: no_limit
     1: mhz_20
@@ -327,7 +327,7 @@ enums:
     1: high_pass
     2: band_pass
     3: band_reject
-    
+
   impedance_enum:
     0: ohm_50
     1: ohm_1meg
@@ -342,7 +342,7 @@ enums:
     2: x0_05
     3: x0_1
     4: x0_2
-    5: x0_5 
+    5: x0_5
     6: x1
     7: x2
     8: x5

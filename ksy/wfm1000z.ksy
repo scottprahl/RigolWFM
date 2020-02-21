@@ -22,7 +22,7 @@ types:
   file_header:
     seq:
       - id: magic
-        contents: [0x01,0xff,0xff,0xff]
+        contents: [0x01, 0xff, 0xff, 0xff]
       - id: structure_id
         type: u2
       - id: structure_size
@@ -38,7 +38,7 @@ types:
         terminator: 0
         encoding: UTF-8
       - id: block
-        contents: [0x00,0x01]
+        contents: [0x00, 0x01]
       - id: file_version
         type: u2
 
@@ -130,13 +130,13 @@ types:
         value: "total_channels == 3 ? 4 : total_channels"
       points:
         value: memory_depth/stride
-      sample_rate_hz: 
+      sample_rate_hz:
         value: sample_rate_ghz * 1e9
-      seconds_per_division: 
+      seconds_per_division:
         value: picoseconds_per_division * 1e-12
-      time_offset: 
+      time_offset:
         value: picoseconds_offset * 1e-12
-      seconds_per_point: 
+      seconds_per_point:
         value: 1/sample_rate_hz
       ch1_volts_per_division:
         value: '_root.header.ch1.inverted ?
@@ -144,7 +144,7 @@ types:
                 _root.header.ch1.scale * _root.header.ch1.probe_value'
         doc: Voltage scale in volts per division.
       ch1_volts_offset:
-        value: _root.header.ch1.shift * _root.header.ch1_volts_per_division / 25.0
+        value: _root.header.ch1.shift * _root.header.ch1_volts_per_division/25.0
         doc: Voltage offset in volts.
 
   channel_head:
@@ -262,8 +262,8 @@ enums:
     2: gnd
 
   bandwidth_enum:
-    0: twenty_mhz
-    1: off
+    0: mhz_20
+    1: no_limit
 
   probe_enum:
     0: x0_01
@@ -282,5 +282,3 @@ enums:
     13: x200
     14: x500
     15: x1000
-
-

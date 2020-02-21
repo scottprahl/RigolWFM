@@ -21,10 +21,17 @@ RigolWFM/wfm4000.py: ksy/wfm4000.ksy
 RigolWFM/wfm6000.py: ksy/wfm6000.ksy
 	kaitai-struct-compiler -t python $(KSY_OPTIONS) ksy/wfm6000.ksy
 
-check:
+yamlcheck:
+	yamllint ksy/wfm1000d.ksy
+	yamllint ksy/wfm1000e.ksy
+	yamllint ksy/wfm1000z.ksy
+	yamllint ksy/wfm4000.ksy
+	yamllint ksy/wfm6000.ksy
+
+ksycheck:
 	ksylint ksy/wfm1000d.ksy
 	ksylint ksy/wfm1000e.ksy
-#	ksylint ksy/wfm1000z.ksy
+	ksylint ksy/wfm1000z.ksy
 	ksylint ksy/wfm4000.ksy
 	ksylint ksy/wfm6000.ksy
 

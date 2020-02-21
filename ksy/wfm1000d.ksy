@@ -5,17 +5,15 @@ meta:
   endian: le
 
 doc: |
-  Rigol DS1020CD scope .wmf format abstracted from a Matlab script with the addition
-  of a few fields found in a Pascal program.  Neither program really examines the
-  header closely (meaning that they skip 26 bytes).  Conveniently, the work on the
-  DS4000 parser suggests that the header may contain a serial number and firmware
-  version.
+  Rigol DS1020CD .wmf format abstracted from a Matlab script with the addition
+  of a few fields found in a Pascal program.  Neither program really examines
+  the header closely (meaning that they skip 26 bytes).
 
 doc-ref: !
   The Matlab script is from
   https://www.mathworks.com/matlabcentral/fileexchange/18999-read-binary-rigol-waveforms
   The Pascal program is from
-  https://sourceforge.net/projects/wfmreader/files/WFMReaderV2_FullSourceWithReqLibsAndCompiledDemo.zip
+  https://sourceforge.net/projects/wfmreader/
   The DS4000 parser is from
   https://github.com/Cat-Ion/rigol-ds4000-wfm
 
@@ -50,7 +48,7 @@ types:
         type: u8
       - id: time_delay       # 92
         type: s8
-      - id: sample_frequency # 100
+      - id: sample_frequency  # 100
         type: f4
       - id: unknown_3        # 104
         type: u4
@@ -106,18 +104,18 @@ types:
 
 enums:
   trigger_source_enum:
-    0 : ch1
-    1 : ch2
-    2 : ext
-    3 : ext5
-    5 : ac_line
-    7 : dig_ch
+    0: ch1
+    1: ch2
+    2: ext
+    3: ext5
+    5: ac_line
+    7: dig_ch
 
   trigger_mode_enum:
-    0 : edge
-    1 : pulse
-    2 : slope
-    3 : video
-    4 : alt
-    5 : pattern
-    6 : duration
+    0: edge
+    1: pulse
+    2: slope
+    3: video
+    4: alt
+    5: pattern
+    6: duration
