@@ -68,6 +68,8 @@ testz:
 test4:
 	python3 RigolWFM/wfm_parser2.py -t 4000 wfm/DS4022-A.wfm
 	python3 RigolWFM/wfm_parser2.py -t 4000 wfm/DS4022-B.wfm
+#	python3 RigolWFM/wfm_parser2.py -t 4000 wfm/DS4024-A.wfm
+#	python3 RigolWFM/wfm_parser2.py -t 4000 wfm/DS4024-B.wfm
 
 test:
 	make teste

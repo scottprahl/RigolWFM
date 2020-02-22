@@ -15,9 +15,8 @@ def main():
     parser.add_argument('filename')
     args = parser.parse_args()
     
-    channels = wfme.parse(args.filename, kind=args.t)
-    for ch in channels:
-        print(ch)
+    description = wfme.describe(args.filename, kind=args.t)
+    print(description)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 #pylint: disable=invalid-name
 #pylint: disable=too-many-instance-attributes
+#pylint: disable=unsubscriptable-object
+#pylint: disable=too-few-public-methods
 
 """
 Extract signals or description from Rigol 1000E Oscilloscope waveform file.
@@ -8,20 +10,19 @@ Use like this::
 
     import RigolWFM.wfme as wfme
 
-    channels = wfme.parse("filename.wfm")
+    channels = wfme.parse("filename.wfm", '1000E')
     for ch in channels:
         print(ch)
 """
-
 import tempfile
 import requests
 import numpy as np
+import matplotlib.pyplot as plt
 
 import RigolWFM.wfm1000e
 import RigolWFM.wfm1000z
 import RigolWFM.wfm4000
 import RigolWFM.wfm6000
-
 
 def engineering_string(number):
     """Format number with proper prefix"""
@@ -52,6 +53,7 @@ class Channel():
     """Base class for a single channel."""
 
     def __init__(self):
+        self.scope_type = 'default'
         self.channel_number = 1
         self.enabled = False
         self.volts_per_division = 1  # V/div
@@ -61,6 +63,8 @@ class Channel():
         self.time_offset = 0         # s
         self.points = 0
         self.raw = None
+        self.volts = None
+        self.times = None
 
     def __str__(self):
         s = "Channel %d\n" % self.channel_number
@@ -77,10 +81,10 @@ class Channel():
         if self.enabled:
             s += "        Raw    = [%9d,%9d,%9d  ... %9d,%9d]\n" % (
                 self.raw[0], self.raw[1], self.raw[2], self.raw[-2], self.raw[-1])
-            v = [engineering_string(self.volts[i])+"V" for i in [0,1,2,-2,-1]]
-            s += "        Volts  = [%9s,%9s,%9s  ... %9s,%9s]\n" % (v[0],v[1],v[2],v[3],v[4])
-            t = [engineering_string(self.times[i])+"s" for i in [0,1,2,-2,-1]]
-            s += "        Times  = [%9s,%9s,%9s  ... %9s,%9s]\n" % (t[0],t[1],t[2],t[3],t[4])
+            v = [engineering_string(self.volts[i])+"V" for i in [0, 1, 2, -2, -1]]
+            s += "        Volts  = [%9s,%9s,%9s  ... %9s,%9s]\n" % (v[0], v[1], v[2], v[-2], v[-1])
+            t = [engineering_string(self.times[i])+"s" for i in [0, 1, 2, -2, -1]]
+            s += "        Times  = [%9s,%9s,%9s  ... %9s,%9s]\n" % (t[0], t[1], t[2], t[-2], t[-1])
         return s
 
 
@@ -89,6 +93,8 @@ class ChannelE(Channel):
 
     def __init__(self, w, ch=1):
         super().__init__()
+        self.scope_type = '1000E'
+        self.waveform = w
         self.channel_number = ch
         self.seconds_per_point = w.header.seconds_per_point
 
@@ -102,9 +108,9 @@ class ChannelE(Channel):
             if self.enabled:
                 self.raw = np.array(w.data.ch1)
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
-                self.times  = np.arange(self.points) * self.seconds_per_point
+                self.times = np.arange(self.points) * self.seconds_per_point
 
-                
+
         elif ch == 2:
             self.enabled = w.header.ch2.enabled
             self.volts_per_division = w.header.ch2_volts_per_division
@@ -115,7 +121,7 @@ class ChannelE(Channel):
             if self.enabled:
                 self.raw = np.array(w.data.ch2)
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
-                self.times  = np.arange(self.points) * self.seconds_per_point
+                self.times = np.arange(self.points) * self.seconds_per_point
 
 
 class ChannelZ(Channel):
@@ -124,56 +130,58 @@ class ChannelZ(Channel):
     def channel_bytes(self, enabled_count, data):
         """
         Return right series of bytes for a channel.
-        
-        Waveform points are interleaved stored in memory when two or more 
+
+        Waveform points are interleaved stored in memory when two or more
         channels are enabled:
-        
+
         Only one channel enabled:
             CH1CH1CH1CH1
-            
+
         Two channels Enabled:
             CH2CH1CH2CH1
-            
+
         Three or Four channels enabled:
             CH4CH3CH2CH1
-            
+
         Args:
             enabled_count: the number of enabled channels before this one
             data:          object containing the raw data structures
         Returns
             byte array for a particular channel
         """
-        
+
         if self.stride == 1:
-            bytes = np.array(data.raw1, dtype=np.uint8)
-            
+            raw_bytes = np.array(data.raw1, dtype=np.uint8)
+
         if self.stride == 2:
             if enabled_count == 0:
-                bytes = np.array(data.raw2 & 0x00FF, dtype=np.uint8)
+                raw_bytes = np.array(data.raw2 & 0x00FF, dtype=np.uint8)
             else:
-                bytes = np.array((data.raw2 & 0xFF00) >> 8, dtype=np.uint8)
-            
+                raw_bytes = np.array((data.raw2 & 0xFF00) >> 8, dtype=np.uint8)
+
         if self.stride == 4:
             if enabled_count == 3:
-                bytes = np.array(np.uint32(data.raw4) & 0x000000FF, dtype=np.uint8)
+                raw_bytes = np.array(np.uint32(data.raw4) & 0x000000FF, dtype=np.uint8)
             elif enabled_count == 2:
-                bytes = np.array((np.uint32(data.raw4) & 0x0000FF00) >> 8, dtype=np.uint8)
+                raw_bytes = np.array((np.uint32(data.raw4) & 0x0000FF00) >> 8, dtype=np.uint8)
             elif enabled_count == 1:
-                bytes = np.array((np.uint32(data.raw4) & 0x00FF0000) >> 16, dtype=np.uint8)
+                raw_bytes = np.array((np.uint32(data.raw4) & 0x00FF0000) >> 16, dtype=np.uint8)
             else:
-                bytes = np.array((np.uint32(data.raw4) & 0xFF000000) >> 24, dtype=np.uint8)
-        
-        return bytes
-            
+                raw_bytes = np.array((np.uint32(data.raw4) & 0xFF000000) >> 24, dtype=np.uint8)
+
+        return raw_bytes
+
     def __init__(self, w, ch, enabled_count):
         super().__init__()
+        self.scope_type = '1000Z'
+        self.waveform = w
         self.channel_number = ch
         self.seconds_per_point = w.header.seconds_per_point
         self.time_scale = w.header.seconds_per_division
         self.time_offset = w.header.time_offset
         self.points = w.header.points
         self.stride = w.header.stride
-        
+
         if ch == 1:
             self.enabled = w.header.ch1.enabled
             self.probe = w.header.ch1.probe_value
@@ -198,7 +206,7 @@ class ChannelZ(Channel):
         if self.enabled:
             self.raw = self.channel_bytes(enabled_count, w.data)
             self.volts = self.volts_per_division/25.0 * (self.raw - 127.0) - self.volts_offset
-            self.times  = np.arange(self.points) * self.seconds_per_point - self.time_scale
+            self.times = np.arange(self.points) * self.seconds_per_point - self.time_scale
 
 class Channel4(Channel):
     """Base class for a single channel from 4000 series scopes."""
@@ -218,7 +226,7 @@ class Channel4(Channel):
             if self.enabled:
                 self.raw = np.array(w.data.channel_1)
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
-                self.times  = np.arange(self.points) * self.seconds_per_point
+                self.times = np.arange(self.points) * self.seconds_per_point
 
         elif ch == 2:
             self.enabled = w.header.enabled.channel_2
@@ -227,32 +235,31 @@ class Channel4(Channel):
             if self.enabled:
                 self.raw = np.array(w.data.channel_2)
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
-                self.times  = np.arange(self.points) * self.seconds_per_point
+                self.times = np.arange(self.points) * self.seconds_per_point
 
 
-class ReadWFMError(Exception):
+class Read_WFM_Error(Exception):
     """Generic Read Error."""
 
 
-class ParseWFMError(Exception):
+class Parse_WFM_Error(Exception):
     """Generic Parse Error."""
 
 
-def parse(wfm_filename, kind='1000E'):
+def parse(wfm_filename, kind):
     """Return a list of channels."""
 
-
-    if kind == '1000e' or kind == '1000E':
+    if kind in ['1000e', '1000E']:
         channels = [None, None]
         try:
             w = RigolWFM.wfm1000e.Wfm1000e.from_file(wfm_filename)
-            channels = [ChannelE(w, i) for i in [1,2]]
+            channels = [ChannelE(w, i) for i in [1, 2]]
             return channels
 
         except:
-            raise ParseWFMError("File format is not 1000E.  Sorry.")
+            raise Parse_WFM_Error("File format is not 1000E.  Sorry.")
 
-    if kind == '1000z' or kind == '1000Z':
+    if kind in ['1000z', '1000Z']:
         enabled_channels = 0
         channels = [None, None, None, None]
         try:
@@ -262,7 +269,7 @@ def parse(wfm_filename, kind='1000E'):
                 if channels[i].enabled:
                     enabled_channels += 1
         except:
-            raise ParseWFMError("File format is not 1000Z.  Sorry.")
+            raise Parse_WFM_Error("File format is not 1000Z.  Sorry.")
 
     if kind == '4000':
         enabled_channels = 0
@@ -274,6 +281,61 @@ def parse(wfm_filename, kind='1000E'):
                 if channels[i].enabled:
                     enabled_channels += 1
         except:
-            raise ParseWFMError("File format is not 4000.  Sorry.")
+            raise Parse_WFM_Error("File format is not 4000.  Sorry.")
 
     return channels
+
+def read_and_parse_file(wfm_filename, kind):
+    """Return an array of channels."""
+
+    try:
+        if wfm_filename.startswith('http://') or wfm_filename.startswith('https://'):
+            # need a local file for conversion, download url and save as tempfile
+
+            r = requests.get(wfm_filename, allow_redirects=True)
+            if not r.ok:
+                error_string = "Downloading URL '%s' failed: '%s'" % (wfm_filename, r.reason)
+                raise Read_WFM_Error(error_string)
+
+            f = tempfile.TemporaryFile()
+            f.write(r.content)
+            f.seek(0)
+
+        else:
+            try:
+                f = open(wfm_filename, 'rb')
+                f.close()
+            except IOError as e:
+                raise Read_WFM_Error(e)
+        try:
+            channels = parse(wfm_filename, kind)
+        except Exception as e: 
+            raise Parse_WFM_Error(e)
+
+    except Read_WFM_Error as e:
+        print(e)
+        return []
+
+    except Parse_WFM_Error as e:
+        print(e)
+        return []
+
+    return channels
+
+
+def describe(wfm_filename, kind):
+    """Returns a string describing the contents of a Rigol wfm file."""
+
+    channels = read_and_parse_file(wfm_filename, kind)
+    s = ''
+    for ch in channels:
+        s += str(ch)
+    return s
+
+def plot(wfm_filename, kind):
+    """Plots the data."""
+
+    channels = read_and_parse_file(wfm_filename, kind)
+
+    for ch in channels:
+        plt.plot(ch.time, ch.volt)
