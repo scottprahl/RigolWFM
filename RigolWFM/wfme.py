@@ -97,6 +97,7 @@ class ChannelE(Channel):
         self.waveform = w
         self.channel_number = ch
         self.seconds_per_point = w.header.seconds_per_point
+        self.roll_stop = w.header.roll_stop
 
         if ch == 1:
             self.enabled = w.header.ch1.enabled
@@ -104,7 +105,7 @@ class ChannelE(Channel):
             self.volts_offset = w.header.ch1_volts_offset
             self.time_offset = w.header.ch1_time_delay
             self.time_scale = w.header.ch1_time_scale
-            self.points = w.header.ch1_points
+            self.points = len(w.data.ch1)
             if self.enabled:
                 self.raw = np.array(w.data.ch1)
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
@@ -117,7 +118,7 @@ class ChannelE(Channel):
             self.volts_offset = w.header.ch2_volts_offset
             self.time_offset = w.header.ch2_time_delay
             self.time_scale = w.header.ch2_time_scale
-            self.points = w.header.ch2_points
+            self.points = len(w.data.ch2)
             if self.enabled:
                 self.raw = np.array(w.data.ch2)
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
@@ -338,4 +339,4 @@ def plot(wfm_filename, kind):
     channels = read_and_parse_file(wfm_filename, kind)
 
     for ch in channels:
-        plt.plot(ch.time, ch.volt)
+        plt.plot(ch.times, ch.volts)

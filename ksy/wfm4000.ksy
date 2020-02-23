@@ -238,7 +238,7 @@ types:
         doc: "[0x00, 0x00, 0x00, 0x00]"
       - id: scale_microvolt
         type: u4
-      - id: offset_uv
+      - id: offset_microvolt
         type: s4
       - id: unknown_9
         type: s2
@@ -249,7 +249,7 @@ types:
         value: 1e-6 * scale_microvolt
         doc: Voltage scale in volts per division.
       volts_offset:
-        value: 1e-6 * offset_uv
+        value: 1e-6 * offset_microvolt
         doc: Voltage offset in volts.
 
   channel_subheader:

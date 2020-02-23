@@ -25,28 +25,28 @@ types:
       - id: adc_mode
         type: u1
       - id: padding_2
-        contents: [0x00, 0x00, 0x00]
+        contents: [0, 0, 0]
       - id: roll_stop
         type: u4
       - id: unused_4
-        contents: [0x00, 0x00, 0x00, 0x00]
-      - id: ch1_points
+        contents: [0, 0, 0, 0]
+      - id: ch1_points_tmp
         type: u4
       - id: active_channel
         type: u1
       - id: padding_3
-        contents: [0x00, 0x00, 0x00]
+        contents: [0, 0, 0]
       - id: ch1
         type: channel_header
       - id: padding_4
-        contents: [0x00, 0x00]
+        contents: [0, 0]
       - id: ch2
         type: channel_header
       - id: time_delay
         type: u1
       - id: padding_5
         contents: [0x00]
-      - id: time1
+      - id: time
         type: time_header
       - id: logic
         type: logic_analyzer_header
@@ -58,7 +58,7 @@ types:
       - id: trigger2
         type: trigger_header
       - id: padding_6
-        contents: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        contents: [0, 0, 0, 0, 0, 0, 0, 0, 0]
       - id: ch2_points_tmp
         type: u4
       - id: time2
@@ -68,8 +68,17 @@ types:
         type: f4
 
     instances:
+      ch1_points:
+        value: "roll_stop == 0 ? ch1_points_tmp - 4: ch1_points_tmp - roll_stop - 6"
+        doc: In rolling mode, change the number of valid samples
+
+      ch1_skip:
+        value: "roll_stop == 0 ? 0 : roll_stop + 2"
+        doc: In rolling mode, skip invalid points
+
       sample_rate_hz:
-        value: time1.sample_rate_hz
+        value: time.sample_rate_hz
+
       seconds_per_point:
         value: 1/sample_rate_hz
 
@@ -80,9 +89,9 @@ types:
         doc: Use ch1_points when ch2_points is not written
 
       ch1_volts_per_division:
-        value: '_root.header.ch1.invert_measured ?
+        value: "_root.header.ch1.invert_measured ?
                 -1e-6 * _root.header.ch1.scale_measured *_root.header.ch1.probe:
-                +1e-6 * _root.header.ch1.scale_measured *_root.header.ch1.probe'
+                +1e-6 * _root.header.ch1.scale_measured *_root.header.ch1.probe"
         doc: Voltage scale in volts per division.
       ch1_volts_offset:
         value: >
@@ -95,9 +104,9 @@ types:
         doc: In rolling mode, skip invalid samples
 
       ch2_volts_per_division:
-        value: '_root.header.ch2.invert_measured ?
+        value: "_root.header.ch2.invert_measured ?
                 -1e-6 * _root.header.ch2.scale_measured *_root.header.ch2.probe:
-                +1e-6 * _root.header.ch2.scale_measured *_root.header.ch2.probe'
+                +1e-6 * _root.header.ch2.scale_measured *_root.header.ch2.probe"
         doc: Voltage scale in volts per division.
       ch2_volts_offset:
         value: >
@@ -110,9 +119,9 @@ types:
         doc: In rolling mode, skip invalid samples
 
       ch1_time_scale:
-        value: 1.0e-12 * _root.header.time1.scale_measured
+        value: 1.0e-12 * _root.header.time.scale_measured
       ch1_time_delay:
-        value: 1.0e-12 * _root.header.time1.delay_measured
+        value: 1.0e-12 * _root.header.time.delay_measured
       ch2_time_scale:
         value: "_root.header.trigger_mode == trigger_mode_enum::alt ?
                  1.0e-12 * _root.header.time2.scale_measured:
@@ -237,17 +246,33 @@ types:
         repeat: expr
         repeat-expr: _root.header.ch1_points
 
+      - id: roll_stop_padding1
+        type: u1
+        if: _root.header.ch1.enabled 
+        repeat: expr
+        repeat-expr: _root.header.ch1_skip
+
+      - id: sentinel_between_datasets
+        type: u4
+        doc: "[0x04, 0x00, 0x04, 0x00]"
+
       - id: ch2
         type: u1
         if: _root.header.ch2.enabled
         repeat: expr
         repeat-expr: _root.header.ch2_points
 
+      - id: roll_stop_padding2
+        type: u1
+        if: _root.header.ch2.enabled
+        repeat: expr
+        repeat-expr: _root.header.ch1_skip
+
       - id: logic
         doc: Not clear where the LA length is stored assume same as ch1_points
         type: u2
         repeat: expr
-        repeat-expr: '_root.header.logic.enabled ? _root.header.ch1_points: 0'
+        repeat-expr: "_root.header.logic.enabled ? _root.header.ch1_points: 0"
 
 
 enums:
