@@ -69,7 +69,7 @@ types:
 
     instances:
       ch1_points:
-        value: "roll_stop == 0 ? ch1_points_tmp - 4: ch1_points_tmp - roll_stop - 6"
+        value: "roll_stop == 0 ? ch1_points_tmp - 4: ch1_points_tmp-roll_stop-6"
         doc: In rolling mode, change the number of valid samples
 
       ch1_skip:
@@ -248,7 +248,7 @@ types:
 
       - id: roll_stop_padding1
         type: u1
-        if: _root.header.ch1.enabled 
+        if: _root.header.ch1.enabled
         repeat: expr
         repeat-expr: _root.header.ch1_skip
 
