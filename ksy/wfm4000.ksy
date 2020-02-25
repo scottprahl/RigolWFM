@@ -42,10 +42,15 @@ types:
       - id: unknown_2
         size: 3
 
+      - id: channel_offset
+        type: u4
+        repeat: expr
+        repeat-expr: 4
+
       - id: unknown_3
         type: u4
         repeat: expr
-        repeat-expr: 7
+        repeat-expr: 3
 
       - id: mem_depth
         type: u4
