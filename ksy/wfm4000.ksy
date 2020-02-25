@@ -7,9 +7,6 @@ instances:
   header:
     pos: 0
     type: header
-  data:
-    pos: 20972
-    type: raw_data
 
 types:
   header:
@@ -42,27 +39,29 @@ types:
       - id: unknown_2
         size: 3
 
-      - id: channel_offset
-        type: u4
-        repeat: expr
-        repeat-expr: 4
+      - id: position
+        type: position_type
 
       - id: unknown_3
         type: u4
-        repeat: expr
-        repeat-expr: 3
 
-      - id: mem_depth
+      - id: unknown_4
+        type: u4
+
+      - id: unknown_5
+        type: u4
+
+      - id: mem_depth_1
         type: u4
 
       - id: sample_rate_hz
         type: f4
 
       - id: unknown_8
-        size: 4
+        type: u4
 
       - id: time_per_div_ps
-        type: u4
+        type: u8
 
       - id: unknown_9
         type: u4
@@ -77,17 +76,16 @@ types:
       - id: unknown_33
         type: u4
         repeat: expr
-        repeat-expr: 5
+        repeat-expr: 4
 
       - id: mem_depth_2
         type: u4
-        doc: "Seems to always be a copy of mem_depth"
       - id: unknown_37
         size: 4
         doc: "[0x00, 0x00, 0x00, 0x00]"
-      - id: mem_depth_3
+      - id: mem_depth
         type: u4
-        doc: "Seems to always be a copy of mem_depth"
+
       - id: unknown_38
         type: u4
         repeat: expr
@@ -141,9 +139,9 @@ types:
       - id: unknown_59
         size: 4
         doc: "[0, 0, 0, 0]"
-      - id: mem_depth_enum
+      - id: mem_depth_type
         type: u1
-        enum: mem_depth
+        enum: mem_depth_enum
       - id: unknown_60
         size: 11
         doc: "[0, 0, 0, 0, 32, 0, 0, 4, 0, 0, 0]"
@@ -162,11 +160,39 @@ types:
       seconds_per_point:
         value: 1/sample_rate_hz
       time_scale:
-        value: 1.0e-12 * _root.header.time.time_per_div_ps
+        value: 1.0e-12 * time.time_per_div_ps
       time_delay:
-        value: 1.0e-12 * _root.header.time.delay_ps
+        value: 1.0e-12 * time.delay_per_div_ps
       points:
-        value: _root.header.mem_depth
+        value: mem_depth
+
+      raw1:
+        pos: position.channel_1
+        size: mem_depth
+        if: enabled.channel_1
+      raw2:
+        pos: position.channel_2
+        size: mem_depth
+        if: enabled.channel_2
+      raw3:
+        pos: position.channel_3
+        size: mem_depth
+        if: enabled.channel_3
+      raw4:
+        pos: position.channel_4
+        size: mem_depth
+        if: enabled.channel_4
+
+  position_type:
+    seq:
+      - id: channel_1
+        type: u4
+      - id: channel_2
+        type: u4
+      - id: channel_3
+        type: u4
+      - id: channel_4
+        type: u4
 
   time_header:
     seq:
@@ -181,18 +207,14 @@ types:
         type: u4
       - id: unknown_3a
         size: 4
-      - id: unknown_3b
-        type: u4
+      - id: delay_per_div_ps
+        type: u8
       - id: unknown_4
-        type: u4
-        repeat: expr
-        repeat-expr: 3
+        size: 16
       - id: delay_ps
         type: u8
       - id: unknown_5
-        type: u4
-        repeat: expr
-        repeat-expr: 4
+        size: 16
       - id: unknown_6
         type: u2
       - id: unknown_7
@@ -259,12 +281,10 @@ types:
 
   channel_subheader:
     seq:
-      - id: unknown_0
-        type: u4
       - id: volt_scale
         type: f4
       - id: volt_offset
-        type: u4
+        type: f4
       - id: unknown_3
         type: u4
       - id: unknown_4
@@ -274,6 +294,8 @@ types:
         type: u4
         doc: "[0x00, 0x2d, 0x31, 0x01] or 20M"
       - id: unknown_6
+        type: u4
+      - id: unknown_0
         type: u4
 
   channel_mask:
@@ -289,43 +311,6 @@ types:
       - id: channel_1
         type: b1
 
-  raw_data:
-    seq:
-      - id: channel_1
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.mem_depth
-        if: _root.header.enabled.channel_1
-      - id: padding_1
-        size: _root.header.bytes_per_channel_1 - _root.header.mem_depth
-        if: _root.header.enabled.channel_1
-
-      - id: channel_2
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.mem_depth
-        if: _root.header.enabled.channel_2
-      - id: padding_2
-        size: _root.header.bytes_per_channel_1 - _root.header.mem_depth
-        if: _root.header.enabled.channel_2
-
-      - id: channel_3
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.mem_depth
-        if: _root.header.enabled.channel_3
-      - id: padding_3
-        size: _root.header.bytes_per_channel_1 - _root.header.mem_depth
-        if: _root.header.enabled.channel_3
-
-      - id: channel_4
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.mem_depth
-        if: _root.header.enabled.channel_4
-      - id: padding_4
-        size: _root.header.bytes_per_channel_1 - _root.header.mem_depth
-        if: _root.header.enabled.channel_4
 
 enums:
   channel_scale:
@@ -367,7 +352,7 @@ enums:
     1: mhz_50
     2: mhz_100
     3: mhz_200
-  mem_depth:
+  mem_depth_enum:
     0: auto
     1: p_7k
     2: p_70k
