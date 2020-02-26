@@ -139,9 +139,9 @@ types:
       seconds_per_point:
         value: 1/sample_rate_hz
       ch1_volts_per_division:
-        value: '_root.header.ch1.inverted ?
+        value: "_root.header.ch1.inverted ?
                 _root.header.ch1.scale * _root.header.ch1.probe_value:
-                _root.header.ch1.scale * _root.header.ch1.probe_value'
+                _root.header.ch1.scale * _root.header.ch1.probe_value"
         doc: Voltage scale in volts per division.
       ch1_volts_offset:
         value: _root.header.ch1.shift * _root.header.ch1_volts_per_division/25.0

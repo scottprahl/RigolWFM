@@ -112,7 +112,7 @@ types:
         type: time_header
     instances:
       vertical_scale_factor:
-        value: 'serial_number.substring(2, 3) == "2" ? 25 : 32'
+        value: "serial_number.substring(2, 3) == '2' ? 25 : 32"
       seconds_per_point:
         value: 1/sample_rate_hz
       time_scale:
@@ -264,47 +264,7 @@ types:
 
 
 enums:
-  channel_scale:
-    0: mv_1
-    1: mv_2
-    2: mv_5
-    3: mv_10
-    4: mv_20
-    5: mv_50
-    6: mv_100
-    7: mv_200
-    8: mv_500
-    9: mv_1000
-    10: mv_2000
-    11: mv_5000
-    
-  coupling_enum:
-    0: dc
-    1: ac
-    2: gnd
 
-  probe_scale:
-    0: xp01
-    1: xp02
-    2: xp05
-    3: xp1
-    4: xp2
-    5: xp5
-    6: x1
-    7: x2
-    8: x5
-    9: x10
-    10: x20
-    11: x50
-    12: x100
-  probe_impedance_enum:
-    0: ohm_50
-    1: ohm_1meg
-  bandwidth_limit:
-    0: none
-    1: mhz_50
-    2: mhz_100
-    3: mhz_200
   mem_depth_enum:
     0: auto
     1: p_7k
