@@ -34,9 +34,9 @@ types:
         type: u4
         repeat: expr
         repeat-expr: 6
-      - id: npts             # 28
+      - id: ch1_points       # 28
         type: u4
-      - id: channel_number   # 32
+      - id: active_channel   # 32
         type: u1
       - id: unknown_2        # 33
         size: 3
