@@ -311,26 +311,29 @@ def read_and_parse_file(wfm_filename, kind):
     """Return an array of channels."""
 
     try:
+        print("working on %s" % wfm_filename)
         if wfm_filename.startswith('http://') or wfm_filename.startswith('https://'):
             # need a local file for conversion, download url and save as tempfile
-
+            print("downloading file")
             r = requests.get(wfm_filename, allow_redirects=True)
             if not r.ok:
                 error_string = "Downloading URL '%s' failed: '%s'" % (wfm_filename, r.reason)
                 raise Read_WFM_Error(error_string)
 
-            f = tempfile.TemporaryFile()
+            f = tempfile.NamedTemporaryFile()
             f.write(r.content)
             f.seek(0)
+            working_filename = f.name
 
         else:
             try:
                 f = open(wfm_filename, 'rb')
                 f.close()
+                working_filename = wfm_filename
             except IOError as e:
                 raise Read_WFM_Error(e)
         try:
-            channels = parse(wfm_filename, kind)
+            channels = parse(working_filename, kind)
         except Exception as e: 
             raise Parse_WFM_Error(e)
 
