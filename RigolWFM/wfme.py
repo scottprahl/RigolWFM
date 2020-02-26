@@ -18,6 +18,7 @@ import tempfile
 import requests
 import numpy as np
 import matplotlib.pyplot as plt
+import traceback
 
 import RigolWFM.wfm1000e
 import RigolWFM.wfm1000z
@@ -98,15 +99,16 @@ class ChannelE(Channel):
         self.channel_number = ch
         self.seconds_per_point = w.header.seconds_per_point
         self.roll_stop = w.header.roll_stop
-
+        self.points = 0
+        
         if ch == 1:
             self.enabled = w.header.ch1.enabled
             self.volts_per_division = w.header.ch1_volts_per_division
             self.volts_offset = w.header.ch1_volts_offset
             self.time_offset = w.header.ch1_time_delay
             self.time_scale = w.header.ch1_time_scale
-            self.points = len(w.data.ch1)
             if self.enabled:
+                self.points = len(w.data.ch1)
                 self.raw = np.array(w.data.ch1)
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
                 self.times = np.arange(self.points) * self.seconds_per_point
@@ -118,8 +120,8 @@ class ChannelE(Channel):
             self.volts_offset = w.header.ch2_volts_offset
             self.time_offset = w.header.ch2_time_delay
             self.time_scale = w.header.ch2_time_scale
-            self.points = len(w.data.ch2)
             if self.enabled:
+                self.points = len(w.data.ch2)
                 self.raw = np.array(w.data.ch2)
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
                 self.times = np.arange(self.points) * self.seconds_per_point
@@ -225,7 +227,7 @@ class Channel4(Channel):
             self.volts_per_division = w.header.channel[0].volts_per_division
             self.volts_offset = w.header.channel[0].volts_offset
             if self.enabled:
-                self.raw = np.array(w.data.channel_1)
+                self.raw = np.array(w.header.raw_1)
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
                 self.times = np.arange(self.points) * self.seconds_per_point
 
@@ -234,7 +236,7 @@ class Channel4(Channel):
             self.volts_per_division = w.header.channel[1].volts_per_division
             self.volts_offset = w.header.channel[1].volts_offset
             if self.enabled:
-                self.raw = np.array(w.data.channel_2)
+                self.raw = np.array(w.header.raw_2)
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
                 self.times = np.arange(self.points) * self.seconds_per_point
 
@@ -257,7 +259,8 @@ def parse(wfm_filename, kind):
             channels = [ChannelE(w, i) for i in [1, 2]]
             return channels
 
-        except:
+        except Exception as e:
+            print(traceback.format_exc())
             raise Parse_WFM_Error("File format is not 1000E.  Sorry.")
 
     if kind in ['1000z', '1000Z']:
@@ -269,7 +272,8 @@ def parse(wfm_filename, kind):
                 channels[i] = ChannelZ(w, i+1, enabled_channels)
                 if channels[i].enabled:
                     enabled_channels += 1
-        except:
+        except Exception as e:
+            print(traceback.format_exc())
             raise Parse_WFM_Error("File format is not 1000Z.  Sorry.")
 
     if kind == '4000':
@@ -281,7 +285,9 @@ def parse(wfm_filename, kind):
                 channels[i] = Channel4(w, i+1)
                 if channels[i].enabled:
                     enabled_channels += 1
-        except:
+                    
+        except Exception as e:
+            print(traceback.format_exc())
             raise Parse_WFM_Error("File format is not 4000.  Sorry.")
 
     return channels
