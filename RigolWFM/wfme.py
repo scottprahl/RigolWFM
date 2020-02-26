@@ -113,8 +113,7 @@ class ChannelE(Channel):
                 self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
                 self.times = np.arange(self.points) * self.seconds_per_point
 
-
-        elif ch == 2:
+        if ch == 2:
             self.enabled = w.header.ch2.enabled
             self.volts_per_division = w.header.ch2_volts_per_division
             self.volts_offset = w.header.ch2_volts_offset
@@ -221,24 +220,39 @@ class Channel4(Channel):
         self.time_offset = w.header.time_delay
         self.time_scale = w.header.time_scale
         self.points = w.header.points
+        self.enable = False
 
         if ch == 1:
             self.enabled = w.header.enabled.channel_1
             self.volts_per_division = w.header.channel[0].volts_per_division
             self.volts_offset = w.header.channel[0].volts_offset
             if self.enabled:
-                self.raw = np.array(w.header.raw_1)
-                self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
-                self.times = np.arange(self.points) * self.seconds_per_point
+                self.raw = np.array(w.header.raw_1)-127
 
-        elif ch == 2:
+        if ch == 2:
             self.enabled = w.header.enabled.channel_2
             self.volts_per_division = w.header.channel[1].volts_per_division
             self.volts_offset = w.header.channel[1].volts_offset
             if self.enabled:
-                self.raw = np.array(w.header.raw_2)
-                self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
-                self.times = np.arange(self.points) * self.seconds_per_point
+                self.raw = np.array(w.header.raw_2)-127
+
+        if ch == 3:
+            self.enabled = w.header.enabled.channel_3
+            self.volts_per_division = w.header.channel[2].volts_per_division
+            self.volts_offset = w.header.channel[2].volts_offset
+            if self.enabled:
+                self.raw = np.array(w.header.raw_3)-127
+
+        if ch == 4:
+            self.enabled = w.header.enabled.channel_4
+            self.volts_per_division = w.header.channel[3].volts_per_division
+            self.volts_offset = w.header.channel[3].volts_offset
+            if self.enabled:
+                self.raw = np.array(w.header.raw_4)-127
+
+        if self.enabled:
+            self.volts = self.volts_per_division * self.raw - self.volts_offset
+            self.times = np.arange(self.points) * self.seconds_per_point
 
 
 class Read_WFM_Error(Exception):
@@ -252,40 +266,41 @@ class Parse_WFM_Error(Exception):
 def parse(wfm_filename, kind):
     """Return a list of channels."""
 
+    enabled_channels = 0
+    channels = []
+    
     if kind in ['1000e', '1000E']:
-        channels = [None, None]
         try:
             w = RigolWFM.wfm1000e.Wfm1000e.from_file(wfm_filename)
-            channels = [ChannelE(w, i) for i in [1, 2]]
-            return channels
-
+            for ch_number in [1, 2]:
+                ch = ChannelE(w, ch_number)
+                if ch.enabled:
+                    channels.append(ch)
         except Exception as e:
             print(traceback.format_exc())
             raise Parse_WFM_Error("File format is not 1000E.  Sorry.")
 
     if kind in ['1000z', '1000Z']:
-        enabled_channels = 0
-        channels = [None, None, None, None]
         try:
             w = RigolWFM.wfm1000z.Wfm1000z.from_file(wfm_filename)
-            for i in range(4):
-                channels[i] = ChannelZ(w, i+1, enabled_channels)
-                if channels[i].enabled:
+            for ch_number in [1, 2, 3, 4]:
+                ch = ChannelZ(w, ch_number, enabled_channels)
+                if ch.enabled:
+                    channels.append(ch)
                     enabled_channels += 1
+                    
         except Exception as e:
             print(traceback.format_exc())
             raise Parse_WFM_Error("File format is not 1000Z.  Sorry.")
 
     if kind == '4000':
-        enabled_channels = 0
-        channels = [None, None, None, None]
         try:
             w = RigolWFM.wfm4000.Wfm4000.from_file(wfm_filename)
-            for i in range(4):
-                channels[i] = Channel4(w, i+1)
-                if channels[i].enabled:
-                    enabled_channels += 1
-                    
+            for ch_number in [1, 2, 3, 4]:
+                ch = Channel4(w, ch_number)
+                if ch.enabled:
+                    channels.append(ch)
+
         except Exception as e:
             print(traceback.format_exc())
             raise Parse_WFM_Error("File format is not 4000.  Sorry.")
