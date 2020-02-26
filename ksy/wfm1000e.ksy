@@ -242,31 +242,28 @@ types:
     seq:
       - id: ch1
         type: u1
-        if: _root.header.ch1.enabled
         repeat: expr
         repeat-expr: _root.header.ch1_points
+        if: _root.header.ch1.enabled
 
       - id: roll_stop_padding1
-        type: u1
+        size: _root.header.ch1_skip
         if: _root.header.ch1.enabled
-        repeat: expr
-        repeat-expr: _root.header.ch1_skip
 
       - id: sentinel_between_datasets
         type: u4
         doc: "[0x04, 0x00, 0x04, 0x00]"
+        if: _root.header.ch1.enabled
 
       - id: ch2
         type: u1
-        if: _root.header.ch2.enabled
         repeat: expr
         repeat-expr: _root.header.ch2_points
+        if: _root.header.ch2.enabled
 
       - id: roll_stop_padding2
-        type: u1
+        size: _root.header.ch1_skip
         if: _root.header.ch2.enabled
-        repeat: expr
-        repeat-expr: _root.header.ch1_skip
 
       - id: logic
         doc: Not clear where the LA length is stored assume same as ch1_points
