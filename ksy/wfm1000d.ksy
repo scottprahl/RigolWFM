@@ -93,13 +93,13 @@ types:
       - id: ch1
         type: u1
         repeat: expr
-        repeat-expr: _root.header.npts
+        repeat-expr: _root.header.ch1_points
         if: _root.header.ch1.enabled
 
       - id: ch2
         type: u1
         repeat: expr
-        repeat-expr: _root.header.npts
+        repeat-expr: _root.header.ch1_points
         if: _root.header.ch2.enabled
 
 enums:
