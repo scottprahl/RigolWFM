@@ -118,7 +118,7 @@ class ChannelE(Channel):
 
         if self.enabled:
             self.volts = self.volt_scale * (self.raw-127) - self.volts_offset
-            self.times = np.arange(self.points) * self.seconds_per_point
+            self.times = np.arange(self.points) * self.seconds_per_point - self.time_offset
 
 
 class ChannelZ(Channel):
