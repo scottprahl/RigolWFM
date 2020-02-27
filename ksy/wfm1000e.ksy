@@ -83,53 +83,49 @@ types:
         value: 1/sample_rate_hz
 
       ch2_points:
-        value: "_root.header.ch2.enabled and _root.header.ch2_points_tmp == 0 ?
-                _root.header.ch1_points:
-                _root.header.ch2_points_tmp"
+        value: "ch2.enabled and ch2_points_tmp==0 ? ch1_points : ch2_points_tmp"
         doc: Use ch1_points when ch2_points is not written
 
       ch1_volts_per_division:
-        value: "_root.header.ch1.invert_measured ?
-                -1e-6 * _root.header.ch1.scale_measured *_root.header.ch1.probe:
-                +1e-6 * _root.header.ch1.scale_measured *_root.header.ch1.probe"
+        value: "ch1.invert_measured ?
+                -1.0e-6 * ch1.scale_measured * ch1.probe:
+                +1.0e-6 * ch1.scale_measured * ch1.probe"
         doc: Voltage scale in volts per division.
+      ch1_volts_scale:
+        value: ch1_volts_per_division/25.0
       ch1_volts_offset:
-        value: >
-               _root.header.ch1.shift_measured *
-               _root.header.ch1_volts_per_division /
-               25.0
+        value: ch1.shift_measured * ch1_volts_scale
         doc: Voltage offset in volts.
       ch1_volt_length:
-        value: _root.header.ch1_points - _root.header.roll_stop
+        value: ch1_points - roll_stop
         doc: In rolling mode, skip invalid samples
 
       ch2_volts_per_division:
-        value: "_root.header.ch2.invert_measured ?
-                -1e-6 * _root.header.ch2.scale_measured *_root.header.ch2.probe:
-                +1e-6 * _root.header.ch2.scale_measured *_root.header.ch2.probe"
+        value: "ch2.invert_measured ?
+                -1e-6 * ch2.scale_measured * ch2.probe:
+                +1e-6 * ch2.scale_measured * ch2.probe"
         doc: Voltage scale in volts per division.
+      ch2_volts_scale:
+        value: ch2_volts_per_division/25.0
       ch2_volts_offset:
-        value: >
-               _root.header.ch2.shift_measured *
-               _root.header.ch2_volts_per_division /
-               25.0
+        value: ch2.shift_measured * ch2_volts_scale
         doc: Voltage offset in volts.
       ch2_volt_length:
-        value: _root.header.ch2_points - _root.header.roll_stop
+        value: ch2_points - roll_stop
         doc: In rolling mode, skip invalid samples
 
       ch1_time_scale:
-        value: 1.0e-12 * _root.header.time.scale_measured
+        value: 1.0e-12 * time.scale_measured
       ch1_time_delay:
-        value: 1.0e-12 * _root.header.time.delay_measured
+        value: 1.0e-12 * time.delay_measured
       ch2_time_scale:
-        value: "_root.header.trigger_mode == trigger_mode_enum::alt ?
-                 1.0e-12 * _root.header.time2.scale_measured:
-                 _root.header.ch1_time_scale"
+        value: "trigger_mode == trigger_mode_enum::alt ?
+                 1.0e-12 * time2.scale_measured:
+                 ch1_time_scale"
       ch2_time_delay:
-        value: "_root.header.trigger_mode == trigger_mode_enum::alt ?
-                 1.0e-12 * _root.header.time2.delay_measured:
-                 _root.header.ch1_time_delay"
+        value: "trigger_mode == trigger_mode_enum::alt ?
+                 1.0e-12 * time2.delay_measured:
+                 ch1_time_delay"
 
   channel_header:
     seq:

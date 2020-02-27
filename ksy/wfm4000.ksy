@@ -261,7 +261,10 @@ types:
                  probe_ratio == probe_ratio_enum::x100 ? 100.0 :
                  probe_ratio == probe_ratio_enum::x200 ? 200.0 :
                  probe_ratio == probe_ratio_enum::x500 ? 500.0 : 1000.0)"
-
+      volts_scale:
+        value: "_root.header.serial_number.substring(2, 3) == '2' ?
+                                      volts_per_division/25.0 :
+                                      volts_per_division/32.0"
 
 enums:
 

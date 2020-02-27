@@ -53,15 +53,12 @@ def engineering_string(number):
 class Channel():
     """Base class for a single channel."""
 
-    def __init__(self):
+    def __init__(self, w, ch):
         self.scope_type = 'default'
-        self.channel_number = 1
+        self.channel_number = ch
+        self.waveform = w
+        self.seconds_per_point = w.header.seconds_per_point
         self.enabled = False
-        self.volts_per_division = 1  # V/div
-        self.volts_offset = 0        # V
-        self.time_scale = 1          # s/div
-        self.seconds_per_point = 0.1    # s/point
-        self.time_offset = 0         # s
         self.points = 0
         self.raw = None
         self.volts = None
@@ -92,38 +89,36 @@ class Channel():
 class ChannelE(Channel):
     """Base class for a single channel from 1000E series scopes."""
 
-    def __init__(self, w, ch=1):
-        super().__init__()
+    def __init__(self, w, ch):
+        super().__init__(w, ch)
         self.scope_type = '1000E'
-        self.waveform = w
-        self.channel_number = ch
-        self.seconds_per_point = w.header.seconds_per_point
         self.roll_stop = w.header.roll_stop
-        self.points = 0
         
         if ch == 1:
             self.enabled = w.header.ch1.enabled
             self.volts_per_division = w.header.ch1_volts_per_division
+            self.volt_scale = w.header.ch1_volts_scale
             self.volts_offset = w.header.ch1_volts_offset
             self.time_offset = w.header.ch1_time_delay
             self.time_scale = w.header.ch1_time_scale
             if self.enabled:
                 self.points = len(w.data.ch1)
                 self.raw = np.array(w.data.ch1)
-                self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
-                self.times = np.arange(self.points) * self.seconds_per_point
 
         if ch == 2:
             self.enabled = w.header.ch2.enabled
             self.volts_per_division = w.header.ch2_volts_per_division
+            self.volt_scale = w.header.ch1_volts_scale
             self.volts_offset = w.header.ch2_volts_offset
             self.time_offset = w.header.ch2_time_delay
             self.time_scale = w.header.ch2_time_scale
             if self.enabled:
                 self.points = len(w.data.ch2)
                 self.raw = np.array(w.data.ch2)
-                self.volts = self.volts_per_division * (5.0 - self.raw/25.0) - self.volts_offset
-                self.times = np.arange(self.points) * self.seconds_per_point
+
+        if self.enabled:
+            self.volts = self.volt_scale * (self.raw-127) - self.volts_offset
+            self.times = np.arange(self.points) * self.seconds_per_point
 
 
 class ChannelZ(Channel):
@@ -174,11 +169,8 @@ class ChannelZ(Channel):
         return raw_bytes
 
     def __init__(self, w, ch, enabled_count):
-        super().__init__()
+        super().__init__(w, ch)
         self.scope_type = '1000Z'
-        self.waveform = w
-        self.channel_number = ch
-        self.seconds_per_point = w.header.seconds_per_point
         self.time_scale = w.header.seconds_per_division
         self.time_offset = w.header.time_offset
         self.points = w.header.points
@@ -199,24 +191,23 @@ class ChannelZ(Channel):
             self.probe = w.header.ch3.probe_value
             self.volts_per_division = w.header.ch3.scale
             self.volts_offset = w.header.ch3.shift
-        elif ch == 4:
+        if ch == 4:
             self.enabled = w.header.ch4.enabled
             self.probe = w.header.ch4.probe_value
             self.volts_per_division = w.header.ch4.scale
             self.volts_offset = w.header.ch4.shift
 
         if self.enabled:
+            self.volts_scale = self.volts_per_division / 25.0
             self.raw = self.channel_bytes(enabled_count, w.data)
-            self.volts = self.volts_per_division/25.0 * (self.raw - 127.0) - self.volts_offset
+            self.volts = self.volts_scale * (self.raw - 127.0) - self.volts_offset
             self.times = np.arange(self.points) * self.seconds_per_point - self.time_scale
 
 class Channel4(Channel):
     """Base class for a single channel from 4000 series scopes."""
 
-    def __init__(self, w, ch=1):
-        super().__init__()
-        self.channel_number = ch
-        self.seconds_per_point = w.header.seconds_per_point
+    def __init__(self, w, ch):
+        super().__init__(w, ch)
         self.time_offset = w.header.time_delay
         self.time_scale = w.header.time_scale
         self.points = w.header.points
@@ -226,32 +217,36 @@ class Channel4(Channel):
             self.enabled = w.header.enabled.channel_1
             self.volts_per_division = w.header.channel[0].volts_per_division
             self.volts_offset = w.header.channel[0].volts_offset
+            self.volts_scale = w.header.channel[0].volts_scale
             if self.enabled:
-                self.raw = np.array(w.header.raw_1)-127
+                self.raw = np.array(w.header.raw_1)
 
         if ch == 2:
             self.enabled = w.header.enabled.channel_2
             self.volts_per_division = w.header.channel[1].volts_per_division
             self.volts_offset = w.header.channel[1].volts_offset
+            self.volts_scale = w.header.channel[1].volts_scale
             if self.enabled:
-                self.raw = np.array(w.header.raw_2)-127
+                self.raw = np.array(w.header.raw_2)
 
         if ch == 3:
             self.enabled = w.header.enabled.channel_3
             self.volts_per_division = w.header.channel[2].volts_per_division
             self.volts_offset = w.header.channel[2].volts_offset
+            self.volts_scale = w.header.channel[2].volts_scale
             if self.enabled:
-                self.raw = np.array(w.header.raw_3)-127
+                self.raw = np.array(w.header.raw_3)
 
         if ch == 4:
             self.enabled = w.header.enabled.channel_4
             self.volts_per_division = w.header.channel[3].volts_per_division
             self.volts_offset = w.header.channel[3].volts_offset
+            self.volts_scale = w.header.channel[3].volts_scale
             if self.enabled:
-                self.raw = np.array(w.header.raw_4)-127
+                self.raw = np.array(w.header.raw_4)
 
         if self.enabled:
-            self.volts = self.volts_per_division * self.raw - self.volts_offset
+            self.volts = self.volts_scale * (self.raw - 127.0) - self.volts_offset
             self.times = np.arange(self.points) * self.seconds_per_point
 
 
