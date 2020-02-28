@@ -108,7 +108,7 @@ class ChannelE(Channel):
         if ch == 2:
             self.enabled = w.header.ch2.enabled
             self.volts_per_division = w.header.ch2_volts_per_division
-            self.volt_scale = w.header.ch1_volts_scale
+            self.volt_scale = w.header.ch2_volts_scale
             self.volts_offset = w.header.ch2_volts_offset
             self.time_offset = w.header.ch2_time_delay
             self.time_scale = w.header.ch2_time_scale
@@ -117,8 +117,9 @@ class ChannelE(Channel):
                 self.raw = np.array(w.data.ch2)
 
         if self.enabled:
-            self.volts = self.volt_scale * (self.raw-127) - self.volts_offset
-            self.times = np.arange(self.points) * self.seconds_per_point - self.time_offset
+            self.volts = self.volt_scale * (127.0 - self.raw) - self.volts_offset
+            half = self.points * self.seconds_per_point / 2
+            self.times = np.linspace(-half,half,self.points) + self.time_offset
 
 
 class ChannelZ(Channel):
@@ -200,8 +201,9 @@ class ChannelZ(Channel):
         if self.enabled:
             self.volts_scale = self.volts_per_division / 25.0
             self.raw = self.channel_bytes(enabled_count, w.data)
-            self.volts = self.volts_scale * (self.raw - 127.0) - self.volts_offset
-            self.times = np.arange(self.points) * self.seconds_per_point - self.time_scale
+            self.volts = self.volts_scale * (self.raw - 127.0) + self.volts_offset
+            half = self.points * self.seconds_per_point / 2
+            self.times = np.linspace(-half,half,self.points) + self.time_offset
 
 class Channel4(Channel):
     """Base class for a single channel from 4000 series scopes."""
@@ -247,8 +249,8 @@ class Channel4(Channel):
 
         if self.enabled:
             self.volts = self.volts_scale * (self.raw - 127.0) - self.volts_offset
-            self.times = np.arange(self.points) * self.seconds_per_point
-
+            half = self.points * self.seconds_per_point / 2
+            self.times = np.linspace(-half,half,self.points) + self.time_offset
 
 class Read_WFM_Error(Exception):
     """Generic Read Error."""
