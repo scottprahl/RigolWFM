@@ -15,7 +15,7 @@ types:
         contents: [0xa5, 0xa5, 0x38, 0x00]
         doc: The last two bytes is the size of the header 0x38=56
 
-      - id: serial_number
+      - id: model_number
         size: 20
         type: str
         terminator: 0
@@ -112,7 +112,7 @@ types:
         type: time_header
     instances:
       vertical_scale_factor:
-        value: "serial_number.substring(2, 3) == '2' ? 25 : 32"
+        value: "model_number.substring(2, 3) == '2' ? 25 : 32"
       seconds_per_point:
         value: 1/sample_rate_hz
       time_scale:
@@ -262,7 +262,7 @@ types:
                  probe_ratio == probe_ratio_enum::x200 ? 200.0 :
                  probe_ratio == probe_ratio_enum::x500 ? 500.0 : 1000.0)"
       volts_scale:
-        value: "_root.header.serial_number.substring(2, 3) == '2' ?
+        value: "_root.header.model_number.substring(2, 3) == '2' ?
                                       volts_per_division/25.0 :
                                       volts_per_division/32.0"
 
@@ -281,7 +281,7 @@ enums:
     9: p_14m
     10: p_140m
 
-  acquistion_enum:
+  acquisition_enum:
     0: normal
     1: average
     2: peak

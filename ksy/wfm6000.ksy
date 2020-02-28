@@ -18,7 +18,7 @@ types:
         contents: [0xa5, 0xa5, 0x38, 0x00]
         doc: The last two bytes is the size of the header 0x38=56
 
-      - id: serial_number
+      - id: model_number
         size: 20
         type: str
         terminator: 0
@@ -47,9 +47,9 @@ types:
         repeat: expr
         repeat-expr: 4
 
-      - id: acquistion_mode
+      - id: acquisition_mode
         type: u1
-        enum: acquistion_enum
+        enum: acquisition_enum
 
       - id: average_time
         type: u2
@@ -303,7 +303,7 @@ types:
         if: _root.header.enabled.channel_4
 
 enums:
-  acquistion_enum:
+  acquisition_enum:
     0: normal
     1: average
     2: peak
