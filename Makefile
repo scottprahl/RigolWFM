@@ -84,6 +84,8 @@ clean:
 	rm -f RigolWFM/wfm6000.py
 	rm -rf dist
 	rm -rf RigolWFM.egg-info
+	rm -rf doc/github.com
+	
 	rm -rf RigolWFM/__pycache__
 	
 .PHONY: clean test check all ksycheck yamlcheck teste testz test4 test
