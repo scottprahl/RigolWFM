@@ -23,22 +23,25 @@ types:
     seq:
       - id: magic
         contents: [0x01, 0xff, 0xff, 0xff]
-      - id: structure_id
+      - id: magic2
         type: u2
+        doc: should be [0xa5, 0xa5] or [0xa5, 0xa6]
       - id: structure_size
-        contents: [0x38]
+        type: u2
+        doc: should be 0x38
+        type: u2
       - id: model_number
         type: str
         size: 20
         terminator: 0
-        encoding: UTF-8
+        encoding: ascii
       - id: firmware_version
         type: str
         size: 20
         terminator: 0
-        encoding: UTF-8
+        encoding: ascii
       - id: block
-        contents: [0x00, 0x01]
+        contents: [0x01, 0x00]
       - id: file_version
         type: u2
 
