@@ -88,8 +88,8 @@ types:
 
       ch1_volts_per_division:
         value: "ch1.invert_measured ?
-                -1.0e-6 * ch1.scale_measured * ch1.probe:
-                +1.0e-6 * ch1.scale_measured * ch1.probe"
+                -1.0e-6 * ch1.scale_measured:
+                +1.0e-6 * ch1.scale_measured"
         doc: Voltage scale in volts per division.
       ch1_volts_scale:
         value: ch1_volts_per_division/25.0
@@ -102,8 +102,8 @@ types:
 
       ch2_volts_per_division:
         value: "ch2.invert_measured ?
-                -1e-6 * ch2.scale_measured * ch2.probe:
-                +1e-6 * ch2.scale_measured * ch2.probe"
+                -1e-6 * ch2.scale_measured:
+                +1e-6 * ch2.scale_measured"
         doc: Voltage scale in volts per division.
       ch2_volts_scale:
         value: ch2_volts_per_division/25.0
