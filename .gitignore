@@ -9,3 +9,5 @@ RigolWFM/wfm1000e.py
 RigolWFM/wfm1000z.py
 RigolWFM/wfm4000.py
 RigolWFM/wfm6000.py
+doc/manuals/*
+doc/sources/*
