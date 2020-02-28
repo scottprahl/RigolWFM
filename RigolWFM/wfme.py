@@ -58,18 +58,24 @@ class Channel():
         self.channel_number = ch
         self.waveform = w
         self.seconds_per_point = w.header.seconds_per_point
+        self.firmware = 'unknown'
         self.enabled = False
         self.points = 0
         self.raw = None
         self.volts = None
         self.times = None
+        self.coupling = 'unknown'
 
     def __str__(self):
         s = "Channel %d\n" % self.channel_number
-        s += "    Enabled:   %s\n" % self.enabled
+        s += "    General:\n"
+        s += "         Scope = %s\n" % self.scope_type
+        s += "      Firmware = %s\n" % self.firmware
+        s += "       Enabled = %s\n" % self.enabled
         s += "    Voltage:\n"
         s += "        Scale  = " + engineering_string(self.volts_per_division) + "V/div\n"
         s += "        Offset = " + engineering_string(self.volts_offset) + "V\n"
+        s += "      Coupling = %s\n" % self.coupling
         s += "    Time:\n"
         s += "        Scale  = " + engineering_string(self.time_scale) + "s/div\n"
         s += "        Delay  = " + engineering_string(self.time_offset) + "s\n"
@@ -93,7 +99,7 @@ class ChannelE(Channel):
         super().__init__(w, ch)
         self.scope_type = '1000E'
         self.roll_stop = w.header.roll_stop
-        
+
         if ch == 1:
             self.enabled = w.header.ch1.enabled
             self.volts_per_division = w.header.ch1_volts_per_division
@@ -171,38 +177,43 @@ class ChannelZ(Channel):
 
     def __init__(self, w, ch, enabled_count):
         super().__init__(w, ch)
-        self.scope_type = '1000Z'
         self.time_scale = w.header.seconds_per_division
         self.time_offset = w.header.time_offset
         self.points = w.header.points
         self.stride = w.header.stride
+        self.firmware = w.preheader.firmware_version
+        self.scope_type = w.preheader.model_number
 
         if ch == 1:
             self.enabled = w.header.ch1.enabled
             self.probe = w.header.ch1.probe_value
             self.volts_per_division = w.header.ch1.scale
             self.volts_offset = w.header.ch1.shift
+            self.coupling = w.header.ch1.coupling.name.upper()
         if ch == 2:
             self.enabled = w.header.ch2.enabled
             self.probe = w.header.ch2.probe_value
             self.volts_per_division = w.header.ch2.scale
             self.volts_offset = w.header.ch2.shift
+            self.coupling = w.header.ch2.coupling.name.upper()
         if ch == 3:
             self.enabled = w.header.ch3.enabled
             self.probe = w.header.ch3.probe_value
             self.volts_per_division = w.header.ch3.scale
             self.volts_offset = w.header.ch3.shift
+            self.coupling = w.header.ch3.coupling.name.upper()
         if ch == 4:
             self.enabled = w.header.ch4.enabled
             self.probe = w.header.ch4.probe_value
             self.volts_per_division = w.header.ch4.scale
             self.volts_offset = w.header.ch4.shift
+            self.coupling = w.header.ch4.coupling.name.upper()
 
         if self.enabled:
             self.volts_scale = self.volts_per_division / 25.0
             self.raw = self.channel_bytes(enabled_count, w.data)
             self.volts = self.volts_scale * (self.raw - 127.0) + self.volts_offset
-            half = self.points * self.seconds_per_point / 2
+            half = self.points * self.seconds_per_point / 2.0
             self.times = np.linspace(-half,half,self.points) + self.time_offset
 
 class Channel4(Channel):
@@ -214,12 +225,15 @@ class Channel4(Channel):
         self.time_scale = w.header.time_scale
         self.points = w.header.points
         self.enable = False
+        self.firmware = w.preheader.firmware_version
+        self.scope_type = w.preheader.model_number
 
         if ch == 1:
             self.enabled = w.header.enabled.channel_1
             self.volts_per_division = w.header.channel[0].volts_per_division
             self.volts_offset = w.header.channel[0].volts_offset
             self.volts_scale = w.header.channel[0].volts_scale
+            self.coupling = w.header.channel[0].coupling.name.upper()
             if self.enabled:
                 self.raw = np.array(w.header.raw_1)
 
@@ -228,6 +242,7 @@ class Channel4(Channel):
             self.volts_per_division = w.header.channel[1].volts_per_division
             self.volts_offset = w.header.channel[1].volts_offset
             self.volts_scale = w.header.channel[1].volts_scale
+            self.coupling = w.header.channel[1].coupling.name.upper()
             if self.enabled:
                 self.raw = np.array(w.header.raw_2)
 
@@ -236,6 +251,7 @@ class Channel4(Channel):
             self.volts_per_division = w.header.channel[2].volts_per_division
             self.volts_offset = w.header.channel[2].volts_offset
             self.volts_scale = w.header.channel[2].volts_scale
+            self.coupling = w.header.channel[2].coupling.name.upper()
             if self.enabled:
                 self.raw = np.array(w.header.raw_3)
 
@@ -244,6 +260,7 @@ class Channel4(Channel):
             self.volts_per_division = w.header.channel[3].volts_per_division
             self.volts_offset = w.header.channel[3].volts_offset
             self.volts_scale = w.header.channel[3].volts_scale
+            self.coupling = w.header.channel[3].coupling.name.upper()
             if self.enabled:
                 self.raw = np.array(w.header.raw_4)
 
