@@ -227,9 +227,9 @@ types:
         type: u1
         enum: impedance_enum
 
-      - id: volts_per_division
+      - id: volt_per_division
         type: f4
-      - id: volts_offset
+      - id: volt_offset
         type: f4
       - id: invert
         type: u1

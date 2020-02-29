@@ -35,16 +35,14 @@ types:
       - id: active_channel
         type: u1
       - id: padding_3
-        contents: [0, 0, 0]
-      - id: ch1
+        contents: [0]
+      - id: ch
         type: channel_header
-      - id: padding_4
-        contents: [0, 0]
-      - id: ch2
-        type: channel_header
+        repeat: expr
+        repeat-expr: 2
       - id: time_delay
         type: u1
-      - id: padding_5
+      - id: padding_4
         contents: [0x00]
       - id: time
         type: time_header
@@ -83,33 +81,14 @@ types:
         value: 1/sample_rate_hz
 
       ch2_points:
-        value: "ch2.enabled and ch2_points_tmp==0 ? ch1_points : ch2_points_tmp"
+        value: "ch[1].enabled and ch2_points_tmp==0 ?
+                ch1_points : ch2_points_tmp"
         doc: Use ch1_points when ch2_points is not written
 
-      ch1_volts_per_division:
-        value: "ch1.invert_measured ?
-                -1.0e-6 * ch1.scale_measured:
-                +1.0e-6 * ch1.scale_measured"
-        doc: Voltage scale in volts per division.
-      ch1_volts_scale:
-        value: ch1_volts_per_division/25.0
-      ch1_volts_offset:
-        value: ch1.shift_measured * ch1_volts_scale
-        doc: Voltage offset in volts.
       ch1_volt_length:
         value: ch1_points - roll_stop
         doc: In rolling mode, skip invalid samples
 
-      ch2_volts_per_division:
-        value: "ch2.invert_measured ?
-                -1e-6 * ch2.scale_measured:
-                +1e-6 * ch2.scale_measured"
-        doc: Voltage scale in volts per division.
-      ch2_volts_scale:
-        value: ch2_volts_per_division/25.0
-      ch2_volts_offset:
-        value: ch2.shift_measured * ch2_volts_scale
-        doc: Voltage offset in volts.
       ch2_volt_length:
         value: ch2_points - roll_stop
         doc: In rolling mode, skip invalid samples
@@ -127,36 +106,46 @@ types:
                  1.0e-12 * time2.delay_measured:
                  ch1_time_delay"
 
-  channel_header:
+  channel_header:   # 24 bytes total
     seq:
+      - id: unknown_0
+        type: u2
       - id: scale_display
         type: s4
       - id: shift_display
         type: s2
       - id: unknown_1
-        type: u2
+        type: u1
+      - id: unknown_2
+        type: u1
       - id: probe
         type: f4
-      - id: unused_bits_0
-        type: b7
-      - id: invert_display
-        type: b1
-      - id: unused_bits_1
-        type: b7
-      - id: enabled
-        type: b1
-      - id: unused_bits_2
-        type: b7
-      - id: invert_measured
-        type: b1
-      - id: unknown_2
+      - id: invert_disp_val
+        type: u1
+      - id: enabled_val
+        type: u1
+      - id: inverted_m_val
+        type: u1
+      - id: unknown_3
         type: u1
       - id: scale_measured
         type: s4
-        doc: Units are microvolts per division.
       - id: shift_measured
         type: s2
-        doc: Units are 1/25th of a division.
+
+    instances:
+      inverted:
+        value: "inverted_m_val != 0 ? true : false"
+      enabled:
+        value: "enabled_val != 0 ? true : false"
+      volt_per_division:
+        value: "inverted ?
+                -1.0e-6 * scale_measured:
+                +1.0e-6 * scale_measured"
+      volt_scale:
+        value: volt_per_division/25.0
+      volt_offset:
+        value: shift_measured * volt_scale
 
   time_header:
     seq:
@@ -240,26 +229,26 @@ types:
         type: u1
         repeat: expr
         repeat-expr: _root.header.ch1_points
-        if: _root.header.ch1.enabled
+        if: _root.header.ch[0].enabled
 
       - id: roll_stop_padding1
         size: _root.header.ch1_skip
-        if: _root.header.ch1.enabled
+        if: _root.header.ch[0].enabled
 
       - id: sentinel_between_datasets
         type: u4
         doc: "[0x04, 0x00, 0x04, 0x00]"
-        if: _root.header.ch1.enabled
+        if: _root.header.ch[0].enabled
 
       - id: ch2
         type: u1
         repeat: expr
         repeat-expr: _root.header.ch2_points
-        if: _root.header.ch2.enabled
+        if: _root.header.ch[1].enabled
 
       - id: roll_stop_padding2
         size: _root.header.ch1_skip
-        if: _root.header.ch2.enabled
+        if: _root.header.ch[1].enabled
 
       - id: logic
         doc: Not clear where the LA length is stored assume same as ch1_points

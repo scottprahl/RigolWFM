@@ -34,21 +34,21 @@ types:
         type: u4
         repeat: expr
         repeat-expr: 6
-      - id: ch1_points       # 28
+      - id: points           # 28
         type: u4
       - id: active_channel   # 32
         type: u1
       - id: unknown_2        # 33
         size: 3
-      - id: ch1              # 36
+      - id: ch               # 36, 60
         type: channel_header
-      - id: ch2              # 60
-        type: channel_header
+        repeat: expr
+        repeat-expr: 2
       - id: time_scale       # 84
         type: u8
       - id: time_delay       # 92
         type: s8
-      - id: sample_frequency  # 100
+      - id: sample_rate_hz   # 100
         type: f4
       - id: unknown_3        # 104
         type: u4
@@ -65,42 +65,65 @@ types:
         type: u1
         enum: trigger_source_enum
 
+    instances:
+      seconds_per_point:
+        value: 1.0/sample_rate_hz
+
   channel_header:   # 24 bytes total
     seq:
-      - id: scale            # 36, 60
-        type: u4
-      - id: position         # 40, 64
-        type: u4
+      - id: scale_display    # 36, 60
+        type: s4
+      - id: shift_display    # 40, 64
+        type: s2
+      - id: unknown_1        # 42, 66
+        type: u1
+      - id: unknown_2        # 43, 67
+        type: u1
       - id: probe            # 44, 68
         type: f4
-      - id: unused_bits_1    # 48, 72
-        type: b7
-      - id: inverted
-        type: b1
-      - id: unused_bits_2    # 49, 73
-        type: b7
-      - id: enabled
-        type: b1
-      - id: unknown_2        # 50, 74
-        size: 2
+      - id: invert_disp_val  # 48, 72
+        type: u1
+      - id: enabled_val      # 49, 73
+        type: u1
+      - id: inverted_m_val   # 50, 74
+        type: u1
+      - id: unknown_3        # 51, 75
+        size: 1
       - id: scale_orig       # 52, 76
         type: u4
       - id: position_orig    # 56, 80
         type: u4
+      - id: scale_measured   # 52, 76
+        type: s4
+      - id: shift_measured   # 56, 80
+        type: s2
+    instances:
+      inverted:
+        value: "inverted_m_val != 0 ? true : false"
+      enabled:
+        value: "enabled_val != 0 ? true : false"
+      volt_per_division:
+        value: "inverted ?
+                -1.0e-6 * scale_measured:
+                +1.0e-6 * scale_measured"
+      volt_scale:
+        value: volt_per_division/25.0
+      volt_offset:
+        value: shift_measured * volt_scale
 
   raw_data:
     seq:
       - id: ch1
         type: u1
         repeat: expr
-        repeat-expr: _root.header.ch1_points
-        if: _root.header.ch1.enabled
+        repeat-expr: _root.header.points
+        if: _root.header.ch[0].enabled
 
       - id: ch2
         type: u1
         repeat: expr
-        repeat-expr: _root.header.ch1_points
-        if: _root.header.ch2.enabled
+        repeat-expr: _root.header.points
+        if: _root.header.ch[1].enabled
 
 enums:
   trigger_source_enum:

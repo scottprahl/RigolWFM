@@ -68,7 +68,7 @@ types:
         repeat: expr
         repeat-expr: 2
 
-      - id: channel
+      - id: ch
         type: channel_header
         repeat: expr
         repeat-expr: 4
@@ -198,7 +198,7 @@ types:
 
   channel_header:
     seq:
-      - id: enabled
+      - id: enabled_val
         type: u1
 
       - id: coupling
@@ -226,11 +226,11 @@ types:
         type: u1
         enum: impedance_enum
 
-      - id: volts_per_division
+      - id: volt_per_division
         type: f4
-      - id: volts_offset
+      - id: volt_offset
         type: f4
-      - id: invert
+      - id: inverted_val
         type: u1
       - id: unit
         type: u1
@@ -245,6 +245,10 @@ types:
       - id: filter_low
         type: u4
     instances:
+      inverted:
+        value: "inverted_val != 0 ? true : false"
+      enabled:
+        value: "enabled_val != 0 ? true : false"
       probe_value:
         value: "(probe_ratio == probe_ratio_enum::x0_01 ? 0.01 :
                  probe_ratio == probe_ratio_enum::x0_02 ? 0.02 :
@@ -261,10 +265,14 @@ types:
                  probe_ratio == probe_ratio_enum::x100 ? 100.0 :
                  probe_ratio == probe_ratio_enum::x200 ? 200.0 :
                  probe_ratio == probe_ratio_enum::x500 ? 500.0 : 1000.0)"
-      volts_scale:
+      volt_signed:
+        value: "inverted ?
+                -1.0 * volt_per_division:
+                +1.0 * volt_per_division"
+      volt_scale:
         value: "_root.header.model_number.substring(2, 3) == '2' ?
-                                      volts_per_division/25.0 :
-                                      volts_per_division/32.0"
+                                      volt_signed/25.0 :
+                                      volt_signed/32.0"
 
 enums:
 

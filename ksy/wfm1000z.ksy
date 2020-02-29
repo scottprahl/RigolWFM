@@ -29,7 +29,6 @@ types:
       - id: structure_size
         type: u2
         doc: should be 0x38
-        type: u2
       - id: model_number
         type: str
         size: 20
@@ -94,17 +93,10 @@ types:
       - id: sample_rate_ghz
         type: f4
 
-      - id: ch1
+      - id: ch
         type: channel_head
-
-      - id: ch2
-        type: channel_head
-
-      - id: ch3
-        type: channel_head
-
-      - id: ch4
-        type: channel_head
+        repeat: expr
+        repeat-expr: 4
 
       - id: la_parameters
         size: 12
@@ -141,22 +133,11 @@ types:
         value: picoseconds_offset * 1e-12
       seconds_per_point:
         value: 1/sample_rate_hz
-      ch1_volts_per_division:
-        value: "_root.header.ch1.inverted ?
-                _root.header.ch1.scale * _root.header.ch1.probe_value:
-                _root.header.ch1.scale * _root.header.ch1.probe_value"
-        doc: Voltage scale in volts per division.
-      ch1_volts_offset:
-        value: _root.header.ch1.shift * _root.header.ch1_volts_per_division/25.0
-        doc: Voltage offset in volts.
 
   channel_head:
     seq:
-      - id: unused_bits_1
-        type: b7
-      - id: enabled
-        type: b1
-
+      - id: enabled_val
+        type: u1
       - id: coupling
         type: u1
         enum: coupling_enum
@@ -174,13 +155,15 @@ types:
         type: f4
       - id: shift
         type: f4
-      - id: unused_bits_2
-        type: b7
-      - id: inverted
-        type: b1
+      - id: inverted_val
+        type: u1
       - id: unknown_2
         size: 11
     instances:
+      inverted:
+        value: "inverted_val != 0 ? true : false"
+      enabled:
+        value: "enabled_val != 0 ? true : false"
       probe_value:
         value: "(probe_ratio == probe_enum::x0_01 ? 0.01 :
                 probe_ratio == probe_enum::x0_02 ? 0.02 :
@@ -198,6 +181,14 @@ types:
                 probe_ratio == probe_enum::x200 ? 200.0 :
                 probe_ratio == probe_enum::x500 ? 500.0 :
                 1000.0)"
+      volt_per_division:
+        value: "inverted ?
+                -1.0 * scale * probe_value:
+                +1.0 * scale * probe_value"
+      volt_scale:
+        value: volt_per_division/25.0
+      volt_offset:
+        value: shift * volt_scale
 
   channel_subhead:
     seq:
