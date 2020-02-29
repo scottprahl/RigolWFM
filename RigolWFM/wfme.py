@@ -58,13 +58,18 @@ class Channel():
         self.channel_number = ch
         self.waveform = w
         self.seconds_per_point = w.header.seconds_per_point
+        channel = w.header.ch[ch-1]
+        self.enabled = channel.enabled
+        self.volt_scale = channel.volt_scale
+        self.volt_offset = channel.volt_offset
+        self.volt_per_division = channel.volt_per_division
         self.firmware = 'unknown'
-        self.enabled = False
         self.points = 0
         self.raw = None
         self.volts = None
         self.times = None
         self.coupling = 'unknown'
+        self.roll_stop = 0
 
     def __str__(self):
         s = "Channel %d\n" % self.channel_number
@@ -73,8 +78,8 @@ class Channel():
         s += "      Firmware = %s\n" % self.firmware
         s += "       Enabled = %s\n" % self.enabled
         s += "    Voltage:\n"
-        s += "        Scale  = " + engineering_string(self.volts_per_division) + "V/div\n"
-        s += "        Offset = " + engineering_string(self.volts_offset) + "V\n"
+        s += "        Scale  = " + engineering_string(self.volt_per_division) + "V/div\n"
+        s += "        Offset = " + engineering_string(self.volt_offset) + "V\n"
         s += "      Coupling = %s\n" % self.coupling
         s += "    Time:\n"
         s += "        Scale  = " + engineering_string(self.time_scale) + "s/div\n"
@@ -92,6 +97,32 @@ class Channel():
         return s
 
 
+class ChannelC(Channel):
+    """Base class for a single channel from 1000CD series scopes."""
+
+    def __init__(self, w, ch):
+        super().__init__(w, ch)
+        self.scope_type = '1000C'
+
+        if ch == 1:
+            self.time_offset = w.header.ch1_time_delay
+            self.time_scale = w.header.ch1_time_scale
+            if self.enabled:
+                self.points = len(w.data.ch1)
+                self.raw = np.array(w.data.ch1)
+
+        if ch == 2:
+            self.time_offset = w.header.ch2_time_delay
+            self.time_scale = w.header.ch2_time_scale
+            if self.enabled:
+                self.points = len(w.data.ch2)
+                self.raw = np.array(w.data.ch2)
+
+        if self.enabled:
+            self.volts = self.volt_scale * (127.0 - self.raw) - self.volt_offset
+            half = self.points * self.seconds_per_point / 2
+            self.times = np.linspace(-half,half,self.points) + self.time_offset
+
 class ChannelE(Channel):
     """Base class for a single channel from 1000E series scopes."""
 
@@ -101,10 +132,6 @@ class ChannelE(Channel):
         self.roll_stop = w.header.roll_stop
 
         if ch == 1:
-            self.enabled = w.header.ch1.enabled
-            self.volts_per_division = w.header.ch1_volts_per_division
-            self.volt_scale = w.header.ch1_volts_scale
-            self.volts_offset = w.header.ch1_volts_offset
             self.time_offset = w.header.ch1_time_delay
             self.time_scale = w.header.ch1_time_scale
             if self.enabled:
@@ -112,10 +139,6 @@ class ChannelE(Channel):
                 self.raw = np.array(w.data.ch1)
 
         if ch == 2:
-            self.enabled = w.header.ch2.enabled
-            self.volts_per_division = w.header.ch2_volts_per_division
-            self.volt_scale = w.header.ch2_volts_scale
-            self.volts_offset = w.header.ch2_volts_offset
             self.time_offset = w.header.ch2_time_delay
             self.time_scale = w.header.ch2_time_scale
             if self.enabled:
@@ -123,7 +146,7 @@ class ChannelE(Channel):
                 self.raw = np.array(w.data.ch2)
 
         if self.enabled:
-            self.volts = self.volt_scale * (127.0 - self.raw) - self.volts_offset
+            self.volts = self.volt_scale * (127.0 - self.raw) - self.volt_offset
             half = self.points * self.seconds_per_point / 2
             self.times = np.linspace(-half,half,self.points) + self.time_offset
 
@@ -183,36 +206,12 @@ class ChannelZ(Channel):
         self.stride = w.header.stride
         self.firmware = w.preheader.firmware_version
         self.scope_type = w.preheader.model_number
-
-        if ch == 1:
-            self.enabled = w.header.ch1.enabled
-            self.probe = w.header.ch1.probe_value
-            self.volts_per_division = w.header.ch1.scale
-            self.volts_offset = w.header.ch1.shift
-            self.coupling = w.header.ch1.coupling.name.upper()
-        if ch == 2:
-            self.enabled = w.header.ch2.enabled
-            self.probe = w.header.ch2.probe_value
-            self.volts_per_division = w.header.ch2.scale
-            self.volts_offset = w.header.ch2.shift
-            self.coupling = w.header.ch2.coupling.name.upper()
-        if ch == 3:
-            self.enabled = w.header.ch3.enabled
-            self.probe = w.header.ch3.probe_value
-            self.volts_per_division = w.header.ch3.scale
-            self.volts_offset = w.header.ch3.shift
-            self.coupling = w.header.ch3.coupling.name.upper()
-        if ch == 4:
-            self.enabled = w.header.ch4.enabled
-            self.probe = w.header.ch4.probe_value
-            self.volts_per_division = w.header.ch4.scale
-            self.volts_offset = w.header.ch4.shift
-            self.coupling = w.header.ch4.coupling.name.upper()
+        self.probe = w.header.ch[ch-1].probe_value
+        self.coupling = w.header.ch[ch-1].coupling.name.upper()
 
         if self.enabled:
-            self.volts_scale = self.volts_per_division / 25.0
             self.raw = self.channel_bytes(enabled_count, w.data)
-            self.volts = self.volts_scale * (self.raw - 127.0) + self.volts_offset
+            self.volts = self.volt_scale * (self.raw - 127.0) + self.volt_offset
             half = self.points * self.seconds_per_point / 2.0
             self.times = np.linspace(-half,half,self.points) + self.time_offset
 
@@ -224,48 +223,24 @@ class Channel4(Channel):
         self.time_offset = w.header.time_delay
         self.time_scale = w.header.time_scale
         self.points = w.header.points
-        self.enable = False
-        self.firmware = w.preheader.firmware_version
-        self.scope_type = w.preheader.model_number
-
-        if ch == 1:
-            self.enabled = w.header.enabled.channel_1
-            self.volts_per_division = w.header.channel[0].volts_per_division
-            self.volts_offset = w.header.channel[0].volts_offset
-            self.volts_scale = w.header.channel[0].volts_scale
-            self.coupling = w.header.channel[0].coupling.name.upper()
-            if self.enabled:
-                self.raw = np.array(w.header.raw_1)
-
-        if ch == 2:
-            self.enabled = w.header.enabled.channel_2
-            self.volts_per_division = w.header.channel[1].volts_per_division
-            self.volts_offset = w.header.channel[1].volts_offset
-            self.volts_scale = w.header.channel[1].volts_scale
-            self.coupling = w.header.channel[1].coupling.name.upper()
-            if self.enabled:
-                self.raw = np.array(w.header.raw_2)
-
-        if ch == 3:
-            self.enabled = w.header.enabled.channel_3
-            self.volts_per_division = w.header.channel[2].volts_per_division
-            self.volts_offset = w.header.channel[2].volts_offset
-            self.volts_scale = w.header.channel[2].volts_scale
-            self.coupling = w.header.channel[2].coupling.name.upper()
-            if self.enabled:
-                self.raw = np.array(w.header.raw_3)
-
-        if ch == 4:
-            self.enabled = w.header.enabled.channel_4
-            self.volts_per_division = w.header.channel[3].volts_per_division
-            self.volts_offset = w.header.channel[3].volts_offset
-            self.volts_scale = w.header.channel[3].volts_scale
-            self.coupling = w.header.channel[3].coupling.name.upper()
-            if self.enabled:
-                self.raw = np.array(w.header.raw_4)
+        self.firmware = w.header.firmware_version
+        self.scope_type = w.header.model_number
+        self.coupling = w.header.ch[ch-1].coupling.name.upper()
 
         if self.enabled:
-            self.volts = self.volts_scale * (self.raw - 127.0) - self.volts_offset
+            if ch == 1:
+                self.raw = np.array(w.header.raw_1)
+
+            if ch == 2:
+                self.raw = np.array(w.header.raw_2)
+
+            if ch == 3:
+                self.raw = np.array(w.header.raw_3)
+
+            if ch == 4:
+                self.raw = np.array(w.header.raw_4)
+
+            self.volts = self.volt_scale * (self.raw - 127.0) - self.volt_offset
             half = self.points * self.seconds_per_point / 2
             self.times = np.linspace(-half,half,self.points) + self.time_offset
 
@@ -280,9 +255,19 @@ class Parse_WFM_Error(Exception):
 def parse(wfm_filename, kind):
     """Return a list of channels."""
 
-    enabled_channels = 0
     channels = []
-    
+
+    if kind in ['1000c', '1000C']:
+        try:
+            w = RigolWFM.wfm1000c.Wfm1000c.from_file(wfm_filename)
+            for ch_number in [1, 2]:
+                ch = ChannelC(w, ch_number)
+                if ch.enabled:
+                    channels.append(ch)
+        except Exception as e:
+            print(traceback.format_exc())
+            raise Parse_WFM_Error("File format is not 1000C.  Sorry.")
+
     if kind in ['1000e', '1000E']:
         try:
             w = RigolWFM.wfm1000e.Wfm1000e.from_file(wfm_filename)
@@ -295,6 +280,7 @@ def parse(wfm_filename, kind):
             raise Parse_WFM_Error("File format is not 1000E.  Sorry.")
 
     if kind in ['1000z', '1000Z']:
+        enabled_channels = 0
         try:
             w = RigolWFM.wfm1000z.Wfm1000z.from_file(wfm_filename)
             for ch_number in [1, 2, 3, 4]:
