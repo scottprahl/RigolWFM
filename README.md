@@ -1,8 +1,8 @@
-# Rigol oscilloscope waveform library
+# Parsing binary .wfm files created by Rigol scopes
 
 ## Background
 
-This project is designed to be a one-stop location for interpreting waveform `.wmf` files from all Rigol scopes.  Programs that parse Rigol's binary `.wfm` files are sadly balkanized: each project tends to support a single scope model and the available efforts are spread across a wide range of languages.
+This project is should be a one-stop location for interpreting waveform `.wmf` files from any Rigol scopes.  Programs that parse Rigol's binary `.wfm` files are sadly balkanized: each project tends to support a single scope model and the available efforts are spread across a wide range of languages.
 
 Most seem to avoid do not deal specifically with the `.wfm` format and if they do, then only one specific scope model is supported.
 
