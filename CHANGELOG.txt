@@ -1,3 +1,6 @@
+v0.4.1
+    fix requirement for enum by just requiring python > 3.4
+    
 v0.4.0
     huge change.  Now using kaitai struct exclusively
     added support for 1000C, 4000, 6000 .wfm formats
