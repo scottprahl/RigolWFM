@@ -1,54 +1,53 @@
+#!/usr/bin/env python3
+#pylint: disable=missing-function-docstring
+"""
+Command line utility to extract signals or description
+from a range of Rigol Oscilloscope waveform file.
+
+Use like this::
+
+    wfm_parser.py -a info -t 1000e DS1102E-A.wfm
+    wfm_parser.py -a csv -t 1000e DS1102E-A.wfm
+"""
+
 import argparse
-
-from pprint import pprint
-
-import wfm1000d
-import wfm1000e
-import wfm1000z
-import wfm4000c
+import RigolWFM.wfm
 
 def main():
     parser = argparse.ArgumentParser(
-        prog='wfm_parse', 
-        description='Parse Rigol WFM files.'
-        )
+        prog='wfm_parse',
+        description='Parse Rigol WFM files.',
+        formatter_class=argparse.RawTextHelpFormatter
+
+    )
+
     parser.add_argument(
-        '-t', 
-        choices=('c','d','e','z'), 
-        required=True, 
-        help='the type of Rigol WFM file'
-        )
+        '-t',
+        required=True,
+        help='the type of scope that created the WFM file' + RigolWFM.wfm.valid_scope_list()
+    )
+
+    parser.add_argument(
+        '-a',
+        dest = 'action',
+        choices=['info', 'csv'],
+        required=True,
+        help='action to perform'
+    )
+
     parser.add_argument('filename')
-    args = parser.parse_args()
     
-    if args.t == 'c':
-        target = wfm4000c.Wfm4000c.from_file(args.filename)
-    elif args.t == 'd':
-        target = wfm1000d.Wfm1000d.from_file(args.filename)
-    elif args.t == 'e':
-        target = wfm1000e.Wfm1000e.from_file(args.filename)
-    else:
-        target = wfm1000z.Wfm1000z.from_file(args.filename)
+    args = parser.parse_args()
 
-    print("Target")
-    pprint(dir(target.header))
-    print()
-
-    print("Header")
-    print("----------")
-    print(hex(target.header.magic[0]), hex(target.header.magic[1]))
-
-
-    print("Header")
-    pprint(vars(target.header))
-    print()
-#     print("time header")
-#     pprint(vars(target.header.ch1))
-#     print()
-#     print("trigger header")
-#     pprint(vars(target.data.ch1))
-
+    try:
+        waveforms = RigolWFM.wfm.Wfm.from_file(args.filename, kind=args.t)
+        action = args.action
+        if action == 'csv':
+            print(waveforms.csv())
+        if action == 'info':
+            print(waveforms.describe())
+    except Exception as e: 
+        print(e)
 
 if __name__ == "__main__":
     main()
-

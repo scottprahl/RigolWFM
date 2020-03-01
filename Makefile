@@ -41,35 +41,23 @@ check:
 	make yamlcheck
 	make ksycheck
 
-oldtest:
-	python3 RigolWFM/wfm_parser.py -t e wfm/DS1102E-A.wfm
-	python3 RigolWFM/wfm_parser.py -t e wfm/DS1102E-B.wfm
-	python3 RigolWFM/wfm_parser.py -t e wfm/DS1102E-C.wfm
-	python3 RigolWFM/wfm_parser.py -t e wfm/DS1102E-D.wfm
-	python3 RigolWFM/wfm_parser.py -t e wfm/DS1052E.wfm
-	python3 RigolWFM/wfm_parser.py -t c wfm/DS4022-A.wfm
-	python3 RigolWFM/wfm_parser.py -t c wfm/DS4022-B.wfm
-	python3 RigolWFM/wfm_parser.py -t z wfm/MSO1104.wfm
-	python3 RigolWFM/wfm_parser.py -t z wfm/DS1074Z-A.wfm 
-	python3 RigolWFM/wfm_parser.py -t z wfm/DS1074Z-B.wfm 
-
 teste:
-	python3 RigolWFM/wfm_parser2.py -t 1000e wfm/DS1102E-A.wfm
-	python3 RigolWFM/wfm_parser2.py -t 1000e wfm/DS1102E-B.wfm
-	python3 RigolWFM/wfm_parser2.py -t 1000e wfm/DS1102E-C.wfm
-	python3 RigolWFM/wfm_parser2.py -t 1000e wfm/DS1102E-D.wfm
-	python3 RigolWFM/wfm_parser2.py -t 1000e wfm/DS1052E.wfm
+	RigolWFM/wfm_parser.py -a info -t 1000e wfm/DS1102E-A.wfm
+	RigolWFM/wfm_parser.py -a info -t 1000e wfm/DS1102E-B.wfm
+	RigolWFM/wfm_parser.py -a info -t 1000e wfm/DS1102E-C.wfm
+	RigolWFM/wfm_parser.py -a info -t 1000e wfm/DS1102E-D.wfm
+	RigolWFM/wfm_parser.py -a info -t 1000e wfm/DS1052E.wfm
 
 testz:
-	python3 RigolWFM/wfm_parser2.py -t 1000z wfm/MSO1104.wfm
-	python3 RigolWFM/wfm_parser2.py -t 1000z wfm/DS1074Z-A.wfm
-	python3 RigolWFM/wfm_parser2.py -t 1000z wfm/DS1074Z-B.wfm
+	RigolWFM/wfm_parser.py -a info -t 1000z wfm/MSO1104.wfm
+	RigolWFM/wfm_parser.py -a info -t 1000z wfm/DS1074Z-A.wfm
+	RigolWFM/wfm_parser.py -a info -t 1000z wfm/DS1074Z-B.wfm
 
 test4:
-	python3 RigolWFM/wfm_parser2.py -t 4000 wfm/DS4022-A.wfm
-	python3 RigolWFM/wfm_parser2.py -t 4000 wfm/DS4022-B.wfm
-	python3 RigolWFM/wfm_parser2.py -t 4000 wfm/DS4024-A.wfm
-	python3 RigolWFM/wfm_parser2.py -t 4000 wfm/DS4024-B.wfm
+	RigolWFM/wfm_parser.py -a info -t 4000 wfm/DS4022-A.wfm
+	RigolWFM/wfm_parser.py -a info -t 4000 wfm/DS4022-B.wfm
+	RigolWFM/wfm_parser.py -a info -t 4000 wfm/DS4024-A.wfm
+	RigolWFM/wfm_parser.py -a info -t 4000 wfm/DS4024-B.wfm
 
 test:
 	make teste

@@ -1,155 +1,228 @@
-# Copyright (c) 2013, Matthias Blaicher
-#
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# pylint: disable=invalid-name
-# pylint: disable=eval-used
+#pylint: disable=invalid-name
+#pylint: disable=too-many-instance-attributes
+#pylint: disable=unsubscriptable-object
+#pylint: disable=too-few-public-methods
 
 """
-Extract signals or description from Rigol Oscilloscope waveform file.
+Extract signals or description from Rigol 1000E Oscilloscope waveform file.
 
 Use like this::
 
     import RigolWFM.wfm as wfm
 
-    signals = wfm.signals("filename.wfm")
-    if len(signals) == 2:
-        t,v = signals
+    waveform = wfm.from_file("filename.wfm", '1000E')
+    for ch in waveform.channels:
+        print(ch)
 """
-
 import tempfile
+import traceback
 import requests
-import numpy as np
+import matplotlib.pyplot as plt
 
-import RigolWFM.wfm1052
-import RigolWFM.wfm1054
+import RigolWFM.wfm1000c
+import RigolWFM.wfm1000e
+import RigolWFM.wfm1000z
+import RigolWFM.wfm4000
+import RigolWFM.wfm6000
+import RigolWFM.channel
 
-class ReadWFMError(Exception):
+# not implemented
+#DS1000B_scopes = ["B", "1000B", "DS1000B",
+#                  "DS1074B", "DS1104B", "DS1204B"]
+
+# untested
+DS1000C_scopes = ["C", "1000C", "DS1000C",
+                  "DS1000CD", "DS1000C", "DS1000MD", "DS1000M",
+                  "DS1302CA", "DS1202CA", "DS1102CA", "DS1062CA"]
+
+# tested
+DS1000E_scopes = ["E", "1000E", "DS1000E",
+                  "D", "1000D", "DS1000D",
+                  "DS1000E", "DS1102E", "DS1052E", "DS1102D", "DS1052D"]
+
+# tested, wonky voltages
+DS1000Z_scopes = ["Z", "1000Z", "DS1000Z",
+                  "DS1202Z", "DS1074Z", "DS1104Z", "DS1074Z-S",
+                  "DS1104Z-S", "MSO1054Z", "DS1054Z",
+                  "MSO1074Z", "MSO1104Z", "DS1104Z"]
+
+# tested
+DS4000_scopes = ["4", "4000", "DS4000",
+                 "DS4054", "DS4052", "DS4034", "DS4032", "DS4024",
+                 "DS4022", "DS4014", "DS4012", "MSO4054", "MSO4052", "MSO4034",
+                 "MSO4032", "MSO4024", "MSO4022", "MSO4014", "MSO4012"]
+
+#untested
+DS6000_scopes = ["6", "6000", "DS6000",
+                 "DS6062", "DS6064", "DS6102", "DS6104"]
+
+def valid_scope_list():
+    """List all the oscilloscope types."""
+    s = "\nValid types are:\n"
+    s += ", ".join(DS1000C_scopes) + "\n"
+    s += ", ".join(DS1000E_scopes) + "\n"
+    s += ", ".join(DS1000Z_scopes) + "\n"
+    s += ", ".join(DS4000_scopes) + "\n"
+    s += ", ".join(DS6000_scopes) + "\n"
+    return s
+
+class Read_WFM_Error(Exception):
     """Generic Read Error."""
 
-class ParseWFMError(Exception):
+class Parse_WFM_Error(Exception):
     """Generic Parse Error."""
 
-def read_and_parse_file(wfm_filename):
-    """Return a scopeData structure."""
+class Invalid_URL(Exception):
+    """Cannot use this URL.  It must start with https:// or http://"""
 
-    model = 0
-    scopeData = None
+class Unknown_Scope_Error(Exception):
+    """Not one of the listed Rigol oscilloscopes."""
 
-    try:
-        if wfm_filename.startswith('http://') or wfm_filename.startswith('https://'):
-            # need a local file for conversion, download url and save as tempfile
+class Wfm():
+    """Class with parsed data from a .wfm file."""
+    def __init__(self, filename, kind):
+        self.channels = []
+        self.file_name = filename
+        self.kind = kind
 
-            r = requests.get(wfm_filename, allow_redirects=True)
-            if not r.ok:
-                error_string = "Downloading URL '%s' failed: '%s'" % (wfm_filename, r.reason)
-                raise ReadWFMError(error_string)
+    @classmethod
+    def from_file(cls, filename, kind):
+        """Create Wfm object from a file."""
 
-            f = tempfile.TemporaryFile()
-            f.write(r.content)
-            f.seek(0)
+        new_wfm = cls(filename, kind)
+
+        # ensure that file exists
+        try:
+            f = open(filename, 'rb')
+            f.close()
+        except IOError as e:
+            raise Read_WFM_Error(e)
+
+        ukind = kind.upper()
+        if ukind in DS1000C_scopes:
+            try:
+                w = RigolWFM.wfm1000c.Wfm1000c.from_file(filename)
+                for ch_number in [1, 2]:
+                    ch = RigolWFM.channel.DS1000C(w, ch_number)
+                    if ch.enabled:
+                        new_wfm.channels.append(ch)
+            except Exception as e:
+                print(traceback.format_exc())
+                raise Parse_WFM_Error("Failed to parse as DS1000C format. Sorry.")
+
+        elif ukind in DS1000E_scopes:
+            try:
+                w = RigolWFM.wfm1000e.Wfm1000e.from_file(filename)
+                for ch_number in [1, 2]:
+                    ch = RigolWFM.channel.DS1000E(w, ch_number)
+                    if ch.enabled:
+                        new_wfm.channels.append(ch)
+            except Exception as e:
+                print(traceback.format_exc())
+                raise Parse_WFM_Error("Failed to parse as DS1000E format. Sorry.")
+
+        elif ukind in DS1000Z_scopes:
+            enabled_channels = 0
+            try:
+                w = RigolWFM.wfm1000z.Wfm1000z.from_file(filename)
+                for ch_number in [1, 2, 3, 4]:
+                    ch = RigolWFM.channel.DS1000Z(w, ch_number, enabled_channels)
+                    if ch.enabled:
+                        new_wfm.channels.append(ch)
+                        enabled_channels += 1
+
+            except Exception as e:
+                print(traceback.format_exc())
+                raise Parse_WFM_Error("Failed to parse as DS1000Z format. Sorry.")
+
+        elif ukind in DS4000_scopes:
+            try:
+                w = RigolWFM.wfm4000.Wfm4000.from_file(filename)
+                for ch_number in [1, 2, 3, 4]:
+                    ch = RigolWFM.channel.DS4000(w, ch_number)
+                    if ch.enabled:
+                        new_wfm.channels.append(ch)
+
+            except Exception as e:
+                print(traceback.format_exc())
+                raise Parse_WFM_Error("Failed to parse as DS4000 format. Sorry.")
+
+        elif ukind in DS6000_scopes:
+            try:
+                w = RigolWFM.wfm6000.Wfm6000.from_file(filename)
+                for ch_number in [1, 2, 3, 4]:
+                    ch = RigolWFM.channel.DS4000(w, ch_number)
+                    if ch.enabled:
+                        new_wfm.channels.append(ch)
+
+            except Exception as e:
+                print(traceback.format_exc())
+                raise Parse_WFM_Error("Failed to parse as DS6000 format. Sorry.")
 
         else:
-            try:
-                f = open(wfm_filename, 'rb')
+            print("Unknown Rigol oscilloscope type: '%s'" % ukind)
+            print(valid_scope_list())
 
-            except IOError as e:
-                raise ReadWFMError(e)
+        return new_wfm
+
+    @classmethod
+    def from_url(cls, url, kind):
+        """Return an array of channels."""
+
+        if not url.startswith('http://') and not url.startswith('https://'):
+            raise Invalid_URL()
 
         try:
-            scopeData = RigolWFM.wfm1052.parseRigolWFM(f)
-            model = 1052
-            f.close()
+            # need a local file for conversion, download url and save as tempfile
+            print("downloading '%s'" % url)
+            r = requests.get(url, allow_redirects=True)
+            if not r.ok:
+                error_string = "Downloading URL '%s' failed: '%s'" % (url, r.reason)
+                raise Read_WFM_Error(error_string)
 
-        except RigolWFM.wfm1052.FormatError:
+            f = tempfile.NamedTemporaryFile()
+            f.write(r.content)
+            f.seek(0)
+            working_filename = f.name
+
             try:
-                scopeData = RigolWFM.wfm1054.parseRigolWFM(f)
-                model = 1054
-                f.close()
-            except RigolWFM.wfm1054.FormatError:
-                raise ParseWFMError("File format is not DS1052E or DS1054Z.  Sorry.")
+                new_cls = cls.from_file(working_filename, kind)
+                new_cls.file_name = url
+                return new_cls
+            except Exception as e:
+                raise Parse_WFM_Error(e)
 
-    except ReadWFMError as e:
-        print(e)
+        except Exception as e:
+            raise Parse_WFM_Error(e)
 
-    except ParseWFMError as e:
-        print(e)
+    def describe(self):
+        """Returns a string describing the contents of a Rigol wfm file."""
+        s = ''
+        for ch in self.channels:
+            s += str(ch)
+        return s
 
-    return model, scopeData
 
+    def plot(self):
+        """Plots the data."""
+        for ch in self.channels:
+            plt.plot(ch.times, ch.volts, label=ch.name)
 
-def signals(wfm_filename):
-    """
-    Returns the time and voltage signal data from the Rigol wfm file.
+        plt.xlabel("Time (s)")
+        plt.ylabel("Volts (V)")
+        plt.title(self.file_name)
+        plt.legend(loc='upper right')
 
-    The result will have 0, 2, 3 or 4 elements depending on the scope channels that
-    were enabled at the moment the data was captured.
+    def csv(self):
+        """Return a string of comma separated values"""
 
-        0: []               # error parsing
-        2: [time, voltage]
-        3: [time, voltage_channel_1, voltage_channel_2]
-        4: [time_channel_1, voltage_channel_1, time_channel_2, voltage_channel_2]
+        s = ''
+        if len(self.channels) == 0:
+            return s
 
-    All the time data is in seconds and the voltage data is in volts.
-    """
-
-    model, scopeData = read_and_parse_file(wfm_filename)
-
-    if model == 0:
-        return []
-
-    if scopeData["alternateTrigger"]:
-        data = np.zeros(4, dtype=np.array)
-        data[0] = np.array(scopeData["channel"][1]["samples"]["time"])
-        data[1] = np.array(scopeData["channel"][1]["samples"]["volts"])
-        data[2] = np.array(scopeData["channel"][2]["samples"]["time"])
-        data[3] = np.array(scopeData["channel"][2]["samples"]["volts"])
-        return data
-
-    channels = []
-    for channel in range(1, 3):
-        if scopeData["channel"][channel]["enabled"]:
-            channels.append(channel)
-
-    data = []
-    data.append(np.array(scopeData["channel"][channels[0]]["samples"]["time"]))
-    for channel in channels:
-        data.append(np.array(scopeData["channel"][channel]["samples"]["volts"]))
-
-    return data
-
-def describe(wfm_filename):
-    """Returns a string describing the contents of a Rigol wfm file."""
-
-    model, scopeData = read_and_parse_file(wfm_filename)
-
-    if model == 1052:
-        desc = RigolWFM.wfm1052.describeScopeData(scopeData)
-
-    elif model == 1054:
-        desc = RigolWFM.wfm1054.describeScopeData(scopeData)
-
-    else:
-        desc = ''
-
-    return desc
+        for i in range(self.channels[0].points):
+            s += "%d" % i
+            for ch in self.channels:
+                s += ",%e" % ch.volts[i]
+            s += "\n"
+        return s

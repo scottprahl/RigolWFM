@@ -8,9 +8,9 @@ Extract signals or description from Rigol 1000E Oscilloscope waveform file.
 
 Use like this::
 
-    import RigolWFM.wfme as wfme
+    import RigolWFM.wfm as wfm
 
-    channels = wfme.parse("filename.wfm", '1000E')
+    channels = wfm.parse("filename.wfm", '1000E')
     for ch in channels:
         print(ch)
 """
