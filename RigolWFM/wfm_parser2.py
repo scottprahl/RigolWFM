@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #pylint: disable=missing-function-docstring
 """
 Command line utility to extract signals or description
@@ -15,26 +16,41 @@ Use like this::
 import argparse
 import RigolWFM.wfme
 
-
 def main():
     parser = argparse.ArgumentParser(
         prog='wfm_parse',
-        description='Parse Rigol WFM files.'
+        description='Parse Rigol WFM files.',
+        formatter_class=argparse.RawTextHelpFormatter
+
     )
+
     parser.add_argument(
         '-t',
-        choices=('1000c', '1000e', '1000z', '4000', '6000'),
         required=True,
-        help='the type of Rigol WFM file'
+        help = 'the type of scope that created the WFM file' + RigolWFM.wfme.valid_scope_list()
     )
+
+    parser.add_argument(
+        '-a',
+        dest = 'action',
+        choices=['info', 'csv'],
+        required=True,
+        help = 'action to '
+    )
+
     parser.add_argument('filename')
+    
     args = parser.parse_args()
 
-    waveforms = RigolWFM.wfme.Wfm.from_file(args.filename, kind=args.t)
-    print(waveforms.describe())
-    description = waveforms.describe()
-    print(description)
-
+    try:
+        waveforms = RigolWFM.wfme.Wfm.from_file(args.filename, kind=args.t)
+        action = args.action
+        if action == 'csv':
+            print(waveforms.csv())
+        if action == 'info':
+            print(waveforms.describe())
+    except Exception as e: 
+        print(e)
 
 if __name__ == "__main__":
     main()

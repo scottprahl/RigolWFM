@@ -48,6 +48,7 @@ class Channel():
     def __init__(self, w, ch):
         self.scope_type = 'default'
         self.channel_number = ch
+        self.name = "CH %d" % ch
         self.waveform = w
         self.seconds_per_point = w.header.seconds_per_point
         channel = w.header.ch[ch-1]
