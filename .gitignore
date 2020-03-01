@@ -4,10 +4,5 @@ RigolWFM.egg-info/*
 RigolWFM/__pycache__/*
 dist/*
 doc/0-*
-RigolWFM/wfm1000d.py
-RigolWFM/wfm1000e.py
-RigolWFM/wfm1000z.py
-RigolWFM/wfm4000.py
-RigolWFM/wfm6000.py
 doc/manuals/*
 doc/sources/*
