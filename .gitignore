@@ -3,6 +3,5 @@ doc/.ipynb_checkpoints
 RigolWFM.egg-info/*
 RigolWFM/__pycache__/*
 dist/*
-doc/0-*
 doc/manuals/*
 doc/sources/*

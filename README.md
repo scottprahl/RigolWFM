@@ -15,10 +15,10 @@ This last project leveraged Kaitai Struct <https://kaitai.io> as a domain specif
 
 There is a bit of work remaining (testing, validation, repackaging) but at least there are now binary file descriptions for `.wfm` files created by
 
-* DS1000C and 1000D untested
+* DS1000C untested
 * DS1000E tested
-* DS1000Z tested
-* DS4000 in progress
+* DS1000Z tested, wonky voltages
+* DS4000 tested
 * DS6000 untested
 
 This has been a bit of an adventure.  In the process of nailing down the basic formats, I have gleaned information from a wide range of projects started by others.
@@ -39,16 +39,19 @@ Right now the first version of python module that supports 1000E and 1000Z forma
 
     pip install RigolWFM
 
-Once this is done, one can extract signals from binary Rigol `.wfm` files easily::
+Once this is done, one can extract signals from binary Rigol `.wfm` files by::
 
     import matplotlib.pyplot as plt
-    import RigolWFM.wfm as wfm
+    import RigolWFM.wfm as rigol
 
-    t, y = wfm.signals('OneChannelFile.wfm')
-    plt.plot(t,y)
+    w = rigol.Wfm.from_file('OneChannelFile.wfm', 'DS1000E')
+    ch = w.channel[0]
+    plt.plot(ch.times, ch.volts)
     plt.show()
 
-    t, y1, y2 = wfm.signals('TwoChannelFile.wfm')
-    plt.plot(t,y)
+    w = rigol.Wfm.from_file('TwoChannelFile.wfm', 'DS1000Z')
+    for ch in w.channels:
+        plt.plot(ch.times, ch.volts, label=ch.name)
+    plt.legend(loc='top right')
     plt.show()
 
