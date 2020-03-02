@@ -351,5 +351,5 @@ enums:
   unit_enum:
     0: watts
     1: amps
-    2: voltage
+    2: volts
     3: unknown

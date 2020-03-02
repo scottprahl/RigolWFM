@@ -67,15 +67,17 @@ test:
 	make test4
 	
 clean:
+	rm -rf dist
+	rm -rf RigolWFM.egg-info
+	rm -rf doc/github.com
+	rm -rf RigolWFM/__pycache__
+
+realclean:
+	make clean
 	rm -f RigolWFM/wfm1000c.py 
 	rm -f RigolWFM/wfm1000e.py 
 	rm -f RigolWFM/wfm1000z.py 
 	rm -f RigolWFM/wfm4000.py
 	rm -f RigolWFM/wfm6000.py
-	rm -rf dist
-	rm -rf RigolWFM.egg-info
-	rm -rf doc/github.com
 	
-	rm -rf RigolWFM/__pycache__
-	
-.PHONY: clean test check all ksycheck yamlcheck teste testz test4 test
+.PHONY: clean realclean test check all ksycheck yamlcheck teste testz test4 test

@@ -12,6 +12,12 @@ class Wfm1000z(KaitaiStruct):
     """Rigol DS1000Z scope .wmf file format.
     """
 
+    class UnitEnum(Enum):
+        watts = 0
+        amps = 1
+        volts = 2
+        unknown = 3
+
     class AcquistionEnum(Enum):
         normal = 0
         peak = 1
@@ -126,7 +132,8 @@ class Wfm1000z(KaitaiStruct):
             self.scale = self._io.read_f4le()
             self.shift = self._io.read_f4le()
             self.inverted_val = self._io.read_u1()
-            self.unknown_2 = self._io.read_bytes(11)
+            self.unit = self._root.UnitEnum(self._io.read_u1())
+            self.unknown_2 = self._io.read_bytes(10)
 
         @property
         def inverted(self):

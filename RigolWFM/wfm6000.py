@@ -13,7 +13,7 @@ class Wfm6000(KaitaiStruct):
     class UnitEnum(Enum):
         watts = 0
         amps = 1
-        voltage = 2
+        volts = 2
         unknown = 3
 
     class ProbeRatioEnum(Enum):

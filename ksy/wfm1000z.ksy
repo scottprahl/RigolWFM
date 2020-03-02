@@ -157,8 +157,11 @@ types:
         type: f4
       - id: inverted_val
         type: u1
+      - id: unit
+        type: u1
+        enum: unit_enum
       - id: unknown_2
-        size: 11
+        size: 10
     instances:
       inverted:
         value: "inverted_val != 0 ? true : false"
@@ -276,3 +279,9 @@ enums:
     13: x200
     14: x500
     15: x1000
+
+  unit_enum:
+    0: watts
+    1: amps
+    2: volts
+    3: unknown
