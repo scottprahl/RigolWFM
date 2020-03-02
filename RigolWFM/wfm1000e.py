@@ -12,14 +12,6 @@ class Wfm1000e(KaitaiStruct):
     """Rigol DS1102E scope .wmf format abstracted from a python script
     """
 
-    class Source(Enum):
-        ch1 = 0
-        ch2 = 1
-        ext = 2
-        ext5 = 3
-        ac_line = 5
-        dig_ch = 7
-
     class TriggerModeEnum(Enum):
         edge = 0
         pulse = 1
@@ -28,6 +20,32 @@ class Wfm1000e(KaitaiStruct):
         alt = 4
         pattern = 5
         duration = 6
+
+    class SourceEnum(Enum):
+        ch1 = 0
+        ch2 = 1
+        ext = 2
+        ext5 = 3
+        ac_line = 5
+        dig_ch = 7
+
+    class FilterEnum(Enum):
+        low_pass = 0
+        high_pass = 1
+        band_pass = 2
+        band_reject = 3
+
+    class BandwidthEnum(Enum):
+        no_limit = 0
+        mhz_20 = 1
+        mhz_100 = 2
+        mhz_200 = 3
+        mhz_250 = 4
+
+    class CouplingEnum(Enum):
+        dc = 0
+        ac = 1
+        gnd = 2
     def __init__(self, _io, _parent=None, _root=None):
         self._io = _io
         self._parent = _parent
@@ -303,7 +321,7 @@ class Wfm1000e(KaitaiStruct):
 
         def _read(self):
             self.mode = self._root.TriggerModeEnum(self._io.read_u1())
-            self.source = self._io.read_u1()
+            self.source = self._root.SourceEnum(self._io.read_u1())
             self.coupling = self._io.read_u1()
             self.sweep = self._io.read_u1()
             self.padding_1 = self._io.ensure_fixed_contents(b"\x00")

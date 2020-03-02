@@ -167,6 +167,7 @@ types:
         enum: trigger_mode_enum
       - id: source
         type: u1
+        enum: source_enum
       - id: coupling
         type: u1
       - id: sweep
@@ -258,7 +259,25 @@ types:
 
 
 enums:
-  source:
+  bandwidth_enum:
+    0: no_limit
+    1: mhz_20
+    2: mhz_100
+    3: mhz_200
+    4: mhz_250
+
+  coupling_enum:
+    0: dc
+    1: ac
+    2: gnd
+
+  filter_enum:
+    0: low_pass
+    1: high_pass
+    2: band_pass
+    3: band_reject
+
+  source_enum:
     0: ch1
     1: ch2
     2: ext
