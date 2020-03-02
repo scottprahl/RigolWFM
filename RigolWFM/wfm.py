@@ -216,12 +216,21 @@ class Wfm():
     def csv(self):
         """Return a string of comma separated values"""
 
-        s = ''
         if len(self.channels) == 0:
-            return s
+            return ''
+
+        s = 'X'
+        for ch in self.channels:
+            s += ",%s" % ch.name
+        s += "\n"
+        
+        s += 'SECONDS'
+        for ch in self.channels:
+            s += ",%s" % ch.unit
+        s += "\n"
 
         for i in range(self.channels[0].points):
-            s += "%d" % i
+            s += "%e" % ch.times[i]
             for ch in self.channels:
                 s += ",%e" % ch.volts[i]
             s += "\n"
