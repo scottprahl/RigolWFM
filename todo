@@ -1,0 +1,20 @@
+Code development
+    - add times to csv code
+    - identify coupling & bandwidth for 1000E
+    - improve .csv code
+    - appropriate LTSpice code
+    - improve Wfm.describe()
+
+Documentation
+    - write better readme
+    - figure out sphinx stuff
+    - create notebook to help those with problem waveforms
+
+Validation:
+   - get csv files for whole 1000E waveform
+
+Code clean up
+    - try out dataviz stuff?
+    - rationalize variable names
+    - use a consistent set of enums ?
+    - expand docs in each .ksy file
