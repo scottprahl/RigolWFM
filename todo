@@ -1,20 +1,27 @@
 Code development
-    - add times to csv code
+    - add --minimal option for problem .wfm files
     - identify coupling & bandwidth for 1000E
-    - improve .csv code
-    - appropriate LTSpice code
+    - add LTSpice export
+    - add json export
     - improve Wfm.describe()
-
-Documentation
-    - write better readme
-    - figure out sphinx stuff
-    - create notebook to help those with problem waveforms
-
-Validation:
-   - get csv files for whole 1000E waveform
+    - eventually need to find trigger info in 1000z, 4000, & 6000 formats
+    - add best scaling parameter for graphing and csv
+    - produce javascript parsers
+    - produce c++ parsers
 
 Code clean up
     - try out dataviz stuff?
     - rationalize variable names
     - use a consistent set of enums ?
     - expand docs in each .ksy file
+
+Documentation
+    - continue working on readme
+    - figure out sphinx stuff
+    - create notebook to help those with problem waveforms
+
+Validation:
+   - get csv files for whole 1000E waveform
+   - get DS1000C .wfm files
+   - get DS6000 .wfm files
+   

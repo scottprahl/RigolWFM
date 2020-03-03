@@ -104,6 +104,7 @@ class Channel():
         self.waveform = w
         self.seconds_per_point = w.header.seconds_per_point
         self.firmware = 'unknown'
+        self.unit = 'VOLTS'
         self.points = 0
         self.raw = None
         self.volts = None
@@ -230,6 +231,7 @@ class Channel():
         self.scope_type = w.preheader.model_number
         self.probe = w.header.ch[ch-1].probe_value
         self.coupling = w.header.ch[ch-1].coupling.name.upper()
+        self.unit = w.header.ch[ch-1].unit
 
         if self.enabled:
             self.raw = _channel_bytes(enabled_count, w.data, self.stride)
@@ -272,6 +274,40 @@ class Channel():
         self.firmware = w.header.firmware_version
         self.scope_type = w.header.model_number
         self.coupling = w.header.ch[ch-1].coupling.name.upper()
+        self.unit = w.header.ch[ch-1].unit
+
+        if self.enabled:
+            if ch == 1:
+                self.raw = np.array(w.header.raw_1)
+
+            if ch == 2:
+                self.raw = np.array(w.header.raw_2)
+
+            if ch == 3:
+                self.raw = np.array(w.header.raw_3)
+
+            if ch == 4:
+                self.raw = np.array(w.header.raw_4)
+
+            self.volts = self.volt_scale * \
+                (self.raw - 127.0) - self.volt_offset
+            half = self.points * self.seconds_per_point / 2
+            self.times = np.linspace(-half, half,
+                                     self.points) + self.time_offset
+
+# totally untested
+class DS6000(Channel):
+    """Base class for a single channel from 6000 series scopes."""
+
+    def __init__(self, w, ch):
+        super().__init__(w, ch)
+        self.time_offset = w.header.time_delay
+        self.time_scale = w.header.time_scale
+        self.points = w.header.points
+        self.firmware = w.header.firmware_version
+        self.scope_type = w.header.model_number
+        self.coupling = w.header.ch[ch-1].coupling.name.upper()
+        self.unit = w.header.ch[ch-1].unit
 
         if self.enabled:
             if ch == 1:
