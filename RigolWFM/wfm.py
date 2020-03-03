@@ -1,8 +1,4 @@
 #pylint: disable=invalid-name
-#pylint: disable=too-many-instance-attributes
-#pylint: disable=unsubscriptable-object
-#pylint: disable=too-few-public-methods
-
 """
 Extract signals or description from Rigol 1000E Oscilloscope waveform file.
 
@@ -98,70 +94,45 @@ class Wfm():
         except IOError as e:
             raise Read_WFM_Error(e)
 
+        # parse the waveform
         ukind = kind.upper()
-        if ukind in DS1000C_scopes:
-            try:
+        try:
+            if ukind in DS1000C_scopes:
                 w = RigolWFM.wfm1000c.Wfm1000c.from_file(filename)
-                for ch_number in [1, 2]:
-                    ch = RigolWFM.channel.DS1000C(w, ch_number)
-                    if ch.enabled:
-                        new_wfm.channels.append(ch)
-            except Exception as e:
-                print(traceback.format_exc())
-                raise Parse_WFM_Error("Failed to parse as DS1000C format. Sorry.")
+                scope_type = "C"
 
-        elif ukind in DS1000E_scopes:
-            try:
+            elif ukind in DS1000E_scopes:
                 w = RigolWFM.wfm1000e.Wfm1000e.from_file(filename)
-                for ch_number in [1, 2]:
-                    ch = RigolWFM.channel.DS1000E(w, ch_number)
-                    if ch.enabled:
-                        new_wfm.channels.append(ch)
-            except Exception as e:
-                print(traceback.format_exc())
-                raise Parse_WFM_Error("Failed to parse as DS1000E format. Sorry.")
+                scope_type = "E"
 
-        elif ukind in DS1000Z_scopes:
-            enabled_channels = 0
-            try:
+            elif ukind in DS1000Z_scopes:
                 w = RigolWFM.wfm1000z.Wfm1000z.from_file(filename)
-                for ch_number in [1, 2, 3, 4]:
-                    ch = RigolWFM.channel.DS1000Z(w, ch_number, enabled_channels)
-                    if ch.enabled:
-                        new_wfm.channels.append(ch)
-                        enabled_channels += 1
+                scope_type = "Z"
 
-            except Exception as e:
-                print(traceback.format_exc())
-                raise Parse_WFM_Error("Failed to parse as DS1000Z format. Sorry.")
-
-        elif ukind in DS4000_scopes:
-            try:
+            elif ukind in DS4000_scopes:
                 w = RigolWFM.wfm4000.Wfm4000.from_file(filename)
-                for ch_number in [1, 2, 3, 4]:
-                    ch = RigolWFM.channel.DS4000(w, ch_number)
-                    if ch.enabled:
-                        new_wfm.channels.append(ch)
+                scope_type = "4"
 
-            except Exception as e:
-                print(traceback.format_exc())
-                raise Parse_WFM_Error("Failed to parse as DS4000 format. Sorry.")
-
-        elif ukind in DS6000_scopes:
-            try:
+            elif ukind in DS6000_scopes:
                 w = RigolWFM.wfm6000.Wfm6000.from_file(filename)
-                for ch_number in [1, 2, 3, 4]:
-                    ch = RigolWFM.channel.DS4000(w, ch_number)
-                    if ch.enabled:
-                        new_wfm.channels.append(ch)
+                scope_type = "6"
 
-            except Exception as e:
-                print(traceback.format_exc())
-                raise Parse_WFM_Error("Failed to parse as DS6000 format. Sorry.")
+            else:
+                print("Unknown Rigol oscilloscope type: '%s'" % ukind)
+                print(valid_scope_list())
+                return new_wfm
 
-        else:
-            print("Unknown Rigol oscilloscope type: '%s'" % ukind)
-            print(valid_scope_list())
+        except Exception as e:
+            print(traceback.format_exc())
+            raise Parse_WFM_Error("Failed to parse as %s format. Sorry." % ukind)
+
+        # assemble into uniform set of names
+        enabled_channels = 0
+        for ch_number in range(1, 5):
+            ch = RigolWFM.channel.Channel(w, ch_number, scope_type, enabled_channels)
+            if ch.enabled:
+                new_wfm.channels.append(ch)
+                enabled_channels += 1
 
         return new_wfm
 
