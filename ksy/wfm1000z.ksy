@@ -129,7 +129,7 @@ types:
         value: sample_rate_ghz * 1e9
       seconds_per_division:
         value: picoseconds_per_division * 1e-12
-      time_offset:
+      time_delay:
         value: picoseconds_offset * 1e-12
       seconds_per_point:
         value: 1/sample_rate_hz

@@ -4,11 +4,12 @@ Extract signals or description from Rigol 1000E Oscilloscope waveform file.
 
 Use like this::
 
-    import RigolWFM.wfm as wfm
+    import RigolWFM.wfm as rigol
 
-    waveform = wfm.from_file("filename.wfm", '1000E')
-    for ch in waveform.channels:
-        print(ch)
+    waveform = rigol.Wfm.from_file("filename.wfm", 'E')
+    description = waveform.describe()
+    print(description)
+
 """
 import tempfile
 import traceback
@@ -194,7 +195,7 @@ class Wfm():
         for ch in self.channels:
             s += ",%s" % ch.name
         s += "\n"
-        
+
         s += 'SECONDS'
         for ch in self.channels:
             s += ",%s" % ch.unit

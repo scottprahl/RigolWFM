@@ -224,7 +224,7 @@ class Channel():
         """Interpret waveform for the Rigol DS1000Z series."""
 
         self.time_scale = w.header.seconds_per_division
-        self.time_offset = w.header.time_offset
+        self.time_offset = w.header.time_delay
         self.points = w.header.points
         self.stride = w.header.stride
         self.firmware = w.preheader.firmware_version
@@ -287,39 +287,6 @@ class Channel():
                 self.raw = np.array(w.header.raw_3)
 
             if ch == 4:
-                self.raw = np.array(w.header.raw_4)
-
-            self.volts = self.volt_scale * \
-                (self.raw - 127.0) - self.volt_offset
-            half = self.points * self.seconds_per_point / 2
-            self.times = np.linspace(-half, half,
-                                     self.points) + self.time_offset
-
-# totally untested
-class DS6000(Channel):
-    """Base class for a single channel from 6000 series scopes."""
-
-    def __init__(self, w, ch):
-        super().__init__(w, ch)
-        self.time_offset = w.header.time_delay
-        self.time_scale = w.header.time_scale
-        self.points = w.header.points
-        self.firmware = w.header.firmware_version
-        self.scope_type = w.header.model_number
-        self.coupling = w.header.ch[ch-1].coupling.name.upper()
-        self.unit = w.header.ch[ch-1].unit
-
-        if self.enabled:
-            if ch == 1:
-                self.raw = np.array(w.header.raw_1)
-
-            elif ch == 2:
-                self.raw = np.array(w.header.raw_2)
-
-            elif ch == 3:
-                self.raw = np.array(w.header.raw_3)
-
-            elif ch == 4:
                 self.raw = np.array(w.header.raw_4)
 
         self.calc_times_and_volts()
