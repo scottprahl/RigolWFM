@@ -172,9 +172,9 @@ types:
         type: u4
       - id: spu_mem_bank_size
         type: u4
-      - id: s16_adc1__clock_delay
+      - id: s16_adc1_clock_delay
         type: u2
-      - id: s16_adc2__clock_delay
+      - id: s16_adc2_clock_delay
         type: u2
       - id: max_main_scrn_chnl_delay
         type: u2
@@ -192,7 +192,7 @@ types:
         value: 1/sample_rate_hz
       time_scale:
         value: 1.0e-12 * time_scale_ps
-      time_delay:
+      time_offset:
         value: 1.0e-12 * time_offset_ps
       points:
         value: _root.header.mem_depth

@@ -39,6 +39,10 @@ types:
     instances:
       seconds_per_point:
         value: 1.0/sample_rate_hz
+      time_scale:
+        value: sample_rate_hz*points/10.0
+      time_offset:
+        value: 0.0
 
       raw_1:
         pos: ch1_location

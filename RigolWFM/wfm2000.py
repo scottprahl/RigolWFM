@@ -59,6 +59,36 @@ class Wfm2000(KaitaiStruct):
             self.sample_rate_hz = self._io.read_u4le()
 
         @property
+        def time_offset(self):
+            if hasattr(self, '_m_time_offset'):
+                return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+
+            self._m_time_offset = 0.0
+            return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+
+        @property
+        def raw_2(self):
+            if hasattr(self, '_m_raw_2'):
+                return self._m_raw_2 if hasattr(self, '_m_raw_2') else None
+
+            _pos = self._io.pos()
+            self._io.seek(self.ch2_location)
+            self._m_raw_2 = [None] * (self.points)
+            for i in range(self.points):
+                self._m_raw_2[i] = self._io.read_u1()
+
+            self._io.seek(_pos)
+            return self._m_raw_2 if hasattr(self, '_m_raw_2') else None
+
+        @property
+        def time_scale(self):
+            if hasattr(self, '_m_time_scale'):
+                return self._m_time_scale if hasattr(self, '_m_time_scale') else None
+
+            self._m_time_scale = ((self.sample_rate_hz * self.points) / 10.0)
+            return self._m_time_scale if hasattr(self, '_m_time_scale') else None
+
+        @property
         def seconds_per_point(self):
             if hasattr(self, '_m_seconds_per_point'):
                 return self._m_seconds_per_point if hasattr(self, '_m_seconds_per_point') else None
@@ -79,20 +109,6 @@ class Wfm2000(KaitaiStruct):
 
             self._io.seek(_pos)
             return self._m_raw_1 if hasattr(self, '_m_raw_1') else None
-
-        @property
-        def raw_2(self):
-            if hasattr(self, '_m_raw_2'):
-                return self._m_raw_2 if hasattr(self, '_m_raw_2') else None
-
-            _pos = self._io.pos()
-            self._io.seek(self.ch2_location)
-            self._m_raw_2 = [None] * (self.points)
-            for i in range(self.points):
-                self._m_raw_2[i] = self._io.read_u1()
-
-            self._io.seek(_pos)
-            return self._m_raw_2 if hasattr(self, '_m_raw_2') else None
 
 
     @property

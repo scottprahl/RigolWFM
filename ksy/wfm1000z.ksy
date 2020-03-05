@@ -127,9 +127,9 @@ types:
         value: memory_depth/stride
       sample_rate_hz:
         value: sample_rate_ghz * 1e9
-      seconds_per_division:
+      time_scale:
         value: picoseconds_per_division * 1e-12
-      time_delay:
+      time_offset:
         value: picoseconds_offset * 1e-12
       seconds_per_point:
         value: 1/sample_rate_hz
@@ -192,6 +192,10 @@ types:
         value: volt_per_division/25.0
       volt_offset:
         value: shift * volt_scale
+      time_scale:
+        value: _root.header.time_scale
+      time_offset:
+        value: _root.header.time_offset
 
   channel_subhead:
     seq:

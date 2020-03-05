@@ -167,8 +167,8 @@ class Wfm6000(KaitaiStruct):
             self.spu_mem_depth_rema = self._io.read_u4le()
             self.mem_offset_base = self._io.read_u4le()
             self.spu_mem_bank_size = self._io.read_u4le()
-            self.s16_adc1__clock_delay = self._io.read_u2le()
-            self.s16_adc2__clock_delay = self._io.read_u2le()
+            self.s16_adc1_clock_delay = self._io.read_u2le()
+            self.s16_adc2_clock_delay = self._io.read_u2le()
             self.max_main_scrn_chnl_delay = self._io.read_u2le()
             self.max_zoom_scrn_chnl_delay = self._io.read_u2le()
             self.main_dgtl_trig_data_offset = self._io.read_u2le()
@@ -192,12 +192,12 @@ class Wfm6000(KaitaiStruct):
             return self._m_time_scale if hasattr(self, '_m_time_scale') else None
 
         @property
-        def time_delay(self):
-            if hasattr(self, '_m_time_delay'):
-                return self._m_time_delay if hasattr(self, '_m_time_delay') else None
+        def time_offset(self):
+            if hasattr(self, '_m_time_offset'):
+                return self._m_time_offset if hasattr(self, '_m_time_offset') else None
 
-            self._m_time_delay = (1.0E-12 * self.time_offset_ps)
-            return self._m_time_delay if hasattr(self, '_m_time_delay') else None
+            self._m_time_offset = (1.0E-12 * self.time_offset_ps)
+            return self._m_time_offset if hasattr(self, '_m_time_offset') else None
 
         @property
         def points(self):

@@ -40,7 +40,7 @@ types:
         type: channel_header
         repeat: expr
         repeat-expr: 2
-      - id: time_delay
+      - id: time_offset
         type: u1
       - id: padding_4
         contents: [0x00]
@@ -95,16 +95,16 @@ types:
 
       ch1_time_scale:
         value: 1.0e-12 * time.scale_measured
-      ch1_time_delay:
-        value: 1.0e-12 * time.delay_measured
+      ch1_time_offset:
+        value: 1.0e-12 * time.offset_measured
       ch2_time_scale:
         value: "trigger_mode == trigger_mode_enum::alt ?
                  1.0e-12 * time2.scale_measured:
                  ch1_time_scale"
-      ch2_time_delay:
+      ch2_time_offset:
         value: "trigger_mode == trigger_mode_enum::alt ?
-                 1.0e-12 * time2.delay_measured:
-                 ch1_time_delay"
+                 1.0e-12 * time2.offset_measured:
+                 ch1_time_offset"
 
   channel_header:   # 24 bytes total
     seq:
@@ -151,13 +151,13 @@ types:
     seq:
       - id: scale_display
         type: s8
-      - id: delay_display
+      - id: offset_display
         type: s8
       - id: sample_rate_hz
         type: f4
       - id: scale_measured
         type: s8
-      - id: delay_measured
+      - id: offset_measured
         type: s8
 
   trigger_header:

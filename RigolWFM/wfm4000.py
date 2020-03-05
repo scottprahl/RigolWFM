@@ -109,9 +109,9 @@ class Wfm4000(KaitaiStruct):
             self.index = self._io.read_u4le()
             self.time_per_div_ps = self._io.read_u4le()
             self.unknown_3a = self._io.read_bytes(4)
-            self.delay_per_div_ps = self._io.read_u8le()
+            self.offset_per_div_ps = self._io.read_u8le()
             self.unknown_4 = self._io.read_bytes(16)
-            self.delay_ps = self._io.read_u8le()
+            self.offset_ps = self._io.read_u8le()
             self.unknown_5 = self._io.read_bytes(16)
             self.unknown_6 = self._io.read_u2le()
             self.unknown_7 = self._io.read_u1()
@@ -266,6 +266,14 @@ class Wfm4000(KaitaiStruct):
             return self._m_points if hasattr(self, '_m_points') else None
 
         @property
+        def time_offset(self):
+            if hasattr(self, '_m_time_offset'):
+                return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+
+            self._m_time_offset = (1.0E-12 * self.time.offset_per_div_ps)
+            return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+
+        @property
         def vertical_scale_factor(self):
             if hasattr(self, '_m_vertical_scale_factor'):
                 return self._m_vertical_scale_factor if hasattr(self, '_m_vertical_scale_factor') else None
@@ -296,14 +304,6 @@ class Wfm4000(KaitaiStruct):
 
             self._m_time_scale = (1.0E-12 * self.time.time_per_div_ps)
             return self._m_time_scale if hasattr(self, '_m_time_scale') else None
-
-        @property
-        def time_delay(self):
-            if hasattr(self, '_m_time_delay'):
-                return self._m_time_delay if hasattr(self, '_m_time_delay') else None
-
-            self._m_time_delay = (1.0E-12 * self.time.delay_per_div_ps)
-            return self._m_time_delay if hasattr(self, '_m_time_delay') else None
 
         @property
         def seconds_per_point(self):

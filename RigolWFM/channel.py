@@ -20,31 +20,37 @@ or the stringification method to describe a channel
 """
 import numpy as np
 
-
-def engineering_string(number):
-    """Format number with proper prefix"""
+def best_scale(number):
+    """Scale and units for a number with proper prefix"""
     absnr = abs(number)
 
     if absnr == 0:
-        engr_str = '%g ' % (number / 1e-12)
+        return 1, ''
     elif absnr < 0.99999999e-9:
-        engr_str = '%g p' % (number / 1e-12)
+        return 1e12, 'p'
     elif absnr < 0.99999999e-6:
-        engr_str = '%g n' % (number / 1e-9)
+        return 1e9, 'n'
     elif absnr < 0.99999999e-3:
-        engr_str = '%g µ' % (number / 1e-6)
+        return 1e6, 'µ'
     elif absnr < 0.99999999:
-        engr_str = '%g m' % (number / 1e-3)
+        return 1e3, 'm'
     elif absnr < 0.99999999e3:
-        engr_str = '%g ' % (number)
+        return 1, ''
     elif absnr < 0.99999999e6:
-        engr_str = '%g k' % (number / 1e3)
+        return 1e-3, 'k'
     elif absnr < 0.999999991e9:
-        engr_str = '%g M' % (number / 1e6)
+        return 1e-6, 'M'
     else:
-        engr_str = '%g G' % (number / 1e9)
-    return engr_str
+        return 1e-9, 'G'
 
+def engineering_string(number):
+    """Format number with proper prefix"""
+    
+    scale, prefix = best_scale(number)
+    s = "%g %s" % (number * scale, prefix)
+    return s
+
+   
 def _channel_bytes(enabled_count, data, stride):
     """
     Return right series of bytes for a channel for 1000Z scopes
@@ -152,7 +158,7 @@ class Channel():
         s += "    Time:\n"
         s += "        Scale  = " + \
             engineering_string(self.time_scale) + "s/div\n"
-        s += "        Delay  = " + engineering_string(self.time_offset) + "s\n"
+        s += "        offset  = " + engineering_string(self.time_offset) + "s\n"
         s += "        Delta  = " + \
             engineering_string(self.seconds_per_point) + "s/point\n"
         s += "    Data:\n"
@@ -182,14 +188,14 @@ class Channel():
         self.scope_type = '1000C'
 
         if ch == 1:
-            self.time_offset = w.header.ch1_time_delay
+            self.time_offset = w.header.ch1_time_offset
             self.time_scale = w.header.ch1_time_scale
             if self.enabled:
                 self.points = len(w.data.ch1)
                 self.raw = np.array(w.data.ch1)
 
         if ch == 2:
-            self.time_offset = w.header.ch2_time_delay
+            self.time_offset = w.header.ch2_time_offset
             self.time_scale = w.header.ch2_time_scale
             if self.enabled:
                 self.points = len(w.data.ch2)
@@ -205,14 +211,14 @@ class Channel():
         self.roll_stop = w.header.roll_stop
 
         if ch == 1:
-            self.time_offset = w.header.ch1_time_delay
+            self.time_offset = w.header.ch1_time_offset
             self.time_scale = w.header.ch1_time_scale
             if self.enabled:
                 self.points = len(w.data.ch1)
                 self.raw = np.array(w.data.ch1)
 
         elif ch == 2:
-            self.time_offset = w.header.ch2_time_delay
+            self.time_offset = w.header.ch2_time_offset
             self.time_scale = w.header.ch2_time_scale
             if self.enabled:
                 self.points = len(w.data.ch2)
@@ -223,8 +229,8 @@ class Channel():
     def ds1000z(self, w, ch, enabled_count):
         """Interpret waveform for the Rigol DS1000Z series."""
 
-        self.time_scale = w.header.seconds_per_division
-        self.time_offset = w.header.time_delay
+        self.time_scale = w.header.time_scale
+        self.time_offset = w.header.time_offset
         self.points = w.header.points
         self.stride = w.header.stride
         self.firmware = w.preheader.firmware_version
@@ -253,7 +259,7 @@ class Channel():
     def ds4000(self, w, ch):
         """Interpret waveform for the Rigol DS4000 series."""
 
-        self.time_offset = w.header.time_delay
+        self.time_offset = w.header.time_offset
         self.time_scale = w.header.time_scale
         self.points = w.header.points
         self.firmware = w.header.firmware_version
@@ -279,7 +285,7 @@ class Channel():
     def ds6000(self, w, ch):
         """Interpret waveform for the Rigol DS6000 series."""
 
-        self.time_offset = w.header.time_delay
+        self.time_offset = w.header.time_offset
         self.time_scale = w.header.time_scale
         self.points = w.header.points
         self.firmware = w.header.firmware_version

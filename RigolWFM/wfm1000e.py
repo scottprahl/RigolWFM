@@ -64,10 +64,10 @@ class Wfm1000e(KaitaiStruct):
 
         def _read(self):
             self.scale_display = self._io.read_s8le()
-            self.delay_display = self._io.read_s8le()
+            self.offset_display = self._io.read_s8le()
             self.sample_rate_hz = self._io.read_f4le()
             self.scale_measured = self._io.read_s8le()
-            self.delay_measured = self._io.read_s8le()
+            self.offset_measured = self._io.read_s8le()
 
 
     class RawData(KaitaiStruct):
@@ -206,7 +206,7 @@ class Wfm1000e(KaitaiStruct):
             for i in range(2):
                 self.ch[i] = self._root.ChannelHeader(self._io, self, self._root)
 
-            self.time_delay = self._io.read_u1()
+            self.time_offset = self._io.read_u1()
             self.padding_4 = self._io.ensure_fixed_contents(b"\x00")
             self.time = self._root.TimeHeader(self._io, self, self._root)
             self.logic = self._root.LogicAnalyzerHeader(self._io, self, self._root)
@@ -228,12 +228,12 @@ class Wfm1000e(KaitaiStruct):
             return self._m_ch2_volt_length if hasattr(self, '_m_ch2_volt_length') else None
 
         @property
-        def ch1_time_delay(self):
-            if hasattr(self, '_m_ch1_time_delay'):
-                return self._m_ch1_time_delay if hasattr(self, '_m_ch1_time_delay') else None
+        def ch2_time_offset(self):
+            if hasattr(self, '_m_ch2_time_offset'):
+                return self._m_ch2_time_offset if hasattr(self, '_m_ch2_time_offset') else None
 
-            self._m_ch1_time_delay = (1.0E-12 * self.time.delay_measured)
-            return self._m_ch1_time_delay if hasattr(self, '_m_ch1_time_delay') else None
+            self._m_ch2_time_offset = ((1.0E-12 * self.time2.offset_measured) if self.trigger_mode == self._root.TriggerModeEnum.alt else self.ch1_time_offset)
+            return self._m_ch2_time_offset if hasattr(self, '_m_ch2_time_offset') else None
 
         @property
         def ch1_time_scale(self):
@@ -270,20 +270,20 @@ class Wfm1000e(KaitaiStruct):
             return self._m_ch1_skip if hasattr(self, '_m_ch1_skip') else None
 
         @property
+        def ch1_time_offset(self):
+            if hasattr(self, '_m_ch1_time_offset'):
+                return self._m_ch1_time_offset if hasattr(self, '_m_ch1_time_offset') else None
+
+            self._m_ch1_time_offset = (1.0E-12 * self.time.offset_measured)
+            return self._m_ch1_time_offset if hasattr(self, '_m_ch1_time_offset') else None
+
+        @property
         def seconds_per_point(self):
             if hasattr(self, '_m_seconds_per_point'):
                 return self._m_seconds_per_point if hasattr(self, '_m_seconds_per_point') else None
 
             self._m_seconds_per_point = (1 / self.sample_rate_hz)
             return self._m_seconds_per_point if hasattr(self, '_m_seconds_per_point') else None
-
-        @property
-        def ch2_time_delay(self):
-            if hasattr(self, '_m_ch2_time_delay'):
-                return self._m_ch2_time_delay if hasattr(self, '_m_ch2_time_delay') else None
-
-            self._m_ch2_time_delay = ((1.0E-12 * self.time2.delay_measured) if self.trigger_mode == self._root.TriggerModeEnum.alt else self.ch1_time_delay)
-            return self._m_ch2_time_delay if hasattr(self, '_m_ch2_time_delay') else None
 
         @property
         def ch1_points(self):

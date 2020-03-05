@@ -110,6 +110,7 @@ types:
         size: 27
       - id: time
         type: time_header
+
     instances:
       vertical_scale_factor:
         value: "model_number.substring(2, 3) == '2' ? 25 : 32"
@@ -117,8 +118,8 @@ types:
         value: 1/sample_rate_hz
       time_scale:
         value: 1.0e-12 * time.time_per_div_ps
-      time_delay:
-        value: 1.0e-12 * time.delay_per_div_ps
+      time_offset:
+        value: 1.0e-12 * time.offset_per_div_ps
       points:
         value: mem_depth
 
@@ -170,11 +171,11 @@ types:
         type: u4
       - id: unknown_3a
         size: 4
-      - id: delay_per_div_ps
+      - id: offset_per_div_ps
         type: u8
       - id: unknown_4
         size: 16
-      - id: delay_ps
+      - id: offset_ps
         type: u8
       - id: unknown_5
         size: 16

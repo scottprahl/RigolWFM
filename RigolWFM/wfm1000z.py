@@ -136,12 +136,28 @@ class Wfm1000z(KaitaiStruct):
             self.unknown_2 = self._io.read_bytes(10)
 
         @property
+        def time_offset(self):
+            if hasattr(self, '_m_time_offset'):
+                return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+
+            self._m_time_offset = self._root.header.time_offset
+            return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+
+        @property
         def inverted(self):
             if hasattr(self, '_m_inverted'):
                 return self._m_inverted if hasattr(self, '_m_inverted') else None
 
             self._m_inverted = (True if self.inverted_val != 0 else False)
             return self._m_inverted if hasattr(self, '_m_inverted') else None
+
+        @property
+        def time_scale(self):
+            if hasattr(self, '_m_time_scale'):
+                return self._m_time_scale if hasattr(self, '_m_time_scale') else None
+
+            self._m_time_scale = self._root.header.time_scale
+            return self._m_time_scale if hasattr(self, '_m_time_scale') else None
 
         @property
         def volt_offset(self):
@@ -267,6 +283,14 @@ class Wfm1000z(KaitaiStruct):
             return self._m_sample_rate_hz if hasattr(self, '_m_sample_rate_hz') else None
 
         @property
+        def time_offset(self):
+            if hasattr(self, '_m_time_offset'):
+                return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+
+            self._m_time_offset = (self.picoseconds_offset * 1E-12)
+            return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+
+        @property
         def ch4_int(self):
             if hasattr(self, '_m_ch4_int'):
                 return self._m_ch4_int if hasattr(self, '_m_ch4_int') else None
@@ -291,12 +315,12 @@ class Wfm1000z(KaitaiStruct):
             return self._m_total_channels if hasattr(self, '_m_total_channels') else None
 
         @property
-        def time_delay(self):
-            if hasattr(self, '_m_time_delay'):
-                return self._m_time_delay if hasattr(self, '_m_time_delay') else None
+        def time_scale(self):
+            if hasattr(self, '_m_time_scale'):
+                return self._m_time_scale if hasattr(self, '_m_time_scale') else None
 
-            self._m_time_delay = (self.picoseconds_offset * 1E-12)
-            return self._m_time_delay if hasattr(self, '_m_time_delay') else None
+            self._m_time_scale = (self.picoseconds_per_division * 1E-12)
+            return self._m_time_scale if hasattr(self, '_m_time_scale') else None
 
         @property
         def seconds_per_point(self):
@@ -321,14 +345,6 @@ class Wfm1000z(KaitaiStruct):
 
             self._m_stride = (4 if self.total_channels == 3 else self.total_channels)
             return self._m_stride if hasattr(self, '_m_stride') else None
-
-        @property
-        def seconds_per_division(self):
-            if hasattr(self, '_m_seconds_per_division'):
-                return self._m_seconds_per_division if hasattr(self, '_m_seconds_per_division') else None
-
-            self._m_seconds_per_division = (self.picoseconds_per_division * 1E-12)
-            return self._m_seconds_per_division if hasattr(self, '_m_seconds_per_division') else None
 
 
     @property

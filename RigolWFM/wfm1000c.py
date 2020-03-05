@@ -63,7 +63,7 @@ class Wfm1000c(KaitaiStruct):
                 self.ch[i] = self._root.ChannelHeader(self._io, self, self._root)
 
             self.time_scale = self._io.read_u8le()
-            self.time_delay = self._io.read_s8le()
+            self.time_offset = self._io.read_s8le()
             self.sample_rate_hz = self._io.read_f4le()
             self.unknown_3 = [None] * (9)
             for i in range(9):
@@ -98,7 +98,7 @@ class Wfm1000c(KaitaiStruct):
             self.probe = self._io.read_f4le()
             self.invert_disp_val = self._io.read_u1()
             self.enabled_val = self._io.read_u1()
-            self.inverted_m_val = self._io.read_u1()
+            self.invert_m_val = self._io.read_u1()
             self.unknown_3 = self._io.read_bytes(1)
             self.scale_orig = self._io.read_u4le()
             self.position_orig = self._io.read_u4le()
@@ -106,12 +106,28 @@ class Wfm1000c(KaitaiStruct):
             self.shift_measured = self._io.read_s2le()
 
         @property
+        def time_offset(self):
+            if hasattr(self, '_m_time_offset'):
+                return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+
+            self._m_time_offset = self._root.header.time_offset
+            return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+
+        @property
         def inverted(self):
             if hasattr(self, '_m_inverted'):
                 return self._m_inverted if hasattr(self, '_m_inverted') else None
 
-            self._m_inverted = (True if self.inverted_m_val != 0 else False)
+            self._m_inverted = (True if self.invert_m_val != 0 else False)
             return self._m_inverted if hasattr(self, '_m_inverted') else None
+
+        @property
+        def time_scale(self):
+            if hasattr(self, '_m_time_scale'):
+                return self._m_time_scale if hasattr(self, '_m_time_scale') else None
+
+            self._m_time_scale = self._root.header.time_scale
+            return self._m_time_scale if hasattr(self, '_m_time_scale') else None
 
         @property
         def volt_offset(self):

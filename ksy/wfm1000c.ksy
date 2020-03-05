@@ -46,7 +46,7 @@ types:
         repeat-expr: 2
       - id: time_scale       # 84
         type: u8
-      - id: time_delay       # 92
+      - id: time_offset      # 92
         type: s8
       - id: sample_rate_hz   # 100
         type: f4
@@ -85,7 +85,7 @@ types:
         type: u1
       - id: enabled_val      # 49, 73
         type: u1
-      - id: inverted_m_val   # 50, 74
+      - id: invert_m_val     # 50, 74
         type: u1
       - id: unknown_3        # 51, 75
         size: 1
@@ -99,7 +99,7 @@ types:
         type: s2
     instances:
       inverted:
-        value: "inverted_m_val != 0 ? true : false"
+        value: "invert_m_val != 0 ? true : false"
       enabled:
         value: "enabled_val != 0 ? true : false"
       volt_per_division:
@@ -110,6 +110,10 @@ types:
         value: volt_per_division/25.0
       volt_offset:
         value: shift_measured * volt_scale
+      time_scale:
+        value: _root.header.time_scale
+      time_offset:
+        value: _root.header.time_offset
 
   raw_data:
     seq:

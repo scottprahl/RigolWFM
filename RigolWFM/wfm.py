@@ -181,14 +181,33 @@ class Wfm():
             s += str(ch)
         return s
 
-
+    def best_scaling(self):
+        """Return appropriate scaling for plot."""
+        v_scale = 1e-12
+        v_prefix = ''
+        h_scale = 1e-12
+        h_prefix = ''
+        for ch in self.channels:
+            v, p = RigolWFM.channel.best_scale(ch.volt_per_division)
+            if v > v_scale:
+                v_scale = v
+                v_prefix = p
+            h, p = RigolWFM.channel.best_scale(ch.time_scale)
+            if h > h_scale:
+                h_scale = h
+                h_prefix = p
+        return h_scale, h_prefix, v_scale, v_prefix
+        
     def plot(self):
         """Plots the data."""
+        h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()
+        print(h_scale)
+        print(v_scale)
         for ch in self.channels:
-            plt.plot(ch.times, ch.volts, label=ch.name)
+            plt.plot(ch.times*h_scale, ch.volts*v_scale, label=ch.name)
 
-        plt.xlabel("Time (s)")
-        plt.ylabel("Volts (V)")
+        plt.xlabel("Time (%ss)" % h_prefix)
+        plt.ylabel("Voltage (%sV)" % v_prefix)
         plt.title(self.file_name)
         plt.legend(loc='upper right')
 
