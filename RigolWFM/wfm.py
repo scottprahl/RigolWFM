@@ -201,8 +201,7 @@ class Wfm():
     def plot(self):
         """Plots the data."""
         h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()
-        print(h_scale)
-        print(v_scale)
+
         for ch in self.channels:
             plt.plot(ch.times*h_scale, ch.volts*v_scale, label=ch.name)
 
