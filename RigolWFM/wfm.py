@@ -43,6 +43,9 @@ DS1000Z_scopes = ["Z", "1000Z", "DS1000Z",
                   "DS1104Z-S", "MSO1054Z", "DS1054Z",
                   "MSO1074Z", "MSO1104Z", "DS1104Z"]
 
+# untested
+DS2000_scopes = ["2", "2000", "DS2000"]
+
 # tested
 DS4000_scopes = ["4", "4000", "DS4000",
                  "DS4054", "DS4052", "DS4034", "DS4032", "DS4024",
@@ -109,6 +112,10 @@ class Wfm():
             elif ukind in DS1000Z_scopes:
                 w = RigolWFM.wfm1000z.Wfm1000z.from_file(filename)
                 scope_type = "Z"
+
+            elif ukind in DS2000_scopes:
+                w = RigolWFM.wfm2000.Wfm2000.from_file(filename)
+                scope_type = "2"
 
             elif ukind in DS4000_scopes:
                 w = RigolWFM.wfm4000.Wfm4000.from_file(filename)

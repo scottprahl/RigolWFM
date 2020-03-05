@@ -1,5 +1,5 @@
 python_parsers = RigolWFM/wfm1000c.py RigolWFM/wfm1000e.py RigolWFM/wfm1000z.py \
-                 RigolWFM/wfm4000.py RigolWFM/wfm6000.py
+                 RigolWFM/wfm2000.py RigolWFM/wfm4000.py RigolWFM/wfm6000.py
 
 KSY_OPTIONS = --verbose=all --outdir RigolWFM
 KSY_OPTIONS = --outdir RigolWFM
@@ -19,6 +19,9 @@ RigolWFM/wfm1000e.py: ksy/wfm1000e.ksy
 RigolWFM/wfm1000z.py: ksy/wfm1000z.ksy
 	kaitai-struct-compiler -t python $(KSY_OPTIONS) ksy/wfm1000z.ksy
 
+RigolWFM/wfm2000.py: ksy/wfm2000.ksy
+	kaitai-struct-compiler -t python $(KSY_OPTIONS) ksy/wfm2000.ksy
+
 RigolWFM/wfm4000.py: ksy/wfm4000.ksy
 	kaitai-struct-compiler -t python $(KSY_OPTIONS) ksy/wfm4000.ksy
 
@@ -29,6 +32,7 @@ yamlcheck:
 	yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000c.ksy
 	yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000e.ksy
 	yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000z.ksy
+	yamllint $(YAML_LINT_OPTIONS) ksy/wfm2000.ksy
 	yamllint $(YAML_LINT_OPTIONS) ksy/wfm4000.ksy
 	yamllint $(YAML_LINT_OPTIONS) ksy/wfm6000.ksy
 
@@ -36,6 +40,7 @@ ksycheck:
 	ksylint ksy/wfm1000c.ksy
 	ksylint ksy/wfm1000e.ksy
 	ksylint ksy/wfm1000z.ksy
+	ksylint ksy/wfm2000.ksy
 	ksylint ksy/wfm4000.ksy
 	ksylint ksy/wfm6000.ksy
 
@@ -77,6 +82,7 @@ realclean:
 	rm -f RigolWFM/wfm1000c.py 
 	rm -f RigolWFM/wfm1000e.py 
 	rm -f RigolWFM/wfm1000z.py 
+	rm -f RigolWFM/wfm2000.py
 	rm -f RigolWFM/wfm4000.py
 	rm -f RigolWFM/wfm6000.py
 	

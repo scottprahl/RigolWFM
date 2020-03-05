@@ -238,6 +238,17 @@ class Channel():
 
         self.calc_times_and_volts()
 
+    def ds2000(self, w, ch):
+        """Interpret waveform for the Rigol DS2000 series."""
+
+        if ch == 1:
+            self.raw[0::2] = np.array(w.data.ch1)
+
+        if ch == 2:
+            self.raw[1::2] = np.array(w.data.ch2)
+
+        self.calc_times_and_volts()
+
 
     def ds4000(self, w, ch):
         """Interpret waveform for the Rigol DS4000 series."""
