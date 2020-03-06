@@ -50,7 +50,11 @@ def engineering_string(number):
     s = "%g %s" % (number * scale, prefix)
     return s
 
-   
+
+### maybe replace with something like
+#    x0[0::2] = data[offset_1:offset_1+pagesize]
+#    x0[1::2] = data[offset_2:offset_2+pagesize]
+
 def _channel_bytes(enabled_count, data, stride):
     """
     Return right series of bytes for a channel for 1000Z scopes

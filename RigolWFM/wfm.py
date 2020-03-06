@@ -43,8 +43,11 @@ DS1000Z_scopes = ["Z", "1000Z", "DS1000Z",
                   "DS1104Z-S", "MSO1054Z", "DS1054Z",
                   "MSO1074Z", "MSO1104Z", "DS1104Z"]
 
-# untested
-DS2000_scopes = ["2", "2000", "DS2000"]
+# untested, super basic implementation
+DS2000_scopes = ["2", "2000", "DS2000",
+                 "DS2102A", "MSO2102A", "MSO2102A-S",
+                 "DS2202A", "MSO2202A", "MSO2202A-S",
+                 "DS2302A", "MSO2302A", "MSO2302A-S]
 
 # tested
 DS4000_scopes = ["4", "4000", "DS4000",
@@ -197,7 +200,7 @@ class Wfm():
                 h_scale = h
                 h_prefix = p
         return h_scale, h_prefix, v_scale, v_prefix
-        
+
     def plot(self):
         """Plots the data."""
         h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()
