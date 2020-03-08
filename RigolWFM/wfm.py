@@ -83,6 +83,9 @@ class Invalid_URL(Exception):
 class Unknown_Scope_Error(Exception):
     """Not one of the listed Rigol oscilloscopes."""
 
+class Write_WAV_Error(Exception):
+    """Something went wrong while writing the .wave file."""
+
 class Wfm():
     """Class with parsed data from a .wfm file."""
     def __init__(self, file_name, model):
@@ -105,7 +108,7 @@ class Wfm():
         except IOError as e:
             raise Read_WFM_Error(e)
 
-        # 
+        #
         new_wfm.original_name = file_name
         new_wfm.file_name = file_name
         new_wfm.basename = os.path.basename(file_name)
@@ -160,11 +163,11 @@ class Wfm():
     def from_url(cls, url, model):
         """
         Return a waveform object given a URL.
-        
-        This is a bit complicated because the parser must have a local file 
-        to work with.  The process is to download the file to a temporary 
-        location and then process that file.  There is a lot that can go 
-        wrong - bad url, bad download, or an error parsing the file.  
+
+        This is a bit complicated because the parser must have a local file
+        to work with.  The process is to download the file to a temporary
+        location and then process that file.  There is a lot that can go
+        wrong - bad url, bad download, or an error parsing the file.
         """
 
         u = urlparse(url)
@@ -210,7 +213,7 @@ class Wfm():
 
         first = True
         for ch in self.channels:
-            if not first: 
+            if not first:
                 s += ', '
             s += '%s' % ch.channel_number
             first = False
@@ -274,3 +277,17 @@ class Wfm():
                 s += ",%.2f" % (ch.volts[i]*v_scale)
             s += "\n"
         return s
+
+    def wav(self, ch_num, wav_filename):
+        """Save data as a WAV file for use with LTSpice."""
+
+        c = None
+        for ch in self.channels:
+            if ch_num == ch.channel_number:
+                c = ch
+                break
+
+        if c == None:
+            return
+
+        scipy.io.wavfile.write(wav_filename, sample_rate, c.raw)

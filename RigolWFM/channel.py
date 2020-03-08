@@ -25,7 +25,7 @@ def best_scale(number):
     absnr = abs(number)
 
     if absnr == 0:
-        return 1, ''
+        return 1, ' '
     elif absnr < 0.99999999e-9:
         return 1e12, 'p'
     elif absnr < 0.99999999e-6:
@@ -35,7 +35,7 @@ def best_scale(number):
     elif absnr < 0.99999999:
         return 1e3, 'm'
     elif absnr < 0.99999999e3:
-        return 1, ''
+        return 1, ' '
     elif absnr < 0.99999999e6:
         return 1e-3, 'k'
     elif absnr < 0.999999991e9:
@@ -43,11 +43,14 @@ def best_scale(number):
     else:
         return 1e-9, 'G'
 
-def engineering_string(number):
+def engineering_string(number, n_digits):
     """Format number with proper prefix"""
-    
+
     scale, prefix = best_scale(number)
-    s = "%g %s" % (number * scale, prefix)
+    format = "%%.%df %%s" % n_digits
+    s = format % (number * scale, prefix)
+    ss = s.rjust(10,' ')
+
     return s
 
 
@@ -114,7 +117,7 @@ class Channel():
         self.waveform = w
         self.seconds_per_point = w.header.seconds_per_point
         self.firmware = 'unknown'
-        self.unit = 'VOLTS'
+        self.unit = 'V'
         self.points = 0
         self.raw = None
         self.volts = None
@@ -150,27 +153,23 @@ class Channel():
 
     def __str__(self):
         s =  "     Channel %d:\n" % self.channel_number
-        s += "         Coupling = %s\n" % self.coupling
-        s += "            Scale = " + \
-            engineering_string(self.volt_per_division) + "V/div\n"
-        s += "           Offset = " + engineering_string(self.volt_offset) + "V\n\n"
-        s += "        Time Base = " + \
-            engineering_string(self.time_scale) + "s/div\n"
-        s += "           Offset = " + engineering_string(self.time_offset) + "s\n"
-        s += "            Delta = " + \
-            engineering_string(self.seconds_per_point) + "s/point\n\n"
-
+        s += "         Coupling = %10s\n" % self.coupling.rjust(7,' ')
+        s += "            Scale = %10sV/div\n" % engineering_string(self.volt_per_division, 2)
+        s += "           Offset = %10sV\n\n" % engineering_string(self.volt_offset, 2)
+        s += "        Time Base = %10ss/div\n" % engineering_string(self.time_scale, 3)
+        s += "           Offset = %10ss\n" % engineering_string(self.time_offset, 3)
+        s += "            Delta = %10ss/point\n\n" % engineering_string(self.seconds_per_point, 3)
         if self.enabled:
             n=self.points
             s += "         Count    = [%9d,%9d,%9d  ... %9d,%9d]\n" % (
                 1, 2, 3, self.points-1, self.points)
             s += "           Raw    = [%9d,%9d,%9d  ... %9d,%9d]\n" % (
                 self.raw[0], self.raw[1], self.raw[2], self.raw[-2], self.raw[-1])
-            t = [engineering_string(self.times[i]) +
+            t = [engineering_string(self.times[i], 3) +
                  "s" for i in [0, 1, 2, -2, -1]]
             s += "           Times  = [%9s,%9s,%9s  ... %9s,%9s]\n" % (
                 t[0], t[1], t[2], t[-2], t[-1])
-            v = [engineering_string(self.volts[i]) +
+            v = [engineering_string(self.volts[i], 2) +
                  "V" for i in [0, 1, 2, -2, -1]]
             s += "           Volts  = [%9s,%9s,%9s  ... %9s,%9s]\n" % (
                 v[0], v[1], v[2], v[-2], v[-1])
@@ -192,14 +191,14 @@ class Channel():
             self.time_scale = w.header.ch1_time_scale
             if self.enabled:
                 self.points = len(w.data.ch1)
-                self.raw = np.array(w.data.ch1)
+                self.raw = np.array(w.data.ch1, dtype=np.uint8)
 
         if ch == 2:
             self.time_offset = w.header.ch2_time_offset
             self.time_scale = w.header.ch2_time_scale
             if self.enabled:
                 self.points = len(w.data.ch2)
-                self.raw = np.array(w.data.ch2)
+                self.raw = np.array(w.data.ch2, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
@@ -215,14 +214,14 @@ class Channel():
             self.time_scale = w.header.ch1_time_scale
             if self.enabled:
                 self.points = len(w.data.ch1)
-                self.raw = np.array(w.data.ch1)
+                self.raw = np.array(w.data.ch1, dtype=np.uint8)
 
         elif ch == 2:
             self.time_offset = w.header.ch2_time_offset
             self.time_scale = w.header.ch2_time_scale
             if self.enabled:
                 self.points = len(w.data.ch2)
-                self.raw = np.array(w.data.ch2)
+                self.raw = np.array(w.data.ch2, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
@@ -248,10 +247,10 @@ class Channel():
         """Interpret waveform for the Rigol DS2000 series."""
 
         if ch == 1:
-            self.raw[0::2] = np.array(w.data.ch1)
+            self.raw[0::2] = np.array(w.data.ch1, dtype=np.uint8)
 
         if ch == 2:
-            self.raw[1::2] = np.array(w.data.ch2)
+            self.raw[1::2] = np.array(w.data.ch2, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
@@ -268,16 +267,16 @@ class Channel():
 
         if self.enabled:
             if ch == 1:
-                self.raw = np.array(w.header.raw_1)
+                self.raw = np.array(w.header.raw_1, dtype=np.uint8)
 
             elif ch == 2:
-                self.raw = np.array(w.header.raw_2)
+                self.raw = np.array(w.header.raw_2, dtype=np.uint8)
 
             elif ch == 3:
-                self.raw = np.array(w.header.raw_3)
+                self.raw = np.array(w.header.raw_3, dtype=np.uint8)
 
             elif ch == 4:
-                self.raw = np.array(w.header.raw_4)
+                self.raw = np.array(w.header.raw_4, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
@@ -295,15 +294,15 @@ class Channel():
 
         if self.enabled:
             if ch == 1:
-                self.raw = np.array(w.header.raw_1)
+                self.raw = np.array(w.header.raw_1, dtype=np.uint8)
 
             if ch == 2:
-                self.raw = np.array(w.header.raw_2)
+                self.raw = np.array(w.header.raw_2, dtype=np.uint8)
 
             if ch == 3:
-                self.raw = np.array(w.header.raw_3)
+                self.raw = np.array(w.header.raw_3, dtype=np.uint8)
 
             if ch == 4:
-                self.raw = np.array(w.header.raw_4)
+                self.raw = np.array(w.header.raw_4, dtype=np.uint8)
 
         self.calc_times_and_volts()
