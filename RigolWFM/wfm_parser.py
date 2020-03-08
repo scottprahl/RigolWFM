@@ -18,7 +18,6 @@ def main():
         prog='wfm_parse',
         description='Parse Rigol WFM files.',
         formatter_class=argparse.RawTextHelpFormatter
-
     )
 
     parser.add_argument(
@@ -40,7 +39,8 @@ def main():
     args = parser.parse_args()
 
     try:
-        waveforms = RigolWFM.wfm.Wfm.from_file(args.filename, kind=args.t)
+        model = args.t
+        waveforms = RigolWFM.wfm.Wfm.from_file(args.filename, model)
         action = args.action
         if action == 'csv':
             print(waveforms.csv())

@@ -149,35 +149,31 @@ class Channel():
 
 
     def __str__(self):
-        s = "Channel %d\n" % self.channel_number
-        s += "    General:\n"
-        s += "         Scope = %s\n" % self.scope_type
-        s += "      Firmware = %s\n" % self.firmware
-        s += "       Enabled = %s\n" % self.enabled
-        s += "    Voltage:\n"
-        s += "        Scale  = " + \
+        s =  "     Channel %d:\n" % self.channel_number
+        s += "         Coupling = %s\n" % self.coupling
+        s += "            Scale = " + \
             engineering_string(self.volt_per_division) + "V/div\n"
-        s += "        Offset = " + engineering_string(self.volt_offset) + "V\n"
-        s += "      Coupling = %s\n" % self.coupling
-        s += "    Time:\n"
-        s += "        Scale  = " + \
+        s += "           Offset = " + engineering_string(self.volt_offset) + "V\n\n"
+        s += "        Time Base = " + \
             engineering_string(self.time_scale) + "s/div\n"
-        s += "        offset  = " + engineering_string(self.time_offset) + "s\n"
-        s += "        Delta  = " + \
-            engineering_string(self.seconds_per_point) + "s/point\n"
-        s += "    Data:\n"
-        s += "        Points = %d\n" % self.points
+        s += "           Offset = " + engineering_string(self.time_offset) + "s\n"
+        s += "            Delta = " + \
+            engineering_string(self.seconds_per_point) + "s/point\n\n"
+
         if self.enabled:
-            s += "        Raw    = [%9d,%9d,%9d  ... %9d,%9d]\n" % (
+            n=self.points
+            s += "         Count    = [%9d,%9d,%9d  ... %9d,%9d]\n" % (
+                1, 2, 3, self.points-1, self.points)
+            s += "           Raw    = [%9d,%9d,%9d  ... %9d,%9d]\n" % (
                 self.raw[0], self.raw[1], self.raw[2], self.raw[-2], self.raw[-1])
-            v = [engineering_string(self.volts[i]) +
-                 "V" for i in [0, 1, 2, -2, -1]]
-            s += "        Volts  = [%9s,%9s,%9s  ... %9s,%9s]\n" % (
-                v[0], v[1], v[2], v[-2], v[-1])
             t = [engineering_string(self.times[i]) +
                  "s" for i in [0, 1, 2, -2, -1]]
-            s += "        Times  = [%9s,%9s,%9s  ... %9s,%9s]\n" % (
+            s += "           Times  = [%9s,%9s,%9s  ... %9s,%9s]\n" % (
                 t[0], t[1], t[2], t[-2], t[-1])
+            v = [engineering_string(self.volts[i]) +
+                 "V" for i in [0, 1, 2, -2, -1]]
+            s += "           Volts  = [%9s,%9s,%9s  ... %9s,%9s]\n" % (
+                v[0], v[1], v[2], v[-2], v[-1])
         return s
 
     def calc_times_and_volts(self):

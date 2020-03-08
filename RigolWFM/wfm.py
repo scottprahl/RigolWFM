@@ -6,7 +6,7 @@ Use like this::
 
     import RigolWFM.wfm as rigol
 
-    waveform = rigol.Wfm.from_file("filename.wfm", 'E')
+    waveform = rigol.Wfm.from_file("file_name.wfm", 'E')
     description = waveform.describe()
     print(description)
 
@@ -14,7 +14,9 @@ Use like this::
 import tempfile
 import traceback
 import requests
+import os.path
 import matplotlib.pyplot as plt
+from urllib.parse import urlparse
 
 import RigolWFM.wfm1000c
 import RigolWFM.wfm1000e
@@ -47,7 +49,7 @@ DS1000Z_scopes = ["Z", "1000Z", "DS1000Z",
 DS2000_scopes = ["2", "2000", "DS2000",
                  "DS2102A", "MSO2102A", "MSO2102A-S",
                  "DS2202A", "MSO2202A", "MSO2202A-S",
-                 "DS2302A", "MSO2302A", "MSO2302A-S]
+                 "DS2302A", "MSO2302A", "MSO2302A-S"]
 
 # tested
 DS4000_scopes = ["4", "4000", "DS4000",
@@ -83,59 +85,66 @@ class Unknown_Scope_Error(Exception):
 
 class Wfm():
     """Class with parsed data from a .wfm file."""
-    def __init__(self, filename, kind):
+    def __init__(self, file_name, model):
         self.channels = []
-        self.file_name = filename
-        self.kind = kind
+        self.original_name = file_name
+        self.model = model
+        self.basename = file_name
+        self.firmware = 'unknown'
 
     @classmethod
-    def from_file(cls, filename, kind):
+    def from_file(cls, file_name, model):
         """Create Wfm object from a file."""
 
-        new_wfm = cls(filename, kind)
+        new_wfm = cls(file_name, model)
 
         # ensure that file exists
         try:
-            f = open(filename, 'rb')
+            f = open(file_name, 'rb')
             f.close()
         except IOError as e:
             raise Read_WFM_Error(e)
 
+        # 
+        new_wfm.original_name = file_name
+        new_wfm.file_name = file_name
+        new_wfm.basename = os.path.basename(file_name)
+
         # parse the waveform
-        ukind = kind.upper()
+        umodel = model.upper()
         try:
-            if ukind in DS1000C_scopes:
-                w = RigolWFM.wfm1000c.Wfm1000c.from_file(filename)
+            if umodel in DS1000C_scopes:
+                w = RigolWFM.wfm1000c.Wfm1000c.from_file(file_name)
                 scope_type = "C"
 
-            elif ukind in DS1000E_scopes:
-                w = RigolWFM.wfm1000e.Wfm1000e.from_file(filename)
+            elif umodel in DS1000E_scopes:
+                w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)
                 scope_type = "E"
 
-            elif ukind in DS1000Z_scopes:
-                w = RigolWFM.wfm1000z.Wfm1000z.from_file(filename)
+            elif umodel in DS1000Z_scopes:
+                w = RigolWFM.wfm1000z.Wfm1000z.from_file(file_name)
                 scope_type = "Z"
 
-            elif ukind in DS2000_scopes:
-                w = RigolWFM.wfm2000.Wfm2000.from_file(filename)
+            elif umodel in DS2000_scopes:
+                w = RigolWFM.wfm2000.Wfm2000.from_file(file_name)
                 scope_type = "2"
 
-            elif ukind in DS4000_scopes:
-                w = RigolWFM.wfm4000.Wfm4000.from_file(filename)
+            elif umodel in DS4000_scopes:
+                w = RigolWFM.wfm4000.Wfm4000.from_file(file_name)
                 scope_type = "4"
 
-            elif ukind in DS6000_scopes:
-                w = RigolWFM.wfm6000.Wfm6000.from_file(filename)
+            elif umodel in DS6000_scopes:
+                w = RigolWFM.wfm6000.Wfm6000.from_file(file_name)
                 scope_type = "6"
 
             else:
-                print("Unknown Rigol oscilloscope type: '%s'" % ukind)
+                print("Unknown Rigol oscilloscope type: '%s'" % umodel)
                 print(valid_scope_list())
                 return new_wfm
 
         except Exception as e:
             print(traceback.format_exc())
-            raise Parse_WFM_Error("Failed to parse as %s format. Sorry." % ukind)
+            raise Parse_WFM_Error("Failed to parse as %s format. Sorry." % umodel)
 
         # assemble into uniform set of names
         enabled_channels = 0
@@ -148,10 +157,20 @@ class Wfm():
         return new_wfm
 
     @classmethod
-    def from_url(cls, url, kind):
-        """Return an array of channels."""
+    def from_url(cls, url, model):
+        """
+        Return a waveform object given a URL.
+        
+        This is a bit complicated because the parser must have a local file 
+        to work with.  The process is to download the file to a temporary 
+        location and then process that file.  There is a lot that can go 
+        wrong - bad url, bad download, or an error parsing the file.  
+        """
 
-        if not url.startswith('http://') and not url.startswith('https://'):
+        u = urlparse(url)
+        scheme = u[0]
+
+        if scheme != 'http' and scheme != 'https':
             raise Invalid_URL()
 
         try:
@@ -165,12 +184,16 @@ class Wfm():
             f = tempfile.NamedTemporaryFile()
             f.write(r.content)
             f.seek(0)
-            working_filename = f.name
+            working_name = f.name
 
             try:
-                new_cls = cls.from_file(working_filename, kind)
-                new_cls.file_name = url
-                return new_cls
+                new_wfm = cls.from_file(working_name, model)
+                new_wfm.original_name = url
+                # extract the simple name
+                rawpath = u[2]
+                path = urllib.parse.unquote(rawpath)
+                new_wfm.basename = os.path.basename(path)
+                return new_wfm
             except Exception as e:
                 raise Parse_WFM_Error(e)
 
@@ -179,9 +202,23 @@ class Wfm():
 
     def describe(self):
         """Returns a string describing the contents of a Rigol wfm file."""
-        s = ''
+        s  = "    General:\n"
+        s += "           Model = %s\n" % self.model
+        s += "        Firmware = %s\n" % self.firmware
+        s += '        Filename = %s\n' % self.basename
+        s += '        Channels = ['
+
+        first = True
+        for ch in self.channels:
+            if not first: 
+                s += ', '
+            s += '%s' % ch.channel_number
+            first = False
+        s += ']\n\n'
+
         for ch in self.channels:
             s += str(ch)
+            s += "\n"
         return s
 
     def best_scaling(self):
