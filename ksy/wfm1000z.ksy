@@ -285,7 +285,7 @@ enums:
     15: x1000
 
   unit_enum:
-    0: watts
-    1: amps
-    2: volts
-    3: unknown
+    0: w
+    1: a
+    2: v
+    3: u
