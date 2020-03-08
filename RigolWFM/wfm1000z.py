@@ -13,10 +13,10 @@ class Wfm1000z(KaitaiStruct):
     """
 
     class UnitEnum(Enum):
-        watts = 0
-        amps = 1
-        volts = 2
-        unknown = 3
+        w = 0
+        a = 1
+        v = 2
+        u = 3
 
     class AcquistionEnum(Enum):
         normal = 0

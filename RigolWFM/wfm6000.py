@@ -11,10 +11,10 @@ if parse_version(ks_version) < parse_version('0.7'):
 class Wfm6000(KaitaiStruct):
 
     class UnitEnum(Enum):
-        watts = 0
-        amps = 1
-        volts = 2
-        unknown = 3
+        w = 0
+        a = 1
+        v = 2
+        u = 3
 
     class ProbeRatioEnum(Enum):
         x0_01 = 0

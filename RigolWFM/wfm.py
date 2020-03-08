@@ -247,7 +247,7 @@ class Wfm():
 
         plt.xlabel("Time (%ss)" % h_prefix)
         plt.ylabel("Voltage (%sV)" % v_prefix)
-        plt.title(self.file_name)
+        plt.title(self.basename)
         plt.legend(loc='upper right')
 
     def csv(self):
@@ -256,19 +256,21 @@ class Wfm():
         if len(self.channels) == 0:
             return ''
 
+        h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()
+
         s = 'X'
         for ch in self.channels:
             s += ",%s" % ch.name
         s += "\n"
 
-        s += 'SECONDS'
+        s += '%ss' % h_prefix
         for ch in self.channels:
-            s += ",%s" % ch.unit
+            s += ",%s%s" % (v_prefix,ch.unit)
         s += "\n"
 
         for i in range(self.channels[0].points):
-            s += "%e" % ch.times[i]
+            s += "%.3f" % (ch.times[i]*h_scale)
             for ch in self.channels:
-                s += ",%e" % ch.volts[i]
+                s += ",%.2f" % (ch.volts[i]*v_scale)
             s += "\n"
         return s
