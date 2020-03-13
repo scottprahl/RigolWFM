@@ -15,6 +15,8 @@ import tempfile
 import traceback
 import requests
 import os.path
+import wave
+
 import matplotlib.pyplot as plt
 from urllib.parse import urlparse
 
@@ -96,19 +98,21 @@ class Wfm():
         self.firmware = 'unknown'
 
     @classmethod
-    def from_file(cls, file_name, model):
-        """Create Wfm object from a file."""
-
-        new_wfm = cls(file_name, model)
+    def from_file_name(self, file_name, model):
 
         # ensure that file exists
         try:
             f = open(file_name, 'rb')
+            return self.from_file(f, file_name, model)
             f.close()
         except IOError as e:
             raise Read_WFM_Error(e)
 
-        #
+    @classmethod
+    def from_file(self, f, file_name, model):
+        """Create Wfm object from a file."""
+
+        new_wfm = self(file_name, model)
         new_wfm.original_name = file_name
         new_wfm.file_name = file_name
         new_wfm.basename = os.path.basename(file_name)
@@ -160,7 +164,7 @@ class Wfm():
         return new_wfm
 
     @classmethod
-    def from_url(cls, url, model):
+    def from_url(self, url, model):
         """
         Return a waveform object given a URL.
 
@@ -190,7 +194,7 @@ class Wfm():
             working_name = f.name
 
             try:
-                new_wfm = cls.from_file(working_name, model)
+                new_wfm = self.from_file_name(working_name, model)
                 new_wfm.original_name = url
                 # extract the simple name
                 rawpath = u[2]
@@ -280,7 +284,6 @@ class Wfm():
 
     def wav(self, ch_num, wav_filename):
         """Save data as a WAV file for use with LTSpice."""
-
         c = None
         for ch in self.channels:
             if ch_num == ch.channel_number:
@@ -290,4 +293,14 @@ class Wfm():
         if c == None:
             return
 
-        scipy.io.wavfile.write(wav_filename, sample_rate, c.raw)
+        sample_rate = 1.0/c.seconds_per_point
+
+        wavef = wave.open(wav_filename, 'wb')
+        wavef.setnchannels(1) # mono
+        wavef.setsampwidth(1) 
+        wavef.setframerate(sample_rate)
+        wavef.setcomptype('NONE', '')
+        wavef.setnframes(c.points)
+
+        wavef.writeframes(c.raw.tostring())
+        wavef.close()
