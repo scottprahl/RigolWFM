@@ -12,7 +12,6 @@ Use like this::
 
 """
 import tempfile
-import traceback
 import requests
 import os.path
 import wave
@@ -150,7 +149,6 @@ class Wfm():
                 return new_wfm
 
         except Exception as e:
-            print(traceback.format_exc())
             raise Parse_WFM_Error("Failed to parse as %s format. Sorry." % umodel)
 
         # assemble into uniform set of names
@@ -296,11 +294,12 @@ class Wfm():
         sample_rate = 1.0/c.seconds_per_point
 
         wavef = wave.open(wav_filename, 'wb')
-        wavef.setnchannels(1) # mono
+        wavef.setnchannels(len(self.channels)) # mono
         wavef.setsampwidth(1) 
         wavef.setframerate(sample_rate)
         wavef.setcomptype('NONE', '')
-        wavef.setnframes(c.points)
+        wavef.setnframes(self.channels[0].points)
 
-        wavef.writeframes(c.raw.tostring())
+        for ch in self.channels:
+            wavef.writeframes(ch.raw)
         wavef.close()

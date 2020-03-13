@@ -54,22 +54,22 @@ check:
 	make ksycheck
 
 teste:
-	RigolWFM/wfm_parser.py --model E info wfm/DS1102E-A.wfm
-	RigolWFM/wfm_parser.py --model E info wfm/DS1102E-B.wfm
-	RigolWFM/wfm_parser.py --model E info wfm/DS1102E-C.wfm
-	RigolWFM/wfm_parser.py --model E info wfm/DS1102E-D.wfm
-	RigolWFM/wfm_parser.py --model E info wfm/DS1052E.wfm
+	RigolWFM/wfmconvert E info wfm/DS1102E-A.wfm
+	RigolWFM/wfmconvert E info wfm/DS1102E-B.wfm
+	RigolWFM/wfmconvert E info wfm/DS1102E-C.wfm
+	RigolWFM/wfmconvert E info wfm/DS1102E-D.wfm
+	RigolWFM/wfmconvert E info wfm/DS1052E.wfm
 
 testz:
-	RigolWFM/wfm_parser.py --model Z info wfm/MSO1104.wfm
-	RigolWFM/wfm_parser.py --model Z info wfm/DS1074Z-A.wfm
-	RigolWFM/wfm_parser.py --model Z info wfm/DS1074Z-B.wfm
+	RigolWFM/wfmconvert Z info wfm/MSO1104.wfm
+	RigolWFM/wfmconvert Z info wfm/DS1074Z-A.wfm
+	RigolWFM/wfmconvert Z info wfm/DS1074Z-B.wfm
 
 test4:
-	RigolWFM/wfm_parser.py --model 4 info wfm/DS4022-A.wfm
-	RigolWFM/wfm_parser.py --model 4 info wfm/DS4022-B.wfm
-	RigolWFM/wfm_parser.py --model 4 info wfm/DS4024-A.wfm
-	RigolWFM/wfm_parser.py --model 4 info wfm/DS4024-B.wfm
+	RigolWFM/wfmconvert 4 info wfm/DS4022-A.wfm
+	RigolWFM/wfmconvert 4 info wfm/DS4022-B.wfm
+	RigolWFM/wfmconvert 4 info wfm/DS4024-A.wfm
+	RigolWFM/wfmconvert 4 info wfm/DS4024-B.wfm
 
 test: $(PYTHON_PARSERS)
 	make teste
@@ -77,22 +77,16 @@ test: $(PYTHON_PARSERS)
 	make test4
 	make csv
 	make wav
-	make info
 
 csv:
-	RigolWFM/wfm_parser.py --model E csv wfm/DS1102E-A.wfm test/DS1102E-A.csv
-	RigolWFM/wfm_parser.py --model Z csv wfm/MSO1104.wfm test/MSO1104.csv
-	RigolWFM/wfm_parser.py --model 4 csv wfm/DS4022-A.wfm test/DS4022-A.csv
+	RigolWFM/wfmconvert E csv wfm/DS1102E-A.wfm
+	RigolWFM/wfmconvert Z csv wfm/MSO1104.wfm
+	RigolWFM/wfmconvert 4 csv wfm/DS4022-A.wfm
 
 wav:
-	RigolWFM/wfm_parser.py --model E wav wfm/DS1102E-A.wfm test/DS1102E-A.wav
-	RigolWFM/wfm_parser.py --model Z wav wfm/MSO1104.wfm test/MSO1104.wav
-	RigolWFM/wfm_parser.py --model 4 wav wfm/DS4022-A.wfm test/DS4022-A.wav
-
-info:
-	RigolWFM/wfm_parser.py --model E info wfm/DS1102E-A.wfm test/DS1102E-A.txt
-	RigolWFM/wfm_parser.py --model Z info wfm/MSO1104.wfm test/MSO1104.txt
-	RigolWFM/wfm_parser.py --model 4 info wfm/DS4022-A.wfm test/DS4022-A.txt
+	RigolWFM/wfmconvert E wav wfm/DS1102E-A.wfm
+	RigolWFM/wfmconvert Z wav wfm/MSO1104.wfm
+	RigolWFM/wfmconvert 4 wav wfm/DS4022-A.wfm
 	
 clean:
 	rm -rf dist
