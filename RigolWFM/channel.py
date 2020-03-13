@@ -111,7 +111,6 @@ class Channel():
     """Base class for a single channel."""
 
     def __init__(self, w, ch, scope, prior):
-        self.scope_type = 'default'
         self.channel_number = ch
         self.name = "CH %d" % ch
         self.waveform = w
@@ -184,7 +183,6 @@ class Channel():
 
     def ds1000c(self, w, ch):
         """Interpret waveform data for 1000CD series scopes."""
-        self.scope_type = '1000C'
 
         if ch == 1:
             self.time_offset = w.header.ch1_time_offset
@@ -206,7 +204,6 @@ class Channel():
     def ds1000e(self, w, ch):
         """Interpret waveform data for 1000D and 1000E series scopes."""
 
-        self.scope_type = '1000E'
         self.roll_stop = w.header.roll_stop
 
         if ch == 1:
@@ -233,7 +230,6 @@ class Channel():
         self.points = w.header.points
         self.stride = w.header.stride
         self.firmware = w.preheader.firmware_version
-        self.scope_type = w.preheader.model_number
         self.probe = w.header.ch[ch-1].probe_value
         self.coupling = w.header.ch[ch-1].coupling.name.upper()
         self.unit = w.header.ch[ch-1].unit
@@ -262,7 +258,6 @@ class Channel():
         self.time_scale = w.header.time_scale
         self.points = w.header.points
         self.firmware = w.header.firmware_version
-        self.scope_type = w.header.model_number
         self.coupling = w.header.ch[ch-1].coupling.name.upper()
 
         if self.enabled:
@@ -288,7 +283,6 @@ class Channel():
         self.time_scale = w.header.time_scale
         self.points = w.header.points
         self.firmware = w.header.firmware_version
-        self.scope_type = w.header.model_number
         self.coupling = w.header.ch[ch-1].coupling.name.upper()
         self.unit = w.header.ch[ch-1].unit
 

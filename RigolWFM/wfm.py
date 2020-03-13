@@ -15,6 +15,8 @@ import tempfile
 import requests
 import os.path
 import wave
+import inspect
+import pprint
 
 import matplotlib.pyplot as plt
 from urllib.parse import urlparse
@@ -92,9 +94,17 @@ class Wfm():
     def __init__(self, file_name, model):
         self.channels = []
         self.original_name = file_name
-        self.model = model
         self.basename = file_name
         self.firmware = 'unknown'
+
+        # there are multiple possible scope names
+        # 1. user_name   - the name passed to the program
+        # 2. header_name - the name found in the header of the file
+        # 3. parser_name - the name of parser used
+        self.user_name = 'unknown'
+        self.parser_name = 'unknown'
+        self.header_name = 'unknown'
+
 
     @classmethod
     def from_file_name(self, file_name, model):
@@ -102,10 +112,15 @@ class Wfm():
         # ensure that file exists
         try:
             f = open(file_name, 'rb')
-            return self.from_file(f, file_name, model)
-            f.close()
         except IOError as e:
             raise Read_WFM_Error(e)
+
+        try:
+            wfm = self.from_file(f, file_name, model)
+            f.close()
+            return wfm
+        except:
+            raise
 
     @classmethod
     def from_file(self, f, file_name, model):
@@ -121,44 +136,50 @@ class Wfm():
         try:
             if umodel in DS1000C_scopes:
                 w = RigolWFM.wfm1000c.Wfm1000c.from_file(file_name)
-                scope_type = "C"
+                new_wfm.header_name = 'DS1000C'
 
             elif umodel in DS1000E_scopes:
                 w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)
-                scope_type = "E"
+                new_wfm.header_name = 'DS1000E'
 
             elif umodel in DS1000Z_scopes:
                 w = RigolWFM.wfm1000z.Wfm1000z.from_file(file_name)
-                scope_type = "Z"
+                new_wfm.header_name = w.preheader.model_number
 
             elif umodel in DS2000_scopes:
                 w = RigolWFM.wfm2000.Wfm2000.from_file(file_name)
-                scope_type = "2"
+                new_wfm.header_name = 'DS2000'
 
             elif umodel in DS4000_scopes:
                 w = RigolWFM.wfm4000.Wfm4000.from_file(file_name)
-                scope_type = "4"
+                new_wfm.header_name = w.header.model_number
 
             elif umodel in DS6000_scopes:
                 w = RigolWFM.wfm6000.Wfm6000.from_file(file_name)
-                scope_type = "6"
+                new_wfm.header_name = w.header.model_number
 
             else:
                 print("Unknown Rigol oscilloscope type: '%s'" % umodel)
                 print(valid_scope_list())
                 return new_wfm
 
-        except Exception as e:
-            raise Parse_WFM_Error("Failed to parse as %s format. Sorry." % umodel)
+        except:
+#            print("Unexpected error:", sys.exc_info()[0])
+            raise
+#            raise Parse_WFM_Error("Failed to parse as %s format. Sorry." % umodel)
 
         # assemble into uniform set of names
         enabled_channels = 0
         for ch_number in range(1, 5):
-            ch = RigolWFM.channel.Channel(w, ch_number, scope_type, enabled_channels)
+            scope_type = model
+            ch = RigolWFM.channel.Channel(w, ch_number, model, enabled_channels)
             if ch.enabled:
                 new_wfm.channels.append(ch)
                 enabled_channels += 1
 
+        new_wfm.user_name = model
+        new_wfm.parser_name = str(w).split(".")[1]
+        
         return new_wfm
 
     @classmethod
@@ -208,10 +229,12 @@ class Wfm():
     def describe(self):
         """Returns a string describing the contents of a Rigol wfm file."""
         s  = "    General:\n"
-        s += "           Model = %s\n" % self.model
-        s += "        Firmware = %s\n" % self.firmware
-        s += '        Filename = %s\n' % self.basename
-        s += '        Channels = ['
+        s += '        File Model   = %s\n' % self.parser_name
+        s += "        User Model   = %s\n" % self.user_name
+        s += '        Parser Model = %s\n' % self.parser_name
+        s += "        Firmware     = %s\n" % self.firmware
+        s += '        Filename     = %s\n' % self.basename
+        s += '        Channels     = ['
 
         first = True
         for ch in self.channels:

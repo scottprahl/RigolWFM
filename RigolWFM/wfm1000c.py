@@ -33,6 +33,15 @@ class Wfm1000c(KaitaiStruct):
         alt = 4
         pattern = 5
         duration = 6
+
+    class MachineModeEnum(Enum):
+        ds1000b = 0
+        ds1000c = 1
+        ds1000e = 2
+        ds1000z = 3
+        ds2000 = 4
+        ds4000 = 5
+        ds6000 = 6
     def __init__(self, _io, _parent=None, _root=None):
         self._io = _io
         self._parent = _parent

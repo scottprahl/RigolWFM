@@ -17,32 +17,29 @@ import argparse
 
 import RigolWFM.wfm as rigol
 
-def info(args, infile):
-    scope_data = rigol.Wfm.from_file_name(infile, args.model)
+def info(args, scope_data, infile):
     s = scope_data.describe()
     print(s)
 
-
-def csv(args, infile):
+def csv(args, scope_data, infile):
     csv_name = os.path.splitext(infile)[0] + '.csv'
 
     if os.path.isfile(csv_name) and not args.force:
         print("'%s' exists, use --force to overwrite" % csv_name)
         return
-    
-    scope_data = rigol.Wfm.from_file_name(infile, args.model)
+
     s = scope_data.csv()
     with open(csv_name, 'wb') as f:
         b = s.encode(encoding='utf-8')
         f.write(b)
 
-def wav(args, infile):
+def wav(args, scope_data, infile):
+
     wav_name = os.path.splitext(infile)[0] + '.wav'
     if os.path.isfile(wav_name) and not args.force:
         print("'%s' exists, use --force to overwrite" % wav_name)
         return
-    
-    scope_data = rigol.Wfm.from_file_name(infile, args.model)
+
     scope_data.wav(1, wav_name)
 
 def main():
@@ -66,13 +63,13 @@ def main():
     )
 
     parser.add_argument(
-        dest='action', 
-        choices = ['csv', 'info', 'wav'],
+        dest='action',
+        choices=['csv', 'info', 'wav'],
         help="Action to perform on the WFM file"
     )
 
     parser.add_argument(
-        'infile', 
+        'infile',
         type=str,
         nargs='+',
         help="Input WFM file"
@@ -85,11 +82,12 @@ def main():
                     "csv": csv,
                     "wav": wav,
                 }
-    
+
     for filename in args.infile:
         try:
-            actionMap[args.action](args, filename)
-        
+            scope_data = rigol.Wfm.from_file_name(filename, args.model)
+            actionMap[args.action](args, scope_data, filename)
+
         except rigol.Parse_WFM_Error as e:
             print("Format does not follow the known file format. Try the --forgiving option.", file=sys.stderr)
             print("If you'd like to help development, please report this error:\n", file=sys.stderr)
