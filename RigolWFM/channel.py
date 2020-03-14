@@ -132,11 +132,13 @@ class Channel():
             self.volt_scale = channel.volt_scale
             self.volt_offset = channel.volt_offset
             self.volt_per_division = channel.volt_per_division
+            self.probe_value = channel.probe_value
         else:
             self.enabled = False
             self.volt_scale = 1
             self.volt_offset = 0
             self.volt_per_division = 1
+            self.probe_value = 1
 
         if scope == 'wfm1000c':
             self.ds1000c(w, ch)
@@ -152,12 +154,14 @@ class Channel():
 
     def __str__(self):
         s =  "     Channel %d:\n" % self.channel_number
-        s += "         Coupling = %10s\n" % self.coupling.rjust(7,' ')
+        s += "         Coupling = %8s\n" % self.coupling.rjust(7,' ')
         s += "            Scale = %10sV/div\n" % engineering_string(self.volt_per_division, 2)
-        s += "           Offset = %10sV\n\n" % engineering_string(self.volt_offset, 2)
+        s += "           Offset = %10sV\n" % engineering_string(self.volt_offset, 2)
+        s += "            Probe = %7gX\n\n" % self.probe_value
         s += "        Time Base = %10ss/div\n" % engineering_string(self.time_scale, 3)
         s += "           Offset = %10ss\n" % engineering_string(self.time_offset, 3)
-        s += "            Delta = %10ss/point\n\n" % engineering_string(self.seconds_per_point, 3)
+        s += "            Delta = %10ss/point\n" % engineering_string(self.seconds_per_point, 3)
+        s += "           Points = %8d\n\n" % self.points
         if self.enabled:
             n=self.points
             s += "         Count    = [%9d,%9d,%9d  ... %9d,%9d]\n" % (

@@ -136,7 +136,7 @@ class Wfm1000e(KaitaiStruct):
             self.shift_display = self._io.read_s2le()
             self.unknown_1 = self._io.read_u1()
             self.unknown_2 = self._io.read_u1()
-            self.probe = self._io.read_f4le()
+            self.probe_value = self._io.read_f4le()
             self.invert_disp_val = self._io.read_u1()
             self.enabled_val = self._io.read_u1()
             self.inverted_m_val = self._io.read_u1()

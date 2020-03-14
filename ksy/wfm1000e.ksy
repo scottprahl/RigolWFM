@@ -118,7 +118,7 @@ types:
         type: u1
       - id: unknown_2
         type: u1
-      - id: probe
+      - id: probe_value
         type: f4
       - id: invert_disp_val
         type: u1

@@ -177,10 +177,8 @@ class Wfm():
         for ch_number in range(1, 5):
 
             ch = RigolWFM.channel.Channel(w, ch_number, pname, enabled_channels)
-            print(ch_number)
             if ch.enabled:
                 new_wfm.channels.append(ch)
-                print(ch.raw[0])
                 enabled_channels += 1
 
         
@@ -293,13 +291,16 @@ class Wfm():
         s = 'X'
         for ch in self.channels:
             s += ",%s" % ch.name
-        s += "\n"
+        s += ",Start,Increment\n"
 
+        # just output the display 100 pts/division
+        incr = ch.time_scale/100
+        off = -6 * ch.time_scale
         s += '%ss' % h_prefix
         for ch in self.channels:
-            s += ",%s%s" % (v_prefix,ch.unit)
-        s += "\n"
-
+            s += ",%s%s" % (v_prefix,ch.unit.name.upper())
+        s += ",%e,%e\n" % (off,incr)
+        
         for i in range(self.channels[0].points):
             s += "%.3f" % (ch.times[i]*h_scale)
             for ch in self.channels:
