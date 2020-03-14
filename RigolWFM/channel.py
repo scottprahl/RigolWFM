@@ -138,15 +138,15 @@ class Channel():
             self.volt_offset = 0
             self.volt_per_division = 1
 
-        if scope == 'C':
+        if scope == 'wfm1000c':
             self.ds1000c(w, ch)
-        elif scope == 'E':
+        elif scope == 'wfm1000e':
             self.ds1000e(w, ch)
-        elif scope == 'Z':
+        elif scope == 'wfm1000z':
             self.ds1000z(w, ch, prior)
-        elif scope == '4':
+        elif scope == 'wfm4000':
             self.ds4000(w, ch)
-        elif scope == '6':
+        elif scope == 'wfm6000':
             self.ds6000(w, ch)
 
 

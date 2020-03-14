@@ -168,17 +168,21 @@ class Wfm():
             raise
 #            raise Parse_WFM_Error("Failed to parse as %s format. Sorry." % umodel)
 
+        new_wfm.user_name = model
+        pname = str(w).split(".")[1]
+        new_wfm.parser_name = pname
+
         # assemble into uniform set of names
         enabled_channels = 0
         for ch_number in range(1, 5):
-            scope_type = model
-            ch = RigolWFM.channel.Channel(w, ch_number, model, enabled_channels)
+
+            ch = RigolWFM.channel.Channel(w, ch_number, pname, enabled_channels)
+            print(ch_number)
             if ch.enabled:
                 new_wfm.channels.append(ch)
+                print(ch.raw[0])
                 enabled_channels += 1
 
-        new_wfm.user_name = model
-        new_wfm.parser_name = str(w).split(".")[1]
         
         return new_wfm
 
