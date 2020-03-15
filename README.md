@@ -17,6 +17,10 @@ Once this is done, one can extract signals from binary Rigol `.wfm` files by::
     w = rigol.Wfm.from_file(filename, scope)
     w.plot()
     plt.show()
+    
+Alternatively, `wfmconvert` can be used from the command line.  For example, the following should convert all the files in the current directory the `.csv` format::
+
+    prompt> wfmconvert 1000E csv *.wfm
 
 More extensive documentation can be found here
 
