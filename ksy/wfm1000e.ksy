@@ -146,6 +146,9 @@ types:
         value: volt_per_division/25.0
       volt_offset:
         value: shift_measured * volt_scale
+      unit:
+        value: "unit_enum::v"
+
 
   time_header:
     seq:
@@ -293,3 +296,9 @@ enums:
     4: alt
     5: pattern
     6: duration
+
+  unit_enum:
+    0: w
+    1: a
+    2: v
+    3: u
