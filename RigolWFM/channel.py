@@ -19,6 +19,13 @@ or the stringification method to describe a channel
 
 """
 import numpy as np
+from enum import Enum
+
+class UnitEnum(Enum):
+    w = 0
+    a = 1
+    v = 2
+    u = 3
 
 def best_scale(number):
     """Scale and units for a number with proper prefix"""
@@ -133,12 +140,14 @@ class Channel():
             self.volt_offset = channel.volt_offset
             self.volt_per_division = channel.volt_per_division
             self.probe_value = channel.probe_value
+            self.unit = channel.unit
         else:
             self.enabled = False
             self.volt_scale = 1
             self.volt_offset = 0
             self.volt_per_division = 1
             self.probe_value = 1
+            self.unit = UnitEnum.v
 
         if scope == 'wfm1000c':
             self.ds1000c(w, ch)
@@ -184,6 +193,7 @@ class Channel():
             self.volts = self.volt_scale * (127.0 - self.raw) - self.volt_offset
             h = self.points * self.seconds_per_point / 2
             self.times = np.linspace(-h, h, self.points) + self.time_offset
+
 
     def ds1000c(self, w, ch):
         """Interpret waveform data for 1000CD series scopes."""
@@ -236,8 +246,8 @@ class Channel():
         self.firmware = w.preheader.firmware_version
         self.probe = w.header.ch[ch-1].probe_value
         self.coupling = w.header.ch[ch-1].coupling.name.upper()
-        self.unit = w.header.ch[ch-1].unit
-
+        self.volt_scale *= -1
+        
         if self.enabled:
             self.raw = _channel_bytes(enabled_count, w.data, self.stride)
 

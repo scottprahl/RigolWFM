@@ -12,6 +12,12 @@ class Wfm1000e(KaitaiStruct):
     """Rigol DS1102E scope .wmf format abstracted from a python script
     """
 
+    class UnitEnum(Enum):
+        w = 0
+        a = 1
+        v = 2
+        u = 3
+
     class TriggerModeEnum(Enum):
         edge = 0
         pulse = 1
@@ -143,6 +149,14 @@ class Wfm1000e(KaitaiStruct):
             self.unknown_3 = self._io.read_u1()
             self.scale_measured = self._io.read_s4le()
             self.shift_measured = self._io.read_s2le()
+
+        @property
+        def unit(self):
+            if hasattr(self, '_m_unit'):
+                return self._m_unit if hasattr(self, '_m_unit') else None
+
+            self._m_unit = self._root.UnitEnum.v
+            return self._m_unit if hasattr(self, '_m_unit') else None
 
         @property
         def inverted(self):

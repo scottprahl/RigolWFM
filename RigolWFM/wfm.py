@@ -15,11 +15,9 @@ import tempfile
 import requests
 import os.path
 import wave
-import inspect
-import pprint
 
+import urllib.parse
 import matplotlib.pyplot as plt
-from urllib.parse import urlparse
 
 import RigolWFM.wfm1000c
 import RigolWFM.wfm1000e
@@ -195,7 +193,7 @@ class Wfm():
         wrong - bad url, bad download, or an error parsing the file.
         """
 
-        u = urlparse(url)
+        u = urllib.parse.urlparse(url)
         scheme = u[0]
 
         if scheme != 'http' and scheme != 'https':
@@ -271,9 +269,11 @@ class Wfm():
     def plot(self):
         """Plots the data."""
         h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()
-
-        for ch in self.channels:
-            plt.plot(ch.times*h_scale, ch.volts*v_scale, label=ch.name)
+        colors = ['red', 'blue', 'orange', 'magenta']
+        
+        for i,ch in enumerate(self.channels):
+            plt.plot(ch.times*h_scale, ch.volts*v_scale, 
+                     label=ch.name, color=colors[i])
 
         plt.xlabel("Time (%ss)" % h_prefix)
         plt.ylabel("Voltage (%sV)" % v_prefix)
