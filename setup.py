@@ -27,6 +27,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Topic :: Scientific/Engineering',
     ],
+    scripts=['wfmconvert'] ,
     keywords=['Rigol', 'wfm', 'DS1052E', 'DS1102E', 'DS1054Z'],
     install_requires=['kaitaistruct', 'numpy','matplotlib'],
     long_description=long_description,
