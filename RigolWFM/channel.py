@@ -246,7 +246,6 @@ class Channel():
         self.firmware = w.preheader.firmware_version
         self.probe = w.header.ch[ch-1].probe_value
         self.coupling = w.header.ch[ch-1].coupling.name.upper()
-        self.volt_scale *= -1
         
         if self.enabled:
             self.raw = _channel_bytes(enabled_count, w.data, self.stride)

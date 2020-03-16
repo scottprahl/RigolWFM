@@ -164,7 +164,7 @@ class Wfm1000z(KaitaiStruct):
             if hasattr(self, '_m_volt_offset'):
                 return self._m_volt_offset if hasattr(self, '_m_volt_offset') else None
 
-            self._m_volt_offset = self.shift
+            self._m_volt_offset = (self.shift - self.volt_per_division)
             return self._m_volt_offset if hasattr(self, '_m_volt_offset') else None
 
         @property
@@ -180,7 +180,7 @@ class Wfm1000z(KaitaiStruct):
             if hasattr(self, '_m_volt_scale'):
                 return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
 
-            self._m_volt_scale = (self.volt_per_division / 25.0)
+            self._m_volt_scale = (-(self.volt_per_division) / 20.0)
             return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
 
         @property
