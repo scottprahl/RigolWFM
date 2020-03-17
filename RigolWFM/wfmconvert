@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+#pylint: disable=invalid-name
 #pylint: disable=missing-function-docstring
+#pylint: disable=unused-argument
 """
 Command line utility to extract signals or description
 from a range of Rigol Oscilloscope waveform file.
@@ -40,7 +42,7 @@ def wav(args, scope_data, infile):
         print("'%s' exists, use --force to overwrite" % wav_name)
         return
 
-    scope_data.wav(1, wav_name)
+    scope_data.wav(wav_name, channel=args.channel)
 
 def main():
 
@@ -54,6 +56,13 @@ def main():
         '--force',
         action='store_true',
         help="overwrite existing csv or wav files"
+    )
+
+    parser.add_argument(
+        '--channel',
+        type=int,
+        default=1,
+        help="designate channel to save in .wav file"
     )
 
     parser.add_argument(
@@ -77,20 +86,17 @@ def main():
 
     args = parser.parse_args()
 
-    actionMap = {
-                    "info": info,
-                    "csv": csv,
-                    "wav": wav,
-                }
+    actionMap = {"info": info, "csv": csv, "wav": wav}
 
     for filename in args.infile:
         try:
-            scope_data = rigol.Wfm.from_file_name(filename, args.model)
+            scope_data = rigol.Wfm.from_file(filename, args.model)
             actionMap[args.action](args, scope_data, filename)
 
         except rigol.Parse_WFM_Error as e:
-            print("Format does not follow the known file format. Try the --forgiving option.", file=sys.stderr)
-            print("If you'd like to help development, please report this error:\n", file=sys.stderr)
+            print("Format does not follow a known format.", file=sys.stderr)
+            print("To help development, post report this error\n", file=sys.stderr)
+            print("as an issue to https://github.com/scottprahl/RigolWFM\n", file=sys.stderr)
             print(e, file=sys.stderr)
             sys.exit()
 if __name__ == "__main__":

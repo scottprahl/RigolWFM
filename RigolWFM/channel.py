@@ -1,6 +1,6 @@
 #pylint: disable=invalid-name
 #pylint: disable=too-many-instance-attributes
-
+#pylint: disable=too-many-return-statements
 """
 Class structure and methods for an oscilloscope channel.
 
@@ -18,10 +18,11 @@ or the stringification method to describe a channel
     print(channel)
 
 """
-import numpy as np
 from enum import Enum
+import numpy as np
 
 class UnitEnum(Enum):
+    """Enumerated units for scopes without them."""
     w = 0
     a = 1
     v = 2
@@ -33,31 +34,28 @@ def best_scale(number):
 
     if absnr == 0:
         return 1, ' '
-    elif absnr < 0.99999999e-9:
+    if absnr < 0.99999999e-9:
         return 1e12, 'p'
-    elif absnr < 0.99999999e-6:
+    if absnr < 0.99999999e-6:
         return 1e9, 'n'
-    elif absnr < 0.99999999e-3:
+    if absnr < 0.99999999e-3:
         return 1e6, 'µ'
-    elif absnr < 0.99999999:
+    if absnr < 0.99999999:
         return 1e3, 'm'
-    elif absnr < 0.99999999e3:
+    if absnr < 0.99999999e3:
         return 1, ' '
-    elif absnr < 0.99999999e6:
+    if absnr < 0.99999999e6:
         return 1e-3, 'k'
-    elif absnr < 0.999999991e9:
+    if absnr < 0.999999991e9:
         return 1e-6, 'M'
-    else:
-        return 1e-9, 'G'
+    return 1e-9, 'G'
 
 def engineering_string(number, n_digits):
     """Format number with proper prefix"""
 
     scale, prefix = best_scale(number)
-    format = "%%.%df %%s" % n_digits
-    s = format % (number * scale, prefix)
-    ss = s.rjust(10,' ')
-
+    fformat = "%%.%df %%s" % n_digits
+    s = fformat % (number * scale, prefix)
     return s
 
 
@@ -162,8 +160,8 @@ class Channel():
 
 
     def __str__(self):
-        s =  "     Channel %d:\n" % self.channel_number
-        s += "         Coupling = %8s\n" % self.coupling.rjust(7,' ')
+        s = "     Channel %d:\n" % self.channel_number
+        s += "         Coupling = %8s\n" % self.coupling.rjust(7, ' ')
         s += "            Scale = %10sV/div\n" % engineering_string(self.volt_per_division, 2)
         s += "           Offset = %10sV\n" % engineering_string(self.volt_offset, 2)
         s += "            Probe = %7gX\n\n" % self.probe_value
@@ -172,7 +170,6 @@ class Channel():
         s += "            Delta = %10ss/point\n" % engineering_string(self.seconds_per_point, 3)
         s += "           Points = %8d\n\n" % self.points
         if self.enabled:
-            n=self.points
             s += "         Count    = [%9d,%9d,%9d  ... %9d,%9d]\n" % (
                 1, 2, 3, self.points-1, self.points)
             s += "           Raw    = [%9d,%9d,%9d  ... %9d,%9d]\n" % (
@@ -246,7 +243,7 @@ class Channel():
         self.firmware = w.preheader.firmware_version
         self.probe = w.header.ch[ch-1].probe_value
         self.coupling = w.header.ch[ch-1].coupling.name.upper()
-        
+
         if self.enabled:
             self.raw = _channel_bytes(enabled_count, w.data, self.stride)
 
