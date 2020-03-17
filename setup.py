@@ -10,7 +10,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 setup(
     name='RigolWFM',
     packages=['RigolWFM'],
-    version='0.4.1',
+    version='0.5.0',
     description='Read and parse Rigol Oscilloscope WFM files',
     url='https://github.com/scottprahl/RigolWFM.git',  
     author='Scott Prahl',
