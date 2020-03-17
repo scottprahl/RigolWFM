@@ -61,7 +61,7 @@ teste:
 	RigolWFM/wfmconvert E info wfm/DS1052E.wfm
 
 testz:
-	RigolWFM/wfmconvert Z info wfm/DS1054Z.wfm
+	RigolWFM/wfmconvert Z info wfm/DS1054Z-A.wfm
 	RigolWFM/wfmconvert Z info wfm/MSO1104.wfm
 	RigolWFM/wfmconvert Z info wfm/DS1074Z-A.wfm
 	RigolWFM/wfmconvert Z info wfm/DS1074Z-B.wfm
@@ -94,6 +94,12 @@ clean:
 	rm -rf RigolWFM.egg-info
 	rm -rf doc/github.com
 	rm -rf RigolWFM/__pycache__
+	rm -rf wfm/DS1102E-A.csv
+	rm -rf wfm/MSO1104.csv
+	rm -rf wfm/DS4022-A.csv
+	rm -rf wfm/DS1102E-A.wav
+	rm -rf wfm/MSO1104.wav
+	rm -rf wfm/DS4022-A.wav
 
 realclean:
 	make clean
