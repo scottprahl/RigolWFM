@@ -181,7 +181,8 @@ class Wfm():
 
         return new_wfm
 
-    def from_url(self, url, model):
+    @classmethod
+    def from_url(cls, url, model):
         """
         Return a waveform object given a URL.
 
@@ -212,7 +213,7 @@ class Wfm():
             working_name = f.name
 
             try:
-                new_wfm = self.from_file(working_name, model)
+                new_wfm = cls.from_file(working_name, model)
                 new_wfm.original_name = url
                 # extract the simple name
                 rawpath = u[2]

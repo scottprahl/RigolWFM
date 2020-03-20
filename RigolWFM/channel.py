@@ -136,6 +136,8 @@ class Channel():
             self.enabled = channel.enabled
             self.volt_scale = channel.volt_scale
             self.volt_offset = channel.volt_offset
+            self.y_scale = channel.volt_scale
+            self.y_offset = channel.volt_offset
             self.volt_per_division = channel.volt_per_division
             self.probe_value = channel.probe_value
             self.unit = channel.unit
@@ -143,6 +145,8 @@ class Channel():
             self.enabled = False
             self.volt_scale = 1
             self.volt_offset = 0
+            self.y_scale = 1
+            self.y_offset = 0
             self.volt_per_division = 1
             self.probe_value = 1
             self.unit = UnitEnum.v
@@ -187,7 +191,7 @@ class Channel():
     def calc_times_and_volts(self):
         """Calculate the times and voltages for this channel."""
         if self.enabled:
-            self.volts = self.volt_scale * (127.0 - self.raw) - self.volt_offset
+            self.volts = self.y_scale * (127.0 - self.raw) - self.y_offset
             h = self.points * self.seconds_per_point / 2
             self.times = np.linspace(-h, h, self.points) + self.time_offset
 
@@ -243,7 +247,9 @@ class Channel():
         self.firmware = w.preheader.firmware_version
         self.probe = w.header.ch[ch-1].probe_value
         self.coupling = w.header.ch[ch-1].coupling.name.upper()
-
+        self.y_scale = w.header.ch[ch-1].y_scale
+        self.y_offset = w.header.ch[ch-1].y_offset
+        
         if self.enabled:
             self.raw = _channel_bytes(enabled_count, w.data, self.stride)
 
