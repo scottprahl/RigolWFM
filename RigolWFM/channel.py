@@ -141,6 +141,7 @@ class Channel():
             self.volt_per_division = channel.volt_per_division
             self.probe_value = channel.probe_value
             self.unit = channel.unit
+            self.inverted = channel.inverted
         else:
             self.enabled = False
             self.volt_scale = 1
@@ -150,6 +151,7 @@ class Channel():
             self.volt_per_division = 1
             self.probe_value = 1
             self.unit = UnitEnum.v
+            self.inverted = False
 
         if scope == 'wfm1000c':
             self.ds1000c(w, ch)
@@ -170,7 +172,8 @@ class Channel():
         s += "         Coupling = %8s\n" % self.coupling.rjust(7, ' ')
         s += "            Scale = %10sV/div\n" % engineering_string(self.volt_per_division, 2)
         s += "           Offset = %10sV\n" % engineering_string(self.volt_offset, 2)
-        s += "            Probe = %7gX\n\n" % self.probe_value
+        s += "            Probe = %7gX\n" % self.probe_value
+        s += "         Inverted = %8s\n\n" % self.inverted
         s += "        Time Base = %10ss/div\n" % engineering_string(self.time_scale, 3)
         s += "           Offset = %10ss\n" % engineering_string(self.time_offset, 3)
         s += "            Delta = %10ss/point\n" % engineering_string(self.seconds_per_point, 3)
@@ -251,7 +254,7 @@ class Channel():
         self.coupling = w.header.ch[ch-1].coupling.name.upper()
         self.y_scale = w.header.ch[ch-1].y_scale
         self.y_offset = w.header.ch[ch-1].y_offset
-        
+
         if self.enabled:
             self.raw = _channel_bytes(enabled_count, w.data, self.stride)
 
@@ -265,6 +268,8 @@ class Channel():
         self.points = w.header.storage_depth
         self.firmware = w.header.firmware_version
         self.coupling = w.header.ch[ch-1].coupling.name.upper()
+        self.y_scale = -self.volt_scale
+        self.y_offset = self.volt_offset
 
         if self.enabled:
             if ch == 1:
