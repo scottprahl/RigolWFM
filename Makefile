@@ -59,6 +59,10 @@ teste:
 	RigolWFM/wfmconvert E info wfm/DS1102E-C.wfm
 	RigolWFM/wfmconvert E info wfm/DS1102E-D.wfm
 	RigolWFM/wfmconvert E info wfm/DS1052E.wfm
+	RigolWFM/wfmconvert E info wfm/DS1000E-A.wfm
+	RigolWFM/wfmconvert E info wfm/DS1000E-B.wfm
+	RigolWFM/wfmconvert E info wfm/DS1000E-C.wfm
+	RigolWFM/wfmconvert E info wfm/DS1000E-D.wfm
 
 testz:
 	RigolWFM/wfmconvert Z info wfm/DS1054Z-A.wfm
