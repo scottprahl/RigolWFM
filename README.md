@@ -18,7 +18,7 @@ Once this is done, one can extract signals from binary Rigol `.wfm` files by::
     w.plot()
     plt.show()
     
-Alternatively, `wfmconvert` can be used from the command line.  For example, the following should convert all the files in the current directory the `.csv` format::
+Alternatively, `wfmconvert` can be used from the command line.  For example, the following should convert all the DS1000E files in the current directory to the `.csv` format::
 
     prompt> wfmconvert 1000E csv *.wfm
 
@@ -42,12 +42,12 @@ This last project leveraged Kaitai Struct <https://kaitai.io> as a domain specif
 
 ## Status
 
-There is a bit of work remaining (testing, validation, repackaging) but at least there are now binary file descriptions for `.wfm` files created by
+There is a bit of work remaining (testing, validation, repackaging) but at least there are now binary file descriptions for `.wfm` files for the following scopes:
 
 * DS1000C untested
 * DS1000E tested
 * DS1000Z tested, (wonky voltages - perhaps fixed with recent firmware?)
-* DS2000 untested, (basic, no info about voltage scale)
+* DS2000 parses, plausible voltages
 * DS4000 tested
 * DS6000 untested
 
@@ -62,8 +62,9 @@ This has been a bit of an adventure.  In the process of nailing down the basic f
 * Szkutnik's python code <https://github.com/michal-szkutnik/pyRigolWfm1000Z>
 * Cat-Ion's python code <https://github.com/Cat-Ion/rigol-ds4000-wfm>
 * Šolc's python code <https://www.tablix.org/~avian/blog/archives/2019/08/quick_and_ugly_wfm_data_export_for_rigol_ds2072a/>
+* Contributions from <http://www.hakasoft.com.au/wfm_viewer>
 * A LabView program I got from Rigol support
-* Rigol's documentation of the 1000Z and 6000 file formats.
+* Rigol's documentation of the 1000E, 1000Z, 2000, and 6000 file formats.
 
 ## License
 
