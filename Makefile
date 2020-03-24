@@ -80,6 +80,7 @@ test: $(PYTHON_PARSERS)
 	make teste
 	make testz
 	make test4
+	make test2
 	make csv
 	make wav
 
