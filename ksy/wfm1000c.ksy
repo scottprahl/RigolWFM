@@ -146,7 +146,7 @@ enums:
     4: alt
     5: pattern
     6: duration
-    
+
   machine_mode_enum:
     0: ds1000b
     1: ds1000c
@@ -155,4 +155,3 @@ enums:
     4: ds2000
     5: ds4000
     6: ds6000
-
