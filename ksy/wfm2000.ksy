@@ -8,9 +8,6 @@ instances:
   header:
     pos: 0
     type: header
-  data:
-    pos: 20916
-    type: raw_data
 
 types:
   header:
@@ -32,17 +29,29 @@ types:
         encoding: ascii
 
       - id: block_num
-        type: u2
-        doc: should be 1
+        contents: [0x01, 0x00]
 
       - id: file_version
         type: u2
 
       - id: unused_1
-        size: 16
+        size: 8
+
+      - id: crc
+        type: u4
+
+      - id: structure_size
+        type: u2
+
+      - id: structure_version
+        type: u2
 
       - id: enabled
         type: channel_mask
+
+      - id: extra_1a
+        size: 2
+        doc: not in pdf specification
 
       - id: channel_offset
         type: u4
@@ -61,12 +70,20 @@ types:
         type: u2
         doc: equ or real
 
+      - id: extra_1b
+        size: 2
+        doc: not in pdf specification
+
       - id: mem_depth
         type: u4
         doc: storage depth
 
       - id: sample_rate_hz
         type: f4
+
+      - id: extra_1c
+        size: 2
+        doc: not in pdf specification
 
       - id: time_mode
         type: u2
@@ -80,7 +97,7 @@ types:
         type: s8
         doc: horizontal offset in picoseconds
 
-      - id: channel
+      - id: ch
         type: channel_header
         repeat: expr
         repeat-expr: 4
@@ -210,9 +227,41 @@ types:
       points:
         value: _root.header.mem_depth
 
+      raw_1:
+        io: _root._io
+        pos: channel_offset[0]
+        type: u1
+        repeat: expr
+        repeat-expr: storage_depth
+        if: channel_offset[0] > 0
+
+      raw_2:
+        io: _root._io
+        pos: channel_offset[1]
+        type: u1
+        repeat: expr
+        repeat-expr: storage_depth
+        if: channel_offset[1] > 0
+
+      raw_3:
+        io: _root._io
+        pos: channel_offset[2]
+        type: u1
+        repeat: expr
+        repeat-expr: storage_depth
+        if: channel_offset[2] > 0
+
+      raw_4:
+        io: _root._io
+        pos: channel_offset[3]
+        type: u1
+        repeat: expr
+        repeat-expr: storage_depth
+        if: channel_offset[3] > 0
+
   channel_header:
     seq:
-      - id: enabled
+      - id: enabled_boolean
         type: u1
 
       - id: coupling
@@ -230,34 +279,45 @@ types:
       - id: probe_ratio
         type: u1
         enum: probe_ratio_enum
+
       - id: probe_diff
         type: u1
         enum: probe_enum
+
       - id: probe_signal
         type: u1
         enum: probe_enum
+
       - id: probe_impedance
         type: u1
         enum: impedance_enum
 
       - id: volt_per_division
         type: f4
+
       - id: volt_offset
         type: f4
-      - id: invert
+
+      - id: inverted_boolean
         type: u1
+
       - id: unit
         type: u1
         enum: unit_enum
+
       - id: filter_enabled
         type: u1
+
       - id: filter_type
         type: u1
+
         enum: filter_enum
       - id: filter_high
         type: u4
+
       - id: filter_low
         type: u4
+
     instances:
       probe_value:
         value: "(probe_ratio == probe_ratio_enum::x0_01 ? 0.01 :
@@ -276,6 +336,19 @@ types:
                  probe_ratio == probe_ratio_enum::x200 ? 200.0 :
                  probe_ratio == probe_ratio_enum::x500 ? 500.0 : 1000.0)"
 
+      inverted:
+        value: "inverted_boolean != 0 ? true : false"
+
+      enabled:
+        value: "enabled_boolean != 0 ? true : false"
+
+      volt_signed:
+        value: "inverted ?
+                -1.0 * volt_per_division:
+                +1.0 * volt_per_division"
+      volt_scale:
+        value: volt_signed/25.0
+
   channel_mask:
     seq:
       - id: unused_1
@@ -292,32 +365,6 @@ types:
         type: b7
       - id: interwoven
         type: b1
-
-  raw_data:
-    seq:
-      - id: channel_1
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.mem_depth
-        if: _root.header.enabled.channel_1
-
-      - id: channel_2
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.mem_depth
-        if: _root.header.enabled.channel_2
-
-      - id: channel_3
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.mem_depth
-        if: _root.header.enabled.channel_3
-
-      - id: channel_4
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.mem_depth
-        if: _root.header.enabled.channel_4
 
 enums:
   acquisition_enum:

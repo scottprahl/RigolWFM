@@ -157,6 +157,8 @@ class Channel():
             self.ds1000e(w, ch)
         elif scope == 'wfm1000z':
             self.ds1000z(w, ch, prior)
+        elif scope == 'wfm2000':
+            self.ds2000(w, ch)
         elif scope == 'wfm4000':
             self.ds4000(w, ch)
         elif scope == 'wfm6000':
@@ -258,11 +260,24 @@ class Channel():
     def ds2000(self, w, ch):
         """Interpret waveform for the Rigol DS2000 series."""
 
-        if ch == 1:
-            self.raw[0::2] = np.array(w.data.ch1, dtype=np.uint8)
+        self.time_offset = w.header.time_offset
+        self.time_scale = w.header.time_scale
+        self.points = w.header.storage_depth
+        self.firmware = w.header.firmware_version
+        self.coupling = w.header.ch[ch-1].coupling.name.upper()
 
-        if ch == 2:
-            self.raw[1::2] = np.array(w.data.ch2, dtype=np.uint8)
+        if self.enabled:
+            if ch == 1:
+                self.raw = np.array(w.header.raw_1, dtype=np.uint8)
+
+            if ch == 2:
+                self.raw = np.array(w.header.raw_2, dtype=np.uint8)
+
+            if ch == 3:
+                self.raw = np.array(w.header.raw_3, dtype=np.uint8)
+
+            if ch == 4:
+                self.raw = np.array(w.header.raw_4, dtype=np.uint8)
 
         self.calc_times_and_volts()
 

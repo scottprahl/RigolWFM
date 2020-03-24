@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 import RigolWFM.wfm1000c
 import RigolWFM.wfm1000e
 import RigolWFM.wfm1000z
+import RigolWFM.wfm2000
 import RigolWFM.wfm4000
 import RigolWFM.wfm6000
 import RigolWFM.channel
@@ -47,7 +48,7 @@ DS1000Z_scopes = ["Z", "1000Z", "DS1000Z",
                   "DS1104Z-S", "MSO1054Z", "DS1054Z",
                   "MSO1074Z", "MSO1104Z", "DS1104Z"]
 
-# untested, super basic implementation
+# tested
 DS2000_scopes = ["2", "2000", "DS2000",
                  "DS2102A", "MSO2102A", "MSO2102A-S",
                  "DS2202A", "MSO2202A", "MSO2202A-S",
@@ -70,6 +71,7 @@ def valid_scope_list():
     s += ", ".join(DS1000C_scopes) + "\n"
     s += ", ".join(DS1000E_scopes) + "\n"
     s += ", ".join(DS1000Z_scopes) + "\n"
+    s += ", ".join(DS2000_scopes) + "\n"
     s += ", ".join(DS4000_scopes) + "\n"
     s += ", ".join(DS6000_scopes) + "\n"
     return s
@@ -173,8 +175,7 @@ class Wfm():
         enabled_channels = 0
         for ch_number in range(1, 5):
 
-            ch = RigolWFM.channel.Channel(
-                w, ch_number, pname, enabled_channels)
+            ch = RigolWFM.channel.Channel(w, ch_number, pname, enabled_channels)
             if ch.enabled:
                 new_wfm.channels.append(ch)
                 enabled_channels += 1

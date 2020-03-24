@@ -66,6 +66,10 @@ testz:
 	RigolWFM/wfmconvert Z info wfm/DS1074Z-A.wfm
 	RigolWFM/wfmconvert Z info wfm/DS1074Z-B.wfm
 
+test2:
+	RigolWFM/wfmconvert 2 info wfm/DS2000-A.wfm
+	RigolWFM/wfmconvert 2 info wfm/DS2000-B.wfm
+
 test4:
 	RigolWFM/wfmconvert 4 info wfm/DS4022-A.wfm
 	RigolWFM/wfmconvert 4 info wfm/DS4022-B.wfm
