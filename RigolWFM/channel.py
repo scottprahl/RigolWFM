@@ -295,6 +295,8 @@ class Channel():
         self.points = w.header.points
         self.firmware = w.header.firmware_version
         self.coupling = w.header.ch[ch-1].coupling.name.upper()
+        self.y_scale = -self.volt_scale
+        self.y_offset = self.volt_offset
 
         if self.enabled:
             if ch == 1:
