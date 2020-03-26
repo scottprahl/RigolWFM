@@ -44,9 +44,10 @@ DS1000E_scopes = ["E", "1000E", "DS1000E",
 
 # tested, wonky voltages
 DS1000Z_scopes = ["Z", "1000Z", "DS1000Z",
-                  "DS1202Z", "DS1074Z", "DS1104Z", "DS1074Z-S",
-                  "DS1104Z-S", "MSO1054Z", "DS1054Z",
-                  "MSO1074Z", "MSO1104Z", "DS1104Z"]
+                  "DS1202Z",
+                  "DS1054Z", "MSO1054Z", 
+                  "DS1074Z", "MSO1074Z", "DS1074Z-S",
+                  "DS1104Z", "MSO1104Z", "DS1104Z-S"]
 
 # tested
 DS2000_scopes = ["2", "2000", "DS2000",
