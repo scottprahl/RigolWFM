@@ -171,6 +171,7 @@ class Wfm():
         pname = str(w).split(".")[1]
         new_wfm.parser_name = pname
 
+
         # assemble into uniform set of names
         enabled_channels = 0
         for ch_number in range(1, 5):
@@ -180,6 +181,7 @@ class Wfm():
                 new_wfm.channels.append(ch)
                 enabled_channels += 1
 
+        new_wfm.firmware = new_wfm.channels[0].firmware
         return new_wfm
 
     @classmethod
