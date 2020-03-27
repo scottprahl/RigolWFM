@@ -10,7 +10,12 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 setup(
     name='RigolWFM',
     packages=['RigolWFM'],
-    version='0.6.0',
+    version='0.6.1',
+    entry_points={
+        'console_scripts': [
+            'wfmconvert = RigolWFM.wfmconvert:main'
+      ]
+    },
     description='Read and parse Rigol Oscilloscope WFM files',
     url='https://github.com/scottprahl/RigolWFM.git',  
     author='Scott Prahl',
@@ -27,7 +32,6 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Topic :: Scientific/Engineering',
     ],
-    scripts=['RigolWFM/wfmconvert'] ,
     keywords=['Rigol', 'wfm', 'DS1000C','DS1000CD','DS1000C','DS1000MD',
     'DS1000M','DS1302CA','DS1202CA','DS1102CA','DS1062CA','DS1000E',
     'DS1000D','DS1102E','DS1052E','DS1102D','DS1052D','DS1000Z','DS1202Z',

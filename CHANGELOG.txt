@@ -1,3 +1,6 @@
+v0.6.1
+    use portable install for console_scripts
+
 v0.6.0
     add support for DS2000
     add command-line utility wfmconvert

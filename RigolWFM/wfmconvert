@@ -99,5 +99,6 @@ def main():
             print("as an issue to https://github.com/scottprahl/RigolWFM\n", file=sys.stderr)
             print(e, file=sys.stderr)
             sys.exit()
+
 if __name__ == "__main__":
     main()
