@@ -1,4 +1,7 @@
 v0.6.1
+    trying to get console_scripts right
+
+v0.6.1
     use portable install for console_scripts
 
 v0.6.0

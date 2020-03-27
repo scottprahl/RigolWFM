@@ -54,31 +54,31 @@ check:
 	make ksycheck
 
 teste:
-	RigolWFM/wfmconvert E info wfm/DS1102E-A.wfm
-	RigolWFM/wfmconvert E info wfm/DS1102E-B.wfm
-	RigolWFM/wfmconvert E info wfm/DS1102E-C.wfm
-	RigolWFM/wfmconvert E info wfm/DS1102E-D.wfm
-	RigolWFM/wfmconvert E info wfm/DS1052E.wfm
-	RigolWFM/wfmconvert E info wfm/DS1000E-A.wfm
-	RigolWFM/wfmconvert E info wfm/DS1000E-B.wfm
-	RigolWFM/wfmconvert E info wfm/DS1000E-C.wfm
-	RigolWFM/wfmconvert E info wfm/DS1000E-D.wfm
+	python3 RigolWFM/wfmconvert.py E info wfm/DS1102E-A.wfm
+	python3 RigolWFM/wfmconvert.py E info wfm/DS1102E-B.wfm
+	python3 RigolWFM/wfmconvert.py E info wfm/DS1102E-C.wfm
+	python3 RigolWFM/wfmconvert.py E info wfm/DS1102E-D.wfm
+	python3 RigolWFM/wfmconvert.py E info wfm/DS1052E.wfm
+	python3 RigolWFM/wfmconvert.py E info wfm/DS1000E-A.wfm
+	python3 RigolWFM/wfmconvert.py E info wfm/DS1000E-B.wfm
+	python3 RigolWFM/wfmconvert.py E info wfm/DS1000E-C.wfm
+	python3 RigolWFM/wfmconvert.py E info wfm/DS1000E-D.wfm
 
 testz:
-	RigolWFM/wfmconvert Z info wfm/DS1054Z-A.wfm
-	RigolWFM/wfmconvert Z info wfm/MSO1104.wfm
-	RigolWFM/wfmconvert Z info wfm/DS1074Z-A.wfm
-	RigolWFM/wfmconvert Z info wfm/DS1074Z-B.wfm
+	python3 RigolWFM/wfmconvert.py Z info wfm/DS1054Z-A.wfm
+	python3 RigolWFM/wfmconvert.py Z info wfm/MSO1104.wfm
+	python3 RigolWFM/wfmconvert.py Z info wfm/DS1074Z-A.wfm
+	python3 RigolWFM/wfmconvert.py Z info wfm/DS1074Z-B.wfm
 
 test2:
-	RigolWFM/wfmconvert 2 info wfm/DS2000-A.wfm
-	RigolWFM/wfmconvert 2 info wfm/DS2000-B.wfm
+	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2000-A.wfm
+	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2000-B.wfm
 
 test4:
-	RigolWFM/wfmconvert 4 info wfm/DS4022-A.wfm
-	RigolWFM/wfmconvert 4 info wfm/DS4022-B.wfm
-	RigolWFM/wfmconvert 4 info wfm/DS4024-A.wfm
-	RigolWFM/wfmconvert 4 info wfm/DS4024-B.wfm
+	python3 RigolWFM/wfmconvert.py 4 info wfm/DS4022-A.wfm
+	python3 RigolWFM/wfmconvert.py 4 info wfm/DS4022-B.wfm
+	python3 RigolWFM/wfmconvert.py 4 info wfm/DS4024-A.wfm
+	python3 RigolWFM/wfmconvert.py 4 info wfm/DS4024-B.wfm
 
 test: $(PYTHON_PARSERS)
 	make teste
@@ -89,14 +89,14 @@ test: $(PYTHON_PARSERS)
 	make wav
 
 csv:
-	RigolWFM/wfmconvert E csv wfm/DS1102E-A.wfm
-	RigolWFM/wfmconvert Z csv wfm/MSO1104.wfm
-	RigolWFM/wfmconvert 4 csv wfm/DS4022-A.wfm
+	python3 RigolWFM/wfmconvert.py E csv wfm/DS1102E-A.wfm
+	python3 RigolWFM/wfmconvert.py Z csv wfm/MSO1104.wfm
+	python3 RigolWFM/wfmconvert.py 4 csv wfm/DS4022-A.wfm
 
 wav:
-	RigolWFM/wfmconvert E wav wfm/DS1102E-A.wfm
-	RigolWFM/wfmconvert Z wav wfm/MSO1104.wfm
-	RigolWFM/wfmconvert 4 wav wfm/DS4022-A.wfm
+	python3 RigolWFM/wfmconvert.py E wav wfm/DS1102E-A.wfm
+	python3 RigolWFM/wfmconvert.py Z wav wfm/MSO1104.wfm
+	python3 RigolWFM/wfmconvert.py 4 wav wfm/DS4022-A.wfm
 	
 clean:
 	rm -rf dist
