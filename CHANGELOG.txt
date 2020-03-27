@@ -1,3 +1,11 @@
+v0.6.0
+    add support for DS2000
+    add command-line utility wfmconvert
+    improve support for DS1000Z
+    fix DS4000
+    add .csv export
+    add .wav export
+    
 v0.4.1
     fix requirement for enum by just requiring python > 3.4
     

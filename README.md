@@ -11,7 +11,7 @@ Once this is done, one can extract signals from binary Rigol `.wfm` files by::
     import matplotlib.pyplot as plt
     import RigolWFM.wfm as rigol
 
-    filename = 'OneChannelFile.wfm'
+    filename = 'example.wfm'
     scope = 'DS1000E'
 
     w = rigol.Wfm.from_file(filename, scope)
@@ -27,6 +27,7 @@ More extensive documentation can be found here
 * Basics <https://github.com/scottprahl/RigolWFM/blob/master/doc/0-Basics.ipynb>
 * DS1000E <https://github.com/scottprahl/RigolWFM/blob/master/doc/1-DS1000E-Waveforms.ipynb>
 * DS1000Z <https://github.com/scottprahl/RigolWFM/blob/master/doc/1-DS1000Z-Waveforms.ipynb>
+* DS2000 <https://github.com/scottprahl/RigolWFM/blob/master/doc/1-DS2000-Waveforms.ipynb>
 * DS4000 <https://github.com/scottprahl/RigolWFM/blob/master/doc/1-DS4000-Waveforms.ipynb>
 
 ## Background
@@ -46,8 +47,8 @@ There is a bit of work remaining (testing, validation, repackaging) but at least
 
 * DS1000C untested
 * DS1000E tested
-* DS1000Z tested, (wonky voltages - perhaps fixed with recent firmware?)
-* DS2000 parses, plausible voltages
+* DS1000Z tested, but with wonky voltage offsets
+* DS2000 tested
 * DS4000 tested
 * DS6000 untested
 
