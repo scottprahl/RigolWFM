@@ -2,7 +2,6 @@ A checklist for releasing a new version
 
 # sanity test the release
   make check
-  make
   make test
   
 # make sure all Jupyter notebooks in the doc folder still work
