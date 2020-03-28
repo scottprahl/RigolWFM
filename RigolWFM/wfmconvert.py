@@ -1,18 +1,16 @@
-#!/usr/bin/env python3
 #pylint: disable=invalid-name
 #pylint: disable=missing-function-docstring
 #pylint: disable=unused-argument
 """
-Command line utility to extract signals or description
-from a range of Rigol Oscilloscope waveform file.
+Command line utility to convert Rigol .wfm files.
 
 Use like this::
 
     wfmconvert 1102E info DS1102E-A.wfm
     wfmconvert 1102E csv DS1102E-A.wfm
     wfmconvert 1102E wav DS1102E-A.wfm
-
 """
+
 import os
 import sys
 import argparse
@@ -20,10 +18,12 @@ import argparse
 import RigolWFM.wfm as rigol
 
 def info(args, scope_data, infile):
+    """Create a string that describes content of .wfm file."""
     s = scope_data.describe()
     print(s)
 
 def csv(args, scope_data, infile):
+    """Create a file with comma separated values."""
     csv_name = os.path.splitext(infile)[0] + '.csv'
 
     if os.path.isfile(csv_name) and not args.force:
@@ -36,7 +36,7 @@ def csv(args, scope_data, infile):
         f.write(b)
 
 def wav(args, scope_data, infile):
-
+    """Create an audible .wav file for use in LTSpice."""
     wav_name = os.path.splitext(infile)[0] + '.wav'
     if os.path.isfile(wav_name) and not args.force:
         print("'%s' exists, use --force to overwrite" % wav_name)
@@ -45,7 +45,7 @@ def wav(args, scope_data, infile):
     scope_data.wav(wav_name, channel=args.channel)
 
 def main():
-
+    """Parse console command line arguments."""
     parser = argparse.ArgumentParser(
         prog='wfmconvert',
         description='Parse Rigol WFM files.',

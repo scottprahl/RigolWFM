@@ -12,7 +12,9 @@ legacy_tox_ini = """
 envlist = py37
 
 [testenv]
-deps = requests
+deps = requests 
+       matplotlib
+       numpy
 
 commands =
     wfmconvert E info {toxinidir}/wfm/DS1052E.wfm

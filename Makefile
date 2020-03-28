@@ -11,6 +11,11 @@ KSY_C_OPTIONS = -t cpp_stl --cpp-standard 11  $(KSY_OPTIONS)
 
 YAML_LINT_OPTIONS = -d "{extends: default, rules: {document-start: disable}}"
 
+SPHINXOPTS    ?=
+SPHINXBUILD   ?= sphinx-build
+SOURCEDIR     = .
+BUILDDIR      = _build
+
 export PYTHONPATH ?= .
 
 all: $(PYTHON_PARSERS)
@@ -34,24 +39,38 @@ RigolWFM/wfm6000.py: ksy/wfm6000.ksy
 	$(KSC) $(KSY_PYTHON_OPTIONS) $<
 
 yamlcheck:
-	yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000c.ksy
-	yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000e.ksy
-	yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000z.ksy
-	yamllint $(YAML_LINT_OPTIONS) ksy/wfm2000.ksy
-	yamllint $(YAML_LINT_OPTIONS) ksy/wfm4000.ksy
-	yamllint $(YAML_LINT_OPTIONS) ksy/wfm6000.ksy
+	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000c.ksy
+	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000e.ksy
+	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000z.ksy
+	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm2000.ksy
+	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm4000.ksy
+	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm6000.ksy
 
 ksycheck:
-	ksylint ksy/wfm1000c.ksy
-	ksylint ksy/wfm1000e.ksy
-	ksylint ksy/wfm1000z.ksy
-	ksylint ksy/wfm2000.ksy
-	ksylint ksy/wfm4000.ksy
-	ksylint ksy/wfm6000.ksy
+	-ksylint ksy/wfm1000c.ksy
+	-ksylint ksy/wfm1000e.ksy
+	-ksylint ksy/wfm1000z.ksy
+	-ksylint ksy/wfm2000.ksy
+	-ksylint ksy/wfm4000.ksy
+	-ksylint ksy/wfm6000.ksy
 
 check:
 	make yamlcheck
 	make ksycheck
+	-pylint RigolWFM/wfm.py
+	-pep257 RigolWFM/wfm.py
+	-pylint RigolWFM/channel.py
+	-pep257 RigolWFM/channel.py
+	-pylint RigolWFM/wfmconvert.py
+	-pep257 RigolWFM/wfmconvert.py
+
+help:
+	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+# Catch-all target: route all unknown targets to Sphinx using the new
+# "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
+%:
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 teste:
 	python3 RigolWFM/wfmconvert.py E info wfm/DS1102E-A.wfm
@@ -120,4 +139,4 @@ realclean:
 	rm -f RigolWFM/wfm6000.py
 
 	
-.PHONY: clean realclean test check all ksycheck yamlcheck teste testz test4 test csv wav
+.PHONY: clean realclean test check all ksycheck yamlcheck teste testz test4 test csv wav help

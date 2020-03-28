@@ -45,7 +45,7 @@ DS1000E_scopes = ["E", "1000E", "DS1000E",
 # tested, wonky voltages
 DS1000Z_scopes = ["Z", "1000Z", "DS1000Z",
                   "DS1202Z",
-                  "DS1054Z", "MSO1054Z", 
+                  "DS1054Z", "MSO1054Z",
                   "DS1074Z", "MSO1074Z", "DS1074Z-S",
                   "DS1104Z", "MSO1104Z", "DS1104Z-S"]
 
@@ -87,7 +87,7 @@ class Parse_WFM_Error(Exception):
 
 
 class Invalid_URL(Exception):
-    """Cannot use this URL.  It must start with https:// or http://"""
+    """Cannot use this URL.  It must start with https or http."""
 
 
 class Unknown_Scope_Error(Exception):
@@ -106,6 +106,7 @@ class Wfm():
     """Class with parsed data from a .wfm file."""
 
     def __init__(self, file_name):
+        """Initialize a Wfm object from a file."""
         self.channels = []
         self.original_name = file_name
         self.file_name = file_name
@@ -123,7 +124,6 @@ class Wfm():
     @classmethod
     def from_file(cls, file_name, model):
         """Create Wfm object from a file."""
-
         # ensure that file exists
         try:
             f = open(file_name, 'rb')
@@ -195,7 +195,6 @@ class Wfm():
         location and then process that file.  There is a lot that can go
         wrong - bad url, bad download, or an error parsing the file.
         """
-
         u = urllib.parse.urlparse(url)
         scheme = u[0]
 
@@ -231,7 +230,7 @@ class Wfm():
             raise Parse_WFM_Error(e)
 
     def describe(self):
-        """Returns a string describing the contents of a Rigol wfm file."""
+        """Return a string describing the contents of a Rigol wfm file."""
         s = "    General:\n"
         s += '        File Model   = %s\n' % self.parser_name
         s += "        User Model   = %s\n" % self.user_name
@@ -271,7 +270,7 @@ class Wfm():
         return h_scale, h_prefix, v_scale, v_prefix
 
     def plot(self):
-        """Plots the data."""
+        """Plot the data."""
         h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()
         colors = ['red', 'blue', 'orange', 'magenta']
 
@@ -285,8 +284,7 @@ class Wfm():
         plt.legend(loc='upper right')
 
     def csv(self):
-        """Return a string of comma separated values"""
-
+        """Return a string of comma separated values."""
         if len(self.channels) == 0:
             return ''
 
@@ -315,7 +313,6 @@ class Wfm():
 
     def wav(self, wav_filename, channel=1):
         """Save data as a WAV file for use with LTSpice."""
-
         c = None
         for ch in self.channels:
             if channel == ch.channel_number:

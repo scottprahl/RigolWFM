@@ -23,13 +23,14 @@ import numpy as np
 
 class UnitEnum(Enum):
     """Enumerated units for scopes without them."""
+
     w = 0
     a = 1
     v = 2
     u = 3
 
 def best_scale(number):
-    """Scale and units for a number with proper prefix"""
+    """Scale and units for a number with proper prefix."""
     absnr = abs(number)
 
     if absnr == 0:
@@ -51,8 +52,7 @@ def best_scale(number):
     return 1e-9, 'G'
 
 def engineering_string(number, n_digits):
-    """Format number with proper prefix"""
-
+    """Format number with proper prefix."""
     scale, prefix = best_scale(number)
     fformat = "%%.%df %%s" % n_digits
     s = fformat % (number * scale, prefix)
@@ -65,7 +65,7 @@ def engineering_string(number, n_digits):
 
 def _channel_bytes(enabled_count, data, stride):
     """
-    Return right series of bytes for a channel for 1000Z scopes
+    Return right series of bytes for a channel for 1000Z scopes.
 
     Waveform points are interleaved stored in memory when two or more
     channels are enabled:
@@ -85,7 +85,6 @@ def _channel_bytes(enabled_count, data, stride):
     Returns
         byte array for a particular channel
     """
-
     if stride == 1:
         raw_bytes = np.array(data.raw1, dtype=np.uint8)
 
@@ -116,6 +115,17 @@ class Channel():
     """Base class for a single channel."""
 
     def __init__(self, w, ch, scope, prior):
+        """
+        Initialize a Channel Object.
+
+        Args:
+            w: Wfm object
+            ch: 1,2,3,4
+            scope: string describing scope
+            prior: number of channels that came before
+        Returns:
+            Channel object
+        """
         self.channel_number = ch
         self.name = "CH %d" % ch
         self.waveform = w
@@ -168,6 +178,7 @@ class Channel():
 
 
     def __str__(self):
+        """Describe this channel."""
         s = "     Channel %d:\n" % self.channel_number
         s += "         Coupling = %8s\n" % self.coupling.rjust(7, ' ')
         s += "            Scale = %10sV/div\n" % engineering_string(self.volt_per_division, 2)
@@ -203,7 +214,6 @@ class Channel():
 
     def ds1000c(self, w, ch):
         """Interpret waveform data for 1000CD series scopes."""
-
         if ch == 1:
             self.time_offset = w.header.ch1_time_offset
             self.time_scale = w.header.ch1_time_scale
@@ -223,7 +233,6 @@ class Channel():
 
     def ds1000e(self, w, ch):
         """Interpret waveform data for 1000D and 1000E series scopes."""
-
         self.roll_stop = w.header.roll_stop
 
         if ch == 1:
@@ -244,7 +253,6 @@ class Channel():
 
     def ds1000z(self, w, ch, enabled_count):
         """Interpret waveform for the Rigol DS1000Z series."""
-
         self.time_scale = w.header.time_scale
         self.time_offset = w.header.time_offset
         self.points = w.header.points
@@ -262,7 +270,6 @@ class Channel():
 
     def ds2000(self, w, ch):
         """Interpret waveform for the Rigol DS2000 series."""
-
         self.time_offset = w.header.time_offset
         self.time_scale = w.header.time_scale
         self.points = w.header.storage_depth
@@ -289,7 +296,6 @@ class Channel():
 
     def ds4000(self, w, ch):
         """Interpret waveform for the Rigol DS4000 series."""
-
         self.time_offset = w.header.time_offset
         self.time_scale = w.header.time_scale
         self.points = w.header.points
@@ -316,7 +322,6 @@ class Channel():
 
     def ds6000(self, w, ch):
         """Interpret waveform for the Rigol DS6000 series."""
-
         self.time_offset = w.header.time_offset
         self.time_scale = w.header.time_scale
         self.points = w.header.points

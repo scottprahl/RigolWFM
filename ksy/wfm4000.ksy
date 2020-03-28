@@ -275,11 +275,6 @@ types:
                                       volt_signed/25.0 :
                                       volt_signed/32.0"
 
-meta:
-  id: common
-  title: Enums and structures common to Rigol waveform files.
-  endian: le
-
 enums:
 
   acquisition_enum:
