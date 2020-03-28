@@ -7,14 +7,14 @@ Usage
 
 The RigolWFM package can be installed via `pip`::
 
-.. code-block::
+.. code-block:: python
 
    pip install RigolWFM
 
 
-Once this is done, one can extract signals from binary Rigol ``.wfm`` files by:
+Once this is done, one can extract signals from binary Rigol ``.wfm`` files by::
 
-.. code-block::
+.. code-block:: python
 
    import matplotlib.pyplot as plt
    import RigolWFM.wfm as rigol
@@ -27,9 +27,9 @@ Once this is done, one can extract signals from binary Rigol ``.wfm`` files by:
    plt.show()
 
 
-Alternatively, ``wfmconvert`` can be used from the command line.  For example, the following should convert all the DS1000E files in the current directory to the ``.csv`` format:
+Alternatively, ``wfmconvert`` can be used from the command line.  For example, the following should convert all the DS1000E files in the current directory to the ``.csv`` format::
 
-.. code-block::
+.. code-block:: shell
 
    prompt> wfmconvert 1000E csv *.wfm
 
