@@ -275,20 +275,12 @@ types:
                                       volt_signed/25.0 :
                                       volt_signed/32.0"
 
-enums:
+meta:
+  id: common
+  title: Enums and structures common to Rigol waveform files.
+  endian: le
 
-  mem_depth_enum:
-    0: auto
-    1: p_7k
-    2: p_70k
-    3: p_700k
-    4: p_7m
-    5: p_70m
-    6: p_14k
-    7: p_140k
-    8: p_1m4
-    9: p_14m
-    10: p_140m
+enums:
 
   acquisition_enum:
     0: normal
@@ -317,6 +309,19 @@ enums:
   impedance_enum:
     0: ohm_50
     1: ohm_1meg
+
+  mem_depth_enum:
+    0: auto
+    1: p_7k
+    2: p_70k
+    3: p_700k
+    4: p_7m
+    5: p_70m
+    6: p_14k
+    7: p_140k
+    8: p_1m4
+    9: p_14m
+    10: p_140m
 
   probe_enum:
     0: single
