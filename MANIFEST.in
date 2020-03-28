@@ -2,7 +2,6 @@ include CHANGELOG.txt
 include LICENSE.txt
 include MANIFEST.in
 include README.md
-include doc/*.ipynb
 
 exclude .gitattributes
 exclude .gitignore
@@ -11,3 +10,5 @@ exclude todo
 exclude Makefile
 exclude wfm/*
 exclude ksy/*
+exclude doc
+exclude doc/*
