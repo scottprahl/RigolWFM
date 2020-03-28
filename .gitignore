@@ -1,6 +1,8 @@
 doc/.ipynb_checkpoints
 .DS_Store
 .tox/*
+_build/*
+api/*
 RigolWFM.egg-info/*
 RigolWFM/__pycache__/*
 dist/*
