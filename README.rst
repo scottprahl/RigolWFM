@@ -31,11 +31,11 @@ Alternatively, ``wfmconvert`` can be used from the command line.  For example, t
 More extensive documentation can be found here
 
 
-* Basics https://github.com/scottprahl/RigolWFM/blob/master/doc/0-Basics.ipynb
-* DS1000E https://github.com/scottprahl/RigolWFM/blob/master/doc/1-DS1000E-Waveforms.ipynb
-* DS1000Z https://github.com/scottprahl/RigolWFM/blob/master/doc/1-DS1000Z-Waveforms.ipynb
-* DS2000 https://github.com/scottprahl/RigolWFM/blob/master/doc/1-DS2000-Waveforms.ipynb
-* DS4000 https://github.com/scottprahl/RigolWFM/blob/master/doc/1-DS4000-Waveforms.ipynb
+* Basics <https://github.com/scottprahl/RigolWFM/blob/master/doc/0-Basics.ipynb
+* DS1000E <https://github.com/scottprahl/RigolWFM/blob/master/doc/1-DS1000E-Waveforms.ipynb
+* DS1000Z <https://github.com/scottprahl/RigolWFM/blob/master/doc/1-DS1000Z-Waveforms.ipynb
+* DS2000 <https://github.com/scottprahl/RigolWFM/blob/master/doc/1-DS2000-Waveforms.ipynb
+* DS4000 <https://github.com/scottprahl/RigolWFM/blob/master/doc/1-DS4000-Waveforms.ipynb
 
 Background
 ----------
@@ -44,9 +44,9 @@ This project is should be a one-stop location for interpreting waveform ``.wmf``
 
 Most seem to avoid do not deal specifically with the ``.wfm`` format and if they do, then only one specific scope model is supported.
 
-Initially, I too, was only interested in a single scope format (DS1102E) and I successfully used the python parser written by Blaicher https://github.com/mabl/pyRigolWFM.  Later, I realized that DS1000Z files were parsed by Szkutnik  https://github.com/michal-szkutnik/pyRigolWfm1000Z and added support for these scopes.  Eventually, I ran across the work on DS4000 files by Cat-Ion https://github.com/Cat-Ion/rigol-ds4000-wfm.
+Initially, I too, was only interested in a single scope format (DS1102E) and I successfully used the python parser written by Blaicher <https://github.com/mabl/pyRigolWFM>. Later, I realized that DS1000Z files were parsed by Szkutnik <https://github.com/michal-szkutnik/pyRigolWfm1000Z> and added support for these scopes.  Eventually, I ran across the work on DS4000 files by Cat-Ion <https://github.com/Cat-Ion/rigol-ds4000-wfm>.
 
-This last project leveraged Kaitai Struct https://kaitai.io as a domain specific language to represent the binary files.  Once a binary file has been described in the ``.ksy`` format, parsers can be generated for a wide range of languages (C++/STL, C#, Go, Java, JavaScript, Lua, Perl, PHP, Python, and Ruby).  Moreover, Kaitai Struct has a Web IDE https://ide.kaitai.io that allows one to interactively reverse engineer binary file formats.  This is super helpful for those Rigol ``.wfm`` formats that are undocumented.
+This last project leveraged Kaitai Struct <https://kaitai.io> as a domain specific language to represent the binary files.  Once a binary file has been described in the ``.ksy`` format, parsers can be generated for a wide range of languages (C++/STL, C#, Go, Java, JavaScript, Lua, Perl, PHP, Python, and Ruby).  Moreover, Kaitai Struct has a Web IDE <https://ide.kaitai.io> that allows one to interactively reverse engineer binary file formats.  This is super helpful for those Rigol ``.wfm`` formats that are undocumented.
 
 Status
 ------
@@ -67,14 +67,14 @@ Resources
 This has been a bit of an adventure.  In the process of nailing down the basic formats, I have gleaned information from a wide range of projects started by others.
 
 
-* Shein's Pascal program https://sourceforge.net/projects/wfmreader
-* Wagenaars's Matlab script https://www.mathworks.com/matlabcentral/fileexchange/18999-read-binary-rigol-waveforms
-* Steele's C program http://nsweb.tn.tudelft.nl/~gsteele/rigol2dat
-* Blaicher's python code https://github.com/mabl/pyRigolWFM
-* Szkutnik's python code https://github.com/michal-szkutnik/pyRigolWfm1000Z
-* Cat-Ion's python code https://github.com/Cat-Ion/rigol-ds4000-wfm
-* Šolc's python code https://www.tablix.org/~avian/blog/archives/2019/08/quick_and_ugly_wfm_data_export_for_rigol_ds2072a/
-* Contributions from http://www.hakasoft.com.au/wfm_viewer
+* Shein's Pascal program <https://sourceforge.net/projects/wfmreader
+* Wagenaars's Matlab script <https://www.mathworks.com/matlabcentral/fileexchange/18999-read-binary-rigol-waveforms
+* Steele's C program <http://nsweb.tn.tudelft.nl/~gsteele/rigol2dat
+* Blaicher's python code <https://github.com/mabl/pyRigolWFM
+* Szkutnik's python code <https://github.com/michal-szkutnik/pyRigolWfm1000Z
+* Cat-Ion's python code <https://github.com/Cat-Ion/rigol-ds4000-wfm
+* Šolc's python code <https://www.tablix.org/~avian/blog/archives/2019/08/quick_and_ugly_wfm_data_export_for_rigol_ds2072a/
+* Contributions from <http://www.hakasoft.com.au/wfm_viewer
 * A LabView program I got from Rigol support
 * Rigol's documentation of the 1000E, 1000Z, 2000, and 6000 file formats.
 
