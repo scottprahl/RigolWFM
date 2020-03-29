@@ -1,7 +1,5 @@
-ipykernel
 numpy
 matplotlib
-pandas
+kaitaistruct
 nbsphinx
 sphinx-automodapi
-kaitaistruct
