@@ -10,10 +10,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
-
+import os
+import sys
+sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
@@ -35,11 +35,10 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.mathjax',
-    'sphinx_automodapi.automodapi',
     'nbsphinx',
 ]
 numpydoc_show_class_members = False
-napoleon_google_docstring = True
+napoleon_google_docstring = False
 napoleon_use_param = False
 napoleon_use_ivar = True
 
@@ -50,7 +49,7 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '.tox', '**.ipynb_checkpoints',
-                    'doc/sources/*', 'doc/first_version/*']
+                    'sources/*', 'first_version/*']
 
 # I execute the notebooks manually in advance. If notebooks test the code,
 # they should be run at build time.

@@ -10,5 +10,5 @@ exclude todo
 exclude Makefile
 exclude wfm/*
 exclude ksy/*
-exclude doc
-exclude doc/*
+exclude docs
+exclude docs/*

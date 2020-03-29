@@ -13,8 +13,8 @@ YAML_LINT_OPTIONS = -d "{extends: default, rules: {document-start: disable}}"
 
 SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
-SOURCEDIR     = .
-BUILDDIR      = _build
+SOURCEDIR     = docs
+BUILDDIR      = docs/_build
 
 export PYTHONPATH ?= .
 
@@ -64,13 +64,8 @@ check:
 	-pylint RigolWFM/wfmconvert.py
 	-pep257 RigolWFM/wfmconvert.py
 
-help:
-	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
-
-# Catch-all target: route all unknown targets to Sphinx using the new
-# "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-%:
-	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+html:
+	$(SPHINXBUILD) -b html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
 
 teste:
 	python3 RigolWFM/wfmconvert.py E info wfm/DS1102E-A.wfm
@@ -120,7 +115,7 @@ wav:
 clean:
 	rm -rf dist
 	rm -rf RigolWFM.egg-info
-	rm -rf doc/github.com
+	rm -rf docs/github.com
 	rm -rf RigolWFM/__pycache__
 	rm -rf wfm/DS1102E-A.csv
 	rm -rf wfm/MSO1104.csv
@@ -128,8 +123,8 @@ clean:
 	rm -rf wfm/DS1102E-A.wav
 	rm -rf wfm/MSO1104.wav
 	rm -rf wfm/DS4022-A.wav
-	rm -rf _build/*
-	rm -rf api/*
+	rm -rf docs/_build/*
+	rm -rf docs/api/*
 
 realclean:
 	make clean
