@@ -4,3 +4,4 @@ matplotlib
 pandas
 nbsphinx
 sphinx-automodapi
+kaitaistruct
