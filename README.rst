@@ -45,7 +45,6 @@ Status
 
 There is a bit of work remaining (testing, validation, repackaging) but there are binary file descriptions for ``.wfm`` files created by the following scopes:
 
-
 * DS1000C untested
 * DS1000E tested
 * DS1000Z tested, but with wonky voltage offsets
@@ -78,4 +77,4 @@ Source code repository
 
 License
 -------
-    BSD 2-Clause -- see the file ``LICENSE`` for details.
+    BSD 3-clause -- see the file ``LICENSE`` for details.

@@ -125,6 +125,7 @@ clean:
 	rm -rf wfm/DS4022-A.wav
 	rm -rf docs/_build/*
 	rm -rf docs/api/*
+	rm -rf .tox
 
 realclean:
 	make clean
@@ -134,7 +135,6 @@ realclean:
 	rm -f RigolWFM/wfm2000.py
 	rm -f RigolWFM/wfm4000.py
 	rm -f RigolWFM/wfm6000.py
-	rm -rf .tox
 
 	
 .PHONY: clean realclean test check all ksycheck yamlcheck teste testz test4 test csv wav help
