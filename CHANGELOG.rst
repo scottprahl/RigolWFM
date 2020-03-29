@@ -3,8 +3,8 @@ Changelog
 
 v0.6.3
 ------
-*    add sphinx documentation
-*    put documentation on https://readthedocs.org
+*    use sphinx for documentation
+*    host docs on https://rigolwfm.readthedocs.io
 *    remove unneeded files from pip installation
 
 v0.6.2
