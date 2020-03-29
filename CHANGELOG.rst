@@ -6,6 +6,7 @@ v0.6.3
 *    use sphinx for documentation
 *    host docs on https://rigolwfm.readthedocs.io
 *    remove unneeded files from pip installation
+*    start using tox for testing
 
 v0.6.2
 ------
