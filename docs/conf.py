@@ -35,6 +35,8 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.mathjax',
+    'sphinx_automodapi.automodapi',
+    'sphinx_automodapi.smart_resolver',
     'nbsphinx',
 ]
 numpydoc_show_class_members = False
