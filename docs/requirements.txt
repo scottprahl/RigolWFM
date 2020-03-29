@@ -1,0 +1,6 @@
+ipykernel
+numpy
+matplotlib
+pandas
+nbsphinx
+sphinx-automodapi
