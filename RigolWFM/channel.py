@@ -90,9 +90,9 @@ def _channel_bytes(enabled_count, data, stride):
 
     if stride == 2:
         if enabled_count == 0:
-            raw_bytes = np.array(data.raw2 & 0x00FF, dtype=np.uint8)
+            raw_bytes = np.array(np.uint16(data.raw2) & 0x00FF, dtype=np.uint8)
         else:
-            raw_bytes = np.array((data.raw2 & 0xFF00) >> 8, dtype=np.uint8)
+            raw_bytes = np.array((np.uint16(data.raw2) & 0xFF00) >> 8, dtype=np.uint8)
 
     if stride == 4:
         if enabled_count == 3:
