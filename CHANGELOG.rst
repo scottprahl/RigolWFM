@@ -1,5 +1,10 @@
 Changelog
 =================================================
+v0.6.4
+------
+*    fix DS4000 to work with two channels
+*    fix DS2000 to work with recent DS2072A firmware
+*    add DS2072A test files to repository
 
 v0.6.3
 ------
