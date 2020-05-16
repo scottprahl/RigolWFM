@@ -143,5 +143,13 @@ realclean:
 	rm -f RigolWFM/wfm4000.py
 	rm -f RigolWFM/wfm6000.py
 
-	
+rcheck:
+	make realclean
+	make
+	make html
+	make test
+	check-manifest
+	pyroma -d .
+	tox
+
 .PHONY: clean realclean test check all ksycheck yamlcheck teste testz test4 test csv wav help
