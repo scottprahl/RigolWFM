@@ -50,7 +50,7 @@ DS1000Z_scopes = ["Z", "1000Z", "DS1000Z",
                   "DS1104Z", "MSO1104Z", "DS1104Z-S"]
 
 # tested
-DS2000_scopes = ["2", "2000", "DS2000",
+DS2000_scopes = ["2", "2000", "DS2000", "DS2072A",
                  "DS2102A", "MSO2102A", "MSO2102A-S",
                  "DS2202A", "MSO2202A", "MSO2202A-S",
                  "DS2302A", "MSO2302A", "MSO2302A-S"]

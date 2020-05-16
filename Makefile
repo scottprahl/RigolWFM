@@ -86,6 +86,12 @@ testz:
 
 test2:
 	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-1.wfm
+	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-2.wfm
+	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-3.wfm
+	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-4.wfm
+	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-5.wfm
+	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-6.wfm
+	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-7.wfm
 	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2000-A.wfm
 	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2000-B.wfm
 
