@@ -276,8 +276,10 @@ class Wfm2000(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.enabled_boolean = self._io.read_u1()
-            self.coupling = self._root.CouplingEnum(self._io.read_u1())
+            self.enabled_temp = self._io.read_u1()
+            self.coupling = self._root.CouplingEnum(self._io.read_bits_int(2))
+            self.skip_coupling = self._io.read_bits_int(6)
+            self._io.align_to_byte()
             self.bandwidth_limit = self._root.BandwidthEnum(self._io.read_u1())
             self.probe_type = self._root.ProbeTypeEnum(self._io.read_u1())
             self.probe_ratio = self._root.ProbeRatioEnum(self._io.read_u1())
@@ -286,19 +288,35 @@ class Wfm2000(KaitaiStruct):
             self.probe_impedance = self._root.ImpedanceEnum(self._io.read_u1())
             self.volt_per_division = self._io.read_f4le()
             self.volt_offset = self._io.read_f4le()
-            self.inverted_boolean = self._io.read_u1()
-            self.unit = self._root.UnitEnum(self._io.read_u1())
+            self.inverted_temp = self._io.read_u1()
+            self.unit_temp = self._io.read_u1()
             self.filter_enabled = self._io.read_u1()
-            self.filter_type = self._root.FilterEnum(self._io.read_u1())
+            self.filter_type = self._io.read_u1()
             self.filter_high = self._io.read_u4le()
             self.filter_low = self._io.read_u4le()
+
+        @property
+        def unit(self):
+            if hasattr(self, '_m_unit'):
+                return self._m_unit if hasattr(self, '_m_unit') else None
+
+            self._m_unit = self.unit_actual
+            return self._m_unit if hasattr(self, '_m_unit') else None
+
+        @property
+        def unit_actual(self):
+            if hasattr(self, '_m_unit_actual'):
+                return self._m_unit_actual if hasattr(self, '_m_unit_actual') else None
+
+            self._m_unit_actual = (self.unit_temp if self.enabled_temp == 1 else self.inverted_temp)
+            return self._m_unit_actual if hasattr(self, '_m_unit_actual') else None
 
         @property
         def inverted(self):
             if hasattr(self, '_m_inverted'):
                 return self._m_inverted if hasattr(self, '_m_inverted') else None
 
-            self._m_inverted = (True if self.inverted_boolean != 0 else False)
+            self._m_inverted = (True if self.inverted_actual == 1 else False)
             return self._m_inverted if hasattr(self, '_m_inverted') else None
 
         @property
@@ -308,6 +326,14 @@ class Wfm2000(KaitaiStruct):
 
             self._m_volt_scale = (self.volt_signed / 25.0)
             return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
+
+        @property
+        def inverted_actual(self):
+            if hasattr(self, '_m_inverted_actual'):
+                return self._m_inverted_actual if hasattr(self, '_m_inverted_actual') else None
+
+            self._m_inverted_actual = (self.inverted_temp if self.enabled_temp == 1 else self.unit_temp)
+            return self._m_inverted_actual if hasattr(self, '_m_inverted_actual') else None
 
         @property
         def probe_value(self):
@@ -322,7 +348,7 @@ class Wfm2000(KaitaiStruct):
             if hasattr(self, '_m_enabled'):
                 return self._m_enabled if hasattr(self, '_m_enabled') else None
 
-            self._m_enabled = (True if self.enabled_boolean != 0 else False)
+            self._m_enabled = (True if self.enabled_temp != 0 else False)
             return self._m_enabled if hasattr(self, '_m_enabled') else None
 
         @property

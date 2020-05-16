@@ -217,12 +217,15 @@ types:
       - id: probe_ratio
         type: u1
         enum: probe_ratio_enum
+
       - id: probe_diff
         type: u1
         enum: probe_enum
+
       - id: probe_signal
         type: u1
         enum: probe_enum
+
       - id: probe_impedance
         type: u1
         enum: impedance_enum

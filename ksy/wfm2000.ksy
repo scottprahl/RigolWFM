@@ -261,12 +261,15 @@ types:
 
   channel_header:
     seq:
-      - id: enabled_boolean
+      - id: enabled_temp
         type: u1
 
       - id: coupling
-        type: u1
+        type: b2
         enum: coupling_enum
+
+      - id: skip_coupling
+        type: b6
 
       - id: bandwidth_limit
         type: u1
@@ -298,12 +301,11 @@ types:
       - id: volt_offset
         type: f4
 
-      - id: inverted_boolean
+      - id: inverted_temp
         type: u1
 
-      - id: unit
+      - id: unit_temp
         type: u1
-        enum: unit_enum
 
       - id: filter_enabled
         type: u1
@@ -311,7 +313,6 @@ types:
       - id: filter_type
         type: u1
 
-        enum: filter_enum
       - id: filter_high
         type: u4
 
@@ -319,6 +320,9 @@ types:
         type: u4
 
     instances:
+      enabled:
+        value: "enabled_temp != 0 ? true : false"
+
       probe_value:
         value: "(probe_ratio == probe_ratio_enum::x0_01 ? 0.01 :
                  probe_ratio == probe_ratio_enum::x0_02 ? 0.02 :
@@ -336,11 +340,17 @@ types:
                  probe_ratio == probe_ratio_enum::x200 ? 200.0 :
                  probe_ratio == probe_ratio_enum::x500 ? 500.0 : 1000.0)"
 
-      inverted:
-        value: "inverted_boolean != 0 ? true : false"
+      inverted_actual:
+        value: "enabled_temp == 1 ? inverted_temp : unit_temp"
 
-      enabled:
-        value: "enabled_boolean != 0 ? true : false"
+      unit_actual:
+        value: "enabled_temp == 1 ? unit_temp : inverted_temp"
+
+      inverted:
+        value: "inverted_actual == 1 ? true : false"
+
+      unit:
+        value: unit_actual
 
       volt_signed:
         value: "inverted ?

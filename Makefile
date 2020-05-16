@@ -85,6 +85,7 @@ testz:
 	python3 RigolWFM/wfmconvert.py Z info wfm/DS1074Z-B.wfm
 
 test2:
+	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-1.wfm
 	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2000-A.wfm
 	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2000-B.wfm
 
