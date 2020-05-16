@@ -13,3 +13,5 @@ docs/_build
 ksy/zzz/*
 test/*
 wfm/DS1054Z-C-original.csv
+wfm/DS1102E-A.csv
+wfm/DS1102E-A.wav
