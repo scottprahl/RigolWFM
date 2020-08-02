@@ -274,6 +274,7 @@ class Channel():
         self.time_scale = w.header.time_scale
         self.points = w.header.storage_depth
         self.firmware = w.header.firmware_version
+        self.unit = UnitEnum(w.header.ch[ch-1].unit_actual)
         self.coupling = w.header.ch[ch-1].coupling.name.upper()
         self.y_scale = -self.volt_scale
         self.y_offset = self.volt_offset
