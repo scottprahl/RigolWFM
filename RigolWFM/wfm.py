@@ -305,7 +305,7 @@ class Wfm():
         s += ",%e,%e\n" % (off, incr)
 
         for i in range(self.channels[0].points):
-            s += "%.3f" % (ch.times[i]*h_scale)
+            s += "%.6f" % (ch.times[i]*h_scale)
             for ch in self.channels:
                 s += ",%.2f" % (ch.volts[i]*v_scale)
             s += "\n"
