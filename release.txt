@@ -1,9 +1,9 @@
 A checklist for releasing a new version
 
+# make sure all Jupyter notebooks in the doc folder still work
+
 # sanity test the release
   make rcheck
-  
-# make sure all Jupyter notebooks in the doc folder still work
 
 # update the version in setup.cfg AND docs/conf.py
   git commit setup.cfg docs/conf.py -m 'update version'
@@ -21,7 +21,7 @@ A checklist for releasing a new version
   python3 setup.py sdist
   twine upload dist/*
 
-# test the install by removing local developer version
-# installing, then uninstalling, then restoring developer version
-  pip install RigolWFM
-  pip uninstall RigolWFM
+# verify releases on 
+  https://github.com/scottprahl/RigolWFM
+  https://pypi.org/project/RigolWFM/
+  https://RigolWFM.readthedocs.io
