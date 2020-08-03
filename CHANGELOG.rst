@@ -1,5 +1,11 @@
 Changelog
 =================================================
+
+v0.6.5
+------
+*    fix DS2000 to convert CSV files
+*    add more testing to tox
+
 v0.6.4
 ------
 *    fix DS4000 to work with two channels
