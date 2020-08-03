@@ -113,11 +113,13 @@ csv:
 	python3 RigolWFM/wfmconvert.py E csv wfm/DS1102E-A.wfm
 	python3 RigolWFM/wfmconvert.py Z csv wfm/MSO1104.wfm
 	python3 RigolWFM/wfmconvert.py 4 csv wfm/DS4022-A.wfm
+	python3 RigolWFM/wfmconvert.py 2 csv wfm/DS2202.wfm
 
 wav:
 	python3 RigolWFM/wfmconvert.py E wav wfm/DS1102E-A.wfm
 	python3 RigolWFM/wfmconvert.py Z wav wfm/MSO1104.wfm
 	python3 RigolWFM/wfmconvert.py 4 wav wfm/DS4022-A.wfm
+	python3 RigolWFM/wfmconvert.py 2 wav wfm/DS2202.wfm
 	
 clean:
 	rm -rf dist
@@ -130,6 +132,10 @@ clean:
 	rm -rf wfm/DS1102E-A.wav
 	rm -rf wfm/MSO1104.wav
 	rm -rf wfm/DS4022-A.wav
+	rm -rf wfm/DS1102E-A.csv
+	rm -rf wfm/DS1102E-A.wav
+	rm -rf wfm/DS2202.csv
+	rm -rf wfm/DS2202.wav
 	rm -rf docs/_build/*
 	rm -rf docs/api/*
 	rm -rf .tox
