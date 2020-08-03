@@ -8,7 +8,7 @@ A checklist for releasing a new version
 # update the version in setup.cfg
   git commit setup.cfg -m 'update version'
 
-# update CHANGELOG.rst using `git shortlog`
+# update CHANGELOG.rst  `git shortlog v0.6.4..HEAD`
   git commit CHANGELOG.rst -m 'update recent changes' 
   git push
 
