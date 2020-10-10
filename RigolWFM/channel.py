@@ -250,8 +250,6 @@ class Channel():
                 self.raw = np.array(w.data.ch2, dtype=np.uint8)
 
         self.calc_times_and_volts()
-#        if self.enabled:
-#            self.volts *= self.probe_value
 
     def ds1000z(self, w, ch, enabled_count):
         """Interpret waveform for the Rigol DS1000Z series."""
