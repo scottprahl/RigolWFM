@@ -208,7 +208,6 @@ class Channel():
         """Calculate the times and voltages for this channel."""
         if self.enabled:
             self.volts = self.y_scale * (127.0 - self.raw) - self.y_offset
-            self.volts *= self.probe_value
             h = self.points * self.seconds_per_point / 2
             self.times = np.linspace(-h, h, self.points) + self.time_offset
 
@@ -251,6 +250,8 @@ class Channel():
                 self.raw = np.array(w.data.ch2, dtype=np.uint8)
 
         self.calc_times_and_volts()
+#        if self.enabled:
+#            self.volts *= self.probe_value
 
     def ds1000z(self, w, ch, enabled_count):
         """Interpret waveform for the Rigol DS1000Z series."""
