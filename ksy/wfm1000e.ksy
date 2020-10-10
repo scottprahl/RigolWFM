@@ -140,10 +140,10 @@ types:
         value: "enabled_val != 0 ? true : false"
       volt_per_division:
         value: "inverted ?
-                -1.0e-6 * scale_measured:
-                +1.0e-6 * scale_measured"
+                -1.0e-6 * scale_measured * probe_value:
+                +1.0e-6 * scale_measured * probe_value"
       volt_scale:
-        value: volt_per_division/25.0
+        value: 1.0e-6 * scale_measured * probe_value / 25.0
       volt_offset:
         value: shift_measured * volt_scale
       unit:
