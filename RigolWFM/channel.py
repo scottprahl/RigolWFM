@@ -208,6 +208,7 @@ class Channel():
         """Calculate the times and voltages for this channel."""
         if self.enabled:
             self.volts = self.y_scale * (127.0 - self.raw) - self.y_offset
+            self.volts *= self.probe_value
             h = self.points * self.seconds_per_point / 2
             self.times = np.linspace(-h, h, self.points) + self.time_offset
 
