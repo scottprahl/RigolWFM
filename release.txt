@@ -17,9 +17,8 @@ A checklist for releasing a new version
   git push origin v0.6.4
 
 # upload source to pypi
-  rm -rf dist/*
   python3 setup.py sdist
-  twine upload dist/*
+  python3 -m twine upload dist/*
 
 # verify releases on 
   https://github.com/scottprahl/RigolWFM
