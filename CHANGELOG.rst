@@ -1,6 +1,10 @@
 Changelog
 =================================================
 
+v0.6.6
+------
+*    use probe scaling with DS1000E files
+
 v0.6.5
 ------
 *    fix DS2000 to convert CSV files
