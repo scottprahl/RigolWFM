@@ -179,7 +179,7 @@ class Wfm1000e(KaitaiStruct):
             if hasattr(self, '_m_volt_per_division'):
                 return self._m_volt_per_division if hasattr(self, '_m_volt_per_division') else None
 
-            self._m_volt_per_division = ((-0.0000010 * self.scale_measured) if self.inverted else (0.0000010 * self.scale_measured))
+            self._m_volt_per_division = (((-0.0000010 * self.scale_measured) * self.probe_value) if self.inverted else ((0.0000010 * self.scale_measured) * self.probe_value))
             return self._m_volt_per_division if hasattr(self, '_m_volt_per_division') else None
 
         @property
@@ -187,7 +187,7 @@ class Wfm1000e(KaitaiStruct):
             if hasattr(self, '_m_volt_scale'):
                 return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
 
-            self._m_volt_scale = (self.volt_per_division / 25.0)
+            self._m_volt_scale = (((0.0000010 * self.scale_measured) * self.probe_value) / 25.0)
             return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
 
         @property
