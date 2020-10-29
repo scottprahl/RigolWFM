@@ -1,15 +1,16 @@
 Code development
     - add trigger information to description
-    - move scope info out of individual channel objects
     - simplify channel._channel_bytes() 
     - add --minimal option for problem .wfm files
     - locate coupling & bandwidth for 1000E formats
-    - add LTSpice export (WAV files)
-    - add json export
     - locate trigger info in 1000z, 4000, & 6000 formats
-    - add best scaling parameter for graphing and csv
     
-Add wrapper for other parser languages
+wfm_convert development
+    - expand options for csv export
+    - expand options for wav export
+    - add svg, pdf, png graphing options
+    
+Add wrappers for other parser languages
     - javascript
     - c++
 
@@ -22,11 +23,11 @@ Code clean up
 Documentation
     - continue working on readme
     - figure out sphinx stuff
-    - create notebook to help those with problem waveforms
+    - create notebook for kaitai struct
+    - create notebook for LTSpice
+    - create notebook for CSV
 
 Validation:
-   - get new csv/wfm files for DS1000Z
    - get DS1000B .wfm files
    - get DS1000C .wfm files
-   - get DS2000 .wfm files
    - get DS6000 .wfm files

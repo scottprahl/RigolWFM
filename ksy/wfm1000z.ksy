@@ -186,12 +186,16 @@ types:
                 1000.0)"
       volt_per_division:
         value: "inverted ?
-                -1.0 * scale * probe_value:
-                +1.0 * scale * probe_value"
+                -1.0 * scale:
+                +1.0 * scale"
       volt_scale:
         value: volt_per_division/25.0
+      y_scale:
+        value: -volt_per_division/20.0
       volt_offset:
-        value: shift * volt_scale
+        value: shift
+      y_offset:
+        value: shift - volt_per_division
       time_scale:
         value: _root.header.time_scale
       time_offset:

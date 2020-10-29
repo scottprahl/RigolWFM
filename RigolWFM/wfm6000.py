@@ -110,9 +110,9 @@ class Wfm6000(KaitaiStruct):
             self.time_mode = self._root.TimeEnum(self._io.read_u2le())
             self.time_scale_ps = self._io.read_u8le()
             self.time_offset_ps = self._io.read_s8le()
-            self.channel = [None] * (4)
+            self.ch = [None] * (4)
             for i in range(4):
-                self.channel[i] = self._root.ChannelHeader(self._io, self, self._root)
+                self.ch[i] = self._root.ChannelHeader(self._io, self, self._root)
 
             self.setup_size = self._io.read_u4le()
             self.setup_offset = self._io.read_u4le()

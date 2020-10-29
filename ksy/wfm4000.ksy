@@ -217,12 +217,15 @@ types:
       - id: probe_ratio
         type: u1
         enum: probe_ratio_enum
+
       - id: probe_diff
         type: u1
         enum: probe_enum
+
       - id: probe_signal
         type: u1
         enum: probe_enum
+
       - id: probe_impedance
         type: u1
         enum: impedance_enum
@@ -277,19 +280,6 @@ types:
 
 enums:
 
-  mem_depth_enum:
-    0: auto
-    1: p_7k
-    2: p_70k
-    3: p_700k
-    4: p_7m
-    5: p_70m
-    6: p_14k
-    7: p_140k
-    8: p_1m4
-    9: p_14m
-    10: p_140m
-
   acquisition_enum:
     0: normal
     1: average
@@ -317,6 +307,19 @@ enums:
   impedance_enum:
     0: ohm_50
     1: ohm_1meg
+
+  mem_depth_enum:
+    0: auto
+    1: p_7k
+    2: p_70k
+    3: p_700k
+    4: p_7m
+    5: p_70m
+    6: p_14k
+    7: p_140k
+    8: p_1m4
+    9: p_14m
+    10: p_140m
 
   probe_enum:
     0: single

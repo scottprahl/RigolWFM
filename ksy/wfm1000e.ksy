@@ -118,7 +118,7 @@ types:
         type: u1
       - id: unknown_2
         type: u1
-      - id: probe
+      - id: probe_value
         type: f4
       - id: invert_disp_val
         type: u1
@@ -140,12 +140,15 @@ types:
         value: "enabled_val != 0 ? true : false"
       volt_per_division:
         value: "inverted ?
-                -1.0e-6 * scale_measured:
-                +1.0e-6 * scale_measured"
+                -1.0e-6 * scale_measured * probe_value:
+                +1.0e-6 * scale_measured * probe_value"
       volt_scale:
-        value: volt_per_division/25.0
+        value: 1.0e-6 * scale_measured * probe_value / 25.0
       volt_offset:
         value: shift_measured * volt_scale
+      unit:
+        value: "unit_enum::v"
+
 
   time_header:
     seq:
@@ -296,3 +299,9 @@ enums:
     4: alt
     5: pattern
     6: duration
+
+  unit_enum:
+    0: w
+    1: a
+    2: v
+    3: u

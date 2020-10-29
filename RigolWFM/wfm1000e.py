@@ -12,6 +12,12 @@ class Wfm1000e(KaitaiStruct):
     """Rigol DS1102E scope .wmf format abstracted from a python script
     """
 
+    class UnitEnum(Enum):
+        w = 0
+        a = 1
+        v = 2
+        u = 3
+
     class TriggerModeEnum(Enum):
         edge = 0
         pulse = 1
@@ -139,13 +145,21 @@ class Wfm1000e(KaitaiStruct):
             self.shift_display = self._io.read_s2le()
             self.unknown_1 = self._io.read_u1()
             self.unknown_2 = self._io.read_u1()
-            self.probe = self._io.read_f4le()
+            self.probe_value = self._io.read_f4le()
             self.invert_disp_val = self._io.read_u1()
             self.enabled_val = self._io.read_u1()
             self.inverted_m_val = self._io.read_u1()
             self.unknown_3 = self._io.read_u1()
             self.scale_measured = self._io.read_s4le()
             self.shift_measured = self._io.read_s2le()
+
+        @property
+        def unit(self):
+            if hasattr(self, '_m_unit'):
+                return self._m_unit if hasattr(self, '_m_unit') else None
+
+            self._m_unit = self._root.UnitEnum.v
+            return self._m_unit if hasattr(self, '_m_unit') else None
 
         @property
         def inverted(self):
@@ -168,7 +182,7 @@ class Wfm1000e(KaitaiStruct):
             if hasattr(self, '_m_volt_per_division'):
                 return self._m_volt_per_division if hasattr(self, '_m_volt_per_division') else None
 
-            self._m_volt_per_division = ((-0.0000010 * self.scale_measured) if self.inverted else (0.0000010 * self.scale_measured))
+            self._m_volt_per_division = (((-0.0000010 * self.scale_measured) * self.probe_value) if self.inverted else ((0.0000010 * self.scale_measured) * self.probe_value))
             return self._m_volt_per_division if hasattr(self, '_m_volt_per_division') else None
 
         @property
@@ -176,7 +190,7 @@ class Wfm1000e(KaitaiStruct):
             if hasattr(self, '_m_volt_scale'):
                 return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
 
-            self._m_volt_scale = (self.volt_per_division / 25.0)
+            self._m_volt_scale = (((0.0000010 * self.scale_measured) * self.probe_value) / 25.0)
             return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
 
         @property

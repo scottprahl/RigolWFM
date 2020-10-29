@@ -78,7 +78,7 @@ types:
         type: s8
         doc: horizontal offset in picoseconds
 
-      - id: channel
+      - id: ch
         type: channel_header
         repeat: expr
         repeat-expr: 4
