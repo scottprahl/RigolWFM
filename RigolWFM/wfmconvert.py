@@ -17,6 +17,8 @@ import argparse
 
 import RigolWFM.wfm as rigol
 
+import subprocess
+
 def info(args, scope_data, infile):
     """Create a string that describes content of .wfm file."""
     s = scope_data.describe()
@@ -35,6 +37,19 @@ def csv(args, scope_data, infile):
         b = s.encode(encoding='utf-8')
         f.write(b)
 
+def vcsv(args, scope_data, infile):
+    """Create a file with comma separated values (full volts)."""
+    csv_name = os.path.splitext(infile)[0] + '.csv'
+
+    if os.path.isfile(csv_name) and not args.force:
+        print("'%s' exists, use --force to overwrite" % csv_name)
+        return
+
+    s = scope_data.sigrokcsv()
+    with open(csv_name, 'wb') as f:
+        b = s.encode(encoding='utf-8')
+        f.write(b)
+
 def wav(args, scope_data, infile):
     """Create an audible .wav file for use in LTSpice."""
     wav_name = os.path.splitext(infile)[0] + '.wav'
@@ -43,6 +58,23 @@ def wav(args, scope_data, infile):
         return
 
     scope_data.wav(wav_name, channel=args.channel)
+
+def sigrok(args, scope_data, infile):
+    """Create a Sigrok (.sr) file."""
+    sigrok_name = os.path.splitext(infile)[0] + '.sr'
+
+    if os.path.isfile(sigrok_name) and not args.force:
+        print("'%s' exists, use --force to overwrite" % sigrok_name)
+        return
+
+    s = scope_data.sigrokcsv()
+    # sigrok-cli reports a warning about /dev/stdin not being a regular file,
+    # but the conversion works fine.
+    p = subprocess.run(
+        ['sigrok-cli', '-I', 'csv:start_line=2:column_formats=t,1a', '-i', '/dev/stdin', '-o', sigrok_name],
+        input=s.encode(encoding='utf-8'))
+    if p.returncode != 0:
+        print("sigrok-cli failed")
 
 def main():
     """Parse console command line arguments."""
@@ -73,7 +105,7 @@ def main():
 
     parser.add_argument(
         dest='action',
-        choices=['csv', 'info', 'wav'],
+        choices=['csv', 'info', 'wav', 'vcsv', 'sigrok'],
         help="Action to perform on the WFM file"
     )
 
@@ -86,7 +118,7 @@ def main():
 
     args = parser.parse_args()
 
-    actionMap = {"info": info, "csv": csv, "wav": wav}
+    actionMap = {"info": info, "csv": csv, "wav": wav, "vcsv": vcsv, "sigrok": sigrok}
 
     for filename in args.infile:
         try:
