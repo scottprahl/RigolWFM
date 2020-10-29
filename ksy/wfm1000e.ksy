@@ -238,7 +238,6 @@ types:
 
       - id: sentinel_between_datasets
         type: u4
-        doc: "[0x04, 0x00, 0x04, 0x00]"
         if: _root.header.ch[0].enabled
 
       - id: ch2
@@ -249,6 +248,10 @@ types:
 
       - id: roll_stop_padding2
         size: _root.header.ch1_skip
+        if: _root.header.ch[1].enabled
+
+      - id: sentinel_between_datasets2
+        type: u4
         if: _root.header.ch[1].enabled
 
       - id: logic
