@@ -311,6 +311,23 @@ class Wfm():
             s += "\n"
         return s
 
+    def sigrokcsv(self):
+        """Return a string of comma separated values for sigrok."""
+        if len(self.channels) == 0:
+            return ''
+
+        s = 'X'
+        for ch in self.channels:
+            s += ",%s (%s)" % (ch.name, ch.unit.name.upper())
+        s += "\n"
+
+        for i in range(self.channels[0].points):
+            s += "%.8f" % (ch.times[i])
+            for ch in self.channels:
+                s += ",%.2f" % (ch.volts[i])
+            s += "\n"
+        return s
+
     def wav(self, wav_filename, channel=1):
         """Save data as a WAV file for use with LTSpice."""
         c = None
