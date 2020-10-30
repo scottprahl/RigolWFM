@@ -1,6 +1,11 @@
 Changelog
 =================================================
 
+v0.6.7
+------
+*    add vcsv conversion (just volts, not µV or mV)
+*    add support for sigrok exporting (requires sigrok-cli)
+
 v0.6.6
 ------
 *    use probe scaling with DS1000E files
