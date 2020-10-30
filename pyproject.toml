@@ -28,4 +28,14 @@ commands =
     wfmconvert --force Z wav {toxinidir}/wfm/MSO1104.wfm
     wfmconvert --force 4 wav {toxinidir}/wfm/DS4022-A.wfm
     wfmconvert --force 2 wav {toxinidir}/wfm/DS2202.wfm
+
+    wfmconvert --force E vcsv {toxinidir}/wfm/DS1102E-A.wfm
+    wfmconvert --force Z vcsv {toxinidir}/wfm/MSO1104.wfm
+    wfmconvert --force 4 vcsv {toxinidir}/wfm/DS4022-A.wfm
+    wfmconvert --force 2 vcsv {toxinidir}/wfm/DS2202.wfm
+
+    wfmconvert --force E sigrok {toxinidir}/wfm/DS1102E-A.wfm
+    wfmconvert --force Z sigrok {toxinidir}/wfm/MSO1104.wfm
+    wfmconvert --force 4 sigrok {toxinidir}/wfm/DS4022-A.wfm
+    wfmconvert --force 2 sigrok {toxinidir}/wfm/DS2202.wfm
 """
