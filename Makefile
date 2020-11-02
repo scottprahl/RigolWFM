@@ -106,8 +106,10 @@ test: $(PYTHON_PARSERS)
 	make testz
 	make test4
 	make test2
+	make vcsv
 	make csv
 	make wav
+	make sigrok
 
 csv:
 	python3 RigolWFM/wfmconvert.py E csv wfm/DS1102E-A.wfm
@@ -121,21 +123,43 @@ wav:
 	python3 RigolWFM/wfmconvert.py 4 wav wfm/DS4022-A.wfm
 	python3 RigolWFM/wfmconvert.py 2 wav wfm/DS2202.wfm
 	
+vcsv:
+	python3 RigolWFM/wfmconvert.py E vcsv wfm/DS1102E-A.wfm
+	mv wfm/DS1102E-A.csv wfm/DS1102E-A.vcsv
+	python3 RigolWFM/wfmconvert.py Z vcsv wfm/MSO1104.wfm
+	mv wfm/MSO1104.csv wfm/MSO1104.vcsv
+	python3 RigolWFM/wfmconvert.py 4 vcsv wfm/DS4022-A.wfm
+	mv wfm/DS4022-A.csv wfm/DS4022-A.vcsv
+	python3 RigolWFM/wfmconvert.py 2 vcsv wfm/DS2202.wfm
+	mv wfm/DS2202.csv wfm/DS2202.vcsv
+
+sigrok:
+	python3 RigolWFM/wfmconvert.py E sigrok wfm/DS1102E-A.wfm
+	python3 RigolWFM/wfmconvert.py Z sigrok wfm/MSO1104.wfm
+	python3 RigolWFM/wfmconvert.py 4 sigrok wfm/DS4022-A.wfm
+	python3 RigolWFM/wfmconvert.py 2 sigrok wfm/DS2202.wfm
+
 clean:
 	rm -rf dist
 	rm -rf RigolWFM.egg-info
 	rm -rf docs/github.com
 	rm -rf RigolWFM/__pycache__
 	rm -rf wfm/DS1102E-A.csv
+	rm -rf wfm/DS1102E-A.wav
+	rm -rf wfm/DS1102E-A.vcsv
+	rm -rf wfm/DS1102E-A.sr
 	rm -rf wfm/MSO1104.csv
-	rm -rf wfm/DS4022-A.csv
-	rm -rf wfm/DS1102E-A.wav
 	rm -rf wfm/MSO1104.wav
+	rm -rf wfm/MSO1104.sr
+	rm -rf wfm/MSO1104.vcsv
+	rm -rf wfm/DS4022-A.csv
 	rm -rf wfm/DS4022-A.wav
-	rm -rf wfm/DS1102E-A.csv
-	rm -rf wfm/DS1102E-A.wav
+	rm -rf wfm/DS4022-A.vcsv
+	rm -rf wfm/DS4022-A.sr
 	rm -rf wfm/DS2202.csv
 	rm -rf wfm/DS2202.wav
+	rm -rf wfm/DS2202.vcsv
+	rm -rf wfm/DS2202.sr
 	rm -rf docs/_build/*
 	rm -rf docs/api/*
 	rm -rf .tox
