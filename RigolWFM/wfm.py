@@ -321,6 +321,7 @@ class Wfm():
             s += ",%s (%s)" % (ch.name, ch.unit.name.upper())
         s += "\n"
 
+        ch = self.channels[0]
         for i in range(self.channels[0].points):
             s += "%.8f" % (ch.times[i])
             for ch in self.channels:

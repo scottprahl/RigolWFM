@@ -14,10 +14,9 @@ Use like this::
 import os
 import sys
 import argparse
+import subprocess
 
 import RigolWFM.wfm as rigol
-
-import subprocess
 
 def info(args, scope_data, infile):
     """Create a string that describes content of .wfm file."""
@@ -71,8 +70,10 @@ def sigrok(args, scope_data, infile):
     # sigrok-cli reports a warning about /dev/stdin not being a regular file,
     # but the conversion works fine.
     p = subprocess.run(
-        ['sigrok-cli', '-I', 'csv:start_line=2:column_formats=t,1a', '-i', '/dev/stdin', '-o', sigrok_name],
-        input=s.encode(encoding='utf-8'))
+        ['sigrok-cli', '-I', 'csv:start_line=2:column_formats=t,1a',
+         '-i', '/dev/stdin', '-o', sigrok_name],
+        input=s.encode(encoding='utf-8'),
+        check=True)
     if p.returncode != 0:
         print("sigrok-cli failed")
 
