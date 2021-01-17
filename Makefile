@@ -134,6 +134,9 @@ vcsv:
 	mv wfm/DS2202.csv wfm/DS2202.vcsv
 
 sigrok:
+	@ echo "*********************************************************"
+	@ echo "*** conversion works despite warning about /dev/stdin ***"
+	@ echo "*********************************************************"
 	python3 RigolWFM/wfmconvert.py E sigrok wfm/DS1102E-A.wfm
 	python3 RigolWFM/wfmconvert.py Z sigrok wfm/MSO1104.wfm
 	python3 RigolWFM/wfmconvert.py 4 sigrok wfm/DS4022-A.wfm
