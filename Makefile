@@ -58,11 +58,11 @@ check:
 	make yamlcheck
 	make ksycheck
 	-pylint RigolWFM/wfm.py
-	-pep257 RigolWFM/wfm.py
+	-pydocstyle RigolWFM/wfm.py
 	-pylint RigolWFM/channel.py
-	-pep257 RigolWFM/channel.py
+	-pydocstyle RigolWFM/channel.py
 	-pylint RigolWFM/wfmconvert.py
-	-pep257 RigolWFM/wfmconvert.py
+	-pydocstyle RigolWFM/wfmconvert.py
 
 html:
 	$(SPHINXBUILD) -b html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
@@ -161,6 +161,8 @@ clean:
 	rm -rf wfm/DS2202.vcsv
 	rm -rf wfm/DS2202.sr
 	rm -rf docs/_build/*
+	rm -rf docs/_build/.buildinfo
+	rm -rf docs/_build/.doctrees
 	rm -rf docs/api/*
 	rm -rf .tox
 	rm -rf docs/raw.githubusercontent.com
