@@ -1,12 +1,13 @@
 # This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
 
 from pkg_resources import parse_version
-from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
+import kaitaistruct
+from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
 from enum import Enum
 
 
-if parse_version(ks_version) < parse_version('0.7'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
+if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
+    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Wfm1000z(KaitaiStruct):
     """Rigol DS1000Z scope .wmf file format.
@@ -73,12 +74,12 @@ class Wfm1000z(KaitaiStruct):
 
         def _read(self):
             self.unknown_1 = self._io.read_bytes(3)
-            self.unused_bits_1 = self._io.read_bits_int(7)
-            self.enabled = self._io.read_bits_int(1) != 0
+            self.unused_bits_1 = self._io.read_bits_int_be(7)
+            self.enabled = self._io.read_bits_int_be(1) != 0
             self._io.align_to_byte()
             self.unknown_2 = self._io.read_bytes(7)
-            self.unused_bits_2 = self._io.read_bits_int(7)
-            self.inverted = self._io.read_bits_int(1) != 0
+            self.unused_bits_2 = self._io.read_bits_int_be(7)
+            self.inverted = self._io.read_bits_int_be(1) != 0
             self._io.align_to_byte()
             self.unknown_3 = self._io.read_bytes(10)
             self.probe_attenuation = self._io.read_s8le()
@@ -124,15 +125,15 @@ class Wfm1000z(KaitaiStruct):
 
         def _read(self):
             self.enabled_val = self._io.read_u1()
-            self.coupling = self._root.CouplingEnum(self._io.read_u1())
-            self.bandwidth_limit = self._root.BandwidthEnum(self._io.read_u1())
+            self.coupling = KaitaiStream.resolve_enum(Wfm1000z.CouplingEnum, self._io.read_u1())
+            self.bandwidth_limit = KaitaiStream.resolve_enum(Wfm1000z.BandwidthEnum, self._io.read_u1())
             self.probe_type = self._io.read_u1()
-            self.probe_ratio = self._root.ProbeEnum(self._io.read_u1())
+            self.probe_ratio = KaitaiStream.resolve_enum(Wfm1000z.ProbeEnum, self._io.read_u1())
             self.unused = self._io.read_bytes(3)
             self.scale = self._io.read_f4le()
             self.shift = self._io.read_f4le()
             self.inverted_val = self._io.read_u1()
-            self.unit = self._root.UnitEnum(self._io.read_u1())
+            self.unit = KaitaiStream.resolve_enum(Wfm1000z.UnitEnum, self._io.read_u1())
             self.unknown_2 = self._io.read_bytes(10)
 
         @property
@@ -204,7 +205,7 @@ class Wfm1000z(KaitaiStruct):
             if hasattr(self, '_m_probe_value'):
                 return self._m_probe_value if hasattr(self, '_m_probe_value') else None
 
-            self._m_probe_value = (0.01 if self.probe_ratio == self._root.ProbeEnum.x0_01 else (0.02 if self.probe_ratio == self._root.ProbeEnum.x0_02 else (0.05 if self.probe_ratio == self._root.ProbeEnum.x0_05 else (0.1 if self.probe_ratio == self._root.ProbeEnum.x0_1 else (0.2 if self.probe_ratio == self._root.ProbeEnum.x0_2 else (0.5 if self.probe_ratio == self._root.ProbeEnum.x0_5 else (1.0 if self.probe_ratio == self._root.ProbeEnum.x1 else (2.0 if self.probe_ratio == self._root.ProbeEnum.x2 else (5.0 if self.probe_ratio == self._root.ProbeEnum.x5 else (10.0 if self.probe_ratio == self._root.ProbeEnum.x10 else (20.0 if self.probe_ratio == self._root.ProbeEnum.x20 else (50.0 if self.probe_ratio == self._root.ProbeEnum.x50 else (100.0 if self.probe_ratio == self._root.ProbeEnum.x100 else (200.0 if self.probe_ratio == self._root.ProbeEnum.x200 else (500.0 if self.probe_ratio == self._root.ProbeEnum.x500 else 1000.0)))))))))))))))
+            self._m_probe_value = (0.01 if self.probe_ratio == Wfm1000z.ProbeEnum.x0_01 else (0.02 if self.probe_ratio == Wfm1000z.ProbeEnum.x0_02 else (0.05 if self.probe_ratio == Wfm1000z.ProbeEnum.x0_05 else (0.1 if self.probe_ratio == Wfm1000z.ProbeEnum.x0_1 else (0.2 if self.probe_ratio == Wfm1000z.ProbeEnum.x0_2 else (0.5 if self.probe_ratio == Wfm1000z.ProbeEnum.x0_5 else (1.0 if self.probe_ratio == Wfm1000z.ProbeEnum.x1 else (2.0 if self.probe_ratio == Wfm1000z.ProbeEnum.x2 else (5.0 if self.probe_ratio == Wfm1000z.ProbeEnum.x5 else (10.0 if self.probe_ratio == Wfm1000z.ProbeEnum.x10 else (20.0 if self.probe_ratio == Wfm1000z.ProbeEnum.x20 else (50.0 if self.probe_ratio == Wfm1000z.ProbeEnum.x50 else (100.0 if self.probe_ratio == Wfm1000z.ProbeEnum.x100 else (200.0 if self.probe_ratio == Wfm1000z.ProbeEnum.x200 else (500.0 if self.probe_ratio == Wfm1000z.ProbeEnum.x500 else 1000.0)))))))))))))))
             return self._m_probe_value if hasattr(self, '_m_probe_value') else None
 
         @property
@@ -224,12 +225,16 @@ class Wfm1000z(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.magic = self._io.ensure_fixed_contents(b"\x01\xFF\xFF\xFF")
+            self.magic = self._io.read_bytes(4)
+            if not self.magic == b"\x01\xFF\xFF\xFF":
+                raise kaitaistruct.ValidationNotEqualError(b"\x01\xFF\xFF\xFF", self.magic, self._io, u"/types/file_header/seq/0")
             self.magic2 = self._io.read_u2le()
             self.structure_size = self._io.read_u2le()
             self.model_number = (KaitaiStream.bytes_terminate(self._io.read_bytes(20), 0, False)).decode(u"ascii")
             self.firmware_version = (KaitaiStream.bytes_terminate(self._io.read_bytes(20), 0, False)).decode(u"ascii")
-            self.block = self._io.ensure_fixed_contents(b"\x01\x00")
+            self.block = self._io.read_bytes(2)
+            if not self.block == b"\x01\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x01\x00", self.block, self._io, u"/types/file_header/seq/5")
             self.file_version = self._io.read_u2le()
 
 
@@ -244,13 +249,15 @@ class Wfm1000z(KaitaiStruct):
             self.picoseconds_per_division = self._io.read_u8le()
             self.picoseconds_offset = self._io.read_s8le()
             self.crc = self._io.read_u4le()
-            self.structure_size = self._io.ensure_fixed_contents(b"\xD8\x00")
+            self.structure_size = self._io.read_bytes(2)
+            if not self.structure_size == b"\xD8\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\xD8\x00", self.structure_size, self._io, u"/types/wfm_header/seq/3")
             self.structure_version = self._io.read_u2le()
-            self.unused_bits_1 = self._io.read_bits_int(4)
-            self.ch4_enabled = self._io.read_bits_int(1) != 0
-            self.ch3_enabled = self._io.read_bits_int(1) != 0
-            self.ch2_enabled = self._io.read_bits_int(1) != 0
-            self.ch1_enabled = self._io.read_bits_int(1) != 0
+            self.unused_bits_1 = self._io.read_bits_int_be(4)
+            self.ch4_enabled = self._io.read_bits_int_be(1) != 0
+            self.ch3_enabled = self._io.read_bits_int_be(1) != 0
+            self.ch2_enabled = self._io.read_bits_int_be(1) != 0
+            self.ch1_enabled = self._io.read_bits_int_be(1) != 0
             self._io.align_to_byte()
             self.unused_mask_bytes = self._io.read_bytes(3)
             self.ch1_file_offset = self._io.read_u4le()
@@ -258,15 +265,17 @@ class Wfm1000z(KaitaiStruct):
             self.ch3_file_offset = self._io.read_u4le()
             self.ch4_file_offset = self._io.read_u4le()
             self.la_offset = self._io.read_u4le()
-            self.acq_mode = self._root.AcquistionEnum(self._io.read_u1())
+            self.acq_mode = KaitaiStream.resolve_enum(Wfm1000z.AcquistionEnum, self._io.read_u1())
             self.average_time = self._io.read_u1()
-            self.sample_mode = self._io.ensure_fixed_contents(b"\x00")
-            self.time_mode = self._root.TimeModeEnum(self._io.read_u1())
+            self.sample_mode = self._io.read_bytes(1)
+            if not self.sample_mode == b"\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00", self.sample_mode, self._io, u"/types/wfm_header/seq/18")
+            self.time_mode = KaitaiStream.resolve_enum(Wfm1000z.TimeModeEnum, self._io.read_u1())
             self.memory_depth = self._io.read_u4le()
             self.sample_rate_ghz = self._io.read_f4le()
             self.ch = [None] * (4)
             for i in range(4):
-                self.ch[i] = self._root.ChannelHead(self._io, self, self._root)
+                self.ch[i] = Wfm1000z.ChannelHead(self._io, self, self._root)
 
             self.la_parameters = self._io.read_bytes(12)
             self.setup_size = self._io.read_u4le()
@@ -370,7 +379,7 @@ class Wfm1000z(KaitaiStruct):
 
         _pos = self._io.pos()
         self._io.seek(0)
-        self._m_preheader = self._root.FileHeader(self._io, self, self._root)
+        self._m_preheader = Wfm1000z.FileHeader(self._io, self, self._root)
         self._io.seek(_pos)
         return self._m_preheader if hasattr(self, '_m_preheader') else None
 
@@ -381,7 +390,7 @@ class Wfm1000z(KaitaiStruct):
 
         _pos = self._io.pos()
         self._io.seek(64)
-        self._m_header = self._root.WfmHeader(self._io, self, self._root)
+        self._m_header = Wfm1000z.WfmHeader(self._io, self, self._root)
         self._io.seek(_pos)
         return self._m_header if hasattr(self, '_m_header') else None
 
@@ -392,7 +401,7 @@ class Wfm1000z(KaitaiStruct):
 
         _pos = self._io.pos()
         self._io.seek(((304 + self._root.header.setup_size) + self._root.header.horizontal_size))
-        self._m_data = self._root.RawData(self._io, self, self._root)
+        self._m_data = Wfm1000z.RawData(self._io, self, self._root)
         self._io.seek(_pos)
         return self._m_data if hasattr(self, '_m_data') else None
 
