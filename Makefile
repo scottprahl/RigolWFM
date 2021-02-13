@@ -101,11 +101,15 @@ test4:
 	python3 RigolWFM/wfmconvert.py 4 info wfm/DS4024-A.wfm
 	python3 RigolWFM/wfmconvert.py 4 info wfm/DS4024-B.wfm
 
+testc:
+	python3 RigolWFM/wfmconvert.py C info wfm/DS1202CA-A.wfm
+
 test: $(PYTHON_PARSERS)
 	make teste
 	make testz
 	make test4
 	make test2
+	make testc
 	make vcsv
 	make csv
 	make wav
@@ -116,12 +120,14 @@ csv:
 	python3 RigolWFM/wfmconvert.py Z csv wfm/MSO1104.wfm
 	python3 RigolWFM/wfmconvert.py 4 csv wfm/DS4022-A.wfm
 	python3 RigolWFM/wfmconvert.py 2 csv wfm/DS2202.wfm
+	python3 RigolWFM/wfmconvert.py C csv wfm/DS1202CA-A.wfm
 
 wav:
 	python3 RigolWFM/wfmconvert.py E wav wfm/DS1102E-A.wfm
 	python3 RigolWFM/wfmconvert.py Z wav wfm/MSO1104.wfm
 	python3 RigolWFM/wfmconvert.py 4 wav wfm/DS4022-A.wfm
 	python3 RigolWFM/wfmconvert.py 2 wav wfm/DS2202.wfm
+	python3 RigolWFM/wfmconvert.py C wav wfm/DS1202CA-A.wfm
 	
 vcsv:
 	python3 RigolWFM/wfmconvert.py E vcsv wfm/DS1102E-A.wfm
@@ -132,6 +138,8 @@ vcsv:
 	mv wfm/DS4022-A.csv wfm/DS4022-A.vcsv
 	python3 RigolWFM/wfmconvert.py 2 vcsv wfm/DS2202.wfm
 	mv wfm/DS2202.csv wfm/DS2202.vcsv
+	python3 RigolWFM/wfmconvert.py C vcsv wfm/DS1202CA-A.wfm
+	mv wfm/DS1202CA-A.csv wfm/DS1202CA-A.vcsv
 
 sigrok:
 	@ echo "*********************************************************"
@@ -141,6 +149,7 @@ sigrok:
 	python3 RigolWFM/wfmconvert.py Z sigrok wfm/MSO1104.wfm
 	python3 RigolWFM/wfmconvert.py 4 sigrok wfm/DS4022-A.wfm
 	python3 RigolWFM/wfmconvert.py 2 sigrok wfm/DS2202.wfm
+	python3 RigolWFM/wfmconvert.py C sigrok wfm/DS1202CA-A.wfm
 
 clean:
 	rm -rf dist
@@ -163,6 +172,10 @@ clean:
 	rm -rf wfm/DS2202.wav
 	rm -rf wfm/DS2202.vcsv
 	rm -rf wfm/DS2202.sr
+	rm -rf wfm/DS1202CA-A.csv
+	rm -rf wfm/DS1202CA-A.wav
+	rm -rf wfm/DS1202CA-A.vcsv
+	rm -rf wfm/DS1202CA-A.sr
 	rm -rf docs/_build/*
 	rm -rf docs/_build/.buildinfo
 	rm -rf docs/_build/.doctrees

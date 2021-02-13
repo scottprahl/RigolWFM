@@ -43,6 +43,12 @@ class Wfm1000c(KaitaiStruct):
         ds2000 = 4
         ds4000 = 5
         ds6000 = 6
+
+    class UnitEnum(Enum):
+        w = 0
+        a = 1
+        v = 2
+        u = 3
     def __init__(self, _io, _parent=None, _root=None):
         self._io = _io
         self._parent = _parent
@@ -60,16 +66,17 @@ class Wfm1000c(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.magic = self._io.read_bytes(4)
-            if not self.magic == b"\xA5\xA5\x00\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\xA5\xA5\x00\x00", self.magic, self._io, u"/types/header/seq/0")
+            self.first_byte = self._io.read_u1()
+            self.magic = self._io.read_bytes(3)
+            if not self.magic == b"\xA5\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\xA5\x00\x00", self.magic, self._io, u"/types/header/seq/1")
             self.unknown_1 = [None] * (6)
             for i in range(6):
                 self.unknown_1[i] = self._io.read_u4le()
 
             self.points = self._io.read_u4le()
             self.active_channel = self._io.read_u1()
-            self.unknown_2 = self._io.read_bytes(3)
+            self.unknown_2a = self._io.read_bytes(3)
             self.ch = [None] * (2)
             for i in range(2):
                 self.ch[i] = Wfm1000c.ChannelHeader(self._io, self, self._root)
@@ -83,7 +90,7 @@ class Wfm1000c(KaitaiStruct):
 
             self.unknown_4 = self._io.read_u2le()
             self.trigger_mode = KaitaiStream.resolve_enum(Wfm1000c.TriggerModeEnum, self._io.read_u1())
-            self.unknown_6 = self._io.read_bytes(1)
+            self.unknown_6 = self._io.read_u1()
             self.trigger_source = KaitaiStream.resolve_enum(Wfm1000c.TriggerSourceEnum, self._io.read_u1())
 
         @property
@@ -107,15 +114,22 @@ class Wfm1000c(KaitaiStruct):
             self.shift_display = self._io.read_s2le()
             self.unknown_1 = self._io.read_u1()
             self.unknown_2 = self._io.read_u1()
-            self.probe = self._io.read_f4le()
+            self.probe_value = self._io.read_f4le()
             self.invert_disp_val = self._io.read_u1()
             self.enabled_val = self._io.read_u1()
             self.invert_m_val = self._io.read_u1()
-            self.unknown_3 = self._io.read_bytes(1)
-            self.scale_orig = self._io.read_u4le()
-            self.position_orig = self._io.read_u4le()
+            self.unknown_3 = self._io.read_u1()
             self.scale_measured = self._io.read_s4le()
             self.shift_measured = self._io.read_s2le()
+            self.unknown_3a = self._io.read_u2le()
+
+        @property
+        def unit(self):
+            if hasattr(self, '_m_unit'):
+                return self._m_unit if hasattr(self, '_m_unit') else None
+
+            self._m_unit = Wfm1000c.UnitEnum.v
+            return self._m_unit if hasattr(self, '_m_unit') else None
 
         @property
         def time_offset(self):
@@ -213,7 +227,7 @@ class Wfm1000c(KaitaiStruct):
             return self._m_data if hasattr(self, '_m_data') else None
 
         _pos = self._io.pos()
-        self._io.seek(272)
+        self._io.seek(256)
         self._m_data = Wfm1000c.RawData(self._io, self, self._root)
         self._io.seek(_pos)
         return self._m_data if hasattr(self, '_m_data') else None

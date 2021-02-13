@@ -130,6 +130,7 @@ class Channel():
         self.name = "CH %d" % ch
         self.waveform = w
         self.seconds_per_point = w.header.seconds_per_point
+        self.sample_rate_hz = w.header.sample_rate_hz
         self.firmware = 'unknown'
         self.unit = 'V'
         self.points = 0
@@ -189,6 +190,8 @@ class Channel():
         s += "           Offset = %10ss\n" % engineering_string(self.time_offset, 3)
         s += "            Delta = %10ss/point\n" % engineering_string(self.seconds_per_point, 3)
         s += "           Points = %8d\n\n" % self.points
+        s += "           Rate = %e\n\n" % self.sample_rate_hz
+
         if self.enabled:
             s += "         Count    = [%9d,%9d,%9d  ... %9d,%9d]\n" % (
                 1, 2, 3, self.points-1, self.points)
@@ -214,16 +217,14 @@ class Channel():
 
     def ds1000c(self, w, ch):
         """Interpret waveform data for 1000CD series scopes."""
+        self.time_scale = 1.0e-12 * w.header.time_scale
+        self.time_offset = 1.0e-12 * w.header.time_offset
         if ch == 1:
-            self.time_offset = w.header.ch1_time_offset
-            self.time_scale = w.header.ch1_time_scale
             if self.enabled:
                 self.points = len(w.data.ch1)
                 self.raw = np.array(w.data.ch1, dtype=np.uint8)
 
         if ch == 2:
-            self.time_offset = w.header.ch2_time_offset
-            self.time_scale = w.header.ch2_time_scale
             if self.enabled:
                 self.points = len(w.data.ch2)
                 self.raw = np.array(w.data.ch2, dtype=np.uint8)

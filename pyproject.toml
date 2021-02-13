@@ -9,33 +9,38 @@ build-backend = "setuptools.build_meta"
 legacy_tox_ini = """
 
 [tox]
-envlist = py37
+envlist = py37 py39
 
 [testenv]
 
 commands =
+    wfmconvert C info {toxinidir}/wfm/DS1202CA-A.wfm
     wfmconvert E info {toxinidir}/wfm/DS1052E.wfm
     wfmconvert Z info {toxinidir}/wfm/DS1054Z-A.wfm
     wfmconvert 2 info {toxinidir}/wfm/DS2000-A.wfm
     wfmconvert 4 info {toxinidir}/wfm/DS4024-A.wfm
-    
+
+    wfmconvert --force C csv {toxinidir}/wfm/DS1202CA-A.wfm
     wfmconvert --force E csv {toxinidir}/wfm/DS1102E-A.wfm
     wfmconvert --force Z csv {toxinidir}/wfm/MSO1104.wfm
-    wfmconvert --force 4 csv {toxinidir}/wfm/DS4022-A.wfm
     wfmconvert --force 2 csv {toxinidir}/wfm/DS2202.wfm
+    wfmconvert --force 4 csv {toxinidir}/wfm/DS4022-A.wfm
 
+    wfmconvert --force C wav {toxinidir}/wfm/DS1202CA-A.wfm
     wfmconvert --force E wav {toxinidir}/wfm/DS1102E-A.wfm
     wfmconvert --force Z wav {toxinidir}/wfm/MSO1104.wfm
-    wfmconvert --force 4 wav {toxinidir}/wfm/DS4022-A.wfm
     wfmconvert --force 2 wav {toxinidir}/wfm/DS2202.wfm
+    wfmconvert --force 4 wav {toxinidir}/wfm/DS4022-A.wfm
 
+    wfmconvert --force C vcsv {toxinidir}/wfm/DS1202CA-A.wfm
     wfmconvert --force E vcsv {toxinidir}/wfm/DS1102E-A.wfm
     wfmconvert --force Z vcsv {toxinidir}/wfm/MSO1104.wfm
-    wfmconvert --force 4 vcsv {toxinidir}/wfm/DS4022-A.wfm
     wfmconvert --force 2 vcsv {toxinidir}/wfm/DS2202.wfm
+    wfmconvert --force 4 vcsv {toxinidir}/wfm/DS4022-A.wfm
 
+    wfmconvert --force C sigrok {toxinidir}/wfm/DS1202CA-A.wfm
     wfmconvert --force E sigrok {toxinidir}/wfm/DS1102E-A.wfm
     wfmconvert --force Z sigrok {toxinidir}/wfm/MSO1104.wfm
-    wfmconvert --force 4 sigrok {toxinidir}/wfm/DS4022-A.wfm
     wfmconvert --force 2 sigrok {toxinidir}/wfm/DS2202.wfm
+    wfmconvert --force 4 sigrok {toxinidir}/wfm/DS4022-A.wfm
 """

@@ -45,7 +45,7 @@ Status
 
 There is a bit of work remaining (testing, validation, repackaging) but there are binary file descriptions for ``.wfm`` files created by the following scopes:
 
-* DS1000C untested
+* DS1000C at least parses DS1202CA file correctly
 * DS1000E tested
 * DS1000Z tested, but with wonky voltage offsets
 * DS2000 tested

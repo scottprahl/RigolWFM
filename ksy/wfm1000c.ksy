@@ -22,14 +22,16 @@ instances:
     pos: 0
     type: header
   data:
-    pos: 272
+    pos: 256
     type: raw_data
 
 types:
   header:
     seq:
-      - id: magic            # 00 (file pos)
-        contents: [0xa5, 0xa5, 0x00, 0x00]
+      - id: first_byte       # 00 (file pos)
+        type: u1  # could be 0xA1 or 0xA5
+      - id: magic            # 01
+        contents: [0xa5, 0x00, 0x00]
       - id: unknown_1        # 04
         type: u4
         repeat: expr
@@ -38,7 +40,7 @@ types:
         type: u4
       - id: active_channel   # 32
         type: u1
-      - id: unknown_2        # 33
+      - id: unknown_2a        # 33
         size: 3
       - id: ch               # 36, 60
         type: channel_header
@@ -60,7 +62,7 @@ types:
         type: u1
         enum: trigger_mode_enum
       - id: unknown_6        # 143
-        size: 1
+        type: u1
       - id: trigger_source   # 144
         type: u1
         enum: trigger_source_enum
@@ -79,7 +81,7 @@ types:
         type: u1
       - id: unknown_2        # 43, 67
         type: u1
-      - id: probe            # 44, 68
+      - id: probe_value      # 44, 68
         type: f4
       - id: invert_disp_val  # 48, 72
         type: u1
@@ -88,15 +90,13 @@ types:
       - id: invert_m_val     # 50, 74
         type: u1
       - id: unknown_3        # 51, 75
-        size: 1
-      - id: scale_orig       # 52, 76
-        type: u4
-      - id: position_orig    # 56, 80
-        type: u4
+        type: u1
       - id: scale_measured   # 52, 76
         type: s4
       - id: shift_measured   # 56, 80
         type: s2
+      - id: unknown_3a       # 58, 82
+        type: u2
     instances:
       inverted:
         value: "invert_m_val != 0 ? true : false"
@@ -114,6 +114,8 @@ types:
         value: _root.header.time_scale
       time_offset:
         value: _root.header.time_offset
+      unit:
+        value: "unit_enum::v"
 
   raw_data:
     seq:
@@ -155,3 +157,9 @@ enums:
     4: ds2000
     5: ds4000
     6: ds6000
+
+  unit_enum:
+    0: w
+    1: a
+    2: v
+    3: u
