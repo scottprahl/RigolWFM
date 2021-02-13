@@ -130,7 +130,6 @@ class Channel():
         self.name = "CH %d" % ch
         self.waveform = w
         self.seconds_per_point = w.header.seconds_per_point
-        self.sample_rate_hz = w.header.sample_rate_hz
         self.firmware = 'unknown'
         self.unit = 'V'
         self.points = 0
@@ -190,7 +189,6 @@ class Channel():
         s += "           Offset = %10ss\n" % engineering_string(self.time_offset, 3)
         s += "            Delta = %10ss/point\n" % engineering_string(self.seconds_per_point, 3)
         s += "           Points = %8d\n\n" % self.points
-        s += "           Rate = %e\n\n" % self.sample_rate_hz
 
         if self.enabled:
             s += "         Count    = [%9d,%9d,%9d  ... %9d,%9d]\n" % (

@@ -67,6 +67,9 @@ check:
 html:
 	$(SPHINXBUILD) -b html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
 
+testc:
+	python3 RigolWFM/wfmconvert.py C info wfm/DS1202CA-A.wfm
+
 teste:
 	python3 RigolWFM/wfmconvert.py E info wfm/DS1102E-A.wfm
 	python3 RigolWFM/wfmconvert.py E info wfm/DS1102E-B.wfm
@@ -100,9 +103,6 @@ test4:
 	python3 RigolWFM/wfmconvert.py 4 info wfm/DS4022-B.wfm
 	python3 RigolWFM/wfmconvert.py 4 info wfm/DS4024-A.wfm
 	python3 RigolWFM/wfmconvert.py 4 info wfm/DS4024-B.wfm
-
-testc:
-	python3 RigolWFM/wfmconvert.py C info wfm/DS1202CA-A.wfm
 
 test: $(PYTHON_PARSERS)
 	make teste

@@ -1,6 +1,10 @@
 Changelog
 =================================================
 
+v0.7.0
+------
+*    add basic support for DS1000CA files
+
 v0.6.7
 ------
 *    add vcsv conversion (just volts, not µV or mV)
