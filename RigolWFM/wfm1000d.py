@@ -9,9 +9,13 @@ from enum import Enum
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
     raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
-class Wfm1000c(KaitaiStruct):
-    """This is the same format as used for DS1000D scopes except that the first byte
-    of the file is 0xA1 and the data starts at an offset of 256.
+class Wfm1000d(KaitaiStruct):
+    """Rigol DS1102D .wmf format abstracted from a Matlab script with the addition
+    of a few fields found in a Pascal program.  Neither program really examines
+    the header closely (meaning that they skip 26 bytes).
+    
+    .. seealso::
+       The Matlab script is from https://www.mathworks.com/matlabcentral/fileexchange/18999-read-binary-rigol-waveforms The Pascal program is from https://sourceforge.net/projects/wfmreader/
     """
 
     class TriggerSourceEnum(Enum):
@@ -63,8 +67,8 @@ class Wfm1000c(KaitaiStruct):
 
         def _read(self):
             self.magic = self._io.read_bytes(4)
-            if not self.magic == b"\xA1\xA5\x00\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\xA1\xA5\x00\x00", self.magic, self._io, u"/types/header/seq/0")
+            if not self.magic == b"\xA5\xA5\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\xA5\xA5\x00\x00", self.magic, self._io, u"/types/header/seq/0")
             self.unknown_1 = [None] * (6)
             for i in range(6):
                 self.unknown_1[i] = self._io.read_u4le()
@@ -74,7 +78,7 @@ class Wfm1000c(KaitaiStruct):
             self.unknown_2a = self._io.read_bytes(3)
             self.ch = [None] * (2)
             for i in range(2):
-                self.ch[i] = Wfm1000c.ChannelHeader(self._io, self, self._root)
+                self.ch[i] = Wfm1000d.ChannelHeader(self._io, self, self._root)
 
             self.time_scale = self._io.read_u8le()
             self.time_offset = self._io.read_s8le()
@@ -84,9 +88,9 @@ class Wfm1000c(KaitaiStruct):
                 self.unknown_3[i] = self._io.read_u4le()
 
             self.unknown_4 = self._io.read_u2le()
-            self.trigger_mode = KaitaiStream.resolve_enum(Wfm1000c.TriggerModeEnum, self._io.read_u1())
+            self.trigger_mode = KaitaiStream.resolve_enum(Wfm1000d.TriggerModeEnum, self._io.read_u1())
             self.unknown_6 = self._io.read_u1()
-            self.trigger_source = KaitaiStream.resolve_enum(Wfm1000c.TriggerSourceEnum, self._io.read_u1())
+            self.trigger_source = KaitaiStream.resolve_enum(Wfm1000d.TriggerSourceEnum, self._io.read_u1())
 
         @property
         def seconds_per_point(self):
@@ -123,7 +127,7 @@ class Wfm1000c(KaitaiStruct):
             if hasattr(self, '_m_unit'):
                 return self._m_unit if hasattr(self, '_m_unit') else None
 
-            self._m_unit = Wfm1000c.UnitEnum.v
+            self._m_unit = Wfm1000d.UnitEnum.v
             return self._m_unit if hasattr(self, '_m_unit') else None
 
         @property
@@ -212,7 +216,7 @@ class Wfm1000c(KaitaiStruct):
 
         _pos = self._io.pos()
         self._io.seek(0)
-        self._m_header = Wfm1000c.Header(self._io, self, self._root)
+        self._m_header = Wfm1000d.Header(self._io, self, self._root)
         self._io.seek(_pos)
         return self._m_header if hasattr(self, '_m_header') else None
 
@@ -222,8 +226,8 @@ class Wfm1000c(KaitaiStruct):
             return self._m_data if hasattr(self, '_m_data') else None
 
         _pos = self._io.pos()
-        self._io.seek(256)
-        self._m_data = Wfm1000c.RawData(self._io, self, self._root)
+        self._io.seek(272)
+        self._m_data = Wfm1000d.RawData(self._io, self, self._root)
         self._io.seek(_pos)
         return self._m_data if hasattr(self, '_m_data') else None
 

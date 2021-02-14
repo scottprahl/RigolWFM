@@ -1,26 +1,33 @@
 meta:
-  id: wfm1000c
-  title: Rigol DS1021CA oscilloscope waveform file format
+  id: wfm1000d
+  title: Rigol DS1102D oscilloscope waveform file format
   file-extension: wfm
   endian: le
 
 doc: |
-  This is the same format as used for DS1000D scopes except that the first byte
-  of the file is 0xA1 and the data starts at an offset of 256.
+  Rigol DS1102D .wmf format abstracted from a Matlab script with the addition
+  of a few fields found in a Pascal program.  Neither program really examines
+  the header closely (meaning that they skip 26 bytes).
+
+doc-ref: !
+  The Matlab script is from
+  https://www.mathworks.com/matlabcentral/fileexchange/18999-read-binary-rigol-waveforms
+  The Pascal program is from
+  https://sourceforge.net/projects/wfmreader/
 
 instances:
   header:
     pos: 0
     type: header
   data:
-    pos: 256
+    pos: 272
     type: raw_data
 
 types:
   header:
     seq:
       - id: magic            # 00 => file offset in decimal
-        contents: [0xa1, 0xa5, 0x00, 0x00]
+        contents: [0xa5, 0xa5, 0x00, 0x00]
       - id: unknown_1        # 04
         type: u4
         repeat: expr

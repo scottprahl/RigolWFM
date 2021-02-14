@@ -165,6 +165,8 @@ class Channel():
 
         if scope == 'wfm1000c':
             self.ds1000c(w, ch)
+        elif scope == 'wfm1000d':
+            self.ds1000d(w, ch)
         elif scope == 'wfm1000e':
             self.ds1000e(w, ch)
         elif scope == 'wfm1000z':
@@ -214,6 +216,23 @@ class Channel():
 
 
     def ds1000c(self, w, ch):
+        """Interpret waveform data for 1000CD series scopes."""
+        self.time_scale = 1.0e-12 * w.header.time_scale
+        self.time_offset = 1.0e-12 * w.header.time_offset
+        if ch == 1:
+            if self.enabled:
+                self.points = len(w.data.ch1)
+                self.raw = np.array(w.data.ch1, dtype=np.uint8)
+
+        if ch == 2:
+            if self.enabled:
+                self.points = len(w.data.ch2)
+                self.raw = np.array(w.data.ch2, dtype=np.uint8)
+
+        self.calc_times_and_volts()
+
+
+    def ds1000d(self, w, ch):
         """Interpret waveform data for 1000CD series scopes."""
         self.time_scale = 1.0e-12 * w.header.time_scale
         self.time_offset = 1.0e-12 * w.header.time_offset

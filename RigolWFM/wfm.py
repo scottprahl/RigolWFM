@@ -33,15 +33,16 @@ import RigolWFM.channel
 # DS1000B_scopes = ["B", "1000B", "DS1000B",
 #                  "DS1074B", "DS1104B", "DS1204B"]
 
-# untested
+# tested
 DS1000C_scopes = ["C", "1000C", "DS1000C",
                   "DS1000CD", "DS1000C", "DS1000MD", "DS1000M",
                   "DS1302CA", "DS1202CA", "DS1102CA", "DS1062CA"]
 
+# untested
+DS1000D_scopes = ["D", "1000D", "DS1000D", "DS1102D", "DS1052D"]
+
 # tested
-DS1000E_scopes = ["E", "1000E", "DS1000E",
-                  "D", "1000D", "DS1000D",
-                  "DS1102E", "DS1052E", "DS1102D", "DS1052D"]
+DS1000E_scopes = ["E", "1000E", "DS1000E", "DS1102E", "DS1052E"]
 
 # tested, wonky voltages
 DS1000Z_scopes = ["Z", "1000Z", "DS1000Z",
@@ -71,6 +72,7 @@ def valid_scope_list():
     """List all the oscilloscope types."""
     s = "\nValid types are:\n"
     s += ", ".join(DS1000C_scopes) + "\n"
+    s += ", ".join(DS1000D_scopes) + "\n"
     s += ", ".join(DS1000E_scopes) + "\n"
     s += ", ".join(DS1000Z_scopes) + "\n"
     s += ", ".join(DS2000_scopes) + "\n"
@@ -143,6 +145,10 @@ class Wfm():
         if umodel in DS1000C_scopes:
             w = RigolWFM.wfm1000c.Wfm1000c.from_file(file_name)
             new_wfm.header_name = 'DS1000C'
+
+        elif umodel in DS1000D_scopes:
+            w = RigolWFM.wfm1000e.Wfm1000d.from_file(file_name)
+            new_wfm.header_name = 'DS1000D'
 
         elif umodel in DS1000E_scopes:
             w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)

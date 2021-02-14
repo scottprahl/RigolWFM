@@ -1,5 +1,6 @@
-PYTHON_PARSERS = RigolWFM/wfm1000c.py RigolWFM/wfm1000e.py RigolWFM/wfm1000z.py \
-                 RigolWFM/wfm2000.py RigolWFM/wfm4000.py RigolWFM/wfm6000.py
+PYTHON_PARSERS = RigolWFM/wfm1000c.py RigolWFM/wfm1000d.py RigolWFM/wfm1000e.py \
+                 RigolWFM/wfm1000z.py RigolWFM/wfm2000.py RigolWFM/wfm4000.py \
+                 RigolWFM/wfm6000.py
 
 KSC ?= kaitai-struct-compiler
 
@@ -23,6 +24,9 @@ all: $(PYTHON_PARSERS)
 RigolWFM/wfm1000c.py: ksy/wfm1000c.ksy
 	$(KSC) $(KSY_PYTHON_OPTIONS) $<
 
+RigolWFM/wfm1000d.py: ksy/wfm1000d.ksy
+	$(KSC) $(KSY_PYTHON_OPTIONS) $<
+
 RigolWFM/wfm1000e.py: ksy/wfm1000e.ksy
 	$(KSC) $(KSY_PYTHON_OPTIONS) $<
 
@@ -40,6 +44,7 @@ RigolWFM/wfm6000.py: ksy/wfm6000.ksy
 
 yamlcheck:
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000c.ksy
+	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000d.ksy
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000e.ksy
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000z.ksy
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm2000.ksy
@@ -48,6 +53,7 @@ yamlcheck:
 
 ksycheck:
 	-ksylint ksy/wfm1000c.ksy
+	-ksylint ksy/wfm1000d.ksy
 	-ksylint ksy/wfm1000e.ksy
 	-ksylint ksy/wfm1000z.ksy
 	-ksylint ksy/wfm2000.ksy
@@ -186,6 +192,7 @@ clean:
 realclean:
 	make clean
 	rm -f RigolWFM/wfm1000c.py 
+	rm -f RigolWFM/wfm1000d.py 
 	rm -f RigolWFM/wfm1000e.py 
 	rm -f RigolWFM/wfm1000z.py 
 	rm -f RigolWFM/wfm2000.py
