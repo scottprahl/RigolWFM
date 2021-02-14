@@ -4,6 +4,7 @@ Changelog
 v0.7.0
 ------
 *    add basic support for DS1000CA files
+*    add new model D (untested) out of the E model list
 
 v0.6.7
 ------
