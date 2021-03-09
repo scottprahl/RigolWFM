@@ -34,9 +34,17 @@ Alternatively, ``wfmconvert`` can be used from the command line.  For example, t
 
    prompt> wfmconvert E csv *.wfm
 
-If you wanted to create `.wav` files for use with LTSpice then this would create them:: 
+If you just wanted to convert channel 1 from a single file to ``.csv`` then::
 
-   prompt> wfmconvert E wav *.wfm
+   prompt> wfmconvert --channel 1 E csv DS1102E.wfm
+
+If you wanted to a signal `.wav` file using the second channel waveform (for use with LTSpice) then:: 
+
+   prompt> wfmconvert --channel 2 E wav *.wfm
+
+If you want to create a ``.wav`` file with channels one and four as signals (and autoscale for use with Audacity or Sigrok Pulseview)::
+
+   prompt> wfmconvert --autoscale --channel 14 E wav *.wfm
 
 More extensive documentation can be found at <https://RigolWFM.readthedocs.io>
 

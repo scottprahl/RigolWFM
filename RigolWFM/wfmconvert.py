@@ -89,10 +89,10 @@ def main():
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=textwrap.dedent("""\
         examples:
-            wfmconvert.py E info DS1102E.wfm
-            wfmconvert.py --channel 2 E csv DS1102E.wfm
-            wfmconvert.py --channel 12 E vcsv DS1102E.wfm
-            wfmconvert.py --channel 124 --autoscale E wav DS1102E.wfm
+            wfmconvert E info DS1102E.wfm
+            wfmconvert --channel 2 E csv DS1102E.wfm
+            wfmconvert --channel 12 E vcsv DS1102E.wfm
+            wfmconvert --channel 124 --autoscale E wav DS1102E.wfm
         """) + rigol.valid_scope_list()
     )
 
