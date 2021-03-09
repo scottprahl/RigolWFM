@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 #pylint: disable=invalid-name
 #pylint: disable=missing-function-docstring
 #pylint: disable=unused-argument
@@ -83,20 +85,21 @@ def main():
     """Parse console command line arguments."""
     parser = argparse.ArgumentParser(
         prog='wfmconvert',
-        description='Parse Rigol WFM files.',
+        description='Convert Rigol WFM files to another format.',
         formatter_class=argparse.RawTextHelpFormatter,
-        epilog=textwrap.dedent('''\
+        epilog=textwrap.dedent("""\
         examples:
-            python3 wfmconvert.py E info DS1102E.wfm
-            python3 wfmconvert.py E --channel 2 csv DS1102E.wfm
-            python3 wfmconvert.py E --channel 12 vcsv DS1102E.wfm
-            python3 wfmconvert.py E --channel '1,2,4' wav DS1102E.wfm
-        ''')
+            wfmconvert.py E info DS1102E.wfm
+            wfmconvert.py --channel 2 E csv DS1102E.wfm
+            wfmconvert.py --channel 12 E vcsv DS1102E.wfm
+            wfmconvert.py --channel 124 --autoscale E wav DS1102E.wfm
+        """) + rigol.valid_scope_list()
     )
 
     parser.add_argument(
         '--force',
         action='store_true',
+        default=False,
         help="overwrite existing output files"
     )
 
@@ -104,33 +107,49 @@ def main():
         '--autoscale',
         action='store_true',
         default=False,
-        help="autoscale each channel to full range"
+        help=textwrap.dedent("""\
+        autoscale each channel to full range.  Used when creating
+        .wav files so signal goes from 0-255.
+        """)
     )
 
     parser.add_argument(
         '--channel',
         type=str,
-        default='1',
-        help="designate channel(s) to save in .wav file"
+        default='1234',
+        help=textwrap.dedent("""\
+        select channel(s) to process.  `--channel 1` outputs only contents of
+        the first channel.  `--channel 34` outputs contents of channels 3 and 4. 
+        The default is `--channel 1234`.
+        """)
     )
 
     parser.add_argument(
         'model',
         type=str,
-        help='the type of scope that created the WFM file' + rigol.valid_scope_list()
+        choices=['C', 'D', 'E', 'Z', '2', '4', '6'],
+        help='oscilloscope model.  See list below.' 
     )
 
     parser.add_argument(
         dest='action',
         choices=['csv', 'info', 'wav', 'vcsv', 'sigrok'],
-        help="Action to perform on the WFM file"
+        help=textwrap.dedent("""\
+        csv:    convert to a file with comma separated values
+        info:   show the various scope settings for a .wfm file
+        wav:    convert to a WAV sound format file for use with Audacity
+                or Sigrok Pulseview. If a single channel is specified then
+                the .wav file can be used with LTspice.
+        vcsv:   convert to a file with comma separated values with raw voltages
+        sigrok: convert to a sigrok file
+        """)
     )
 
     parser.add_argument(
         'infile',
         type=str,
         nargs='+',
-        help="Input WFM file"
+        help="the WFM file to be converted"
     )
 
     args = parser.parse_args()
@@ -146,8 +165,8 @@ def main():
             actionMap[args.action](args, scope_data, filename)
 
         except rigol.Parse_WFM_Error as e:
-            print("Format does not follow a known format.", file=sys.stderr)
-            print("To help development, post report this error\n", file=sys.stderr)
+            print("File contents do not follow a known format.", file=sys.stderr)
+            print("To help development, please report this error\n", file=sys.stderr)
             print("as an issue to https://github.com/scottprahl/RigolWFM\n", file=sys.stderr)
             print(e, file=sys.stderr)
             sys.exit()

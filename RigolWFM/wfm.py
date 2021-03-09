@@ -73,13 +73,13 @@ DS6000_scopes = ["6", "6000", "DS6000",
 
 def valid_scope_list():
     """List all the oscilloscope types."""
-    s = "\nValid types are:\n"
-    s += ", ".join(DS1000C_scopes) + "\n"
-    s += ", ".join(DS1000D_scopes) + "\n"
-    s += ", ".join(DS1000E_scopes) + "\n"
-    s += ", ".join(DS1000Z_scopes) + "\n"
-    s += ", ".join(DS2000_scopes) + "\n"
-    s += ", ".join(DS4000_scopes) + "\n"
+    s = "\nRigol oscilloscope models:\n    "
+    s += ", ".join(DS1000C_scopes) + "\n    "
+    s += ", ".join(DS1000D_scopes) + "\n    "
+    s += ", ".join(DS1000E_scopes) + "\n    "
+    s += ", ".join(DS1000Z_scopes) + "\n    "
+    s += ", ".join(DS2000_scopes) + "\n    "
+    s += ", ".join(DS4000_scopes) + "\n    "
     s += ", ".join(DS6000_scopes) + "\n"
     return s
 

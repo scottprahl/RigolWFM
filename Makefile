@@ -74,41 +74,41 @@ html:
 	$(SPHINXBUILD) -b html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
 
 testc:
-	python3 RigolWFM/wfmconvert.py C info wfm/DS1202CA-A.wfm
+	RigolWFM/wfmconvert.py C info wfm/DS1202CA-A.wfm
 
 teste:
-	python3 RigolWFM/wfmconvert.py E info wfm/DS1102E-A.wfm
-	python3 RigolWFM/wfmconvert.py E info wfm/DS1102E-B.wfm
-	python3 RigolWFM/wfmconvert.py E info wfm/DS1102E-C.wfm
-	python3 RigolWFM/wfmconvert.py E info wfm/DS1102E-D.wfm
-	python3 RigolWFM/wfmconvert.py E info wfm/DS1052E.wfm
-	python3 RigolWFM/wfmconvert.py E info wfm/DS1000E-A.wfm
-	python3 RigolWFM/wfmconvert.py E info wfm/DS1000E-B.wfm
-	python3 RigolWFM/wfmconvert.py E info wfm/DS1000E-C.wfm
-	python3 RigolWFM/wfmconvert.py E info wfm/DS1000E-D.wfm
+	RigolWFM/wfmconvert.py E info wfm/DS1102E-A.wfm
+	RigolWFM/wfmconvert.py E info wfm/DS1102E-B.wfm
+	RigolWFM/wfmconvert.py E info wfm/DS1102E-C.wfm
+	RigolWFM/wfmconvert.py E info wfm/DS1102E-D.wfm
+	RigolWFM/wfmconvert.py E info wfm/DS1052E.wfm
+	RigolWFM/wfmconvert.py E info wfm/DS1000E-A.wfm
+	RigolWFM/wfmconvert.py E info wfm/DS1000E-B.wfm
+	RigolWFM/wfmconvert.py E info wfm/DS1000E-C.wfm
+	RigolWFM/wfmconvert.py E info wfm/DS1000E-D.wfm
 
 testz:
-	python3 RigolWFM/wfmconvert.py Z info wfm/DS1054Z-A.wfm
-	python3 RigolWFM/wfmconvert.py Z info wfm/MSO1104.wfm
-	python3 RigolWFM/wfmconvert.py Z info wfm/DS1074Z-A.wfm
-	python3 RigolWFM/wfmconvert.py Z info wfm/DS1074Z-B.wfm
+	RigolWFM/wfmconvert.py Z info wfm/DS1054Z-A.wfm
+	RigolWFM/wfmconvert.py Z info wfm/MSO1104.wfm
+	RigolWFM/wfmconvert.py Z info wfm/DS1074Z-A.wfm
+	RigolWFM/wfmconvert.py Z info wfm/DS1074Z-B.wfm
 
 test2:
-	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-1.wfm
-	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-2.wfm
-	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-3.wfm
-	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-4.wfm
-	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-5.wfm
-	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-6.wfm
-	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2072A-7.wfm
-	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2000-A.wfm
-	python3 RigolWFM/wfmconvert.py 2 info wfm/DS2000-B.wfm
+	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-1.wfm
+	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-2.wfm
+	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-3.wfm
+	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-4.wfm
+	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-5.wfm
+	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-6.wfm
+	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-7.wfm
+	RigolWFM/wfmconvert.py 2 info wfm/DS2000-A.wfm
+	RigolWFM/wfmconvert.py 2 info wfm/DS2000-B.wfm
 
 test4:
-	python3 RigolWFM/wfmconvert.py 4 info wfm/DS4022-A.wfm
-	python3 RigolWFM/wfmconvert.py 4 info wfm/DS4022-B.wfm
-	python3 RigolWFM/wfmconvert.py 4 info wfm/DS4024-A.wfm
-	python3 RigolWFM/wfmconvert.py 4 info wfm/DS4024-B.wfm
+	RigolWFM/wfmconvert.py 4 info wfm/DS4022-A.wfm
+	RigolWFM/wfmconvert.py 4 info wfm/DS4022-B.wfm
+	RigolWFM/wfmconvert.py 4 info wfm/DS4024-A.wfm
+	RigolWFM/wfmconvert.py 4 info wfm/DS4024-B.wfm
 
 test: $(PYTHON_PARSERS)
 	make teste
@@ -122,40 +122,40 @@ test: $(PYTHON_PARSERS)
 	make sigrok
 
 csv:
-	python3 RigolWFM/wfmconvert.py E csv wfm/DS1102E-A.wfm
-	python3 RigolWFM/wfmconvert.py Z csv wfm/MSO1104.wfm
-	python3 RigolWFM/wfmconvert.py 4 csv wfm/DS4022-A.wfm
-	python3 RigolWFM/wfmconvert.py 2 csv wfm/DS2202.wfm
-	python3 RigolWFM/wfmconvert.py C csv wfm/DS1202CA-A.wfm
+	RigolWFM/wfmconvert.py E csv wfm/DS1102E-A.wfm
+	RigolWFM/wfmconvert.py Z csv wfm/MSO1104.wfm
+	RigolWFM/wfmconvert.py 4 csv wfm/DS4022-A.wfm
+	RigolWFM/wfmconvert.py 2 csv wfm/DS2202.wfm
+	RigolWFM/wfmconvert.py C csv wfm/DS1202CA-A.wfm
 
 wav:
-	python3 RigolWFM/wfmconvert.py E wav wfm/DS1102E-A.wfm
-	python3 RigolWFM/wfmconvert.py Z wav wfm/MSO1104.wfm
-	python3 RigolWFM/wfmconvert.py 4 wav wfm/DS4022-A.wfm
-	python3 RigolWFM/wfmconvert.py 2 wav wfm/DS2202.wfm
-	python3 RigolWFM/wfmconvert.py C wav wfm/DS1202CA-A.wfm
+	RigolWFM/wfmconvert.py E wav wfm/DS1102E-A.wfm
+	RigolWFM/wfmconvert.py Z wav wfm/MSO1104.wfm
+	RigolWFM/wfmconvert.py 4 wav wfm/DS4022-A.wfm
+	RigolWFM/wfmconvert.py 2 wav wfm/DS2202.wfm
+	RigolWFM/wfmconvert.py C wav wfm/DS1202CA-A.wfm
 	
 vcsv:
-	python3 RigolWFM/wfmconvert.py E vcsv wfm/DS1102E-A.wfm
+	RigolWFM/wfmconvert.py E vcsv wfm/DS1102E-A.wfm
 	mv wfm/DS1102E-A.csv wfm/DS1102E-A.vcsv
-	python3 RigolWFM/wfmconvert.py Z vcsv wfm/MSO1104.wfm
+	RigolWFM/wfmconvert.py Z vcsv wfm/MSO1104.wfm
 	mv wfm/MSO1104.csv wfm/MSO1104.vcsv
-	python3 RigolWFM/wfmconvert.py 4 vcsv wfm/DS4022-A.wfm
+	RigolWFM/wfmconvert.py 4 vcsv wfm/DS4022-A.wfm
 	mv wfm/DS4022-A.csv wfm/DS4022-A.vcsv
-	python3 RigolWFM/wfmconvert.py 2 vcsv wfm/DS2202.wfm
+	RigolWFM/wfmconvert.py 2 vcsv wfm/DS2202.wfm
 	mv wfm/DS2202.csv wfm/DS2202.vcsv
-	python3 RigolWFM/wfmconvert.py C vcsv wfm/DS1202CA-A.wfm
+	RigolWFM/wfmconvert.py C vcsv wfm/DS1202CA-A.wfm
 	mv wfm/DS1202CA-A.csv wfm/DS1202CA-A.vcsv
 
 sigrok:
 	@ echo "*********************************************************"
 	@ echo "*** conversion works despite warning about /dev/stdin ***"
 	@ echo "*********************************************************"
-	python3 RigolWFM/wfmconvert.py E sigrok wfm/DS1102E-A.wfm
-	python3 RigolWFM/wfmconvert.py Z sigrok wfm/MSO1104.wfm
-	python3 RigolWFM/wfmconvert.py 4 sigrok wfm/DS4022-A.wfm
-	python3 RigolWFM/wfmconvert.py 2 sigrok wfm/DS2202.wfm
-	python3 RigolWFM/wfmconvert.py C sigrok wfm/DS1202CA-A.wfm
+	RigolWFM/wfmconvert.py E sigrok wfm/DS1102E-A.wfm
+	RigolWFM/wfmconvert.py Z sigrok wfm/MSO1104.wfm
+	RigolWFM/wfmconvert.py 4 sigrok wfm/DS4022-A.wfm
+	RigolWFM/wfmconvert.py 2 sigrok wfm/DS2202.wfm
+	RigolWFM/wfmconvert.py C sigrok wfm/DS1202CA-A.wfm
 
 clean:
 	rm -rf dist
