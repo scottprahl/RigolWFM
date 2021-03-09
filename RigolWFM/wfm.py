@@ -13,15 +13,18 @@ Use like this::
     print(description)
 
 """
-import tempfile
 import os.path
-import wave
+import sys
+import tempfile
 import urllib.parse
+import wave
 
-import requests
 import matplotlib.pyplot as plt
+import numpy as np
+import requests
 
 import RigolWFM.wfm1000c
+import RigolWFM.wfm1000d
 import RigolWFM.wfm1000e
 import RigolWFM.wfm1000z
 import RigolWFM.wfm2000
@@ -80,7 +83,6 @@ def valid_scope_list():
     s += ", ".join(DS6000_scopes) + "\n"
     return s
 
-
 class Read_WFM_Error(Exception):
     """Generic Read Error."""
 
@@ -125,7 +127,7 @@ class Wfm():
         self.header_name = 'unknown'
 
     @classmethod
-    def from_file(cls, file_name, model):
+    def from_file(cls, file_name, model, selected):
         """Create Wfm object from a file."""
         # ensure that file exists
         try:
@@ -147,7 +149,7 @@ class Wfm():
             new_wfm.header_name = 'DS1000C'
 
         elif umodel in DS1000D_scopes:
-            w = RigolWFM.wfm1000e.Wfm1000d.from_file(file_name)
+            w = RigolWFM.wfm1000d.Wfm1000d.from_file(file_name)
             new_wfm.header_name = 'DS1000D'
 
         elif umodel in DS1000E_scopes:
@@ -182,18 +184,33 @@ class Wfm():
 
         # assemble into uniform set of names
         enabled_channels = 0
+        enabled = ''
         for ch_number in range(1, 5):
 
             ch = RigolWFM.channel.Channel(w, ch_number, pname, enabled_channels)
-            if ch.enabled:
+
+            if not ch.enabled:
+                continue
+
+            # keep track of enabled channels for error message
+            enabled += str(ch_number)
+
+            # only append if channel is enabled and selected
+            if selected.find(str(ch_number)) !=-1:
                 new_wfm.channels.append(ch)
                 enabled_channels += 1
+
+        if len(new_wfm.channels)==0:
+            print("Sorry! No channels in the waveform are both selected and enabled")
+            print("    Selected channels = '%s'" % selected)
+            print("     Enabled channels = '%s'" % enabled)
+            sys.exit()
 
         new_wfm.firmware = new_wfm.channels[0].firmware
         return new_wfm
 
     @classmethod
-    def from_url(cls, url, model):
+    def from_url(cls, url, model, selected):
         """
         Return a waveform object given a URL.
 
@@ -223,7 +240,7 @@ class Wfm():
             working_name = f.name
 
             try:
-                new_wfm = cls.from_file(working_name, model)
+                new_wfm = cls.from_file(working_name, model, selected)
                 new_wfm.original_name = url
                 # extract the simple name
                 rawpath = u[2]
@@ -336,26 +353,32 @@ class Wfm():
             s += "\n"
         return s
 
-    def wav(self, wav_filename, channel=1):
+    def wav(self, wav_filename, autoscale=False, channel='1234'):
         """Save data as a WAV file for use with LTSpice."""
-        c = None
-        for ch in self.channels:
-            if channel == ch.channel_number:
-                c = ch
-                break
+        n_channels = len(self.channels)
+        channel_length = self.channels[0].points
+        total_len = channel_length * n_channels
 
-        if c is None:
-            raise Channel_Not_In_WFM_Error()
+        out = np.empty((total_len,), dtype = np.uint8, order='C' )
 
-        sample_rate = 1.0/c.seconds_per_point
+        # channels are interleaved e.g., 123123123
+        for i, ch in enumerate(self.channels):
+            if autoscale:
+                amin = np.min(ch.raw)
+                amax = max(np.max(ch.raw),amin+1) #avoid division by zero
+                scale = 250/(amax-amin)*0.95
+                out[i::n_channels] = np.int8((ch.raw-amin)*scale)
+            else:
+                out[i::n_channels] = ch.raw
+
+        sample_rate = 1.0/self.channels[0].seconds_per_point
 
         wavef = wave.open(wav_filename, 'wb')
-        wavef.setnchannels(len(self.channels))  # mono
+        wavef.setnchannels(n_channels)  # mono
         wavef.setsampwidth(1)
         wavef.setframerate(sample_rate)
         wavef.setcomptype('NONE', '')
-        wavef.setnframes(self.channels[0].points)
+        wavef.setnframes(channel_length)
 
-        for ch in self.channels:
-            wavef.writeframes(ch.raw)
+        wavef.writeframes(out)
         wavef.close()

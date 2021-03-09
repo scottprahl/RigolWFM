@@ -11,10 +11,12 @@ Use like this::
     wfmconvert E wav DS1102E-A.wfm
 """
 
+import re
 import os
 import sys
 import argparse
 import subprocess
+import textwrap
 
 import RigolWFM.wfm as rigol
 
@@ -82,20 +84,34 @@ def main():
     parser = argparse.ArgumentParser(
         prog='wfmconvert',
         description='Parse Rigol WFM files.',
-        formatter_class=argparse.RawTextHelpFormatter
+        formatter_class=argparse.RawTextHelpFormatter,
+        epilog=textwrap.dedent('''\
+        examples:
+            python3 wfmconvert.py E info DS1102E.wfm
+            python3 wfmconvert.py E --channel 2 csv DS1102E.wfm
+            python3 wfmconvert.py E --channel 12 vcsv DS1102E.wfm
+            python3 wfmconvert.py E --channel '1,2,4' wav DS1102E.wfm
+        ''')
     )
 
     parser.add_argument(
         '--force',
         action='store_true',
-        help="overwrite existing csv or wav files"
+        help="overwrite existing output files"
+    )
+
+    parser.add_argument(
+        '--autoscale',
+        action='store_true',
+        default=False,
+        help="autoscale each channel to full range"
     )
 
     parser.add_argument(
         '--channel',
-        type=int,
-        default=1,
-        help="designate channel to save in .wav file"
+        type=str,
+        default='1',
+        help="designate channel(s) to save in .wav file"
     )
 
     parser.add_argument(
@@ -119,11 +135,14 @@ def main():
 
     args = parser.parse_args()
 
+    # strip anything that is not a possible channel number
+    selected = re.sub(r'[^1234]', '', args.channel)
+
     actionMap = {"info": info, "csv": csv, "wav": wav, "vcsv": vcsv, "sigrok": sigrok}
 
     for filename in args.infile:
         try:
-            scope_data = rigol.Wfm.from_file(filename, args.model)
+            scope_data = rigol.Wfm.from_file(filename, args.model, selected)
             actionMap[args.action](args, scope_data, filename)
 
         except rigol.Parse_WFM_Error as e:
