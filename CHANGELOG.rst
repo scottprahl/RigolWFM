@@ -1,6 +1,12 @@
 Changelog
 =================================================
 
+v0.7.1
+------
+*    add support for selecting channels
+*    add autoscaling support for .wav files
+*    improve help message for wfmconvert
+
 v0.7.0
 ------
 *    add basic support for DS1000CA files
