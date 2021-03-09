@@ -66,14 +66,14 @@ Resources
 This has been a bit of an adventure.  In the process of nailing down the basic formats, I have gleaned information from a wide range of projects started by others.
 
 
-* Shein's Pascal program <https://sourceforge.net/projects/wfmreader
-* Wagenaars's Matlab script <https://www.mathworks.com/matlabcentral/fileexchange/18999-read-binary-rigol-waveforms
-* Steele's C program <http://nsweb.tn.tudelft.nl/~gsteele/rigol2dat
-* Blaicher's python code <https://github.com/mabl/pyRigolWFM
-* Szkutnik's python code <https://github.com/michal-szkutnik/pyRigolWfm1000Z
-* Cat-Ion's python code <https://github.com/Cat-Ion/rigol-ds4000-wfm
-* Šolc's python code <https://www.tablix.org/~avian/blog/archives/2019/08/quick_and_ugly_wfm_data_export_for_rigol_ds2072a/
-* Contributions from <http://www.hakasoft.com.au/wfm_viewer
+* Shein's Pascal program <https://sourceforge.net/projects/wfmreader>
+* Wagenaars's Matlab script <https://www.mathworks.com/matlabcentral/fileexchange/18999-read-binary-rigol-waveforms>
+* Steele's C program <http://nsweb.tn.tudelft.nl/~gsteele/rigol2dat>
+* Blaicher's python code <https://github.com/mabl/pyRigolWFM>
+* Szkutnik's python code <https://github.com/michal-szkutnik/pyRigolWfm1000Z>
+* Cat-Ion's python code <https://github.com/Cat-Ion/rigol-ds4000-wfm>
+* Šolc's python code <https://www.tablix.org/~avian/blog/archives/2019/08/quick_and_ugly_wfm_data_export_for_rigol_ds2072a/>
+* Contributions from <http://www.hakasoft.com.au/wfm_viewer>
 * A LabView program I got from Rigol support
 * Rigol's documentation of the 1000E, 1000Z, 2000, and 6000 file formats.
 
