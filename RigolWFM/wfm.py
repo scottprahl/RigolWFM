@@ -127,8 +127,17 @@ class Wfm():
         self.header_name = 'unknown'
 
     @classmethod
-    def from_file(cls, file_name, model, selected):
-        """Create Wfm object from a file."""
+    def from_file(cls, file_name, model, selected='1234'):
+        """
+        Create Wfm object from a file.
+
+        Args:
+            filename: name of file
+            model: Rigol Oscilloscope used, e.g., 'E' or 'Z'
+            selected: string of channels to process e.g., '12'
+        Returns:
+            a wfm object for the file
+        """
         # ensure that file exists
         try:
             f = open(file_name, 'rb')
@@ -210,7 +219,7 @@ class Wfm():
         return new_wfm
 
     @classmethod
-    def from_url(cls, url, model, selected):
+    def from_url(cls, url, model, selected='1234'):
         """
         Return a waveform object given a URL.
 
@@ -218,6 +227,13 @@ class Wfm():
         to work with.  The process is to download the file to a temporary
         location and then process that file.  There is a lot that can go
         wrong - bad url, bad download, or an error parsing the file.
+
+        Args:
+            url: location of the file
+            model: Rigol Oscilloscope used, e.g., 'E' or 'Z'
+            selected: string of channels to process e.g., '12'
+        Returns:
+            a wfm object for the file
         """
         u = urllib.parse.urlparse(url)
         scheme = u[0]
@@ -353,8 +369,8 @@ class Wfm():
             s += "\n"
         return s
 
-    def wav(self, wav_filename, autoscale=False, channel='1234'):
-        """Save data as a WAV file for use with LTSpice."""
+    def wav(self, wav_filename, autoscale=False):
+        """Save data as a WAV file for use with LTspice or Sigrok."""
         n_channels = len(self.channels)
         channel_length = self.channels[0].points
         total_len = channel_length * n_channels
@@ -374,7 +390,7 @@ class Wfm():
         sample_rate = 1.0/self.channels[0].seconds_per_point
 
         wavef = wave.open(wav_filename, 'wb')
-        wavef.setnchannels(n_channels)  # mono
+        wavef.setnchannels(n_channels)  # 1 = mono, 2 = stereo
         wavef.setsampwidth(1)
         wavef.setframerate(sample_rate)
         wavef.setcomptype('NONE', '')
