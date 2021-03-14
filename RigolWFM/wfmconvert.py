@@ -54,13 +54,13 @@ def vcsv(args, scope_data, infile):
         f.write(b)
 
 def wav(args, scope_data, infile):
-    """Create an audible .wav file for use in LTSpice."""
+    """Create an audible .wav file for use in LTspice."""
     wav_name = os.path.splitext(infile)[0] + '.wav'
     if os.path.isfile(wav_name) and not args.force:
         print("'%s' exists, use --force to overwrite" % wav_name)
         return
 
-    scope_data.wav(wav_name, channel=args.channel)
+    scope_data.wav(wav_name, autoscale=args.autoscale)
 
 def sigrok(args, scope_data, infile):
     """Create a Sigrok (.sr) file."""
@@ -91,8 +91,8 @@ def main():
         examples:
             wfmconvert E info DS1102E.wfm
             wfmconvert --channel 2 E csv DS1102E.wfm
-            wfmconvert --channel 12 E vcsv DS1102E.wfm
-            wfmconvert --channel 124 --autoscale E wav DS1102E.wfm
+            wfmconvert --channel 124 E vcsv DS1102E.wfm
+            wfmconvert --channel 34 --autoscale E wav DS1102E.wfm
         """) + rigol.valid_scope_list()
     )
 
@@ -155,7 +155,23 @@ def main():
     args = parser.parse_args()
 
     # strip anything that is not a possible channel number
-    selected = re.sub(r'[^1234]', '', args.channel)
+    good = re.sub(r'[^1234]', '', args.channel)
+    # remove duplicates keeping order
+    selected = "".join(dict.fromkeys(good))
+    
+    if len(selected) == 0:
+        print('\nwfmconvert error')
+        print('No valid channels were passed after --channel')
+        print('Channels are identified by number and must be a combination of 1, 2, 3, or 4')
+        print('You used "--channel %s"' % args.channel)
+        sys.exit()
+
+    if len(selected) > 4:
+        print('\nwfmconvert error')
+        print('Only 1-2 channel (monophonic) or 3-4 channels (stereo) ', end='')
+        print('can be used when creating a .wav file')
+        print('You used "--channel %s"' % args.channel)
+        sys.exit()
 
     actionMap = {"info": info, "csv": csv, "wav": wav, "vcsv": vcsv, "sigrok": sigrok}
 
@@ -165,8 +181,9 @@ def main():
             actionMap[args.action](args, scope_data, filename)
 
         except rigol.Parse_WFM_Error as e:
-            print("File contents do not follow a known format.", file=sys.stderr)
-            print("To help development, please report this error\n", file=sys.stderr)
+            print("File contents do not follow the format for", end='', file=sys.stderr)
+            print("for the Rigol Oscilloscope Model %s."%args.model, file=sys.stderr)
+            print("To help with development, please report this error\n", file=sys.stderr)
             print("as an issue to https://github.com/scottprahl/RigolWFM\n", file=sys.stderr)
             print(e, file=sys.stderr)
             sys.exit()
