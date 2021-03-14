@@ -1,6 +1,10 @@
 Changelog
 =================================================
 
+v0.7.3
+------
+*    fix hyperlinks for colab in docs at https://readthedocs.io
+
 v0.7.2
 ------
 *    fix bug with selecting channels
