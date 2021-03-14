@@ -5,9 +5,9 @@ v0.7.2
 ------
 *    fix bug with selecting channels
 *    fix bug with autoscaling
-*    add links to google colab to documentation
+*    add links to google colaboratory to documentation
 *    describe parameters for a few functions
-*    automatically try to install RigolWFM if missing
+*    modify message to install RigolWFM when missing
 
 v0.7.1
 ------
