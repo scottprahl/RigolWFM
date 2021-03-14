@@ -1,6 +1,10 @@
 Changelog
 =================================================
 
+v0.7.4
+------
+*    fix versions in conf.py and setup.cfg
+
 v0.7.3
 ------
 *    fix hyperlinks for colab in docs at https://readthedocs.io
