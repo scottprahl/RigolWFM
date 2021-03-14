@@ -22,7 +22,7 @@ copyright = '2020-2021, Scott Prahl'
 author = 'Scott Prahl'
 
 # The full version, including alpha/beta/rc tags
-release = '0.7.1'
+release = '0.7.2'
 
 master_doc = 'index'
 

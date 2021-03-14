@@ -24,10 +24,10 @@ Documentation
     - continue working on readme
     - figure out sphinx stuff
     - create notebook for kaitai struct
-    - create notebook for LTSpice
+    - create notebook for LTspice
     - create notebook for CSV
+    - create notebook for sigrok
 
 Validation:
    - get DS1000B .wfm files
-   - get DS1000C .wfm files
    - get DS6000 .wfm files

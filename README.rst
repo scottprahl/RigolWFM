@@ -38,7 +38,7 @@ If you just wanted to convert channel 1 from a single file to ``.csv`` then::
 
    prompt> wfmconvert --channel 1 E csv DS1102E.wfm
 
-If you wanted to a signal `.wav` file using the second channel waveform (for use with LTSpice) then:: 
+If you wanted to a signal `.wav` file using the second channel waveform (for use with LTspice) then:: 
 
    prompt> wfmconvert --channel 2 E wav *.wfm
 
