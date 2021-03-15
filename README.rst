@@ -1,8 +1,8 @@
-RigolWFM a utility to process Rigol oscilloscope `.wfm` files
-=============================================================
+RigolWFM: a utility to process Rigol oscilloscope `.wfm` files
+==============================================================
 
 .. image:: https://mybinder.org/badge_logo.svg
-   :target: https://mybinder.org/v2/gh/scottprahl/RigolWFM/master
+   :target: https://mybinder.org/v2/gh/scottprahl/RigolWFM/master?filepath=docs
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
    :target: https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master
@@ -10,8 +10,11 @@ RigolWFM a utility to process Rigol oscilloscope `.wfm` files
 .. image:: https://img.shields.io/badge/kaitai-struct-green.svg
    :target: https://ide.kaitai.io
 
-.. image:: https://img.shields.io/badge/contributions-welcome-orange.svg
-   :target: https://github.com/scottprahl/RigolWFM/issues
+.. image:: https://img.shields.io/badge/nbviewer-docs-yellow.svg
+   :target: https://nbviewer.jupyter.org/github/scottprahl/RigolWFM/tree/master/docs
+
+.. image:: https://img.shields.io/badge/readthedocs-latest-blue.svg
+   :target: https://RigolWFM.readthedocs.io
 
 __________
 
