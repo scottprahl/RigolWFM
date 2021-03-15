@@ -1,7 +1,7 @@
 Using `.wfm` files created by Rigol scopes
 ========================================================================
 
-`https://mybinder.org/badge_logo.svg<https://mybinder.org/v2/gh/scottprahl/RigolWFM/master>`_
+<a href="https://mybinder.org/v2/gh/scottprahl/RigolWFM/master"><img src="https://mybinder.org/badge_logo.svg"></a>
 
 `https://colab.research.google.com/assets/colab-badge.svg<https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master>`_
 
