@@ -1,5 +1,5 @@
-Using `.wfm` files created by Rigol scopes
-========================================================================
+RigolWFM a utility to process Rigol oscilloscope `.wfm` files
+=============================================================
 
 .. image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/scottprahl/RigolWFM/master
@@ -12,6 +12,8 @@ Using `.wfm` files created by Rigol scopes
 
 .. image:: https://img.shields.io/badge/contributions-welcome-orange.svg
    :target: https://github.com/scottprahl/RigolWFM/issues
+
+__________
 
 This project is intended to be a comprehensive resource for interpreting waveform ``.wmf`` files created by any Rigol oscilloscope.  Open source (and Rigol's own applications) that parse/convert Rigol's binary ``.wfm`` files are sadly balkanized: each program tends to support a single oscilloscope group and the available efforts are spread across a range of languages.
 

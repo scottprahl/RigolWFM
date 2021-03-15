@@ -51,6 +51,11 @@ yamlcheck:
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm4000.ksy
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm6000.ksy
 
+rstcheck:
+	-rstcheck README.rst
+	-rstcheck CHANGELOG.rst
+	-rstcheck docs/index.rst
+
 ksycheck:
 	-ksylint ksy/wfm1000c.ksy
 	-ksylint ksy/wfm1000d.ksy
@@ -63,6 +68,7 @@ ksycheck:
 check:
 	make yamlcheck
 	make ksycheck
+	make rstcheck
 	-pylint RigolWFM/wfm.py
 	-pydocstyle RigolWFM/wfm.py
 	-pylint RigolWFM/channel.py
@@ -202,6 +208,7 @@ realclean:
 rcheck:
 	make realclean
 	make
+	make check
 	make html
 	make test
 	check-manifest
