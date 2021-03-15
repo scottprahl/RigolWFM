@@ -1,13 +1,17 @@
 Using `.wfm` files created by Rigol scopes
 ========================================================================
 
-<a href="https://mybinder.org/v2/gh/scottprahl/RigolWFM/master"><img src="https://mybinder.org/badge_logo.svg"></a>
+.. image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/scottprahl/RigolWFM/master
 
-`https://colab.research.google.com/assets/colab-badge.svg<https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master>`_
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+   :target: https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master
 
-`https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat<https://github.com/scottprahl/RigolWFM/issues>`_
+.. image:: https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat
+   :target: https://github.com/scottprahl/RigolWFM/issues
 
-`https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/scottprahl/RigolWFM/pulls)
+.. image:: https://img.shields.io/badge/PRs-welcome-brightgreen.svg
+   :target: https://github.com/scottprahl/RigolWFM/pulls
 
 This project is intended to be a comprehensive resource for interpreting waveform ``.wmf`` files created by any Rigol oscilloscope.  Open source (and Rigol's own applications) that parse/convert Rigol's binary ``.wfm`` files are sadly balkanized: each program tends to support a single oscilloscope group and the available efforts are spread across a range of languages.
 
