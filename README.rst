@@ -1,6 +1,14 @@
 Using `.wfm` files created by Rigol scopes
 ========================================================================
 
+`https://mybinder.org/badge_logo.svg<https://mybinder.org/v2/gh/scottprahl/RigolWFM/master>`_
+
+`https://colab.research.google.com/assets/colab-badge.svg<https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master>`_
+
+`https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat<https://github.com/scottprahl/RigolWFM/issues>`_
+
+`https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/scottprahl/RigolWFM/pulls)
+
 This project is intended to be a comprehensive resource for interpreting waveform ``.wmf`` files created by any Rigol oscilloscope.  Open source (and Rigol's own applications) that parse/convert Rigol's binary ``.wfm`` files are sadly balkanized: each program tends to support a single oscilloscope group and the available efforts are spread across a range of languages.
 
 This project leverages a domain specific language (kaitai struct) to represent the binary files.  Once a binary file has been described in this text format, parsers can be generated for a wide range of languages (C++/STL, C#, Go, Java, JavaScript, Lua, Perl, PHP, Python, and Ruby).  
