@@ -1,3 +1,15 @@
+Rigol Oscilloscope Binary `.wfm` files
+======================================
+
+.. include:: ../badges.rst
+
+This project is intended to be a comprehensive resource for interpreting waveform ``.wmf`` files created by any Rigol oscilloscope.  The open source (and Rigol's own applications) that parse/convert Rigol's binary ``.wfm`` files are sadly balkanized: each program tends to support a single oscilloscope group and the available efforts are spread across a range of languages.
+
+This project leverages a domain specific language (kaitai struct) to represent the binary files.  Once a binary file has been described in this text format, parsers can be generated for a wide range of languages (C++/STL, C#, Go, Java, JavaScript, Lua, Perl, PHP, Python, and Ruby).  
+
+Kaitai Struct <https://kaitai.io> also has a slick web IDE <https://ide.kaitai.io> that allows one to interactively reverse engineer binary file formats directly in your browser.  This is super helpful for those Rigol ``.wfm`` formats that are undocumented.
+
+
 Links
 =====
 .. toctree::

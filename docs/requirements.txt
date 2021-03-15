@@ -3,3 +3,4 @@ matplotlib
 kaitaistruct
 nbsphinx
 sphinx-automodapi
+sphinx-book-theme
