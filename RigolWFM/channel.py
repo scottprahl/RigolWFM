@@ -63,7 +63,7 @@ def engineering_string(number, n_digits):
 #    x0[0::2] = data[offset_1:offset_1+pagesize]
 #    x0[1::2] = data[offset_2:offset_2+pagesize]
 
-def _channel_bytes(enabled_count, data, stride):
+def _channel_bytes(channel, enabled_count, data, stride):
     """
     Return right series of bytes for a channel for 1000Z scopes.
 
@@ -80,6 +80,7 @@ def _channel_bytes(enabled_count, data, stride):
         CH4CH3CH2CH1
 
     Args:
+        channel: the physical scope channel
         enabled_count: the number of enabled channels before this one
         data:          object containing the raw data structures
     Returns
@@ -95,13 +96,13 @@ def _channel_bytes(enabled_count, data, stride):
             raw_bytes = np.array((np.uint16(data.raw2) & 0xFF00) >> 8, dtype=np.uint8)
 
     if stride == 4:
-        if enabled_count == 3:
+        if channel == 3:
             raw_bytes = np.array(np.uint32(data.raw4)
                                  & 0x000000FF, dtype=np.uint8)
-        elif enabled_count == 2:
+        elif channel == 2:
             raw_bytes = np.array(
                 (np.uint32(data.raw4) & 0x0000FF00) >> 8, dtype=np.uint8)
-        elif enabled_count == 1:
+        elif channel == 1:
             raw_bytes = np.array(
                 (np.uint32(data.raw4) & 0x00FF0000) >> 16, dtype=np.uint8)
         else:
@@ -282,7 +283,7 @@ class Channel():
         self.y_offset = w.header.ch[ch-1].y_offset
 
         if self.enabled:
-            self.raw = _channel_bytes(enabled_count, w.data, self.stride)
+            self.raw = _channel_bytes(ch-1,enabled_count, w.data, self.stride)
 
         self.calc_times_and_volts()
 
