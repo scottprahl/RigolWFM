@@ -192,11 +192,13 @@ class Wfm():
 
 
         # assemble into uniform set of names
-        enabled_channels = 0
         enabled = ''
         for ch_number in range(1, 5):
 
-            ch = RigolWFM.channel.Channel(w, ch_number, pname, enabled_channels)
+            # determine if this channel is one of those chosen by user
+            chosen = selected.find(str(ch_number)) != -1
+            
+            ch = RigolWFM.channel.Channel(w, ch_number, pname, chosen)
 
             if not ch.enabled:
                 continue
@@ -204,15 +206,13 @@ class Wfm():
             # keep track of enabled channels for error message
             enabled += str(ch_number)
 
-            # only append if channel is enabled and selected
-            if selected.find(str(ch_number)) !=-1:
-                new_wfm.channels.append(ch)
-                enabled_channels += 1
+            # append all enabled channels
+            new_wfm.channels.append(ch)
 
         if len(new_wfm.channels)==0:
             print("Sorry! No channels in the waveform are both selected and enabled")
-            print("    Selected channels = '%s'" % selected)
-            print("     Enabled channels = '%s'" % enabled)
+            print("    User selected channels = '%s'" % selected)
+            print("    Scope enabled channels = '%s'" % enabled)
             sys.exit()
 
         new_wfm.firmware = new_wfm.channels[0].firmware
