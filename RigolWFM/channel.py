@@ -63,50 +63,34 @@ def engineering_string(number, n_digits):
 #    x0[0::2] = data[offset_1:offset_1+pagesize]
 #    x0[1::2] = data[offset_2:offset_2+pagesize]
 
-def _channel_bytes(enabled_count, data, stride):
+def _channel_bytes(channel_number, w):
     """
     Return right series of bytes for a channel for 1000Z scopes.
 
     Waveform points are interleaved stored in memory when two or more
-    channels are enabled:
-
-    Only one channel enabled:
-        CH1CH1CH1CH1
-
-    Two channels Enabled:
-        CH2CH1CH2CH1
-
-    Three or Four channels enabled:
-        CH4CH3CH2CH1
-
+    channels are s.  This unweaves them.
+    
     Args:
-        enabled_count: the number of enabled channels before this one
-        data:          object containing the raw data structures
+        channel_number: the number of enabled channels before this one
+        w:              original waveform object
     Returns
-        byte array for a particular channel
+        byte array for specified channel
     """
-    if stride == 1:
-        raw_bytes = np.array(data.raw1, dtype=np.uint8)
+    if w.header.stride == 1:
+        offset = 0
 
-    if stride == 2:
-        if enabled_count == 0:
-            raw_bytes = np.array(np.uint16(data.raw2) & 0x00FF, dtype=np.uint8)
-        else:
-            raw_bytes = np.array((np.uint16(data.raw2) & 0xFF00) >> 8, dtype=np.uint8)
+    elif w.header.stride == 2:
+        offset = 1
+        # number of enabled channels before this will be 0 or 1
+        for i in range(channel_number-1):
+            if w.header.ch[i].enabled:
+                offset = 0
 
-    if stride == 4:
-        if enabled_count == 3:
-            raw_bytes = np.array(np.uint32(data.raw4)
-                                 & 0x000000FF, dtype=np.uint8)
-        elif enabled_count == 2:
-            raw_bytes = np.array(
-                (np.uint32(data.raw4) & 0x0000FF00) >> 8, dtype=np.uint8)
-        elif enabled_count == 1:
-            raw_bytes = np.array(
-                (np.uint32(data.raw4) & 0x00FF0000) >> 16, dtype=np.uint8)
-        else:
-            raw_bytes = np.array(
-                (np.uint32(data.raw4) & 0xFF000000) >> 24, dtype=np.uint8)
+    else:  #w.header.stride == 4:
+        offset = 4 - channel_number
+
+    raw_bytes = np.uint8(w.data.raw[offset::w.header.stride])
+    print(channel_number, len(raw_bytes), len(w.data.raw))
 
     return raw_bytes
 
@@ -114,20 +98,20 @@ def _channel_bytes(enabled_count, data, stride):
 class Channel():
     """Base class for a single channel."""
 
-    def __init__(self, w, ch, scope, prior):
+    def __init__(self, w, channel_number, scope, chosen=True):
         """
         Initialize a Channel Object.
 
         Args:
             w: Wfm object
-            ch: 1,2,3,4
+            channel_number: 1,2,3,4
             scope: string describing scope
-            prior: number of channels that came before
+            chosen: if user wants this channel
         Returns:
             Channel object
         """
-        self.channel_number = ch
-        self.name = "CH %d" % ch
+        self.channel_number = channel_number
+        self.name = "CH %d" % channel_number
         self.waveform = w
         self.seconds_per_point = w.header.seconds_per_point
         self.firmware = 'unknown'
@@ -141,9 +125,10 @@ class Channel():
         self.time_offset = 0
         self.time_scale = 1
 
-        if ch <= len(w.header.ch):
-            channel = w.header.ch[ch-1]
+        if channel_number <= len(w.header.ch):
+            channel = w.header.ch[channel_number-1]
             self.enabled = channel.enabled
+            self.enabled_and_selected = channel.enabled and chosen
             self.volt_scale = channel.volt_scale
             self.volt_offset = channel.volt_offset
             self.y_scale = channel.volt_scale
@@ -154,6 +139,7 @@ class Channel():
             self.inverted = channel.inverted
         else:
             self.enabled = False
+            self.enabled_and_selected = False
             self.volt_scale = 1
             self.volt_offset = 0
             self.y_scale = 1
@@ -164,19 +150,19 @@ class Channel():
             self.inverted = False
 
         if scope == 'wfm1000c':
-            self.ds1000c(w, ch)
+            self.ds1000c(w, channel_number)
         elif scope == 'wfm1000d':
-            self.ds1000d(w, ch)
+            self.ds1000d(w, channel_number)
         elif scope == 'wfm1000e':
-            self.ds1000e(w, ch)
+            self.ds1000e(w, channel_number)
         elif scope == 'wfm1000z':
-            self.ds1000z(w, ch, prior)
+            self.ds1000z(w, channel_number)
         elif scope == 'wfm2000':
-            self.ds2000(w, ch)
+            self.ds2000(w, channel_number)
         elif scope == 'wfm4000':
-            self.ds4000(w, ch)
+            self.ds4000(w, channel_number)
         elif scope == 'wfm6000':
-            self.ds6000(w, ch)
+            self.ds6000(w, channel_number)
 
 
     def __str__(self):
@@ -192,7 +178,7 @@ class Channel():
         s += "            Delta = %10ss/point\n" % engineering_string(self.seconds_per_point, 3)
         s += "           Points = %8d\n\n" % self.points
 
-        if self.enabled:
+        if self.enabled_and_selected:
             s += "         Count    = [%9d,%9d,%9d  ... %9d,%9d]\n" % (
                 1, 2, 3, self.points-1, self.points)
             s += "           Raw    = [%9d,%9d,%9d  ... %9d,%9d]\n" % (
@@ -209,156 +195,157 @@ class Channel():
 
     def calc_times_and_volts(self):
         """Calculate the times and voltages for this channel."""
-        if self.enabled:
+        if self.enabled_and_selected:
             self.volts = self.y_scale * (127.0 - self.raw) - self.y_offset
             h = self.points * self.seconds_per_point / 2
             self.times = np.linspace(-h, h, self.points) + self.time_offset
 
 
-    def ds1000c(self, w, ch):
+    def ds1000c(self, w, channel_number):
         """Interpret waveform data for 1000CD series scopes."""
         self.time_scale = 1.0e-12 * w.header.time_scale
         self.time_offset = 1.0e-12 * w.header.time_offset
-        if ch == 1:
-            if self.enabled:
+        if channel_number == 1:
+            if self.enabled_and_selected:
                 self.points = len(w.data.ch1)
                 self.raw = np.array(w.data.ch1, dtype=np.uint8)
 
-        if ch == 2:
-            if self.enabled:
+        if channel_number == 2:
+            if self.enabled_and_selected:
                 self.points = len(w.data.ch2)
                 self.raw = np.array(w.data.ch2, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
 
-    def ds1000d(self, w, ch):
+    def ds1000d(self, w, channel_number):
         """Interpret waveform data for 1000CD series scopes."""
         self.time_scale = 1.0e-12 * w.header.time_scale
         self.time_offset = 1.0e-12 * w.header.time_offset
-        if ch == 1:
-            if self.enabled:
+        if channel_number == 1:
+            if self.enabled_and_selected:
                 self.points = len(w.data.ch1)
                 self.raw = np.array(w.data.ch1, dtype=np.uint8)
 
-        if ch == 2:
-            if self.enabled:
+        if channel_number == 2:
+            if self.enabled_and_selected:
                 self.points = len(w.data.ch2)
                 self.raw = np.array(w.data.ch2, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
 
-    def ds1000e(self, w, ch):
+    def ds1000e(self, w, channel_number):
         """Interpret waveform data for 1000D and 1000E series scopes."""
         self.roll_stop = w.header.roll_stop
 
-        if ch == 1:
+        if channel_number == 1:
             self.time_offset = w.header.ch1_time_offset
             self.time_scale = w.header.ch1_time_scale
-            if self.enabled:
+            if self.enabled_and_selected:
                 self.points = len(w.data.ch1)
                 self.raw = np.array(w.data.ch1, dtype=np.uint8)
 
-        elif ch == 2:
+        elif channel_number == 2:
             self.time_offset = w.header.ch2_time_offset
             self.time_scale = w.header.ch2_time_scale
-            if self.enabled:
+            if self.enabled_and_selected:
                 self.points = len(w.data.ch2)
                 self.raw = np.array(w.data.ch2, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
-    def ds1000z(self, w, ch, enabled_count):
+    def ds1000z(self, w, channel_number):
         """Interpret waveform for the Rigol DS1000Z series."""
         self.time_scale = w.header.time_scale
         self.time_offset = w.header.time_offset
         self.points = w.header.points
         self.stride = w.header.stride
         self.firmware = w.preheader.firmware_version
-        self.probe = w.header.ch[ch-1].probe_value
-        self.coupling = w.header.ch[ch-1].coupling.name.upper()
-        self.y_scale = w.header.ch[ch-1].y_scale
-        self.y_offset = w.header.ch[ch-1].y_offset
+        self.probe = w.header.ch[channel_number-1].probe_value
+        self.coupling = w.header.ch[channel_number-1].coupling.name.upper()
+        self.y_scale = w.header.ch[channel_number-1].y_scale
+        self.y_offset = w.header.ch[channel_number-1].y_offset
 
-        if self.enabled:
-            self.raw = _channel_bytes(enabled_count, w.data, self.stride)
+        if self.enabled_and_selected:
+            self.raw = _channel_bytes(channel_number, w)
+            self.points = len(self.raw)
 
         self.calc_times_and_volts()
 
-    def ds2000(self, w, ch):
+    def ds2000(self, w, channel_number):
         """Interpret waveform for the Rigol DS2000 series."""
         self.time_offset = w.header.time_offset
         self.time_scale = w.header.time_scale
         self.points = w.header.storage_depth
         self.firmware = w.header.firmware_version
-        self.unit = UnitEnum(w.header.ch[ch-1].unit_actual)
-        self.coupling = w.header.ch[ch-1].coupling.name.upper()
+        self.unit = UnitEnum(w.header.ch[channel_number-1].unit_actual)
+        self.coupling = w.header.ch[channel_number-1].coupling.name.upper()
         self.y_scale = -self.volt_scale
         self.y_offset = self.volt_offset
 
-        if self.enabled:
-            if ch == 1:
+        if self.enabled_and_selected:
+            if channel_number == 1:
                 self.raw = np.array(w.header.raw_1, dtype=np.uint8)
 
-            if ch == 2:
+            if channel_number == 2:
                 self.raw = np.array(w.header.raw_2, dtype=np.uint8)
 
-            if ch == 3:
+            if channel_number == 3:
                 self.raw = np.array(w.header.raw_3, dtype=np.uint8)
 
-            if ch == 4:
+            if channel_number == 4:
                 self.raw = np.array(w.header.raw_4, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
 
-    def ds4000(self, w, ch):
+    def ds4000(self, w, channel_number):
         """Interpret waveform for the Rigol DS4000 series."""
         self.time_offset = w.header.time_offset
         self.time_scale = w.header.time_scale
         self.points = w.header.points
         self.firmware = w.header.firmware_version
-        self.coupling = w.header.ch[ch-1].coupling.name.upper()
+        self.coupling = w.header.ch[channel_number-1].coupling.name.upper()
         self.y_scale = -self.volt_scale
         self.y_offset = self.volt_offset
 
-        if self.enabled:
-            if ch == 1:
+        if self.enabled_and_selected:
+            if channel_number == 1:
                 self.raw = np.array(w.header.raw_1, dtype=np.uint8)
 
-            elif ch == 2:
+            elif channel_number == 2:
                 self.raw = np.array(w.header.raw_2, dtype=np.uint8)
 
-            elif ch == 3:
+            elif channel_number == 3:
                 self.raw = np.array(w.header.raw_3, dtype=np.uint8)
 
-            elif ch == 4:
+            elif channel_number == 4:
                 self.raw = np.array(w.header.raw_4, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
 
-    def ds6000(self, w, ch):
+    def ds6000(self, w, channel_number):
         """Interpret waveform for the Rigol DS6000 series."""
         self.time_offset = w.header.time_offset
         self.time_scale = w.header.time_scale
         self.points = w.header.points
         self.firmware = w.header.firmware_version
-        self.coupling = w.header.ch[ch-1].coupling.name.upper()
-        self.unit = w.header.ch[ch-1].unit
+        self.coupling = w.header.ch[channel_number-1].coupling.name.upper()
+        self.unit = w.header.ch[channel_number-1].unit
 
-        if self.enabled:
-            if ch == 1:
+        if self.enabled_and_selected:
+            if channel_number == 1:
                 self.raw = np.array(w.header.raw_1, dtype=np.uint8)
 
-            if ch == 2:
+            if channel_number == 2:
                 self.raw = np.array(w.header.raw_2, dtype=np.uint8)
 
-            if ch == 3:
+            if channel_number == 3:
                 self.raw = np.array(w.header.raw_3, dtype=np.uint8)
 
-            if ch == 4:
+            if channel_number == 4:
                 self.raw = np.array(w.header.raw_4, dtype=np.uint8)
 
         self.calc_times_and_volts()
