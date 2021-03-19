@@ -96,23 +96,9 @@ class Wfm1000z(KaitaiStruct):
             self._read()
 
         def _read(self):
-            if self._root.header.stride == 1:
-                self.raw1 = [None] * (self._root.header.points)
-                for i in range(self._root.header.points):
-                    self.raw1[i] = self._io.read_u1()
-
-
-            if self._root.header.stride == 2:
-                self.raw2 = [None] * (self._root.header.points)
-                for i in range(self._root.header.points):
-                    self.raw2[i] = self._io.read_u2le()
-
-
-            if self._root.header.stride == 4:
-                self.raw4 = [None] * (self._root.header.points)
-                for i in range(self._root.header.points):
-                    self.raw4[i] = self._io.read_u4le()
-
+            self.raw = [None] * ((self._root.header.points * self._root.header.stride))
+            for i in range((self._root.header.points * self._root.header.stride)):
+                self.raw[i] = self._io.read_u1()
 
 
 
