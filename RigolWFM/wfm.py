@@ -195,10 +195,7 @@ class Wfm():
         enabled = ''
         for ch_number in range(1, 5):
 
-            # determine if this channel is one of those chosen by user
-            chosen = selected.find(str(ch_number)) != -1
-            
-            ch = RigolWFM.channel.Channel(w, ch_number, pname, chosen)
+            ch = RigolWFM.channel.Channel(w, ch_number, pname, selected)
 
             if not ch.enabled:
                 continue
