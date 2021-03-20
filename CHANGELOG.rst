@@ -1,6 +1,11 @@
 Changelog
 =================================================
 
+v0.8.0
+------
+*    significantly speed parsing of large .wfm files
+*    fix bug with selection of channels in DS1000Z files
+
 v0.7.4
 ------
 *    fix versions in conf.py and setup.cfg
