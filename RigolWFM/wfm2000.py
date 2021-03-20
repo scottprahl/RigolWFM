@@ -197,10 +197,7 @@ class Wfm2000(KaitaiStruct):
                 io = self._root._io
                 _pos = io.pos()
                 io.seek(self.channel_offset[1])
-                self._m_raw_2 = [None] * (self.storage_depth)
-                for i in range(self.storage_depth):
-                    self._m_raw_2[i] = io.read_u1()
-
+                self._m_raw_2 = io.read_bytes(self.storage_depth)
                 io.seek(_pos)
 
             return self._m_raw_2 if hasattr(self, '_m_raw_2') else None
@@ -230,10 +227,7 @@ class Wfm2000(KaitaiStruct):
                 io = self._root._io
                 _pos = io.pos()
                 io.seek(self.channel_offset[3])
-                self._m_raw_4 = [None] * (self.storage_depth)
-                for i in range(self.storage_depth):
-                    self._m_raw_4[i] = io.read_u1()
-
+                self._m_raw_4 = io.read_bytes(self.storage_depth)
                 io.seek(_pos)
 
             return self._m_raw_4 if hasattr(self, '_m_raw_4') else None
@@ -247,10 +241,7 @@ class Wfm2000(KaitaiStruct):
                 io = self._root._io
                 _pos = io.pos()
                 io.seek(self.channel_offset[2])
-                self._m_raw_3 = [None] * (self.storage_depth)
-                for i in range(self.storage_depth):
-                    self._m_raw_3[i] = io.read_u1()
-
+                self._m_raw_3 = io.read_bytes(self.storage_depth)
                 io.seek(_pos)
 
             return self._m_raw_3 if hasattr(self, '_m_raw_3') else None
@@ -264,10 +255,7 @@ class Wfm2000(KaitaiStruct):
                 io = self._root._io
                 _pos = io.pos()
                 io.seek(self.channel_offset[0])
-                self._m_raw_1 = [None] * (self.storage_depth)
-                for i in range(self.storage_depth):
-                    self._m_raw_1[i] = io.read_u1()
-
+                self._m_raw_1 = io.read_bytes(self.storage_depth)
                 io.seek(_pos)
 
             return self._m_raw_1 if hasattr(self, '_m_raw_1') else None

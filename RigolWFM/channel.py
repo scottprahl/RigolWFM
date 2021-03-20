@@ -280,16 +280,16 @@ class Channel():
 
         if self.enabled_and_selected:
             if channel_number == 1:
-                self.raw = np.array(w.header.raw_1, dtype=np.uint8)
+                self.raw = np.frombuffer(w.header.raw_1, dtype=np.uint8)
 
             if channel_number == 2:
-                self.raw = np.array(w.header.raw_2, dtype=np.uint8)
+                self.raw = np.frombuffer(w.header.raw_2, dtype=np.uint8)
 
             if channel_number == 3:
-                self.raw = np.array(w.header.raw_3, dtype=np.uint8)
+                self.raw = np.frombuffer(w.header.raw_3, dtype=np.uint8)
 
             if channel_number == 4:
-                self.raw = np.array(w.header.raw_4, dtype=np.uint8)
+                self.raw = np.frombuffer(w.header.raw_4, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
