@@ -83,7 +83,7 @@ def _channel_bytes(channel_number, w):
     elif w.header.stride == 4:  # byte pattern CH4 CH3 CH2 CH1
         offset = 4 - channel_number
 
-    data = np.frombuffer(w.data.raw, dtype='int8')
+    data = np.frombuffer(w.data.raw, dtype=np.uint8)
     raw_bytes = data[offset::w.header.stride]
 
     return raw_bytes
