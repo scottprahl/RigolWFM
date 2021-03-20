@@ -1,6 +1,7 @@
 #pylint: disable=invalid-name
 #pylint: disable=too-many-instance-attributes
 #pylint: disable=too-many-return-statements
+#pylint: disable=too-many-statements
 """
 Class structure and methods for an oscilloscope channel.
 
@@ -59,38 +60,31 @@ def engineering_string(number, n_digits):
     return s
 
 
-### maybe replace with something like
-#    x0[0::2] = data[offset_1:offset_1+pagesize]
-#    x0[1::2] = data[offset_2:offset_2+pagesize]
-
 def _channel_bytes(channel_number, w):
     """
     Return right series of bytes for a channel for 1000Z scopes.
 
     Waveform points are interleaved stored in memory when two or more
-    channels are s.  This unweaves them.
-    
+    channels are saved.  This unweaves them.
+
     Args:
         channel_number: the number of enabled channels before this one
         w:              original waveform object
     Returns
         byte array for specified channel
     """
-    if w.header.stride == 1:
-        offset = 0
+    offset = 0
 
-    elif w.header.stride == 2:
-        offset = 1
-        # number of enabled channels before this will be 0 or 1
-        for i in range(channel_number-1):
-            if w.header.ch[i].enabled:
-                offset = 0
+    if w.header.stride == 2:   # byte pattern CHx CHy
+        # use odd bytes when this is the second enabled channel
+        if any([w.header.ch[i].enabled for i in range(channel_number-1)]):
+            offset = 1
 
-    else:  #w.header.stride == 4:
+    elif w.header.stride == 4:  # byte pattern CH4 CH3 CH2 CH1
         offset = 4 - channel_number
 
-    raw_bytes = np.uint8(w.data.raw[offset::w.header.stride])
-    print(channel_number, len(raw_bytes), len(w.data.raw))
+    data = np.frombuffer(w.data.raw, dtype='int8')
+    raw_bytes = data[offset::w.header.stride]
 
     return raw_bytes
 
@@ -98,15 +92,15 @@ def _channel_bytes(channel_number, w):
 class Channel():
     """Base class for a single channel."""
 
-    def __init__(self, w, channel_number, scope, chosen=True):
+    def __init__(self, w, channel_number, scope, selected='1234'):
         """
         Initialize a Channel Object.
 
         Args:
             w: Wfm object
-            channel_number: 1,2,3,4
+            channel_number: 1, 2, 3, or 4
             scope: string describing scope
-            chosen: if user wants this channel
+            selected: string with channels chosen by user
         Returns:
             Channel object
         """
@@ -115,7 +109,7 @@ class Channel():
         self.waveform = w
         self.seconds_per_point = w.header.seconds_per_point
         self.firmware = 'unknown'
-        self.unit = 'V'
+        self.unit = UnitEnum.v
         self.points = 0
         self.raw = None
         self.volts = None
@@ -124,6 +118,18 @@ class Channel():
         self.roll_stop = 0
         self.time_offset = 0
         self.time_scale = 1
+        self.enabled = False
+        self.enabled_and_selected = False
+        self.volt_scale = 1
+        self.volt_offset = 0
+        self.y_scale = 1
+        self.y_offset = 0
+        self.volt_per_division = 1
+        self.probe_value = 1
+        self.inverted = False
+
+        # determine if this channel is one of those chosen by user
+        chosen = selected.find(str(channel_number)) != -1
 
         if channel_number <= len(w.header.ch):
             channel = w.header.ch[channel_number-1]
@@ -137,17 +143,6 @@ class Channel():
             self.probe_value = channel.probe_value
             self.unit = channel.unit
             self.inverted = channel.inverted
-        else:
-            self.enabled = False
-            self.enabled_and_selected = False
-            self.volt_scale = 1
-            self.volt_offset = 0
-            self.y_scale = 1
-            self.y_offset = 0
-            self.volt_per_division = 1
-            self.probe_value = 1
-            self.unit = UnitEnum.v
-            self.inverted = False
 
         if scope == 'wfm1000c':
             self.ds1000c(w, channel_number)
@@ -163,7 +158,6 @@ class Channel():
             self.ds4000(w, channel_number)
         elif scope == 'wfm6000':
             self.ds6000(w, channel_number)
-
 
     def __str__(self):
         """Describe this channel."""
