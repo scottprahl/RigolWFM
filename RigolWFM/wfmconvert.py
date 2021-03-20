@@ -128,7 +128,7 @@ def main():
         'model',
         type=str,
         choices=['C', 'D', 'E', 'Z', '2', '4', '6'],
-        help='oscilloscope model.  See list below.' 
+        help='oscilloscope model.  See list below.'
     )
 
     parser.add_argument(
@@ -156,9 +156,10 @@ def main():
 
     # strip anything that is not a possible channel number
     good = re.sub(r'[^1234]', '', args.channel)
+
     # remove duplicates keeping order
     selected = "".join(dict.fromkeys(good))
-    
+
     if len(selected) == 0:
         print('\nwfmconvert error')
         print('No valid channels were passed after --channel')
