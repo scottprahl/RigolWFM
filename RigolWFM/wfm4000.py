@@ -290,13 +290,11 @@ class Wfm4000(KaitaiStruct):
                 return self._m_raw_2 if hasattr(self, '_m_raw_2') else None
 
             if self.enabled.channel_2:
-                _pos = self._io.pos()
-                self._io.seek(self.position.channel_2)
-                self._m_raw_2 = [None] * (self.mem_depth)
-                for i in range(self.mem_depth):
-                    self._m_raw_2[i] = self._io.read_u1()
-
-                self._io.seek(_pos)
+                io = self._root._io
+                _pos = io.pos()
+                io.seek(self.position.channel_2)
+                self._m_raw_2 = io.read_bytes(self.mem_depth)
+                io.seek(_pos)
 
             return self._m_raw_2 if hasattr(self, '_m_raw_2') else None
 
@@ -322,13 +320,11 @@ class Wfm4000(KaitaiStruct):
                 return self._m_raw_4 if hasattr(self, '_m_raw_4') else None
 
             if self.enabled.channel_4:
-                _pos = self._io.pos()
-                self._io.seek(self.position.channel_4)
-                self._m_raw_4 = [None] * (self.mem_depth)
-                for i in range(self.mem_depth):
-                    self._m_raw_4[i] = self._io.read_u1()
-
-                self._io.seek(_pos)
+                io = self._root._io
+                _pos = io.pos()
+                io.seek(self.position.channel_4)
+                self._m_raw_4 = io.read_bytes(self.mem_depth)
+                io.seek(_pos)
 
             return self._m_raw_4 if hasattr(self, '_m_raw_4') else None
 
@@ -338,13 +334,11 @@ class Wfm4000(KaitaiStruct):
                 return self._m_raw_3 if hasattr(self, '_m_raw_3') else None
 
             if self.enabled.channel_3:
-                _pos = self._io.pos()
-                self._io.seek(self.position.channel_3)
-                self._m_raw_3 = [None] * (self.mem_depth)
-                for i in range(self.mem_depth):
-                    self._m_raw_3[i] = self._io.read_u1()
-
-                self._io.seek(_pos)
+                io = self._root._io
+                _pos = io.pos()
+                io.seek(self.position.channel_3)
+                self._m_raw_3 = io.read_bytes(self.mem_depth)
+                io.seek(_pos)
 
             return self._m_raw_3 if hasattr(self, '_m_raw_3') else None
 
@@ -354,13 +348,11 @@ class Wfm4000(KaitaiStruct):
                 return self._m_raw_1 if hasattr(self, '_m_raw_1') else None
 
             if self.enabled.channel_1:
-                _pos = self._io.pos()
-                self._io.seek(self.position.channel_1)
-                self._m_raw_1 = [None] * (self.mem_depth)
-                for i in range(self.mem_depth):
-                    self._m_raw_1[i] = self._io.read_u1()
-
-                self._io.seek(_pos)
+                io = self._root._io
+                _pos = io.pos()
+                io.seek(self.position.channel_1)
+                self._m_raw_1 = io.read_bytes(self.mem_depth)
+                io.seek(_pos)
 
             return self._m_raw_1 if hasattr(self, '_m_raw_1') else None
 
