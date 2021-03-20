@@ -235,7 +235,7 @@ types:
       raw_2:
         io: _root._io
         pos: channel_offset[1]
-        size: storage_depth 
+        size: storage_depth
         if: channel_offset[1] > 0
 
       raw_3:
