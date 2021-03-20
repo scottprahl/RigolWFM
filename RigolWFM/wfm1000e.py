@@ -86,10 +86,7 @@ class Wfm1000e(KaitaiStruct):
 
         def _read(self):
             if self._root.header.ch[0].enabled:
-                self.ch1 = [None] * (self._root.header.ch1_points)
-                for i in range(self._root.header.ch1_points):
-                    self.ch1[i] = self._io.read_u1()
-
+                self.ch1 = self._io.read_bytes(self._root.header.ch1_points)
 
             if self._root.header.ch[0].enabled:
                 self.roll_stop_padding1 = self._io.read_bytes(self._root.header.ch1_skip)
@@ -98,10 +95,7 @@ class Wfm1000e(KaitaiStruct):
                 self.sentinel_between_datasets = self._io.read_u4le()
 
             if self._root.header.ch[1].enabled:
-                self.ch2 = [None] * (self._root.header.ch2_points)
-                for i in range(self._root.header.ch2_points):
-                    self.ch2[i] = self._io.read_u1()
-
+                self.ch2 = self._io.read_bytes(self._root.header.ch2_points)
 
             if self._root.header.ch[1].enabled:
                 self.roll_stop_padding2 = self._io.read_bytes(self._root.header.ch1_skip)

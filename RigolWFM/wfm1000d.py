@@ -196,16 +196,10 @@ class Wfm1000d(KaitaiStruct):
 
         def _read(self):
             if self._root.header.ch[0].enabled:
-                self.ch1 = [None] * (self._root.header.points)
-                for i in range(self._root.header.points):
-                    self.ch1[i] = self._io.read_u1()
-
+                self.ch1 = self._io.read_bytes(self._root.header.points)
 
             if self._root.header.ch[1].enabled:
-                self.ch2 = [None] * (self._root.header.points)
-                for i in range(self._root.header.points):
-                    self.ch2[i] = self._io.read_u1()
-
+                self.ch2 = self._io.read_bytes(self._root.header.points)
 
 
 

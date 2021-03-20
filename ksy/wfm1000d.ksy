@@ -116,15 +116,11 @@ types:
   raw_data:
     seq:
       - id: ch1
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.points
+        size: _root.header.points
         if: _root.header.ch[0].enabled
 
       - id: ch2
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.points
+        size: _root.header.points
         if: _root.header.ch[1].enabled
 
 enums:

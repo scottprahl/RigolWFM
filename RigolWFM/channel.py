@@ -202,12 +202,12 @@ class Channel():
         if channel_number == 1:
             if self.enabled_and_selected:
                 self.points = len(w.data.ch1)
-                self.raw = np.array(w.data.ch1, dtype=np.uint8)
+                self.raw = np.frombuffer(w.data.ch1, dtype=np.uint8)
 
         if channel_number == 2:
             if self.enabled_and_selected:
                 self.points = len(w.data.ch2)
-                self.raw = np.array(w.data.ch2, dtype=np.uint8)
+                self.raw = np.frombuffer(w.data.ch2, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
@@ -219,12 +219,12 @@ class Channel():
         if channel_number == 1:
             if self.enabled_and_selected:
                 self.points = len(w.data.ch1)
-                self.raw = np.array(w.data.ch1, dtype=np.uint8)
+                self.raw = np.frombuffer(w.data.ch1, dtype=np.uint8)
 
         if channel_number == 2:
             if self.enabled_and_selected:
                 self.points = len(w.data.ch2)
-                self.raw = np.array(w.data.ch2, dtype=np.uint8)
+                self.raw = np.frombuffer(w.data.ch2, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
@@ -238,14 +238,14 @@ class Channel():
             self.time_scale = w.header.ch1_time_scale
             if self.enabled_and_selected:
                 self.points = len(w.data.ch1)
-                self.raw = np.array(w.data.ch1, dtype=np.uint8)
+                self.raw = np.frombuffer(w.data.ch1, dtype=np.uint8)
 
         elif channel_number == 2:
             self.time_offset = w.header.ch2_time_offset
             self.time_scale = w.header.ch2_time_scale
             if self.enabled_and_selected:
                 self.points = len(w.data.ch2)
-                self.raw = np.array(w.data.ch2, dtype=np.uint8)
+                self.raw = np.frombuffer(w.data.ch2, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
