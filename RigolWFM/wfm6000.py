@@ -269,28 +269,16 @@ class Wfm6000(KaitaiStruct):
 
         def _read(self):
             if self._root.header.enabled.channel_1:
-                self.channel_1 = [None] * (self._root.header.mem_depth)
-                for i in range(self._root.header.mem_depth):
-                    self.channel_1[i] = self._io.read_u1()
-
+                self.channel_1 = self._io.read_bytes(self._root.header.mem_depth)
 
             if self._root.header.enabled.channel_2:
-                self.channel_2 = [None] * (self._root.header.mem_depth)
-                for i in range(self._root.header.mem_depth):
-                    self.channel_2[i] = self._io.read_u1()
-
+                self.channel_2 = self._io.read_bytes(self._root.header.mem_depth)
 
             if self._root.header.enabled.channel_3:
-                self.channel_3 = [None] * (self._root.header.mem_depth)
-                for i in range(self._root.header.mem_depth):
-                    self.channel_3[i] = self._io.read_u1()
-
+                self.channel_3 = self._io.read_bytes(self._root.header.mem_depth)
 
             if self._root.header.enabled.channel_4:
-                self.channel_4 = [None] * (self._root.header.mem_depth)
-                for i in range(self._root.header.mem_depth):
-                    self.channel_4[i] = self._io.read_u1()
-
+                self.channel_4 = self._io.read_bytes(self._root.header.mem_depth)
 
 
 
