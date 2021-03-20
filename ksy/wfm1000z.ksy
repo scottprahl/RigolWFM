@@ -232,7 +232,6 @@ types:
   raw_data:
     seq:
       - id: raw
-        type: u1
         size: _root.header.points * _root.header.stride
 
 enums:

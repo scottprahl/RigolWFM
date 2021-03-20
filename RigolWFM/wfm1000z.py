@@ -96,10 +96,7 @@ class Wfm1000z(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.raw = [None] * ((self._root.header.points * self._root.header.stride))
-            for i in range((self._root.header.points * self._root.header.stride)):
-                self.raw[i] = self._io.read_u1()
-
+            self.raw = self._io.read_bytes((self._root.header.points * self._root.header.stride))
 
 
     class ChannelHead(KaitaiStruct):
