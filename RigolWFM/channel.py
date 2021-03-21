@@ -75,9 +75,9 @@ def _channel_bytes(channel_number, w):
     """
     offset = 0
 
-    if w.header.stride == 2:   # byte pattern CHx CHy
+    if w.header.stride == 2:   # byte pattern e.g., CH4 CH1 CH4 CH 1
         # use odd bytes when this is the second enabled channel
-        if any([w.header.ch[i].enabled for i in range(channel_number-1)]):
+        if not any([w.header.ch[i].enabled for i in range(channel_number-1)]):
             offset = 1
 
     elif w.header.stride == 4:  # byte pattern CH4 CH3 CH2 CH1
