@@ -13,7 +13,7 @@ RigolWFM: a utility to process Rigol oscilloscope `.wfm` files
 .. image:: https://img.shields.io/badge/github-code-green.svg
    :target: https://github.com/scottprahl/RigolWFM
 
-.. image:: https://img.shields.io/badge/MIT-license-yellow.svg
+.. image:: https://img.shields.io/badge/BSD-license-yellow.svg
    :target: https://github.com/scottprahl/RigolWFM/blob/master/LICENSE
 
 __________
