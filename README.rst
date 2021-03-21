@@ -37,7 +37,7 @@ Using RigolWFM
 Usage
 -----
 
-Once this is done, one can plot the signals from binary Rigol ``.wfm`` files by::
+Once ``RigolWFM`` is installedf, you can plot the signals from binary Rigol ``.wfm`` files by::
 
    import matplotlib.pyplot as plt
    import RigolWFM.wfm as rigol
