@@ -1,20 +1,20 @@
 RigolWFM: a utility to process Rigol oscilloscope `.wfm` files
 ==============================================================
 
-.. image:: https://mybinder.org/badge_logo.svg
-   :target: https://mybinder.org/v2/gh/scottprahl/RigolWFM/master?filepath=docs
-
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
    :target: https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master
 
 .. image:: https://img.shields.io/badge/kaitai-struct-green.svg
    :target: https://ide.kaitai.io
 
-.. image:: https://img.shields.io/badge/nbviewer-docs-yellow.svg
-   :target: https://nbviewer.jupyter.org/github/scottprahl/RigolWFM/tree/master/docs
-
 .. image:: https://img.shields.io/badge/readthedocs-latest-blue.svg
    :target: https://RigolWFM.readthedocs.io
+
+.. image:: https://img.shields.io/badge/github-code-green.svg
+   :target: https://github.com/scottprahl/RigolWFM
+
+.. image:: https://img.shields.io/badge/MIT-license-yellow.svg
+   :target: https://github.com/scottprahl/RigolWFM/blob/master/LICENSE.txt
 
 __________
 
@@ -24,12 +24,17 @@ This project leverages a domain specific language (kaitai struct) to represent t
 
 Kaitai Struct <https://kaitai.io> also has a slick web IDE <https://ide.kaitai.io> that allows one to interactively reverse engineer binary file formats directly in your browser.  This is super helpful for those Rigol ``.wfm`` formats that are undocumented.
 
-Installation
-------------
+Using RigolWFM
+---------------
 
-The RigolWFM package can be installed via `pip`::
+1. You can install locally using pip::
+    
+    pip install --user RigolWFM
 
-   pip install RigolWFM
+2. or `run this code in the cloud using Google Collaboratory <https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master>`_ by selecting the Jupyter notebook that interests you.
+
+3. or `analyze your files using the kaitai struct IDE <https://ide.kaitai.io>`_ (you will need to manually upload the appropriate `.ksy` file and your `.wfm` to the IDE).
+
 
 Usage
 -----

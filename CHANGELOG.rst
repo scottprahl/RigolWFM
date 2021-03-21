@@ -1,6 +1,11 @@
 Changelog
 =================================================
 
+v0.8.1
+------
+*    fixed swapped channels for DS1000Z files (2 channel case only)
+*    advise `pip install --user RigolWFM` to avoid permission errors
+
 v0.8.0
 ------
 *    significantly speed parsing of large .wfm files
