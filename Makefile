@@ -68,16 +68,32 @@ ksycheck:
 	-ksylint ksy/wfm4000.ksy
 	-ksylint ksy/wfm6000.ksy
 
-check:
-	make yamlcheck
-	make ksycheck
-	make rstcheck
+notecheck:
+	make clean
+	pytest --verbose -n 4 test_all_notebooks.py
+
+pycheck:
 	-pylint RigolWFM/wfm.py
 	-pydocstyle RigolWFM/wfm.py
 	-pylint RigolWFM/channel.py
 	-pydocstyle RigolWFM/channel.py
 	-pylint RigolWFM/wfmconvert.py
 	-pydocstyle RigolWFM/wfmconvert.py
+
+#check everything before a new release
+rcheck:
+	make realclean
+	make ksycheck
+	make yamlcheck
+	make
+	make notecheck
+	make rstcheck
+	make pycheck
+	make html
+	make test
+	check-manifest
+	pyroma -d .
+	tox
 
 html:
 	$(SPHINXBUILD) -b html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
@@ -208,14 +224,6 @@ realclean:
 	rm -f RigolWFM/wfm4000.py
 	rm -f RigolWFM/wfm6000.py
 
-rcheck:
-	make realclean
-	make
-	make check
-	make html
-	make test
-	check-manifest
-	pyroma -d .
-	tox
-
-.PHONY: clean realclean test check all ksycheck yamlcheck teste testz test4 test csv wav help
+.PHONY: clean realclean csv wav vcsv sigrok \
+        test testc teste testz test2 test4 \
+        pycheck ksycheck yamlcheck rcheck 

@@ -1,5 +1,7 @@
 .DS_Store
 .tox/*
+__pycache__
+docs/raw.githubusercontent.com/*
 RigolWFM.egg-info/*
 RigolWFM/__pycache__/*
 dist/*
