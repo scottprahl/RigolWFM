@@ -4,6 +4,9 @@ RigolWFM: a utility to process Rigol oscilloscope `.wfm` files
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
    :target: https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master
 
+.. image:: https://img.shields.io/pypi/v/RigolWFM.svg
+   :target: https://pypi.org/project/RigolWFM/
+
 .. image:: https://img.shields.io/badge/kaitai-struct-green.svg
    :target: https://ide.kaitai.io
 
