@@ -1,6 +1,6 @@
 PYTHON_PARSERS = RigolWFM/wfm1000c.py RigolWFM/wfm1000d.py RigolWFM/wfm1000e.py \
                  RigolWFM/wfm1000z.py RigolWFM/wfm2000.py RigolWFM/wfm4000.py \
-                 RigolWFM/wfm6000.py
+                 RigolWFM/wfm6000.py RigolWFM/wfm1000b.py
 
 KSC ?= kaitai-struct-compiler
 
@@ -20,6 +20,9 @@ BUILDDIR      = docs/_build
 export PYTHONPATH ?= .
 
 all: $(PYTHON_PARSERS)
+
+RigolWFM/wfm1000b.py: ksy/wfm1000b.ksy
+	$(KSC) $(KSY_PYTHON_OPTIONS) $<
 
 RigolWFM/wfm1000c.py: ksy/wfm1000c.ksy
 	$(KSC) $(KSY_PYTHON_OPTIONS) $<
@@ -43,6 +46,7 @@ RigolWFM/wfm6000.py: ksy/wfm6000.ksy
 	$(KSC) $(KSY_PYTHON_OPTIONS) $<
 
 yamlcheck:
+	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000b.ksy
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000c.ksy
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000d.ksy
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm1000e.ksy
@@ -60,6 +64,7 @@ rstcheck:
 	-rstcheck --ignore-directives automodule docs/RigolWFM.rst
 
 ksycheck:
+	-ksylint ksy/wfm1000b.ksy
 	-ksylint ksy/wfm1000c.ksy
 	-ksylint ksy/wfm1000d.ksy
 	-ksylint ksy/wfm1000e.ksy
@@ -97,6 +102,9 @@ rcheck:
 
 html:
 	$(SPHINXBUILD) -b html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
+
+testb:
+	RigolWFM/wfmconvert.py B info wfm/DS1204B.wfm
 
 testc:
 	RigolWFM/wfmconvert.py C info wfm/DS1202CA-A.wfm
@@ -216,6 +224,7 @@ clean:
 
 realclean:
 	make clean
+	rm -f RigolWFM/wfm1000b.py 
 	rm -f RigolWFM/wfm1000c.py 
 	rm -f RigolWFM/wfm1000d.py 
 	rm -f RigolWFM/wfm1000e.py 

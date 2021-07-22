@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import requests
 
+import RigolWFM.wfm1000b
 import RigolWFM.wfm1000c
 import RigolWFM.wfm1000d
 import RigolWFM.wfm1000e
@@ -32,9 +33,9 @@ import RigolWFM.wfm4000
 import RigolWFM.wfm6000
 import RigolWFM.channel
 
-# not implemented
-# DS1000B_scopes = ["B", "1000B", "DS1000B",
-#                  "DS1074B", "DS1104B", "DS1204B"]
+# in progress
+DS1000B_scopes = ["B", "1000B", "DS1000B",
+                  "DS1074B", "DS1104B", "DS1204B"]
 
 # tested
 DS1000C_scopes = ["C", "1000C", "DS1000C",
@@ -153,7 +154,11 @@ class Wfm():
         # parse the waveform
         umodel = model.upper()
 
-        if umodel in DS1000C_scopes:
+        if umodel in DS1000B_scopes:
+            w = RigolWFM.wfm1000b.Wfm1000b.from_file(file_name)
+            new_wfm.header_name = 'DS1000B'
+
+        elif umodel in DS1000C_scopes:
             w = RigolWFM.wfm1000c.Wfm1000c.from_file(file_name)
             new_wfm.header_name = 'DS1000C'
 

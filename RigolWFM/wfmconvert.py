@@ -127,7 +127,7 @@ def main():
     parser.add_argument(
         'model',
         type=str,
-        choices=['C', 'D', 'E', 'Z', '2', '4', '6'],
+        choices=['B', 'C', 'D', 'E', 'Z', '2', '4', '6'],
         help='oscilloscope model.  See list below.'
     )
 
