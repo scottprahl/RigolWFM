@@ -54,7 +54,7 @@ types:
         type: f4
       - id: time_scale_stop  # 184
         type: u8
-      - id: time_scale_offset # 192
+      - id: time_scale_offset  # 192
         type: s8
       - id: unknown_4        # 200
         type: u4
