@@ -36,7 +36,7 @@ if os.path.exists('.testignore'):
     ignores = [line.strip() for line in open('.testignore') if line.strip()]
 
 # Ignore hidden folders (startswith('.')) and files matching ignore patterns
-notebooks = [notebook for notebook in searchpath.glob('**/*.ipynb')
+notebooks = [notebook for notebook in searchpath.glob('*/*.ipynb')
              if not (any(parent.startswith('.')
                          for parent in notebook.parent.parts)
                      or any(notebook.match(pattern)
