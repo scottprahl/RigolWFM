@@ -84,6 +84,7 @@ pycheck:
 	-pydocstyle RigolWFM/channel.py
 	-pylint RigolWFM/wfmconvert.py
 	-pydocstyle RigolWFM/wfmconvert.py
+	-flake8 .
 
 #check everything before a new release
 rcheck:
