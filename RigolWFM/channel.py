@@ -145,6 +145,7 @@ class Channel():
             self.inverted = channel.inverted
 
         if scope == 'wfm1000b':
+            self.y_offset += 1.12 * channel.volt_per_division
             self.ds1000b(w, channel_number)
         elif scope == 'wfm1000c':
             self.ds1000c(w, channel_number)
@@ -210,6 +211,16 @@ class Channel():
             if self.enabled_and_selected:
                 self.points = len(w.data.ch2)
                 self.raw = np.frombuffer(w.data.ch2, dtype=np.uint8)
+
+        if channel_number == 3:
+            if self.enabled_and_selected:
+                self.points = len(w.data.ch3)
+                self.raw = np.frombuffer(w.data.ch3, dtype=np.uint8)
+
+        if channel_number == 4:
+            if self.enabled_and_selected:
+                self.points = len(w.data.ch4)
+                self.raw = np.frombuffer(w.data.ch4, dtype=np.uint8)
 
         self.calc_times_and_volts()
 

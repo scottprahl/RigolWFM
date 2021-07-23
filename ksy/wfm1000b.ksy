@@ -13,7 +13,7 @@ instances:
     pos: 0
     type: header
   data:
-    pos: 256
+    pos: 0x1A4
     type: raw_data
 
 types:
@@ -27,37 +27,47 @@ types:
         terminator: 0
         encoding: UTF-8
       - id: unknown_1        # 08
+        size: 36
+      - id: ch1size          # 44
         type: u4
-        repeat: expr
-        repeat-expr: 12
+      - id: ch2size          # 48
+        type: u4
+      - id: adcmode          # 52
+        type: u1
+      - id: unknown_2        # 53
+        size: 3
       - id: points           # 56
         type: u4
-      - id: active_channel   # 32
+      - id: active_channel   # 64
         type: u1
-      - id: unknown_2a       # 33
+      - id: unknown_3        # 65
         size: 3
-      - id: ch               # 36, 60
+      - id: ch               # 68, 92, 116, 140
         type: channel_header
         repeat: expr
         repeat-expr: 4
-      - id: time_scale       # 84 (in picoseconds)
+      - id: time_scale       # 164 (in picoseconds)
         type: u8
-      - id: time_offset      # 92 (in picoseconds)
+      - id: time_offset      # 172 (in picoseconds)
         type: s8
-      - id: sample_rate_hz   # 100
+      - id: sample_rate_hz   # 180
         type: f4
-      - id: unknown_3        # 104
+      - id: time_scale_stop  # 184
+        type: u8
+      - id: time_scale_offset # 192
+        type: s8
+      - id: unknown_4        # 200
         type: u4
         repeat: expr
-        repeat-expr: 9
-      - id: unknown_4        # 140
+        repeat-expr: 5
+      - id: unknown_5        # 220
         type: u2
-      - id: trigger_mode     # 142
+      - id: trigger_mode     # 222
         type: u1
         enum: trigger_mode_enum
-      - id: unknown_6        # 143
+      - id: unknown_6        # 221
         type: u1
-      - id: trigger_source   # 144
+      - id: trigger_source   # 222
         type: u1
         enum: trigger_source_enum
 
@@ -67,30 +77,30 @@ types:
 
   channel_header:   # 24 bytes total
     seq:
-      - id: scale_display    # 36, 60
+      - id: scale_display    # 68, 92, 116
         type: s4
-      - id: shift_display    # 40, 64
+      - id: shift_display    # 72, 96, 120
         type: s2
-      - id: unknown_1        # 42, 66
-        type: u1
-      - id: unknown_2        # 43, 67
-        type: u1
-      - id: probe_value      # 44, 68
+      - id: unknown1         # 74, 98
+        size: 2
+      - id: probe_value      # 76, 100
         type: f4
-      - id: invert_disp_val  # 48, 72
+      - id: probe_type       # 80, 104
+        type: s1
+      - id: invert_disp_val  # 81, 105
         type: u1
-      - id: enabled_val      # 49, 73
+      - id: enabled_val      # 82, 106
         type: u1
-      - id: invert_m_val     # 50, 74
+      - id: invert_m_val     # 83, 107
         type: u1
-      - id: unknown_3        # 51, 75
-        type: u1
-      - id: scale_measured   # 52, 76
+      - id: scale_measured   # 84, 108
         type: s4
-      - id: shift_measured   # 56, 80
+      - id: shift_measured   # 88, 112
         type: s2
-      - id: unknown_3a       # 58, 82
-        type: u2
+      - id: time_delayed     # 90, 114
+        type: u1
+      - id: unknown2         # 91, 114
+        size: 1
     instances:
       inverted:
         value: "invert_m_val != 0 ? true : false"

@@ -66,13 +66,14 @@ class Wfm1000b(KaitaiStruct):
             if not self.magic == b"\xA5\xA5\xA4\x01":
                 raise kaitaistruct.ValidationNotEqualError(b"\xA5\xA5\xA4\x01", self.magic, self._io, u"/types/header/seq/0")
             self.scopetype = (KaitaiStream.bytes_terminate(self._io.read_bytes(8), 0, False)).decode(u"UTF-8")
-            self.unknown_1 = [None] * (12)
-            for i in range(12):
-                self.unknown_1[i] = self._io.read_u4le()
-
+            self.unknown_1 = self._io.read_bytes(36)
+            self.ch1size = self._io.read_u4le()
+            self.ch2size = self._io.read_u4le()
+            self.adcmode = self._io.read_u1()
+            self.unknown_2 = self._io.read_bytes(3)
             self.points = self._io.read_u4le()
             self.active_channel = self._io.read_u1()
-            self.unknown_2a = self._io.read_bytes(3)
+            self.unknown_3 = self._io.read_bytes(3)
             self.ch = [None] * (4)
             for i in range(4):
                 self.ch[i] = Wfm1000b.ChannelHeader(self._io, self, self._root)
@@ -80,11 +81,13 @@ class Wfm1000b(KaitaiStruct):
             self.time_scale = self._io.read_u8le()
             self.time_offset = self._io.read_s8le()
             self.sample_rate_hz = self._io.read_f4le()
-            self.unknown_3 = [None] * (9)
-            for i in range(9):
-                self.unknown_3[i] = self._io.read_u4le()
+            self.time_scale_stop = self._io.read_u8le()
+            self.time_scale_offset = self._io.read_s8le()
+            self.unknown_4 = [None] * (5)
+            for i in range(5):
+                self.unknown_4[i] = self._io.read_u4le()
 
-            self.unknown_4 = self._io.read_u2le()
+            self.unknown_5 = self._io.read_u2le()
             self.trigger_mode = KaitaiStream.resolve_enum(Wfm1000b.TriggerModeEnum, self._io.read_u1())
             self.unknown_6 = self._io.read_u1()
             self.trigger_source = KaitaiStream.resolve_enum(Wfm1000b.TriggerSourceEnum, self._io.read_u1())
@@ -108,16 +111,16 @@ class Wfm1000b(KaitaiStruct):
         def _read(self):
             self.scale_display = self._io.read_s4le()
             self.shift_display = self._io.read_s2le()
-            self.unknown_1 = self._io.read_u1()
-            self.unknown_2 = self._io.read_u1()
+            self.unknown1 = self._io.read_bytes(2)
             self.probe_value = self._io.read_f4le()
+            self.probe_type = self._io.read_s1()
             self.invert_disp_val = self._io.read_u1()
             self.enabled_val = self._io.read_u1()
             self.invert_m_val = self._io.read_u1()
-            self.unknown_3 = self._io.read_u1()
             self.scale_measured = self._io.read_s4le()
             self.shift_measured = self._io.read_s2le()
-            self.unknown_3a = self._io.read_u2le()
+            self.time_delayed = self._io.read_u1()
+            self.unknown2 = self._io.read_bytes(1)
 
         @property
         def unit(self):
@@ -223,7 +226,7 @@ class Wfm1000b(KaitaiStruct):
             return self._m_data if hasattr(self, '_m_data') else None
 
         _pos = self._io.pos()
-        self._io.seek(256)
+        self._io.seek(420)
         self._m_data = Wfm1000b.RawData(self._io, self, self._root)
         self._io.seek(_pos)
         return self._m_data if hasattr(self, '_m_data') else None
