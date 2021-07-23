@@ -103,9 +103,14 @@ rcheck:
 
 html:
 	$(SPHINXBUILD) -b html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
+	open docs/_build/index.html
 
 testb:
-	RigolWFM/wfmconvert.py B info wfm/DS1204B.wfm
+	RigolWFM/wfmconvert.py B info wfm/DS1204B-A.wfm
+	RigolWFM/wfmconvert.py B info wfm/DS1204B-B.wfm
+	RigolWFM/wfmconvert.py B info wfm/DS1204B-C.wfm
+	RigolWFM/wfmconvert.py B info wfm/DS1204B-D.wfm
+	RigolWFM/wfmconvert.py B info wfm/DS1204B-E.wfm
 
 testc:
 	RigolWFM/wfmconvert.py C info wfm/DS1202CA-A.wfm
@@ -161,7 +166,7 @@ csv:
 	RigolWFM/wfmconvert.py 4 csv wfm/DS4022-A.wfm
 	RigolWFM/wfmconvert.py 2 csv wfm/DS2202.wfm
 	RigolWFM/wfmconvert.py C csv wfm/DS1202CA-A.wfm
-	RigolWFM/wfmconvert.py B csv wfm/DS1204B.wfm
+	RigolWFM/wfmconvert.py B csv wfm/DS1204B-A.wfm
 
 wav:
 	RigolWFM/wfmconvert.py E wav wfm/DS1102E-A.wfm
@@ -169,7 +174,7 @@ wav:
 	RigolWFM/wfmconvert.py 4 wav wfm/DS4022-A.wfm
 	RigolWFM/wfmconvert.py 2 wav wfm/DS2202.wfm
 	RigolWFM/wfmconvert.py C wav wfm/DS1202CA-A.wfm
-	RigolWFM/wfmconvert.py B wav wfm/DS1204B.wfm
+	RigolWFM/wfmconvert.py B wav wfm/DS1204B-A.wfm
 	
 vcsv:
 	RigolWFM/wfmconvert.py E vcsv wfm/DS1102E-A.wfm
@@ -182,8 +187,8 @@ vcsv:
 	mv wfm/DS2202.csv wfm/DS2202.vcsv
 	RigolWFM/wfmconvert.py C vcsv wfm/DS1202CA-A.wfm
 	mv wfm/DS1202CA-A.csv wfm/DS1202CA-A.vcsv
-	RigolWFM/wfmconvert.py B vcsv wfm/DS1204B.wfm
-	mv wfm/DS1204B.csv wfm/DS1204B.vcsv
+	RigolWFM/wfmconvert.py B vcsv wfm/DS1204B-A.wfm
+	mv wfm/DS1204B-A.csv wfm/DS1204B-A.vcsv
 
 sigrok:
 	@ echo "*********************************************************"
@@ -194,7 +199,7 @@ sigrok:
 	RigolWFM/wfmconvert.py 4 sigrok wfm/DS4022-A.wfm
 	RigolWFM/wfmconvert.py 2 sigrok wfm/DS2202.wfm
 	RigolWFM/wfmconvert.py C sigrok wfm/DS1202CA-A.wfm
-	RigolWFM/wfmconvert.py B sigrok wfm/DS1204B.wfm
+	RigolWFM/wfmconvert.py B sigrok wfm/DS1204B-A.wfm
 
 clean:
 	rm -rf dist
@@ -221,10 +226,10 @@ clean:
 	rm -rf wfm/DS1202CA-A.wav
 	rm -rf wfm/DS1202CA-A.vcsv
 	rm -rf wfm/DS1202CA-A.sr
-	rm -rf wfm/DS1204B.csv
-	rm -rf wfm/DS1204B.wav
-	rm -rf wfm/DS1204B.vcsv
-	rm -rf wfm/DS1204B.sr
+	rm -rf wfm/DS1204B-A.csv
+	rm -rf wfm/DS1204B-A.wav
+	rm -rf wfm/DS1204B-A.vcsv
+	rm -rf wfm/DS1204B-A.sr
 	rm -rf docs/_build/*
 	rm -rf docs/_build/.buildinfo
 	rm -rf docs/_build/.doctrees
