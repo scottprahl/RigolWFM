@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-#pylint: disable=invalid-name
-#pylint: disable=missing-function-docstring
-#pylint: disable=unused-argument
+# pylint: disable=invalid-name
+# pylint: disable=missing-function-docstring
+# pylint: disable=unused-argument
 """
 Command line utility to convert Rigol .wfm files.
 
@@ -22,10 +22,12 @@ import textwrap
 
 import RigolWFM.wfm as rigol
 
+
 def info(args, scope_data, infile):
     """Create a string that describes content of .wfm file."""
     s = scope_data.describe()
     print(s)
+
 
 def csv(args, scope_data, infile):
     """Create a file with comma separated values."""
@@ -40,6 +42,7 @@ def csv(args, scope_data, infile):
         b = s.encode(encoding='utf-8')
         f.write(b)
 
+
 def vcsv(args, scope_data, infile):
     """Create a file with comma separated values (full volts)."""
     csv_name = os.path.splitext(infile)[0] + '.csv'
@@ -53,6 +56,7 @@ def vcsv(args, scope_data, infile):
         b = s.encode(encoding='utf-8')
         f.write(b)
 
+
 def wav(args, scope_data, infile):
     """Create an audible .wav file for use in LTspice."""
     wav_name = os.path.splitext(infile)[0] + '.wav'
@@ -61,6 +65,7 @@ def wav(args, scope_data, infile):
         return
 
     scope_data.wav(wav_name, autoscale=args.autoscale)
+
 
 def sigrok(args, scope_data, infile):
     """Create a Sigrok (.sr) file."""
@@ -80,6 +85,7 @@ def sigrok(args, scope_data, infile):
         check=True)
     if p.returncode != 0:
         print("sigrok-cli failed")
+
 
 def main():
     """Parse console command line arguments."""
@@ -119,7 +125,7 @@ def main():
         default='1234',
         help=textwrap.dedent("""\
         select channel(s) to process.  `--channel 1` outputs only contents of
-        the first channel.  `--channel 34` outputs contents of channels 3 and 4. 
+        the first channel.  `--channel 34` outputs contents of channels 3 and 4.
         The default is `--channel 1234`.
         """)
     )
@@ -183,11 +189,12 @@ def main():
 
         except rigol.Parse_WFM_Error as e:
             print("File contents do not follow the format for", end='', file=sys.stderr)
-            print("for the Rigol Oscilloscope Model %s."%args.model, file=sys.stderr)
+            print("for the Rigol Oscilloscope Model %s." % args.model, file=sys.stderr)
             print("To help with development, please report this error\n", file=sys.stderr)
             print("as an issue to https://github.com/scottprahl/RigolWFM\n", file=sys.stderr)
             print(e, file=sys.stderr)
             sys.exit()
+
 
 if __name__ == "__main__":
     main()
