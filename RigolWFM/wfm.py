@@ -1,6 +1,9 @@
 #pylint: disable=invalid-name
 #pylint: disable=too-many-instance-attributes
 #pylint: disable=raise-missing-from
+#pylint: disable=too-many-branches
+#pylint: disable=too-many-statements
+
 """
 Extract signals or description from Rigol 1000E Oscilloscope waveform file.
 
