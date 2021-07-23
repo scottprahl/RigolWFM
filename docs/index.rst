@@ -42,6 +42,7 @@ Links
    
    readme
    0-Basics.ipynb
+   1-DS1000B-Waveforms.ipynb
    1-DS1000C-Waveforms.ipynb
    1-DS1000E-Waveforms.ipynb
    1-DS1000Z-Waveforms.ipynb
