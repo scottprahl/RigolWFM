@@ -1,6 +1,12 @@
 Changelog
 =================================================
 
+v0.9.0
+------
+*     support wfm files from 1000B scopes
+*     automate notebook testing
+*     add pypi badge
+
 v0.8.1
 ------
 *    fixed swapped channels for DS1000Z files (2 channel case only)

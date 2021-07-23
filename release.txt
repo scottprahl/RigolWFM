@@ -1,7 +1,5 @@
 A checklist for releasing a new version
 
-# make sure all Jupyter notebooks in the doc folder still work
-
 # sanity test the release
   make rcheck
 
