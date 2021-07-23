@@ -1,8 +1,8 @@
-#pylint: disable=invalid-name
-#pylint: disable=too-many-instance-attributes
-#pylint: disable=raise-missing-from
-#pylint: disable=too-many-branches
-#pylint: disable=too-many-statements
+# pylint: disable=invalid-name
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=raise-missing-from
+# pylint: disable=too-many-branches
+# pylint: disable=too-many-statements
 
 """
 Extract signals or description from Rigol 1000E Oscilloscope waveform file.
@@ -87,6 +87,7 @@ def valid_scope_list():
     s += ", ".join(DS6000_scopes) + "\n"
     return s
 
+
 class Read_WFM_Error(Exception):
     """Generic Read Error."""
 
@@ -136,7 +137,7 @@ class Wfm():
         Create Wfm object from a file.
 
         Args:
-            filename: name of file
+            file_name: name of file
             model: Rigol Oscilloscope used, e.g., 'E' or 'Z'
             selected: string of channels to process e.g., '12'
         Returns:
@@ -198,7 +199,6 @@ class Wfm():
         pname = str(w).split(".")[1]
         new_wfm.parser_name = pname
 
-
         # assemble into uniform set of names
         enabled = ''
         for ch_number in range(1, 5):
@@ -214,7 +214,7 @@ class Wfm():
             # append all enabled channels
             new_wfm.channels.append(ch)
 
-        if len(new_wfm.channels)==0:
+        if len(new_wfm.channels) == 0:
             print("Sorry! No channels in the waveform are both selected and enabled")
             print("    User selected channels = '%s'" % selected)
             print("    Scope enabled channels = '%s'" % enabled)
@@ -320,7 +320,7 @@ class Wfm():
         colors = ['red', 'blue', 'orange', 'magenta']
 
         for i, ch in enumerate(self.channels):
-            plt.plot(ch.times*h_scale, ch.volts*v_scale,
+            plt.plot(ch.times * h_scale, ch.volts * v_scale,
                      label=ch.name, color=colors[i])
 
         plt.xlabel("Time (%ss)" % h_prefix)
@@ -342,7 +342,7 @@ class Wfm():
 
         # just output the display 100 pts/division
         ch = self.channels[0]
-        incr = ch.time_scale/100
+        incr = ch.time_scale / 100
         off = -6 * ch.time_scale
         s += '%ss' % h_prefix
         for ch in self.channels:
@@ -350,9 +350,9 @@ class Wfm():
         s += ",%e,%e\n" % (off, incr)
 
         for i in range(self.channels[0].points):
-            s += "%.6f" % (ch.times[i]*h_scale)
+            s += "%.6f" % (ch.times[i] * h_scale)
             for ch in self.channels:
-                s += ",%.2f" % (ch.volts[i]*v_scale)
+                s += ",%.2f" % (ch.volts[i] * v_scale)
             s += "\n"
         return s
 
@@ -380,19 +380,19 @@ class Wfm():
         channel_length = self.channels[0].points
         total_len = channel_length * n_channels
 
-        out = np.empty((total_len,), dtype = np.uint8, order='C' )
+        out = np.empty((total_len,), dtype=np.uint8, order='C')
 
         # channels are interleaved e.g., 123123123
         for i, ch in enumerate(self.channels):
             if autoscale:
                 amin = np.min(ch.raw)
-                amax = max(np.max(ch.raw),amin+1) #avoid division by zero
-                scale = 250/(amax-amin)*0.95
-                out[i::n_channels] = np.int8((ch.raw-amin)*scale)
+                amax = max(np.max(ch.raw), amin + 1)  # avoid division by zero
+                scale = 250 / (amax - amin) * 0.95
+                out[i::n_channels] = np.int8((ch.raw - amin) * scale)
             else:
                 out[i::n_channels] = ch.raw
 
-        sample_rate = 1.0/self.channels[0].seconds_per_point
+        sample_rate = 1.0 / self.channels[0].seconds_per_point
 
         wavef = wave.open(wav_filename, 'wb')
         wavef.setnchannels(n_channels)  # 1 = mono, 2 = stereo
