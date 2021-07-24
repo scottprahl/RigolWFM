@@ -167,7 +167,7 @@ class Wfm1000b(KaitaiStruct):
             if hasattr(self, '_m_volt_per_division'):
                 return self._m_volt_per_division if hasattr(self, '_m_volt_per_division') else None
 
-            self._m_volt_per_division = ((-0.0000010 * self.scale_measured) if self.inverted else (0.0000010 * self.scale_measured))
+            self._m_volt_per_division = (((-0.0000010 * self.scale_measured) * self.probe_value) if self.inverted else ((0.0000010 * self.scale_measured) * self.probe_value))
             return self._m_volt_per_division if hasattr(self, '_m_volt_per_division') else None
 
         @property
@@ -195,18 +195,10 @@ class Wfm1000b(KaitaiStruct):
             self._read()
 
         def _read(self):
-            if self._root.header.ch[0].enabled:
-                self.ch1 = self._io.read_bytes(self._root.header.points)
-
-            if self._root.header.ch[1].enabled:
-                self.ch2 = self._io.read_bytes(self._root.header.points)
-
-            if self._root.header.ch[2].enabled:
-                self.ch3 = self._io.read_bytes(self._root.header.points)
-
-            if self._root.header.ch[3].enabled:
-                self.ch4 = self._io.read_bytes(self._root.header.points)
-
+            self.ch1 = self._io.read_bytes(self._root.header.points)
+            self.ch2 = self._io.read_bytes(self._root.header.points)
+            self.ch3 = self._io.read_bytes(self._root.header.points)
+            self.ch4 = self._io.read_bytes(self._root.header.points)
 
 
     @property

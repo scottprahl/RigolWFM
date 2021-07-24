@@ -199,7 +199,7 @@ class Channel():
             self.times = np.linspace(-h, h, self.points) + self.time_offset
 
     def ds1000b(self, w, channel_number):
-        """Interpret waveform data for 1000CD series scopes."""
+        """Interpret waveform data for 1000B series scopes."""
         self.time_scale = 1.0e-12 * w.header.time_scale
         self.time_offset = 1.0e-12 * w.header.time_offset
         if channel_number == 1:

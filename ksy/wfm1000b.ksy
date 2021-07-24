@@ -108,8 +108,8 @@ types:
         value: "enabled_val != 0 ? true : false"
       volt_per_division:
         value: "inverted ?
-                -1.0e-6 * scale_measured:
-                +1.0e-6 * scale_measured"
+                -1.0e-6 * scale_measured * probe_value:
+                +1.0e-6 * scale_measured * probe_value"
       volt_scale:
         value: volt_per_division/25.0
       volt_offset:
@@ -125,19 +125,15 @@ types:
     seq:
       - id: ch1
         size: _root.header.points
-        if: _root.header.ch[0].enabled
 
       - id: ch2
         size: _root.header.points
-        if: _root.header.ch[1].enabled
 
       - id: ch3
         size: _root.header.points
-        if: _root.header.ch[2].enabled
 
       - id: ch4
         size: _root.header.points
-        if: _root.header.ch[3].enabled
 
 enums:
   trigger_source_enum:
