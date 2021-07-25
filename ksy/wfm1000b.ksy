@@ -5,15 +5,16 @@ meta:
   endian: le
 
 doc: |
-  This is the same format as used for DS10024B scopes except that the first byte
-  of the file is 0xA1 and the data starts at an offset of 256.
+  This was put together based on an excel header list of unknown provenance.
+  It has been tested with a handful of different files.  The offset to the 
+  data seems correct and the channel coupling is untested.
 
 instances:
   header:
     pos: 0
     type: header
   data:
-    pos: 0x1A4
+    pos: 0x1A4        # 420
     type: raw_data
 
 types:
@@ -27,11 +28,7 @@ types:
         terminator: 0
         encoding: UTF-8
       - id: unknown_1        # 08
-        size: 36
-      - id: ch1size          # 44
-        type: u4
-      - id: ch2size          # 48
-        type: u4
+        size: 44
       - id: adcmode          # 52
         type: u1
       - id: unknown_2        # 53
@@ -59,9 +56,13 @@ types:
       - id: unknown_4        # 200
         type: u4
         repeat: expr
-        repeat-expr: 5
-      - id: unknown_5        # 220
-        type: u2
+        repeat-expr: 4
+      - id: coupling_ch12    # 212
+        type: u1
+      - id: coupling_ch34    # 213
+        type: u1
+      - id: unknown_5        # 216
+        size: 4
       - id: trigger_mode     # 222
         type: u1
         enum: trigger_mode_enum

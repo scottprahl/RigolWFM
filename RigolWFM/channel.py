@@ -202,23 +202,36 @@ class Channel():
         """Interpret waveform data for 1000B series scopes."""
         self.time_scale = 1.0e-12 * w.header.time_scale
         self.time_offset = 1.0e-12 * w.header.time_offset
+        self.coupling = 'AC'
         if channel_number == 1:
             if self.enabled_and_selected:
+                print(w.header.coupling_ch12,w.header.coupling_ch12&0xC0)
+                if (w.header.coupling_ch12 & 0xC0) == 0xC0:
+                    self.coupling = 'DC'
                 self.points = len(w.data.ch1)
                 self.raw = np.frombuffer(w.data.ch1, dtype=np.uint8)
 
         if channel_number == 2:
             if self.enabled_and_selected:
+                print(w.header.coupling_ch12,w.header.coupling_ch12&0x0C)
+                if (w.header.coupling_ch12 & 0x0C) == 0x0C:
+                    self.coupling = 'DC'
                 self.points = len(w.data.ch2)
                 self.raw = np.frombuffer(w.data.ch2, dtype=np.uint8)
 
         if channel_number == 3:
             if self.enabled_and_selected:
+                print(w.header.coupling_ch34,w.header.coupling_ch34&0xC0)
+                if (w.header.coupling_ch34 & 0xC0) == 0xC0:
+                    self.coupling = 'DC'
                 self.points = len(w.data.ch3)
                 self.raw = np.frombuffer(w.data.ch3, dtype=np.uint8)
 
         if channel_number == 4:
             if self.enabled_and_selected:
+                print(w.header.coupling_ch34,w.header.coupling_ch34&0x0C)
+                if (w.header.coupling_ch34 & 0x0C) == 0x0C:
+                    self.coupling = 'DC'
                 self.points = len(w.data.ch4)
                 self.raw = np.frombuffer(w.data.ch4, dtype=np.uint8)
 

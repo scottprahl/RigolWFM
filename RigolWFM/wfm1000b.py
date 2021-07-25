@@ -10,8 +10,9 @@ if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
     raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Wfm1000b(KaitaiStruct):
-    """This is the same format as used for DS10024B scopes except that the first byte
-    of the file is 0xA1 and the data starts at an offset of 256.
+    """This was put together based on an excel header list of unknown provenance.
+    It has been tested with a handful of different files.  The offset to the 
+    data seems correct and the channel coupling is untested.
     """
 
     class TriggerSourceEnum(Enum):
@@ -66,9 +67,7 @@ class Wfm1000b(KaitaiStruct):
             if not self.magic == b"\xA5\xA5\xA4\x01":
                 raise kaitaistruct.ValidationNotEqualError(b"\xA5\xA5\xA4\x01", self.magic, self._io, u"/types/header/seq/0")
             self.scopetype = (KaitaiStream.bytes_terminate(self._io.read_bytes(8), 0, False)).decode(u"UTF-8")
-            self.unknown_1 = self._io.read_bytes(36)
-            self.ch1size = self._io.read_u4le()
-            self.ch2size = self._io.read_u4le()
+            self.unknown_1 = self._io.read_bytes(44)
             self.adcmode = self._io.read_u1()
             self.unknown_2 = self._io.read_bytes(3)
             self.points = self._io.read_u4le()
@@ -83,11 +82,13 @@ class Wfm1000b(KaitaiStruct):
             self.sample_rate_hz = self._io.read_f4le()
             self.time_scale_stop = self._io.read_u8le()
             self.time_scale_offset = self._io.read_s8le()
-            self.unknown_4 = [None] * (5)
-            for i in range(5):
+            self.unknown_4 = [None] * (4)
+            for i in range(4):
                 self.unknown_4[i] = self._io.read_u4le()
 
-            self.unknown_5 = self._io.read_u2le()
+            self.coupling_ch12 = self._io.read_u1()
+            self.coupling_ch34 = self._io.read_u1()
+            self.unknown_5 = self._io.read_bytes(4)
             self.trigger_mode = KaitaiStream.resolve_enum(Wfm1000b.TriggerModeEnum, self._io.read_u1())
             self.unknown_6 = self._io.read_u1()
             self.trigger_source = KaitaiStream.resolve_enum(Wfm1000b.TriggerSourceEnum, self._io.read_u1())
