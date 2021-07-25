@@ -3,9 +3,9 @@ Changelog
 
 v0.9.0
 ------
-*     support wfm files from 1000B scopes
+*     support 1000B scopes
 *     automate notebook testing
-*     add pypi badge
+*     add pypi badges
 *     add flake8 testing
 
 v0.8.1
