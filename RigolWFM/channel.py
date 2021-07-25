@@ -205,7 +205,6 @@ class Channel():
         self.coupling = 'AC'
         if channel_number == 1:
             if self.enabled_and_selected:
-                print(w.header.coupling_ch12,w.header.coupling_ch12&0xC0)
                 if (w.header.coupling_ch12 & 0xC0) == 0xC0:
                     self.coupling = 'DC'
                 self.points = len(w.data.ch1)
@@ -213,7 +212,6 @@ class Channel():
 
         if channel_number == 2:
             if self.enabled_and_selected:
-                print(w.header.coupling_ch12,w.header.coupling_ch12&0x0C)
                 if (w.header.coupling_ch12 & 0x0C) == 0x0C:
                     self.coupling = 'DC'
                 self.points = len(w.data.ch2)
@@ -221,7 +219,6 @@ class Channel():
 
         if channel_number == 3:
             if self.enabled_and_selected:
-                print(w.header.coupling_ch34,w.header.coupling_ch34&0xC0)
                 if (w.header.coupling_ch34 & 0xC0) == 0xC0:
                     self.coupling = 'DC'
                 self.points = len(w.data.ch3)
@@ -229,7 +226,6 @@ class Channel():
 
         if channel_number == 4:
             if self.enabled_and_selected:
-                print(w.header.coupling_ch34,w.header.coupling_ch34&0x0C)
                 if (w.header.coupling_ch34 & 0x0C) == 0x0C:
                     self.coupling = 'DC'
                 self.points = len(w.data.ch4)
