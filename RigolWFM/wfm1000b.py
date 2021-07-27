@@ -11,7 +11,7 @@ if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
 
 class Wfm1000b(KaitaiStruct):
     """This was put together based on an excel header list of unknown provenance.
-    It has been tested with a handful of different files.  The offset to the 
+    It has been tested with a handful of different files.  The offset to the
     data seems correct and the channel coupling is untested.
     """
 
@@ -94,12 +94,68 @@ class Wfm1000b(KaitaiStruct):
             self.trigger_source = KaitaiStream.resolve_enum(Wfm1000b.TriggerSourceEnum, self._io.read_u1())
 
         @property
+        def ch2(self):
+            if hasattr(self, '_m_ch2'):
+                return self._m_ch2 if hasattr(self, '_m_ch2') else None
+
+            if self.ch[1].enabled:
+                io = self._root._io
+                _pos = io.pos()
+                io.seek((420 + self._root.header.points))
+                self._m_ch2 = io.read_bytes(self.points)
+                io.seek(_pos)
+
+            return self._m_ch2 if hasattr(self, '_m_ch2') else None
+
+        @property
+        def ch1(self):
+            if hasattr(self, '_m_ch1'):
+                return self._m_ch1 if hasattr(self, '_m_ch1') else None
+
+            if self.ch[0].enabled:
+                io = self._root._io
+                _pos = io.pos()
+                io.seek(420)
+                self._m_ch1 = io.read_bytes(self.points)
+                io.seek(_pos)
+
+            return self._m_ch1 if hasattr(self, '_m_ch1') else None
+
+        @property
+        def ch4(self):
+            if hasattr(self, '_m_ch4'):
+                return self._m_ch4 if hasattr(self, '_m_ch4') else None
+
+            if self.ch[3].enabled:
+                io = self._root._io
+                _pos = io.pos()
+                io.seek((420 + (self._root.header.points * 3)))
+                self._m_ch4 = io.read_bytes(self.points)
+                io.seek(_pos)
+
+            return self._m_ch4 if hasattr(self, '_m_ch4') else None
+
+        @property
         def seconds_per_point(self):
             if hasattr(self, '_m_seconds_per_point'):
                 return self._m_seconds_per_point if hasattr(self, '_m_seconds_per_point') else None
 
             self._m_seconds_per_point = (1.0 / self.sample_rate_hz)
             return self._m_seconds_per_point if hasattr(self, '_m_seconds_per_point') else None
+
+        @property
+        def ch3(self):
+            if hasattr(self, '_m_ch3'):
+                return self._m_ch3 if hasattr(self, '_m_ch3') else None
+
+            if self.ch[2].enabled:
+                io = self._root._io
+                _pos = io.pos()
+                io.seek((420 + (self._root.header.points * 2)))
+                self._m_ch3 = io.read_bytes(self.points)
+                io.seek(_pos)
+
+            return self._m_ch3 if hasattr(self, '_m_ch3') else None
 
 
     class ChannelHeader(KaitaiStruct):
@@ -188,20 +244,6 @@ class Wfm1000b(KaitaiStruct):
             return self._m_enabled if hasattr(self, '_m_enabled') else None
 
 
-    class RawData(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.ch1 = self._io.read_bytes(self._root.header.points)
-            self.ch2 = self._io.read_bytes(self._root.header.points)
-            self.ch3 = self._io.read_bytes(self._root.header.points)
-            self.ch4 = self._io.read_bytes(self._root.header.points)
-
-
     @property
     def header(self):
         if hasattr(self, '_m_header'):
@@ -212,16 +254,5 @@ class Wfm1000b(KaitaiStruct):
         self._m_header = Wfm1000b.Header(self._io, self, self._root)
         self._io.seek(_pos)
         return self._m_header if hasattr(self, '_m_header') else None
-
-    @property
-    def data(self):
-        if hasattr(self, '_m_data'):
-            return self._m_data if hasattr(self, '_m_data') else None
-
-        _pos = self._io.pos()
-        self._io.seek(420)
-        self._m_data = Wfm1000b.RawData(self._io, self, self._root)
-        self._io.seek(_pos)
-        return self._m_data if hasattr(self, '_m_data') else None
 
 

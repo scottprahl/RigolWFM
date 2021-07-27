@@ -6,16 +6,13 @@ meta:
 
 doc: |
   This was put together based on an excel header list of unknown provenance.
-  It has been tested with a handful of different files.  The offset to the 
+  It has been tested with a handful of different files.  The offset to the
   data seems correct and the channel coupling is untested.
 
 instances:
   header:
     pos: 0
     type: header
-  data:
-    pos: 0x1A4        # 420
-    type: raw_data
 
 types:
   header:
@@ -75,6 +72,27 @@ types:
     instances:
       seconds_per_point:
         value: 1.0/sample_rate_hz
+      ch1:
+        io: _root._io
+        pos: 420
+        size: points
+        if: ch[0].enabled
+      ch2:
+        io: _root._io
+        pos: 420 + _root.header.points
+        size: points
+        if: ch[1].enabled
+      ch3:
+        io: _root._io
+        pos: 420 + _root.header.points * 2
+        size: points
+        if: ch[2].enabled
+      ch4:
+        io: _root._io
+        pos: 420 + _root.header.points * 3
+        size: points
+        if: ch[3].enabled
+
 
   channel_header:   # 24 bytes total
     seq:
@@ -121,20 +139,6 @@ types:
         value: _root.header.time_offset
       unit:
         value: "unit_enum::v"
-
-  raw_data:
-    seq:
-      - id: ch1
-        size: _root.header.points
-
-      - id: ch2
-        size: _root.header.points
-
-      - id: ch3
-        size: _root.header.points
-
-      - id: ch4
-        size: _root.header.points
 
 enums:
   trigger_source_enum:
