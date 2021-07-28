@@ -1,6 +1,10 @@
 Changelog
 =================================================
 
+v0.9.1
+------
+*     fix for 1204B files with 0x4000 bytes
+
 v0.9.0
 ------
 *     support 1000B scopes
