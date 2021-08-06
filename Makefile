@@ -237,6 +237,7 @@ clean:
 	rm -rf .tox
 	rm -rf __pycache__
 	rm -rf docs/raw.githubusercontent.com
+	rm -rf build
 
 realclean:
 	make clean
