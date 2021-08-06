@@ -1,16 +1,22 @@
 Changelog
 =================================================
 
+v0.9.2
+------
+*    create pure python packaging
+*    include wheel file
+*    package as python3 only
+
 v0.9.1
 ------
-*     fix for 1204B files with 0x4000 bytes
+*    fix for 1204B files with 0x4000 bytes
 
 v0.9.0
 ------
-*     support 1000B scopes
-*     automate notebook testing
-*     add pypi badges
-*     add flake8 testing
+*    support 1000B scopes
+*    automate notebook testing
+*    add pypi badges
+*    add flake8 testing
 
 v0.8.1
 ------
