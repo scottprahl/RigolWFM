@@ -1,5 +1,8 @@
-RigolWFM: a utility to process Rigol oscilloscope `.wfm` files
-==============================================================
+RigolWFM
+=========
+
+A utility to process Rigol oscilloscope `.wfm` files
+----------------------------------------------------
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
    :target: https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master
@@ -24,6 +27,8 @@ __________
 This project is intended to be a comprehensive resource for interpreting waveform ``.wmf`` files created by any Rigol oscilloscope.  Open source (and Rigol's own applications) that parse/convert Rigol's binary ``.wfm`` files are sadly balkanized: each program tends to support a single oscilloscope group and the available efforts are spread across a range of languages.
 
 This project leverages a domain specific language (kaitai struct) to represent the binary files.  Once a binary file has been described in this text format, parsers can be generated for a wide range of languages (C++/STL, C#, Go, Java, JavaScript, Lua, Perl, PHP, Python, and Ruby).  
+
+Documentation can be found at <https://RigolWFM.readthedocs.io>
 
 Using RigolWFM
 ---------------
@@ -68,8 +73,6 @@ If you wanted to a signal `.wav` file using the second channel waveform (for use
 If you want to create a ``.wav`` file with channels one and four as signals (and autoscale for use with Audacity or Sigrok Pulseview)::
 
    prompt> wfmconvert --autoscale --channel 14 E wav *.wfm
-
-More extensive documentation can be found at <https://RigolWFM.readthedocs.io>
 
 Status
 ------
