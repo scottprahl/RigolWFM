@@ -3,6 +3,8 @@
 # pylint: disable=invalid-name
 # pylint: disable=missing-function-docstring
 # pylint: disable=unused-argument
+# pylint: disable=consider-using-f-string
+
 """
 Command line utility to convert Rigol .wfm files.
 
