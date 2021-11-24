@@ -20,8 +20,10 @@ types:
     seq:
       - id: magic
         contents: [0xa5, 0xa5, 0x00, 0x00]
-      - id: blank_12
-        contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      - id: unused_1
+        type: u2
+      - id: blank_10
+        contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
       - id: adc_mode
         type: u1
       - id: padding_2
