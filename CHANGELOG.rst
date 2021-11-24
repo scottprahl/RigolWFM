@@ -1,5 +1,11 @@
 Changelog
-=================================================
+=========
+
+v0.9.3
+------
+*    processing of E type files is less restrictive
+*    use nbsphinx 0.8.5 so docs build
+*    improve docs
 
 v0.9.2
 ------
