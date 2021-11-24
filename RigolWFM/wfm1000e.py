@@ -205,22 +205,23 @@ class Wfm1000e(KaitaiStruct):
             self.magic = self._io.read_bytes(4)
             if not self.magic == b"\xA5\xA5\x00\x00":
                 raise kaitaistruct.ValidationNotEqualError(b"\xA5\xA5\x00\x00", self.magic, self._io, u"/types/header/seq/0")
-            self.blank_12 = self._io.read_bytes(12)
-            if not self.blank_12 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self.blank_12, self._io, u"/types/header/seq/1")
+            self.unused_1 = self._io.read_u2le()
+            self.blank_10 = self._io.read_bytes(10)
+            if not self.blank_10 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self.blank_10, self._io, u"/types/header/seq/2")
             self.adc_mode = self._io.read_u1()
             self.padding_2 = self._io.read_bytes(3)
             if not self.padding_2 == b"\x00\x00\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00", self.padding_2, self._io, u"/types/header/seq/3")
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00", self.padding_2, self._io, u"/types/header/seq/4")
             self.roll_stop = self._io.read_u4le()
             self.unused_4 = self._io.read_bytes(4)
             if not self.unused_4 == b"\x00\x00\x00\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self.unused_4, self._io, u"/types/header/seq/5")
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self.unused_4, self._io, u"/types/header/seq/6")
             self.ch1_points_tmp = self._io.read_u4le()
             self.active_channel = self._io.read_u1()
             self.padding_3 = self._io.read_bytes(1)
             if not self.padding_3 == b"\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\x00", self.padding_3, self._io, u"/types/header/seq/8")
+                raise kaitaistruct.ValidationNotEqualError(b"\x00", self.padding_3, self._io, u"/types/header/seq/9")
             self.ch = [None] * (2)
             for i in range(2):
                 self.ch[i] = Wfm1000e.ChannelHeader(self._io, self, self._root)
@@ -228,7 +229,7 @@ class Wfm1000e(KaitaiStruct):
             self.time_offset = self._io.read_u1()
             self.padding_4 = self._io.read_bytes(1)
             if not self.padding_4 == b"\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\x00", self.padding_4, self._io, u"/types/header/seq/11")
+                raise kaitaistruct.ValidationNotEqualError(b"\x00", self.padding_4, self._io, u"/types/header/seq/12")
             self.time = Wfm1000e.TimeHeader(self._io, self, self._root)
             self.logic = Wfm1000e.LogicAnalyzerHeader(self._io, self, self._root)
             self.trigger_mode = KaitaiStream.resolve_enum(Wfm1000e.TriggerModeEnum, self._io.read_u1())
@@ -236,7 +237,7 @@ class Wfm1000e(KaitaiStruct):
             self.trigger2 = Wfm1000e.TriggerHeader(self._io, self, self._root)
             self.padding_6 = self._io.read_bytes(9)
             if not self.padding_6 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00", self.padding_6, self._io, u"/types/header/seq/17")
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00", self.padding_6, self._io, u"/types/header/seq/18")
             self.ch2_points_tmp = self._io.read_u4le()
             self.time2 = Wfm1000e.TimeHeader(self._io, self, self._root)
             self.la_sample_rate = self._io.read_f4le()
