@@ -120,6 +120,9 @@ teste:
 	RigolWFM/wfmconvert.py E info wfm/DS1102E-B.wfm
 	RigolWFM/wfmconvert.py E info wfm/DS1102E-C.wfm
 	RigolWFM/wfmconvert.py E info wfm/DS1102E-D.wfm
+	RigolWFM/wfmconvert.py E info wfm/DS1102E-E.wfm
+	RigolWFM/wfmconvert.py E info wfm/DS1102E-F.wfm
+	RigolWFM/wfmconvert.py E info wfm/DS1102E-G.wfm
 	RigolWFM/wfmconvert.py E info wfm/DS1052E.wfm
 	RigolWFM/wfmconvert.py E info wfm/DS1000E-A.wfm
 	RigolWFM/wfmconvert.py E info wfm/DS1000E-B.wfm
