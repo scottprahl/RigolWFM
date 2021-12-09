@@ -12,3 +12,4 @@ exclude wfm/*
 exclude ksy/*
 exclude docs
 exclude docs/*
+exclude test_all_notebooks.py

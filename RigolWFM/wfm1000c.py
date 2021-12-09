@@ -1,20 +1,17 @@
 # This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
 
 from pkg_resources import parse_version
-from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
+import kaitaistruct
+from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
 from enum import Enum
 
 
-if parse_version(ks_version) < parse_version('0.7'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
+if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
+    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Wfm1000c(KaitaiStruct):
-    """Rigol DS1020CD .wmf format abstracted from a Matlab script with the addition
-    of a few fields found in a Pascal program.  Neither program really examines
-    the header closely (meaning that they skip 26 bytes).
-    
-    .. seealso::
-       The Matlab script is from https://www.mathworks.com/matlabcentral/fileexchange/18999-read-binary-rigol-waveforms The Pascal program is from https://sourceforge.net/projects/wfmreader/ The DS4000 parser is from https://github.com/Cat-Ion/rigol-ds4000-wfm
+    """This is the same format as used for DS1000D scopes except that the first byte
+    of the file is 0xA1 and the data starts at an offset of 256.
     """
 
     class TriggerSourceEnum(Enum):
@@ -42,6 +39,12 @@ class Wfm1000c(KaitaiStruct):
         ds2000 = 4
         ds4000 = 5
         ds6000 = 6
+
+    class UnitEnum(Enum):
+        w = 0
+        a = 1
+        v = 2
+        u = 3
     def __init__(self, _io, _parent=None, _root=None):
         self._io = _io
         self._parent = _parent
@@ -59,17 +62,19 @@ class Wfm1000c(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.magic = self._io.ensure_fixed_contents(b"\xA5\xA5\x00\x00")
+            self.magic = self._io.read_bytes(4)
+            if not self.magic == b"\xA1\xA5\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\xA1\xA5\x00\x00", self.magic, self._io, u"/types/header/seq/0")
             self.unknown_1 = [None] * (6)
             for i in range(6):
                 self.unknown_1[i] = self._io.read_u4le()
 
             self.points = self._io.read_u4le()
             self.active_channel = self._io.read_u1()
-            self.unknown_2 = self._io.read_bytes(3)
+            self.unknown_2a = self._io.read_bytes(3)
             self.ch = [None] * (2)
             for i in range(2):
-                self.ch[i] = self._root.ChannelHeader(self._io, self, self._root)
+                self.ch[i] = Wfm1000c.ChannelHeader(self._io, self, self._root)
 
             self.time_scale = self._io.read_u8le()
             self.time_offset = self._io.read_s8le()
@@ -79,9 +84,9 @@ class Wfm1000c(KaitaiStruct):
                 self.unknown_3[i] = self._io.read_u4le()
 
             self.unknown_4 = self._io.read_u2le()
-            self.trigger_mode = self._root.TriggerModeEnum(self._io.read_u1())
-            self.unknown_6 = self._io.read_bytes(1)
-            self.trigger_source = self._root.TriggerSourceEnum(self._io.read_u1())
+            self.trigger_mode = KaitaiStream.resolve_enum(Wfm1000c.TriggerModeEnum, self._io.read_u1())
+            self.unknown_6 = self._io.read_u1()
+            self.trigger_source = KaitaiStream.resolve_enum(Wfm1000c.TriggerSourceEnum, self._io.read_u1())
 
         @property
         def seconds_per_point(self):
@@ -104,15 +109,22 @@ class Wfm1000c(KaitaiStruct):
             self.shift_display = self._io.read_s2le()
             self.unknown_1 = self._io.read_u1()
             self.unknown_2 = self._io.read_u1()
-            self.probe = self._io.read_f4le()
+            self.probe_value = self._io.read_f4le()
             self.invert_disp_val = self._io.read_u1()
             self.enabled_val = self._io.read_u1()
             self.invert_m_val = self._io.read_u1()
-            self.unknown_3 = self._io.read_bytes(1)
-            self.scale_orig = self._io.read_u4le()
-            self.position_orig = self._io.read_u4le()
+            self.unknown_3 = self._io.read_u1()
             self.scale_measured = self._io.read_s4le()
             self.shift_measured = self._io.read_s2le()
+            self.unknown_3a = self._io.read_u2le()
+
+        @property
+        def unit(self):
+            if hasattr(self, '_m_unit'):
+                return self._m_unit if hasattr(self, '_m_unit') else None
+
+            self._m_unit = Wfm1000c.UnitEnum.v
+            return self._m_unit if hasattr(self, '_m_unit') else None
 
         @property
         def time_offset(self):
@@ -180,16 +192,10 @@ class Wfm1000c(KaitaiStruct):
 
         def _read(self):
             if self._root.header.ch[0].enabled:
-                self.ch1 = [None] * (self._root.header.points)
-                for i in range(self._root.header.points):
-                    self.ch1[i] = self._io.read_u1()
-
+                self.ch1 = self._io.read_bytes(self._root.header.points)
 
             if self._root.header.ch[1].enabled:
-                self.ch2 = [None] * (self._root.header.points)
-                for i in range(self._root.header.points):
-                    self.ch2[i] = self._io.read_u1()
-
+                self.ch2 = self._io.read_bytes(self._root.header.points)
 
 
 
@@ -200,7 +206,7 @@ class Wfm1000c(KaitaiStruct):
 
         _pos = self._io.pos()
         self._io.seek(0)
-        self._m_header = self._root.Header(self._io, self, self._root)
+        self._m_header = Wfm1000c.Header(self._io, self, self._root)
         self._io.seek(_pos)
         return self._m_header if hasattr(self, '_m_header') else None
 
@@ -210,8 +216,8 @@ class Wfm1000c(KaitaiStruct):
             return self._m_data if hasattr(self, '_m_data') else None
 
         _pos = self._io.pos()
-        self._io.seek(272)
-        self._m_data = self._root.RawData(self._io, self, self._root)
+        self._io.seek(256)
+        self._m_data = Wfm1000c.RawData(self._io, self, self._root)
         self._io.seek(_pos)
         return self._m_data if hasattr(self, '_m_data') else None
 

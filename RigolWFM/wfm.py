@@ -1,5 +1,11 @@
-#pylint: disable=invalid-name
-#pylint: disable=too-many-instance-attributes
+# pylint: disable=invalid-name
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=raise-missing-from
+# pylint: disable=too-many-branches
+# pylint: disable=too-many-statements
+# pylint: disable=consider-using-f-string
+# pylint: disable=consider-using-with
+
 """
 Extract signals or description from Rigol 1000E Oscilloscope waveform file.
 
@@ -12,15 +18,19 @@ Use like this::
     print(description)
 
 """
-import tempfile
 import os.path
-import wave
+import sys
+import tempfile
 import urllib.parse
+import wave
 
-import requests
 import matplotlib.pyplot as plt
+import numpy as np
+import requests
 
+import RigolWFM.wfm1000b
 import RigolWFM.wfm1000c
+import RigolWFM.wfm1000d
 import RigolWFM.wfm1000e
 import RigolWFM.wfm1000z
 import RigolWFM.wfm2000
@@ -28,19 +38,20 @@ import RigolWFM.wfm4000
 import RigolWFM.wfm6000
 import RigolWFM.channel
 
-# not implemented
-# DS1000B_scopes = ["B", "1000B", "DS1000B",
-#                  "DS1074B", "DS1104B", "DS1204B"]
+# in progress
+DS1000B_scopes = ["B", "1000B", "DS1000B",
+                  "DS1074B", "DS1104B", "DS1204B"]
 
-# untested
+# tested
 DS1000C_scopes = ["C", "1000C", "DS1000C",
                   "DS1000CD", "DS1000C", "DS1000MD", "DS1000M",
                   "DS1302CA", "DS1202CA", "DS1102CA", "DS1062CA"]
 
+# untested
+DS1000D_scopes = ["D", "1000D", "DS1000D", "DS1102D", "DS1052D"]
+
 # tested
-DS1000E_scopes = ["E", "1000E", "DS1000E",
-                  "D", "1000D", "DS1000D",
-                  "DS1102E", "DS1052E", "DS1102D", "DS1052D"]
+DS1000E_scopes = ["E", "1000E", "DS1000E", "DS1102E", "DS1052E"]
 
 # tested, wonky voltages
 DS1000Z_scopes = ["Z", "1000Z", "DS1000Z",
@@ -68,12 +79,13 @@ DS6000_scopes = ["6", "6000", "DS6000",
 
 def valid_scope_list():
     """List all the oscilloscope types."""
-    s = "\nValid types are:\n"
-    s += ", ".join(DS1000C_scopes) + "\n"
-    s += ", ".join(DS1000E_scopes) + "\n"
-    s += ", ".join(DS1000Z_scopes) + "\n"
-    s += ", ".join(DS2000_scopes) + "\n"
-    s += ", ".join(DS4000_scopes) + "\n"
+    s = "\nRigol oscilloscope models:\n    "
+    s += ", ".join(DS1000C_scopes) + "\n    "
+    s += ", ".join(DS1000D_scopes) + "\n    "
+    s += ", ".join(DS1000E_scopes) + "\n    "
+    s += ", ".join(DS1000Z_scopes) + "\n    "
+    s += ", ".join(DS2000_scopes) + "\n    "
+    s += ", ".join(DS4000_scopes) + "\n    "
     s += ", ".join(DS6000_scopes) + "\n"
     return s
 
@@ -122,8 +134,17 @@ class Wfm():
         self.header_name = 'unknown'
 
     @classmethod
-    def from_file(cls, file_name, model):
-        """Create Wfm object from a file."""
+    def from_file(cls, file_name, model, selected='1234'):
+        """
+        Create Wfm object from a file.
+
+        Args:
+            file_name: name of file
+            model: Rigol Oscilloscope used, e.g., 'E' or 'Z'
+            selected: string of channels to process e.g., '12'
+        Returns:
+            a wfm object for the file
+        """
         # ensure that file exists
         try:
             f = open(file_name, 'rb')
@@ -139,9 +160,17 @@ class Wfm():
         # parse the waveform
         umodel = model.upper()
 
-        if umodel in DS1000C_scopes:
+        if umodel in DS1000B_scopes:
+            w = RigolWFM.wfm1000b.Wfm1000b.from_file(file_name)
+            new_wfm.header_name = 'DS1000B'
+
+        elif umodel in DS1000C_scopes:
             w = RigolWFM.wfm1000c.Wfm1000c.from_file(file_name)
             new_wfm.header_name = 'DS1000C'
+
+        elif umodel in DS1000D_scopes:
+            w = RigolWFM.wfm1000d.Wfm1000d.from_file(file_name)
+            new_wfm.header_name = 'DS1000D'
 
         elif umodel in DS1000E_scopes:
             w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)
@@ -172,21 +201,32 @@ class Wfm():
         pname = str(w).split(".")[1]
         new_wfm.parser_name = pname
 
-
         # assemble into uniform set of names
-        enabled_channels = 0
+        enabled = ''
         for ch_number in range(1, 5):
 
-            ch = RigolWFM.channel.Channel(w, ch_number, pname, enabled_channels)
-            if ch.enabled:
-                new_wfm.channels.append(ch)
-                enabled_channels += 1
+            ch = RigolWFM.channel.Channel(w, ch_number, pname, selected)
+
+            if not ch.enabled:
+                continue
+
+            # keep track of enabled channels for error message
+            enabled += str(ch_number)
+
+            # append all enabled channels
+            new_wfm.channels.append(ch)
+
+        if len(new_wfm.channels) == 0:
+            print("Sorry! No channels in the waveform are both selected and enabled")
+            print("    User selected channels = '%s'" % selected)
+            print("    Scope enabled channels = '%s'" % enabled)
+            sys.exit()
 
         new_wfm.firmware = new_wfm.channels[0].firmware
         return new_wfm
 
     @classmethod
-    def from_url(cls, url, model):
+    def from_url(cls, url, model, selected='1234'):
         """
         Return a waveform object given a URL.
 
@@ -194,6 +234,13 @@ class Wfm():
         to work with.  The process is to download the file to a temporary
         location and then process that file.  There is a lot that can go
         wrong - bad url, bad download, or an error parsing the file.
+
+        Args:
+            url: location of the file
+            model: Rigol Oscilloscope used, e.g., 'E' or 'Z'
+            selected: string of channels to process e.g., '12'
+        Returns:
+            a wfm object for the file
         """
         u = urllib.parse.urlparse(url)
         scheme = u[0]
@@ -216,7 +263,7 @@ class Wfm():
             working_name = f.name
 
             try:
-                new_wfm = cls.from_file(working_name, model)
+                new_wfm = cls.from_file(working_name, model, selected)
                 new_wfm.original_name = url
                 # extract the simple name
                 rawpath = u[2]
@@ -275,7 +322,7 @@ class Wfm():
         colors = ['red', 'blue', 'orange', 'magenta']
 
         for i, ch in enumerate(self.channels):
-            plt.plot(ch.times*h_scale, ch.volts*v_scale,
+            plt.plot(ch.times * h_scale, ch.volts * v_scale,
                      label=ch.name, color=colors[i])
 
         plt.xlabel("Time (%ss)" % h_prefix)
@@ -297,7 +344,7 @@ class Wfm():
 
         # just output the display 100 pts/division
         ch = self.channels[0]
-        incr = ch.time_scale/100
+        incr = ch.time_scale / 100
         off = -6 * ch.time_scale
         s += '%ss' % h_prefix
         for ch in self.channels:
@@ -305,9 +352,9 @@ class Wfm():
         s += ",%e,%e\n" % (off, incr)
 
         for i in range(self.channels[0].points):
-            s += "%.6f" % (ch.times[i]*h_scale)
+            s += "%.6f" % (ch.times[i] * h_scale)
             for ch in self.channels:
-                s += ",%.2f" % (ch.volts[i]*v_scale)
+                s += ",%.2f" % (ch.volts[i] * v_scale)
             s += "\n"
         return s
 
@@ -321,6 +368,7 @@ class Wfm():
             s += ",%s (%s)" % (ch.name, ch.unit.name.upper())
         s += "\n"
 
+        ch = self.channels[0]
         for i in range(self.channels[0].points):
             s += "%.8f" % (ch.times[i])
             for ch in self.channels:
@@ -328,26 +376,32 @@ class Wfm():
             s += "\n"
         return s
 
-    def wav(self, wav_filename, channel=1):
-        """Save data as a WAV file for use with LTSpice."""
-        c = None
-        for ch in self.channels:
-            if channel == ch.channel_number:
-                c = ch
-                break
+    def wav(self, wav_filename, autoscale=False):
+        """Save data as a WAV file for use with LTspice or Sigrok."""
+        n_channels = len(self.channels)
+        channel_length = self.channels[0].points
+        total_len = channel_length * n_channels
 
-        if c is None:
-            raise Channel_Not_In_WFM_Error()
+        out = np.empty((total_len,), dtype=np.uint8, order='C')
 
-        sample_rate = 1.0/c.seconds_per_point
+        # channels are interleaved e.g., 123123123
+        for i, ch in enumerate(self.channels):
+            if autoscale:
+                amin = np.min(ch.raw)
+                amax = max(np.max(ch.raw), amin + 1)  # avoid division by zero
+                scale = 250 / (amax - amin) * 0.95
+                out[i::n_channels] = np.int8((ch.raw - amin) * scale)
+            else:
+                out[i::n_channels] = ch.raw
+
+        sample_rate = 1.0 / self.channels[0].seconds_per_point
 
         wavef = wave.open(wav_filename, 'wb')
-        wavef.setnchannels(len(self.channels))  # mono
+        wavef.setnchannels(n_channels)  # 1 = mono, 2 = stereo
         wavef.setsampwidth(1)
         wavef.setframerate(sample_rate)
         wavef.setcomptype('NONE', '')
-        wavef.setnframes(self.channels[0].points)
+        wavef.setnframes(channel_length)
 
-        for ch in self.channels:
-            wavef.writeframes(ch.raw)
+        wavef.writeframes(out)
         wavef.close()

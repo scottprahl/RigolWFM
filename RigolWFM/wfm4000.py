@@ -1,12 +1,13 @@
 # This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
 
 from pkg_resources import parse_version
-from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
+import kaitaistruct
+from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
 from enum import Enum
 
 
-if parse_version(ks_version) < parse_version('0.7'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
+if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
+    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Wfm4000(KaitaiStruct):
 
@@ -125,11 +126,11 @@ class Wfm4000(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.unused = self._io.read_bits_int(4)
-            self.channel_4 = self._io.read_bits_int(1) != 0
-            self.channel_3 = self._io.read_bits_int(1) != 0
-            self.channel_2 = self._io.read_bits_int(1) != 0
-            self.channel_1 = self._io.read_bits_int(1) != 0
+            self.unused = self._io.read_bits_int_be(4)
+            self.channel_4 = self._io.read_bits_int_be(1) != 0
+            self.channel_3 = self._io.read_bits_int_be(1) != 0
+            self.channel_2 = self._io.read_bits_int_be(1) != 0
+            self.channel_1 = self._io.read_bits_int_be(1) != 0
 
 
     class ChannelHeader(KaitaiStruct):
@@ -141,19 +142,19 @@ class Wfm4000(KaitaiStruct):
 
         def _read(self):
             self.enabled_val = self._io.read_u1()
-            self.coupling = self._root.CouplingEnum(self._io.read_u1())
-            self.bandwidth_limit = self._root.BandwidthEnum(self._io.read_u1())
-            self.probe_type = self._root.ProbeTypeEnum(self._io.read_u1())
-            self.probe_ratio = self._root.ProbeRatioEnum(self._io.read_u1())
-            self.probe_diff = self._root.ProbeEnum(self._io.read_u1())
-            self.probe_signal = self._root.ProbeEnum(self._io.read_u1())
-            self.probe_impedance = self._root.ImpedanceEnum(self._io.read_u1())
+            self.coupling = KaitaiStream.resolve_enum(Wfm4000.CouplingEnum, self._io.read_u1())
+            self.bandwidth_limit = KaitaiStream.resolve_enum(Wfm4000.BandwidthEnum, self._io.read_u1())
+            self.probe_type = KaitaiStream.resolve_enum(Wfm4000.ProbeTypeEnum, self._io.read_u1())
+            self.probe_ratio = KaitaiStream.resolve_enum(Wfm4000.ProbeRatioEnum, self._io.read_u1())
+            self.probe_diff = KaitaiStream.resolve_enum(Wfm4000.ProbeEnum, self._io.read_u1())
+            self.probe_signal = KaitaiStream.resolve_enum(Wfm4000.ProbeEnum, self._io.read_u1())
+            self.probe_impedance = KaitaiStream.resolve_enum(Wfm4000.ImpedanceEnum, self._io.read_u1())
             self.volt_per_division = self._io.read_f4le()
             self.volt_offset = self._io.read_f4le()
             self.inverted_val = self._io.read_u1()
-            self.unit = self._root.UnitEnum(self._io.read_u1())
+            self.unit = KaitaiStream.resolve_enum(Wfm4000.UnitEnum, self._io.read_u1())
             self.filter_enabled = self._io.read_u1()
-            self.filter_type = self._root.FilterEnum(self._io.read_u1())
+            self.filter_type = KaitaiStream.resolve_enum(Wfm4000.FilterEnum, self._io.read_u1())
             self.filter_high = self._io.read_u4le()
             self.filter_low = self._io.read_u4le()
 
@@ -170,7 +171,7 @@ class Wfm4000(KaitaiStruct):
             if hasattr(self, '_m_volt_scale'):
                 return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
 
-            self._m_volt_scale = ((self.volt_signed / 25.0) if self._root.header.model_number[2:3] == u"2" else (self.volt_signed / 32.0))
+            self._m_volt_scale = ((self.volt_signed / 25.0) if (self._root.header.model_number)[2:3] == u"2" else (self.volt_signed / 32.0))
             return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
 
         @property
@@ -178,7 +179,7 @@ class Wfm4000(KaitaiStruct):
             if hasattr(self, '_m_probe_value'):
                 return self._m_probe_value if hasattr(self, '_m_probe_value') else None
 
-            self._m_probe_value = (0.01 if self.probe_ratio == self._root.ProbeRatioEnum.x0_01 else (0.02 if self.probe_ratio == self._root.ProbeRatioEnum.x0_02 else (0.05 if self.probe_ratio == self._root.ProbeRatioEnum.x0_05 else (0.1 if self.probe_ratio == self._root.ProbeRatioEnum.x0_1 else (0.2 if self.probe_ratio == self._root.ProbeRatioEnum.x0_2 else (0.5 if self.probe_ratio == self._root.ProbeRatioEnum.x0_5 else (1.0 if self.probe_ratio == self._root.ProbeRatioEnum.x1 else (2.0 if self.probe_ratio == self._root.ProbeRatioEnum.x2 else (5.0 if self.probe_ratio == self._root.ProbeRatioEnum.x5 else (10.0 if self.probe_ratio == self._root.ProbeRatioEnum.x10 else (20.0 if self.probe_ratio == self._root.ProbeRatioEnum.x20 else (50.0 if self.probe_ratio == self._root.ProbeRatioEnum.x50 else (100.0 if self.probe_ratio == self._root.ProbeRatioEnum.x100 else (200.0 if self.probe_ratio == self._root.ProbeRatioEnum.x200 else (500.0 if self.probe_ratio == self._root.ProbeRatioEnum.x500 else 1000.0)))))))))))))))
+            self._m_probe_value = (0.01 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x0_01 else (0.02 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x0_02 else (0.05 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x0_05 else (0.1 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x0_1 else (0.2 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x0_2 else (0.5 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x0_5 else (1.0 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x1 else (2.0 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x2 else (5.0 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x5 else (10.0 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x10 else (20.0 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x20 else (50.0 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x50 else (100.0 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x100 else (200.0 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x200 else (500.0 if self.probe_ratio == Wfm4000.ProbeRatioEnum.x500 else 1000.0)))))))))))))))
             return self._m_probe_value if hasattr(self, '_m_probe_value') else None
 
         @property
@@ -206,16 +207,18 @@ class Wfm4000(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.magic = self._io.ensure_fixed_contents(b"\xA5\xA5\x38\x00")
+            self.magic = self._io.read_bytes(4)
+            if not self.magic == b"\xA5\xA5\x38\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\xA5\xA5\x38\x00", self.magic, self._io, u"/types/header/seq/0")
             self.model_number = (KaitaiStream.bytes_terminate(self._io.read_bytes(20), 0, False)).decode(u"ascii")
             self.firmware_version = (KaitaiStream.bytes_terminate(self._io.read_bytes(20), 0, False)).decode(u"ascii")
             self.unknown_1 = [None] * (5)
             for i in range(5):
                 self.unknown_1[i] = self._io.read_u4le()
 
-            self.enabled = self._root.ChannelMask(self._io, self, self._root)
+            self.enabled = Wfm4000.ChannelMask(self._io, self, self._root)
             self.unknown_2 = self._io.read_bytes(3)
-            self.position = self._root.PositionType(self._io, self, self._root)
+            self.position = Wfm4000.PositionType(self._io, self, self._root)
             self.unknown_3 = self._io.read_u4le()
             self.unknown_4 = self._io.read_u4le()
             self.unknown_5 = self._io.read_u4le()
@@ -229,7 +232,7 @@ class Wfm4000(KaitaiStruct):
 
             self.ch = [None] * (4)
             for i in range(4):
-                self.ch[i] = self._root.ChannelHeader(self._io, self, self._root)
+                self.ch[i] = Wfm4000.ChannelHeader(self._io, self, self._root)
 
             self.unknown_33 = [None] * (6)
             for i in range(6):
@@ -253,9 +256,9 @@ class Wfm4000(KaitaiStruct):
             for i in range(4):
                 self.unknown_57[i] = self._io.read_u4le()
 
-            self.mem_depth_type = self._root.MemDepthEnum(self._io.read_u1())
+            self.mem_depth_type = KaitaiStream.resolve_enum(Wfm4000.MemDepthEnum, self._io.read_u1())
             self.unknown_60 = self._io.read_bytes(27)
-            self.time = self._root.TimeHeader(self._io, self, self._root)
+            self.time = Wfm4000.TimeHeader(self._io, self, self._root)
 
         @property
         def points(self):
@@ -278,7 +281,7 @@ class Wfm4000(KaitaiStruct):
             if hasattr(self, '_m_vertical_scale_factor'):
                 return self._m_vertical_scale_factor if hasattr(self, '_m_vertical_scale_factor') else None
 
-            self._m_vertical_scale_factor = (25 if self.model_number[2:3] == u"2" else 32)
+            self._m_vertical_scale_factor = (25 if (self.model_number)[2:3] == u"2" else 32)
             return self._m_vertical_scale_factor if hasattr(self, '_m_vertical_scale_factor') else None
 
         @property
@@ -287,13 +290,11 @@ class Wfm4000(KaitaiStruct):
                 return self._m_raw_2 if hasattr(self, '_m_raw_2') else None
 
             if self.enabled.channel_2:
-                _pos = self._io.pos()
-                self._io.seek(self.position.channel_2)
-                self._m_raw_2 = [None] * (self.mem_depth)
-                for i in range(self.mem_depth):
-                    self._m_raw_2[i] = self._io.read_u1()
-
-                self._io.seek(_pos)
+                io = self._root._io
+                _pos = io.pos()
+                io.seek(self.position.channel_2)
+                self._m_raw_2 = io.read_bytes(self.mem_depth)
+                io.seek(_pos)
 
             return self._m_raw_2 if hasattr(self, '_m_raw_2') else None
 
@@ -319,13 +320,11 @@ class Wfm4000(KaitaiStruct):
                 return self._m_raw_4 if hasattr(self, '_m_raw_4') else None
 
             if self.enabled.channel_4:
-                _pos = self._io.pos()
-                self._io.seek(self.position.channel_4)
-                self._m_raw_4 = [None] * (self.mem_depth)
-                for i in range(self.mem_depth):
-                    self._m_raw_4[i] = self._io.read_u1()
-
-                self._io.seek(_pos)
+                io = self._root._io
+                _pos = io.pos()
+                io.seek(self.position.channel_4)
+                self._m_raw_4 = io.read_bytes(self.mem_depth)
+                io.seek(_pos)
 
             return self._m_raw_4 if hasattr(self, '_m_raw_4') else None
 
@@ -335,13 +334,11 @@ class Wfm4000(KaitaiStruct):
                 return self._m_raw_3 if hasattr(self, '_m_raw_3') else None
 
             if self.enabled.channel_3:
-                _pos = self._io.pos()
-                self._io.seek(self.position.channel_3)
-                self._m_raw_3 = [None] * (self.mem_depth)
-                for i in range(self.mem_depth):
-                    self._m_raw_3[i] = self._io.read_u1()
-
-                self._io.seek(_pos)
+                io = self._root._io
+                _pos = io.pos()
+                io.seek(self.position.channel_3)
+                self._m_raw_3 = io.read_bytes(self.mem_depth)
+                io.seek(_pos)
 
             return self._m_raw_3 if hasattr(self, '_m_raw_3') else None
 
@@ -351,13 +348,11 @@ class Wfm4000(KaitaiStruct):
                 return self._m_raw_1 if hasattr(self, '_m_raw_1') else None
 
             if self.enabled.channel_1:
-                _pos = self._io.pos()
-                self._io.seek(self.position.channel_1)
-                self._m_raw_1 = [None] * (self.mem_depth)
-                for i in range(self.mem_depth):
-                    self._m_raw_1[i] = self._io.read_u1()
-
-                self._io.seek(_pos)
+                io = self._root._io
+                _pos = io.pos()
+                io.seek(self.position.channel_1)
+                self._m_raw_1 = io.read_bytes(self.mem_depth)
+                io.seek(_pos)
 
             return self._m_raw_1 if hasattr(self, '_m_raw_1') else None
 
@@ -383,7 +378,7 @@ class Wfm4000(KaitaiStruct):
 
         _pos = self._io.pos()
         self._io.seek(0)
-        self._m_header = self._root.Header(self._io, self, self._root)
+        self._m_header = Wfm4000.Header(self._io, self, self._root)
         self._io.seek(_pos)
         return self._m_header if hasattr(self, '_m_header') else None
 

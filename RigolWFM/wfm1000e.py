@@ -1,12 +1,13 @@
 # This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
 
 from pkg_resources import parse_version
-from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
+import kaitaistruct
+from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
 from enum import Enum
 
 
-if parse_version(ks_version) < parse_version('0.7'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
+if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
+    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Wfm1000e(KaitaiStruct):
     """Rigol DS1102E scope .wmf format abstracted from a python script
@@ -85,10 +86,7 @@ class Wfm1000e(KaitaiStruct):
 
         def _read(self):
             if self._root.header.ch[0].enabled:
-                self.ch1 = [None] * (self._root.header.ch1_points)
-                for i in range(self._root.header.ch1_points):
-                    self.ch1[i] = self._io.read_u1()
-
+                self.ch1 = self._io.read_bytes(self._root.header.ch1_points)
 
             if self._root.header.ch[0].enabled:
                 self.roll_stop_padding1 = self._io.read_bytes(self._root.header.ch1_skip)
@@ -97,10 +95,7 @@ class Wfm1000e(KaitaiStruct):
                 self.sentinel_between_datasets = self._io.read_u4le()
 
             if self._root.header.ch[1].enabled:
-                self.ch2 = [None] * (self._root.header.ch2_points)
-                for i in range(self._root.header.ch2_points):
-                    self.ch2[i] = self._io.read_u1()
-
+                self.ch2 = self._io.read_bytes(self._root.header.ch2_points)
 
             if self._root.header.ch[1].enabled:
                 self.roll_stop_padding2 = self._io.read_bytes(self._root.header.ch1_skip)
@@ -122,8 +117,8 @@ class Wfm1000e(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.unused = self._io.read_bits_int(7)
-            self.enabled = self._io.read_bits_int(1) != 0
+            self.unused = self._io.read_bits_int_be(7)
+            self.enabled = self._io.read_bits_int_be(1) != 0
             self._io.align_to_byte()
             self.active_channel = self._io.read_u1()
             self.enabled_channels = self._io.read_u2le()
@@ -158,7 +153,7 @@ class Wfm1000e(KaitaiStruct):
             if hasattr(self, '_m_unit'):
                 return self._m_unit if hasattr(self, '_m_unit') else None
 
-            self._m_unit = self._root.UnitEnum.v
+            self._m_unit = Wfm1000e.UnitEnum.v
             return self._m_unit if hasattr(self, '_m_unit') else None
 
         @property
@@ -210,29 +205,44 @@ class Wfm1000e(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.magic = self._io.ensure_fixed_contents(b"\xA5\xA5\x00\x00")
-            self.blank_12 = self._io.ensure_fixed_contents(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+            self.magic = self._io.read_bytes(4)
+            if not self.magic == b"\xA5\xA5\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\xA5\xA5\x00\x00", self.magic, self._io, u"/types/header/seq/0")
+            self.unused_1 = self._io.read_u2le()
+            self.blank_10 = self._io.read_bytes(10)
+            if not self.blank_10 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self.blank_10, self._io, u"/types/header/seq/2")
             self.adc_mode = self._io.read_u1()
-            self.padding_2 = self._io.ensure_fixed_contents(b"\x00\x00\x00")
+            self.padding_2 = self._io.read_bytes(3)
+            if not self.padding_2 == b"\x00\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00", self.padding_2, self._io, u"/types/header/seq/4")
             self.roll_stop = self._io.read_u4le()
-            self.unused_4 = self._io.ensure_fixed_contents(b"\x00\x00\x00\x00")
+            self.unused_4 = self._io.read_bytes(4)
+            if not self.unused_4 == b"\x00\x00\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self.unused_4, self._io, u"/types/header/seq/6")
             self.ch1_points_tmp = self._io.read_u4le()
             self.active_channel = self._io.read_u1()
-            self.padding_3 = self._io.ensure_fixed_contents(b"\x00")
+            self.padding_3 = self._io.read_bytes(1)
+            if not self.padding_3 == b"\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00", self.padding_3, self._io, u"/types/header/seq/9")
             self.ch = [None] * (2)
             for i in range(2):
-                self.ch[i] = self._root.ChannelHeader(self._io, self, self._root)
+                self.ch[i] = Wfm1000e.ChannelHeader(self._io, self, self._root)
 
             self.time_offset = self._io.read_u1()
-            self.padding_4 = self._io.ensure_fixed_contents(b"\x00")
-            self.time = self._root.TimeHeader(self._io, self, self._root)
-            self.logic = self._root.LogicAnalyzerHeader(self._io, self, self._root)
-            self.trigger_mode = self._root.TriggerModeEnum(self._io.read_u1())
-            self.trigger1 = self._root.TriggerHeader(self._io, self, self._root)
-            self.trigger2 = self._root.TriggerHeader(self._io, self, self._root)
-            self.padding_6 = self._io.ensure_fixed_contents(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+            self.padding_4 = self._io.read_bytes(1)
+            if not self.padding_4 == b"\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00", self.padding_4, self._io, u"/types/header/seq/12")
+            self.time = Wfm1000e.TimeHeader(self._io, self, self._root)
+            self.logic = Wfm1000e.LogicAnalyzerHeader(self._io, self, self._root)
+            self.trigger_mode = KaitaiStream.resolve_enum(Wfm1000e.TriggerModeEnum, self._io.read_u1())
+            self.trigger1 = Wfm1000e.TriggerHeader(self._io, self, self._root)
+            self.trigger2 = Wfm1000e.TriggerHeader(self._io, self, self._root)
+            self.padding_6 = self._io.read_bytes(9)
+            if not self.padding_6 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00", self.padding_6, self._io, u"/types/header/seq/18")
             self.ch2_points_tmp = self._io.read_u4le()
-            self.time2 = self._root.TimeHeader(self._io, self, self._root)
+            self.time2 = Wfm1000e.TimeHeader(self._io, self, self._root)
             self.la_sample_rate = self._io.read_f4le()
 
         @property
@@ -249,7 +259,7 @@ class Wfm1000e(KaitaiStruct):
             if hasattr(self, '_m_ch2_time_offset'):
                 return self._m_ch2_time_offset if hasattr(self, '_m_ch2_time_offset') else None
 
-            self._m_ch2_time_offset = ((1.0E-12 * self.time2.offset_measured) if self.trigger_mode == self._root.TriggerModeEnum.alt else self.ch1_time_offset)
+            self._m_ch2_time_offset = ((1.0E-12 * self.time2.offset_measured) if self.trigger_mode == Wfm1000e.TriggerModeEnum.alt else self.ch1_time_offset)
             return self._m_ch2_time_offset if hasattr(self, '_m_ch2_time_offset') else None
 
         @property
@@ -325,7 +335,7 @@ class Wfm1000e(KaitaiStruct):
             if hasattr(self, '_m_ch2_time_scale'):
                 return self._m_ch2_time_scale if hasattr(self, '_m_ch2_time_scale') else None
 
-            self._m_ch2_time_scale = ((1.0E-12 * self.time2.scale_measured) if self.trigger_mode == self._root.TriggerModeEnum.alt else self.ch1_time_scale)
+            self._m_ch2_time_scale = ((1.0E-12 * self.time2.scale_measured) if self.trigger_mode == Wfm1000e.TriggerModeEnum.alt else self.ch1_time_scale)
             return self._m_ch2_time_scale if hasattr(self, '_m_ch2_time_scale') else None
 
 
@@ -337,20 +347,26 @@ class Wfm1000e(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.mode = self._root.TriggerModeEnum(self._io.read_u1())
-            self.source = self._root.SourceEnum(self._io.read_u1())
+            self.mode = KaitaiStream.resolve_enum(Wfm1000e.TriggerModeEnum, self._io.read_u1())
+            self.source = KaitaiStream.resolve_enum(Wfm1000e.SourceEnum, self._io.read_u1())
             self.coupling = self._io.read_u1()
             self.sweep = self._io.read_u1()
-            self.padding_1 = self._io.ensure_fixed_contents(b"\x00")
+            self.padding_1 = self._io.read_bytes(1)
+            if not self.padding_1 == b"\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00", self.padding_1, self._io, u"/types/trigger_header/seq/4")
             self.sens = self._io.read_f4le()
             self.holdoff = self._io.read_f4le()
             self.level = self._io.read_f4le()
             self.direct = self._io.read_u1()
             self.pulse_type = self._io.read_u1()
-            self.padding_2 = self._io.ensure_fixed_contents(b"\x00\x00")
+            self.padding_2 = self._io.read_bytes(2)
+            if not self.padding_2 == b"\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00", self.padding_2, self._io, u"/types/trigger_header/seq/10")
             self.pulse_width = self._io.read_f4le()
             self.slope_type = self._io.read_u1()
-            self.padding_3 = self._io.ensure_fixed_contents(b"\x00\x00\x00")
+            self.padding_3 = self._io.read_bytes(3)
+            if not self.padding_3 == b"\x00\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00", self.padding_3, self._io, u"/types/trigger_header/seq/13")
             self.lower = self._io.read_f4le()
             self.slope_width = self._io.read_f4le()
             self.video_pol = self._io.read_u1()
@@ -365,7 +381,7 @@ class Wfm1000e(KaitaiStruct):
 
         _pos = self._io.pos()
         self._io.seek(0)
-        self._m_header = self._root.Header(self._io, self, self._root)
+        self._m_header = Wfm1000e.Header(self._io, self, self._root)
         self._io.seek(_pos)
         return self._m_header if hasattr(self, '_m_header') else None
 
@@ -376,7 +392,7 @@ class Wfm1000e(KaitaiStruct):
 
         _pos = self._io.pos()
         self._io.seek(276)
-        self._m_data = self._root.RawData(self._io, self, self._root)
+        self._m_data = Wfm1000e.RawData(self._io, self, self._root)
         self._io.seek(_pos)
         return self._m_data if hasattr(self, '_m_data') else None
 

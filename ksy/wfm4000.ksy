@@ -124,28 +124,24 @@ types:
         value: mem_depth
 
       raw_1:
+        io: _root._io
         pos: position.channel_1
-        type: u1
-        repeat: expr
-        repeat-expr: mem_depth
+        size: mem_depth
         if: enabled.channel_1
       raw_2:
+        io: _root._io
         pos: position.channel_2
-        type: u1
-        repeat: expr
-        repeat-expr: mem_depth
+        size: mem_depth
         if: enabled.channel_2
       raw_3:
+        io: _root._io
         pos: position.channel_3
-        type: u1
-        repeat: expr
-        repeat-expr: mem_depth
+        size: mem_depth
         if: enabled.channel_3
       raw_4:
+        io: _root._io
         pos: position.channel_4
-        type: u1
-        repeat: expr
-        repeat-expr: mem_depth
+        size: mem_depth
         if: enabled.channel_4
 
   position_type:

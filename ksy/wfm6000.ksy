@@ -279,27 +279,19 @@ types:
   raw_data:
     seq:
       - id: channel_1
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.mem_depth
+        size: _root.header.mem_depth
         if: _root.header.enabled.channel_1
 
       - id: channel_2
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.mem_depth
+        size: _root.header.mem_depth
         if: _root.header.enabled.channel_2
 
       - id: channel_3
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.mem_depth
+        size: _root.header.mem_depth
         if: _root.header.enabled.channel_3
 
       - id: channel_4
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.mem_depth
+        size: _root.header.mem_depth
         if: _root.header.enabled.channel_4
 
 enums:

@@ -1,5 +1,65 @@
 Changelog
-=================================================
+=========
+
+v0.9.3
+------
+*    processing of E type files is less restrictive
+*    use nbsphinx 0.8.5 so docs build
+*    improve docs
+
+v0.9.2
+------
+*    create pure python packaging
+*    include wheel file
+*    package as python3 only
+
+v0.9.1
+------
+*    fix for 1204B files with 0x4000 bytes
+
+v0.9.0
+------
+*    support 1000B scopes
+*    automate notebook testing
+*    add pypi badges
+*    add flake8 testing
+
+v0.8.1
+------
+*    fixed swapped channels for DS1000Z files (2 channel case only)
+*    advise `pip install --user RigolWFM` to avoid permission errors
+
+v0.8.0
+------
+*    significantly speed parsing of large .wfm files
+*    fix bug with selection of channels in DS1000Z files
+
+v0.7.4
+------
+*    fix versions in conf.py and setup.cfg
+
+v0.7.3
+------
+*    fix hyperlinks for colab in docs at https://readthedocs.io
+
+v0.7.2
+------
+*    fix bug with selecting channels
+*    fix bug with autoscaling
+*    add links to google colaboratory to documentation
+*    describe parameters for a few functions
+*    modify message to install RigolWFM when missing
+
+v0.7.1
+------
+*    add support for selecting channels
+*    add autoscaling support for .wav files
+*    improve help message for wfmconvert
+
+v0.7.0
+------
+*    add basic support for DS1000CA files
+*    add new model D (untested) out of the E model list
 
 v0.6.7
 ------

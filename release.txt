@@ -1,7 +1,5 @@
 A checklist for releasing a new version
 
-# make sure all Jupyter notebooks in the doc folder still work
-
 # sanity test the release
   make rcheck
 
@@ -13,14 +11,14 @@ A checklist for releasing a new version
   git push
 
 # create release tag on github
-  git tag v0.6.4
-  git push origin v0.6.4
+  git tag v0.9.2
+  git push origin v0.9.2
 
 # upload source to pypi
-  python3 setup.py sdist
+  python3 -m build
   python3 -m twine upload dist/*
 
 # verify releases on 
-  https://github.com/scottprahl/RigolWFM
-  https://pypi.org/project/RigolWFM/
-  https://RigolWFM.readthedocs.io
+  open https://github.com/scottprahl/RigolWFM
+  open https://pypi.org/project/RigolWFM/
+  open https://RigolWFM.readthedocs.io

@@ -231,23 +231,8 @@ types:
 
   raw_data:
     seq:
-      - id: raw1
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.points
-        if: _root.header.stride == 1
-
-      - id: raw2
-        type: u2
-        repeat: expr
-        repeat-expr: _root.header.points
-        if: _root.header.stride == 2
-
-      - id: raw4
-        type: u4
-        repeat: expr
-        repeat-expr: _root.header.points
-        if: _root.header.stride == 4
+      - id: raw
+        size: _root.header.points * _root.header.stride
 
 enums:
   acquistion_enum:

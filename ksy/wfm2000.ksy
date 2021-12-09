@@ -226,38 +226,30 @@ types:
         value: 1.0e-12 * time_offset_ps
       points:
         value: _root.header.mem_depth
-
       raw_1:
         io: _root._io
         pos: channel_offset[0]
-        type: u1
-        repeat: expr
-        repeat-expr: storage_depth
+        size: storage_depth
         if: channel_offset[0] > 0
 
       raw_2:
         io: _root._io
         pos: channel_offset[1]
-        type: u1
-        repeat: expr
-        repeat-expr: storage_depth
+        size: storage_depth
         if: channel_offset[1] > 0
 
       raw_3:
         io: _root._io
         pos: channel_offset[2]
-        type: u1
-        repeat: expr
-        repeat-expr: storage_depth
+        size: storage_depth
         if: channel_offset[2] > 0
 
       raw_4:
         io: _root._io
         pos: channel_offset[3]
-        type: u1
-        repeat: expr
-        repeat-expr: storage_depth
+        size: storage_depth
         if: channel_offset[3] > 0
+
 
   channel_header:
     seq:

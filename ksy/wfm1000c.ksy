@@ -1,35 +1,26 @@
 meta:
   id: wfm1000c
-  title: Rigol DS1020C oscilloscope waveform file format
+  title: Rigol DS1021CA oscilloscope waveform file format
   file-extension: wfm
   endian: le
 
 doc: |
-  Rigol DS1020CD .wmf format abstracted from a Matlab script with the addition
-  of a few fields found in a Pascal program.  Neither program really examines
-  the header closely (meaning that they skip 26 bytes).
-
-doc-ref: !
-  The Matlab script is from
-  https://www.mathworks.com/matlabcentral/fileexchange/18999-read-binary-rigol-waveforms
-  The Pascal program is from
-  https://sourceforge.net/projects/wfmreader/
-  The DS4000 parser is from
-  https://github.com/Cat-Ion/rigol-ds4000-wfm
+  This is the same format as used for DS1000D scopes except that the first byte
+  of the file is 0xA1 and the data starts at an offset of 256.
 
 instances:
   header:
     pos: 0
     type: header
   data:
-    pos: 272
+    pos: 256
     type: raw_data
 
 types:
   header:
     seq:
-      - id: magic            # 00 (file pos)
-        contents: [0xa5, 0xa5, 0x00, 0x00]
+      - id: magic            # 00 => file offset in decimal
+        contents: [0xa1, 0xa5, 0x00, 0x00]
       - id: unknown_1        # 04
         type: u4
         repeat: expr
@@ -38,15 +29,15 @@ types:
         type: u4
       - id: active_channel   # 32
         type: u1
-      - id: unknown_2        # 33
+      - id: unknown_2a       # 33
         size: 3
       - id: ch               # 36, 60
         type: channel_header
         repeat: expr
         repeat-expr: 2
-      - id: time_scale       # 84
+      - id: time_scale       # 84 (in picoseconds)
         type: u8
-      - id: time_offset      # 92
+      - id: time_offset      # 92 (in picoseconds)
         type: s8
       - id: sample_rate_hz   # 100
         type: f4
@@ -60,7 +51,7 @@ types:
         type: u1
         enum: trigger_mode_enum
       - id: unknown_6        # 143
-        size: 1
+        type: u1
       - id: trigger_source   # 144
         type: u1
         enum: trigger_source_enum
@@ -79,7 +70,7 @@ types:
         type: u1
       - id: unknown_2        # 43, 67
         type: u1
-      - id: probe            # 44, 68
+      - id: probe_value      # 44, 68
         type: f4
       - id: invert_disp_val  # 48, 72
         type: u1
@@ -88,15 +79,13 @@ types:
       - id: invert_m_val     # 50, 74
         type: u1
       - id: unknown_3        # 51, 75
-        size: 1
-      - id: scale_orig       # 52, 76
-        type: u4
-      - id: position_orig    # 56, 80
-        type: u4
+        type: u1
       - id: scale_measured   # 52, 76
         type: s4
       - id: shift_measured   # 56, 80
         type: s2
+      - id: unknown_3a       # 58, 82
+        type: u2
     instances:
       inverted:
         value: "invert_m_val != 0 ? true : false"
@@ -114,19 +103,17 @@ types:
         value: _root.header.time_scale
       time_offset:
         value: _root.header.time_offset
+      unit:
+        value: "unit_enum::v"
 
   raw_data:
     seq:
       - id: ch1
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.points
+        size: _root.header.points
         if: _root.header.ch[0].enabled
 
       - id: ch2
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.points
+        size: _root.header.points
         if: _root.header.ch[1].enabled
 
 enums:
@@ -155,3 +142,9 @@ enums:
     4: ds2000
     5: ds4000
     6: ds6000
+
+  unit_enum:
+    0: w
+    1: a
+    2: v
+    3: u

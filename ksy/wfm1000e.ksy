@@ -20,8 +20,10 @@ types:
     seq:
       - id: magic
         contents: [0xa5, 0xa5, 0x00, 0x00]
-      - id: blank_12
-        contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      - id: unused_1
+        type: u2
+      - id: blank_10
+        contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
       - id: adc_mode
         type: u1
       - id: padding_2
@@ -230,9 +232,7 @@ types:
   raw_data:
     seq:
       - id: ch1
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.ch1_points
+        size: _root.header.ch1_points
         if: _root.header.ch[0].enabled
 
       - id: roll_stop_padding1
@@ -244,9 +244,7 @@ types:
         if: _root.header.ch[0].enabled
 
       - id: ch2
-        type: u1
-        repeat: expr
-        repeat-expr: _root.header.ch2_points
+        size: _root.header.ch2_points
         if: _root.header.ch[1].enabled
 
       - id: roll_stop_padding2

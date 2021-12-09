@@ -1,30 +1,49 @@
-Links
-=====
-.. toctree::
-   :maxdepth: 3
-   :titlesonly:
-   
-   readme
-   changelog
-   0-Basics.ipynb
-   1-DS1000E-Waveforms.ipynb
-   1-DS1000Z-Waveforms.ipynb
-   1-DS2000-Waveforms.ipynb
-   1-DS4000-Waveforms.ipynb
-
 .. include:: ../README.rst
 
-Indices and tables
-==================
+.. toctree::
+   :maxdepth: 2
 
-* :ref:`genindex`
-* :ref:`modindex`
+.. toctree::
+   :caption: Introduction
+   
+   0-Basics.ipynb
 
-API
-===
+.. toctree::
+   :caption: B Series
 
-.. automodapi:: RigolWFM.channel
+   1-DS1000B-Waveforms.ipynb
 
-.. automodapi:: RigolWFM.wfm
+.. toctree::
+   :caption: C Series
 
-.. automodapi:: RigolWFM.wfmconvert
+   1-DS1000C-Waveforms.ipynb
+
+.. toctree::
+   :caption: E Series
+
+   1-DS1000E-Waveforms.ipynb
+
+.. toctree::
+   :caption: Z Series
+
+   1-DS1000Z-Waveforms.ipynb
+
+.. toctree::
+   :caption: 2 Series
+
+   1-DS2000-Waveforms.ipynb
+
+.. toctree::
+   :caption: 4 Series
+
+   1-DS4000-Waveforms.ipynb
+
+.. toctree::
+   :caption: API
+   
+   RigolWFM
+
+.. toctree::
+   :caption: Versions
+   
+   changelog
