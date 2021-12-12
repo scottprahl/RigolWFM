@@ -100,6 +100,9 @@ class Wfm1000e(KaitaiStruct):
             if self._root.header.ch[1].enabled:
                 self.roll_stop_padding2 = self._io.read_bytes(self._root.header.ch1_skip)
 
+            if self._root.header.ch[1].enabled:
+                self.sentinel_between_datasets2 = self._io.read_u4le()
+
             self.logic = [None] * ((self._root.header.ch1_points if self._root.header.logic.enabled else 0))
             for i in range((self._root.header.ch1_points if self._root.header.logic.enabled else 0)):
                 self.logic[i] = self._io.read_u2le()
