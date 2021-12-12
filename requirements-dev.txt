@@ -1,0 +1,38 @@
+## (for development)
+## pip install -r requirements-dev.txt
+##
+-e .
+#
+# Test
+pytest
+tox
+flake8
+#
+#
+# Testing notebooks
+kaitaistruct
+numpy
+matplotlib
+nbconvert
+nbformat
+#
+#
+# Lint
+yamllint
+ksylint
+rstcheck
+pylint
+pydocstyle
+#
+#
+# Docs
+Jinja2==2.11.3
+nbsphinx==0.8.5
+sphinx-automodapi
+sphinx-rtd-theme
+#
+#
+# Release
+check-manifest
+pyroma
+
