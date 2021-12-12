@@ -19,8 +19,10 @@ instances:
 types:
   header:
     seq:
-      - id: magic            # 00 => file offset in decimal
-        contents: [0xa1, 0xa5, 0x00, 0x00]
+      - id: a1_or_a5         # 00
+        size: 1              # can be 0xa1 or 0xa5?
+      - id: magic            # 01
+        contents: [0xa5, 0x00, 0x00]
       - id: unknown_1        # 04
         type: u4
         repeat: expr
