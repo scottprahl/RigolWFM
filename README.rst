@@ -80,7 +80,7 @@ Status
 There is a bit of work remaining (testing, validation, repackaging) but there are binary file descriptions for ``.wfm`` files created by the following scopes:
 
 * DS1000B tested 
-* DS1000C tested (one file only)
+* DS1000C tested (two files only)
 * DS1000E tested
 * DS1000Z tested, but with wonky voltage offsets
 * DS2000 tested

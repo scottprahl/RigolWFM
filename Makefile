@@ -114,6 +114,7 @@ testb:
 
 testc:
 	RigolWFM/wfmconvert.py C info wfm/DS1202CA-A.wfm
+	RigolWFM/wfmconvert.py C info wfm/DS1042C-A.wfm
 
 teste:
 	RigolWFM/wfmconvert.py E info wfm/DS1102E-A.wfm

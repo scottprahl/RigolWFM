@@ -19,8 +19,8 @@ instances:
 types:
   header:
     seq:
-      - id: a1_or_a5         # 00
-        size: 1              # can be 0xa1 or 0xa5?
+      - id: byte1            # 00
+        type: u1
       - id: magic            # 01
         contents: [0xa5, 0x00, 0x00]
       - id: unknown_1        # 04
@@ -95,8 +95,8 @@ types:
         value: "enabled_val != 0 ? true : false"
       volt_per_division:
         value: "inverted ?
-                -1.0e-6 * scale_measured:
-                +1.0e-6 * scale_measured"
+                -1.0e-6 * scale_measured * probe_value:
+                +1.0e-6 * scale_measured * probe_value"
       volt_scale:
         value: volt_per_division/25.0
       volt_offset:
@@ -110,6 +110,10 @@ types:
 
   raw_data:
     seq:
+      - id: unused55
+        size: 0x10
+        if: _root.header.byte1 == 0xa5
+
       - id: ch1
         size: _root.header.points
         if: _root.header.ch[0].enabled

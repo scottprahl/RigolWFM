@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v0.9.4
+------
+*    improve handling of 1000C files
+*    add .readthedocs.yaml so docs build correctly
+
 v0.9.3
 ------
 *    processing of E type files is less restrictive

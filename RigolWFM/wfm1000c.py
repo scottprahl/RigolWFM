@@ -62,7 +62,7 @@ class Wfm1000c(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.a1_or_a5 = self._io.read_bytes(1)
+            self.byte1 = self._io.read_u1()
             self.magic = self._io.read_bytes(3)
             if not self.magic == b"\xA5\x00\x00":
                 raise kaitaistruct.ValidationNotEqualError(b"\xA5\x00\x00", self.magic, self._io, u"/types/header/seq/1")
@@ -164,7 +164,7 @@ class Wfm1000c(KaitaiStruct):
             if hasattr(self, '_m_volt_per_division'):
                 return self._m_volt_per_division if hasattr(self, '_m_volt_per_division') else None
 
-            self._m_volt_per_division = ((-0.0000010 * self.scale_measured) if self.inverted else (0.0000010 * self.scale_measured))
+            self._m_volt_per_division = (((-0.0000010 * self.scale_measured) * self.probe_value) if self.inverted else ((0.0000010 * self.scale_measured) * self.probe_value))
             return self._m_volt_per_division if hasattr(self, '_m_volt_per_division') else None
 
         @property
@@ -192,6 +192,9 @@ class Wfm1000c(KaitaiStruct):
             self._read()
 
         def _read(self):
+            if self._root.header.byte1 == 165:
+                self.unused55 = self._io.read_bytes(16)
+
             if self._root.header.ch[0].enabled:
                 self.ch1 = self._io.read_bytes(self._root.header.points)
 

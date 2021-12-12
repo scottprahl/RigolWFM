@@ -5,6 +5,7 @@ include README.rst
 
 exclude .gitattributes
 exclude .gitignore
+exclude .readthedocs.yaml
 exclude release.txt
 exclude todo
 exclude Makefile
