@@ -62,9 +62,10 @@ class Wfm1000c(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.magic = self._io.read_bytes(4)
-            if not self.magic == b"\xA1\xA5\x00\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\xA1\xA5\x00\x00", self.magic, self._io, u"/types/header/seq/0")
+            self.a1_or_a5 = self._io.read_bytes(1)
+            self.magic = self._io.read_bytes(3)
+            if not self.magic == b"\xA5\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\xA5\x00\x00", self.magic, self._io, u"/types/header/seq/1")
             self.unknown_1 = [None] * (6)
             for i in range(6):
                 self.unknown_1[i] = self._io.read_u4le()
