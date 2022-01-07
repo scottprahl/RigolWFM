@@ -1,6 +1,8 @@
 RigolWFM
 =========
 
+by Scott Prahl
+
 A utility to process Rigol oscilloscope `.wfm` files
 ----------------------------------------------------
 
