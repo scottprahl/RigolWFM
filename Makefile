@@ -234,10 +234,8 @@ clean:
 	rm -rf wfm/DS1204B-A.wav
 	rm -rf wfm/DS1204B-A.vcsv
 	rm -rf wfm/DS1204B-A.sr
-	rm -rf docs/_build/*
-	rm -rf docs/_build/.buildinfo
-	rm -rf docs/_build/.doctrees
-	rm -rf docs/api/*
+	rm -rf docs/_build
+	rm -rf docs/api
 	rm -rf .tox
 	rm -rf __pycache__
 	rm -rf docs/raw.githubusercontent.com

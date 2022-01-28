@@ -1,28 +1,5 @@
-API for `RigolWFM` package
-==========================
+.. automodapi:: RigolWFM.channel
 
-Submodules
-----------
+.. automodapi:: RigolWFM.wfm
 
-RigolWFM.channel module
------------------------
-
-.. automodule:: RigolWFM.channel
-   :members:
-   :undoc-members:
-
-RigolWFM.wfm
-------------
-
-.. automodule:: RigolWFM.wfm
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-RigolWFM.wfmconvert module
---------------------------
-
-.. automodule:: RigolWFM.wfmconvert
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. automodapi:: RigolWFM.wfmconvert
