@@ -1,6 +1,10 @@
 Changelog
 =========
 
+v0.9.5
+------
+*    use __version__ in __init__.py
+
 v0.9.4
 ------
 *    improve handling of 1000C files

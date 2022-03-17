@@ -1,13 +1,36 @@
+import re
+import os.path
 from setuptools import setup
 
-# use README as the long description
-# make sure to use the syntax that works in both ReST and markdown
-from os import path
-this_directory = path.abspath(path.dirname(__file__))
-with open(path.join(this_directory, 'README.rst'), encoding='utf-8') as f:
-    long_description = f.read()
+project = 'RigolWFM'
+
+
+def get_init_property(prop):
+    """Return property from __init__.py."""
+    here = os.path.abspath(os.path.dirname(__file__))
+    file_name = os.path.join(here, project, '__init__.py')
+    regex = r'{}\s*=\s*[\'"]([^\'"]*)[\'"]'.format(prop)
+    with open(file_name, 'r', encoding='utf-8') as file:
+        result = re.search(regex, file.read())
+    return result.group(1)
+
+
+def get_contents(filename):
+    """Return contents of filename relative to the location of this file."""
+    here = os.path.abspath(os.path.dirname(__file__))
+    fn = os.path.join(here, filename)
+    with open(fn, 'r', encoding='utf-8') as f:
+        contents = f.read()
+    return contents
+
 
 setup(
-    long_description=long_description,
-    long_description_content_type='text/x-rst'
+    name=project,
+    long_description=get_contents('README.rst'),
+    long_description_content_type='text/x-rst',
+    version=get_init_property('__version__'),
+    author=get_init_property('__author__'),
+    author_email=get_init_property('__email__'),
+    license=get_init_property('__license__'),
+    url=get_init_property('__url__')
 )

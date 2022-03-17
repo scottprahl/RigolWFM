@@ -8,11 +8,13 @@
 """
 Command line utility to convert Rigol .wfm files.
 
-Use like this::
+    Examples::
 
-    wfmconvert E info DS1102E-A.wfm
-    wfmconvert E csv DS1102E-A.wfm
-    wfmconvert E wav DS1102E-A.wfm
+        prompt> wfmconvert E info DS1102E-A.wfm
+        
+        prompt> wfmconvert E csv DS1102E-A.wfm
+        
+        prompt> wfmconvert E wav DS1102E-A.wfm
 """
 
 import re

@@ -11,12 +11,12 @@ The idea is to collect all the relevant information from all the Rigol
 scope waveforms into a single structure that can be handled in a uniform
 and consistent manner.
 
-Specifically this lets one just use
+Specifically this lets one do::
 
     channel.times   : numpy array of signal times
     channel.volts   : numpy array of signal voltages
 
-or the stringification method to describe a channel
+or the stringification method to describe a channel::
 
     print(channel)
 

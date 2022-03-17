@@ -1,60 +1,55 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+# pylint: disable=invalid-name
+# pylint: disable=consider-using-f-string
+"""
+Configuration file for building documentation.
 
-# -- Path setup --------------------------------------------------------------
+Sphinx builds the docs using couple of external modules: napoleon and nbsphinx.
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-import os
-import sys
-import sphinx_rtd_theme
-sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('..'))
+The overall format is controlled by `.rst` files. The top level file is `index.rst`
 
-# -- Project information -----------------------------------------------------
+`napoleon` builds the API in HTML assuming that the code is documented with
+docstrings that follow the Google docstring format.
+
+`nbsphinx` convert the Jupyter notebooks to html with nbsphinx, will
+"""
+
+import re
+import os.path
 
 project = 'RigolWFM'
-copyright = '2020-2021, Scott Prahl'
-author = 'Scott Prahl'
 
-# The full version, including alpha/beta/rc tags
-release = '0.9.4'
+def get_init_property(prop):
+    """Return property from __init__.py."""
+    here = os.path.abspath(os.path.dirname(__file__))
+    file_name = os.path.join(here, '..', project, '__init__.py')
+    regex = r'{}\s*=\s*[\'"]([^\'"]*)[\'"]'.format(prop)
+    with open(file_name, 'r', encoding='utf-8') as file:
+        result = re.search(regex, file.read())
+    return result.group(1)
+
+release = get_init_property("__version__")
+author = get_init_property("__author__")
 
 master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------
 
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
+# Sphinx extension module names
 extensions = [
-    "sphinx_rtd_theme",
-    'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.mathjax',
     'sphinx_automodapi.automodapi',
-    'sphinx_automodapi.smart_resolver',
     'nbsphinx',
 ]
 numpydoc_show_class_members = False
-napoleon_google_docstring = False
-napoleon_use_param = False
-napoleon_use_ivar = False
-
-# Add any paths that contain templates here, relative to this directory.
-# templates_path = ['_templates']
+napoleon_use_rtype = False
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '.tox', '**.ipynb_checkpoints',
-                    'sources/*', 'first_version/*']
+exclude_patterns = ['_build', '.DS_Store', '.tox', 'first_version', 'sources',
+                    'manuals', '**.ipynb_checkpoints']
 
 # I execute the notebooks manually in advance. If notebooks test the code,
 # they should be run at build time.
@@ -65,19 +60,6 @@ nbsphinx_allow_errors = True
 source_suffix = ['.rst', '.ipynb']
 
 # -- Options for HTML output -------------------------------------------------
-
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-#
 html_theme = 'sphinx_rtd_theme'
-
-#html_theme = 'sphinx_rtd_theme'
-
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['_static']
-
 html_scaled_image_link = False
-
 html_sourcelink_suffix = ''
