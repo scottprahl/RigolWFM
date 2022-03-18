@@ -240,6 +240,7 @@ clean:
 	rm -rf __pycache__
 	rm -rf docs/raw.githubusercontent.com
 	rm -rf build
+	rm -rf .pytest_cache
 
 realclean:
 	make clean
