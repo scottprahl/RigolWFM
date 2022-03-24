@@ -131,6 +131,7 @@ teste:
 	RigolWFM/wfmconvert.py E info wfm/DS1000E-D.wfm
 
 testz:
+	RigolWFM/wfmconvert.py Z info wfm/DS1074Z-C.wfm
 	RigolWFM/wfmconvert.py Z info wfm/DS1054Z-A.wfm
 	RigolWFM/wfmconvert.py Z info wfm/MSO1104.wfm
 	RigolWFM/wfmconvert.py Z info wfm/DS1074Z-A.wfm

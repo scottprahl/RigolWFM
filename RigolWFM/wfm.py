@@ -219,9 +219,10 @@ class Wfm():
             print("Sorry! No channels in the waveform are both selected and enabled")
             print("    User selected channels = '%s'" % selected)
             print("    Scope enabled channels = '%s'" % enabled)
-            sys.exit()
+            print()
+        else:
+            new_wfm.firmware = new_wfm.channels[0].firmware
 
-        new_wfm.firmware = new_wfm.channels[0].firmware
         return new_wfm
 
     @classmethod

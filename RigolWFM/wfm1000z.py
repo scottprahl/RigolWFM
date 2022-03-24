@@ -319,7 +319,7 @@ class Wfm1000z(KaitaiStruct):
             if hasattr(self, '_m_total_channels'):
                 return self._m_total_channels if hasattr(self, '_m_total_channels') else None
 
-            self._m_total_channels = (((self.ch1_int + self.ch2_int) + self.ch3_int) + self.ch4_int)
+            self._m_total_channels = (1 if self.total_count == 0 else self.total_count)
             return self._m_total_channels if hasattr(self, '_m_total_channels') else None
 
         @property
@@ -353,6 +353,14 @@ class Wfm1000z(KaitaiStruct):
 
             self._m_stride = (4 if self.total_channels == 3 else self.total_channels)
             return self._m_stride if hasattr(self, '_m_stride') else None
+
+        @property
+        def total_count(self):
+            if hasattr(self, '_m_total_count'):
+                return self._m_total_count if hasattr(self, '_m_total_count') else None
+
+            self._m_total_count = (((self.ch1_int + self.ch2_int) + self.ch3_int) + self.ch4_int)
+            return self._m_total_count if hasattr(self, '_m_total_count') else None
 
 
     @property

@@ -119,8 +119,10 @@ types:
         value: "ch3_enabled ? 1 : 0"
       ch4_int:
         value: "ch4_enabled ? 1 : 0"
-      total_channels:
+      total_count:
         value: ch1_int + ch2_int + ch3_int + ch4_int
+      total_channels:
+        value: "total_count == 0 ? 1 : total_count"
       stride:
         value: "total_channels == 3 ? 4 : total_channels"
       points:
