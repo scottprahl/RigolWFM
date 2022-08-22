@@ -1,12 +1,11 @@
 # This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
 
-from pkg_resources import parse_version
 import kaitaistruct
 from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
 from enum import Enum
 
 
-if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
+if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
     raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Wfm2000(KaitaiStruct):
@@ -107,9 +106,9 @@ class Wfm2000(KaitaiStruct):
             self.structure_version = self._io.read_u2le()
             self.enabled = Wfm2000.ChannelMask(self._io, self, self._root)
             self.extra_1a = self._io.read_bytes(2)
-            self.channel_offset = [None] * (4)
+            self.channel_offset = []
             for i in range(4):
-                self.channel_offset[i] = self._io.read_u4le()
+                self.channel_offset.append(self._io.read_u4le())
 
             self.acquisition_mode = KaitaiStream.resolve_enum(Wfm2000.AcquisitionEnum, self._io.read_u2le())
             self.average_time = self._io.read_u2le()
@@ -121,9 +120,9 @@ class Wfm2000(KaitaiStruct):
             self.time_mode = KaitaiStream.resolve_enum(Wfm2000.TimeEnum, self._io.read_u2le())
             self.time_scale_ps = self._io.read_u8le()
             self.time_offset_ps = self._io.read_s8le()
-            self.ch = [None] * (4)
+            self.ch = []
             for i in range(4):
-                self.ch[i] = Wfm2000.ChannelHeader(self._io, self, self._root)
+                self.ch.append(Wfm2000.ChannelHeader(self._io, self, self._root))
 
             self.setup_size = self._io.read_u4le()
             self.setup_offset = self._io.read_u4le()
@@ -131,17 +130,17 @@ class Wfm2000(KaitaiStruct):
             self.storage_depth = self._io.read_u4le()
             self.z_pt_offset = self._io.read_u4le()
             self.wfm_len = self._io.read_u4le()
-            self.equ_coarse = [None] * (2)
+            self.equ_coarse = []
             for i in range(2):
-                self.equ_coarse[i] = self._io.read_u2le()
+                self.equ_coarse.append(self._io.read_u2le())
 
-            self.equ_fine = [None] * (2)
+            self.equ_fine = []
             for i in range(2):
-                self.equ_fine[i] = self._io.read_u2le()
+                self.equ_fine.append(self._io.read_u2le())
 
-            self.mem_start_addr = [None] * (2)
+            self.mem_start_addr = []
             for i in range(2):
-                self.mem_start_addr[i] = self._io.read_u4le()
+                self.mem_start_addr.append(self._io.read_u4le())
 
             self.mem_last_addr = self._io.read_u4le()
             self.mem_length = self._io.read_u4le()
@@ -175,23 +174,23 @@ class Wfm2000(KaitaiStruct):
         @property
         def points(self):
             if hasattr(self, '_m_points'):
-                return self._m_points if hasattr(self, '_m_points') else None
+                return self._m_points
 
             self._m_points = self._root.header.mem_depth
-            return self._m_points if hasattr(self, '_m_points') else None
+            return getattr(self, '_m_points', None)
 
         @property
         def time_offset(self):
             if hasattr(self, '_m_time_offset'):
-                return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+                return self._m_time_offset
 
             self._m_time_offset = (1.0E-12 * self.time_offset_ps)
-            return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+            return getattr(self, '_m_time_offset', None)
 
         @property
         def raw_2(self):
             if hasattr(self, '_m_raw_2'):
-                return self._m_raw_2 if hasattr(self, '_m_raw_2') else None
+                return self._m_raw_2
 
             if self.channel_offset[1] > 0:
                 io = self._root._io
@@ -200,28 +199,28 @@ class Wfm2000(KaitaiStruct):
                 self._m_raw_2 = io.read_bytes(self.storage_depth)
                 io.seek(_pos)
 
-            return self._m_raw_2 if hasattr(self, '_m_raw_2') else None
+            return getattr(self, '_m_raw_2', None)
 
         @property
         def time_scale(self):
             if hasattr(self, '_m_time_scale'):
-                return self._m_time_scale if hasattr(self, '_m_time_scale') else None
+                return self._m_time_scale
 
             self._m_time_scale = (1.0E-12 * self.time_scale_ps)
-            return self._m_time_scale if hasattr(self, '_m_time_scale') else None
+            return getattr(self, '_m_time_scale', None)
 
         @property
         def seconds_per_point(self):
             if hasattr(self, '_m_seconds_per_point'):
-                return self._m_seconds_per_point if hasattr(self, '_m_seconds_per_point') else None
+                return self._m_seconds_per_point
 
             self._m_seconds_per_point = (1 / self.sample_rate_hz)
-            return self._m_seconds_per_point if hasattr(self, '_m_seconds_per_point') else None
+            return getattr(self, '_m_seconds_per_point', None)
 
         @property
         def raw_4(self):
             if hasattr(self, '_m_raw_4'):
-                return self._m_raw_4 if hasattr(self, '_m_raw_4') else None
+                return self._m_raw_4
 
             if self.channel_offset[3] > 0:
                 io = self._root._io
@@ -230,12 +229,12 @@ class Wfm2000(KaitaiStruct):
                 self._m_raw_4 = io.read_bytes(self.storage_depth)
                 io.seek(_pos)
 
-            return self._m_raw_4 if hasattr(self, '_m_raw_4') else None
+            return getattr(self, '_m_raw_4', None)
 
         @property
         def raw_3(self):
             if hasattr(self, '_m_raw_3'):
-                return self._m_raw_3 if hasattr(self, '_m_raw_3') else None
+                return self._m_raw_3
 
             if self.channel_offset[2] > 0:
                 io = self._root._io
@@ -244,12 +243,12 @@ class Wfm2000(KaitaiStruct):
                 self._m_raw_3 = io.read_bytes(self.storage_depth)
                 io.seek(_pos)
 
-            return self._m_raw_3 if hasattr(self, '_m_raw_3') else None
+            return getattr(self, '_m_raw_3', None)
 
         @property
         def raw_1(self):
             if hasattr(self, '_m_raw_1'):
-                return self._m_raw_1 if hasattr(self, '_m_raw_1') else None
+                return self._m_raw_1
 
             if self.channel_offset[0] > 0:
                 io = self._root._io
@@ -258,7 +257,7 @@ class Wfm2000(KaitaiStruct):
                 self._m_raw_1 = io.read_bytes(self.storage_depth)
                 io.seek(_pos)
 
-            return self._m_raw_1 if hasattr(self, '_m_raw_1') else None
+            return getattr(self, '_m_raw_1', None)
 
 
     class ChannelHeader(KaitaiStruct):
@@ -291,66 +290,66 @@ class Wfm2000(KaitaiStruct):
         @property
         def unit(self):
             if hasattr(self, '_m_unit'):
-                return self._m_unit if hasattr(self, '_m_unit') else None
+                return self._m_unit
 
             self._m_unit = self.unit_actual
-            return self._m_unit if hasattr(self, '_m_unit') else None
+            return getattr(self, '_m_unit', None)
 
         @property
         def unit_actual(self):
             if hasattr(self, '_m_unit_actual'):
-                return self._m_unit_actual if hasattr(self, '_m_unit_actual') else None
+                return self._m_unit_actual
 
             self._m_unit_actual = (self.unit_temp if self.enabled_temp == 1 else self.inverted_temp)
-            return self._m_unit_actual if hasattr(self, '_m_unit_actual') else None
+            return getattr(self, '_m_unit_actual', None)
 
         @property
         def inverted(self):
             if hasattr(self, '_m_inverted'):
-                return self._m_inverted if hasattr(self, '_m_inverted') else None
+                return self._m_inverted
 
             self._m_inverted = (True if self.inverted_actual == 1 else False)
-            return self._m_inverted if hasattr(self, '_m_inverted') else None
+            return getattr(self, '_m_inverted', None)
 
         @property
         def volt_scale(self):
             if hasattr(self, '_m_volt_scale'):
-                return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
+                return self._m_volt_scale
 
             self._m_volt_scale = (self.volt_signed / 25.0)
-            return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
+            return getattr(self, '_m_volt_scale', None)
 
         @property
         def inverted_actual(self):
             if hasattr(self, '_m_inverted_actual'):
-                return self._m_inverted_actual if hasattr(self, '_m_inverted_actual') else None
+                return self._m_inverted_actual
 
             self._m_inverted_actual = (self.inverted_temp if self.enabled_temp == 1 else self.unit_temp)
-            return self._m_inverted_actual if hasattr(self, '_m_inverted_actual') else None
+            return getattr(self, '_m_inverted_actual', None)
 
         @property
         def probe_value(self):
             if hasattr(self, '_m_probe_value'):
-                return self._m_probe_value if hasattr(self, '_m_probe_value') else None
+                return self._m_probe_value
 
             self._m_probe_value = (0.01 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x0_01 else (0.02 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x0_02 else (0.05 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x0_05 else (0.1 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x0_1 else (0.2 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x0_2 else (0.5 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x0_5 else (1.0 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x1 else (2.0 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x2 else (5.0 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x5 else (10.0 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x10 else (20.0 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x20 else (50.0 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x50 else (100.0 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x100 else (200.0 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x200 else (500.0 if self.probe_ratio == Wfm2000.ProbeRatioEnum.x500 else 1000.0)))))))))))))))
-            return self._m_probe_value if hasattr(self, '_m_probe_value') else None
+            return getattr(self, '_m_probe_value', None)
 
         @property
         def enabled(self):
             if hasattr(self, '_m_enabled'):
-                return self._m_enabled if hasattr(self, '_m_enabled') else None
+                return self._m_enabled
 
             self._m_enabled = (True if self.enabled_temp != 0 else False)
-            return self._m_enabled if hasattr(self, '_m_enabled') else None
+            return getattr(self, '_m_enabled', None)
 
         @property
         def volt_signed(self):
             if hasattr(self, '_m_volt_signed'):
-                return self._m_volt_signed if hasattr(self, '_m_volt_signed') else None
+                return self._m_volt_signed
 
             self._m_volt_signed = ((-1.0 * self.volt_per_division) if self.inverted else (1.0 * self.volt_per_division))
-            return self._m_volt_signed if hasattr(self, '_m_volt_signed') else None
+            return getattr(self, '_m_volt_signed', None)
 
 
     class ChannelMask(KaitaiStruct):
@@ -373,12 +372,12 @@ class Wfm2000(KaitaiStruct):
     @property
     def header(self):
         if hasattr(self, '_m_header'):
-            return self._m_header if hasattr(self, '_m_header') else None
+            return self._m_header
 
         _pos = self._io.pos()
         self._io.seek(0)
         self._m_header = Wfm2000.Header(self._io, self, self._root)
         self._io.seek(_pos)
-        return self._m_header if hasattr(self, '_m_header') else None
+        return getattr(self, '_m_header', None)
 
 

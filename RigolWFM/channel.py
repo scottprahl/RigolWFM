@@ -110,7 +110,7 @@ class Channel():
             Channel object
         """
         self.channel_number = channel_number
-        self.name = "CH %d" % channel_number
+        self.name = f'CH {channel_number}'
         self.waveform = w
         self.seconds_per_point = w.header.seconds_per_point
         self.firmware = 'unknown'
@@ -134,7 +134,7 @@ class Channel():
         self.inverted = False
 
         # determine if this channel is one of those chosen by user
-        chosen = selected.find(str(channel_number)) != -1
+        chosen = str(channel_number) in selected
 
         if channel_number <= len(w.header.ch):
             channel = w.header.ch[channel_number - 1]
@@ -315,8 +315,8 @@ class Channel():
         self.coupling = w.header.ch[channel_number - 1].coupling.name.upper()
         self.y_scale = -self.volt_scale
         self.y_offset = self.volt_offset
-
-        if self.enabled_and_selected:
+        
+        if self.enabled_and_selected and not w.header.enabled.interwoven:
             if channel_number == 1:
                 self.raw = np.frombuffer(w.header.raw_1, dtype=np.uint8)
 
@@ -328,6 +328,9 @@ class Channel():
 
             if channel_number == 4:
                 self.raw = np.frombuffer(w.header.raw_4, dtype=np.uint8)
+
+        elif w.header.enabled.interwoven:
+            self.raw = np.frombuffer(w.header.raw_1, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
