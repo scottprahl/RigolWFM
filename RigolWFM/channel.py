@@ -330,7 +330,12 @@ class Channel():
                 self.raw = np.frombuffer(w.header.raw_4, dtype=np.uint8)
 
         elif w.header.enabled.interwoven:
-            self.raw = np.frombuffer(w.header.raw_1, dtype=np.uint8)
+            # 'Interwoven' wave captures use the memory available to all channels
+            # to sample at a higher resolution.  This means if CH1 is disabled
+            # CH2 will use the memory from CH1.
+            self.raw = np.empty((self.points,), dtype=np.uint8)
+            self.raw[0::2] = np.frombuffer(w.header.raw_1, count=self.points//2, dtype=np.uint8)
+            self.raw[1::2] = np.frombuffer(w.header.raw_2, count=self.points//2, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
