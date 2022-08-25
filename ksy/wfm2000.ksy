@@ -225,29 +225,29 @@ types:
       time_offset:
         value: 1.0e-12 * time_offset_ps
       points:
-        value: _root.header.mem_depth
+        value: mem_depth
+
+      raw_depth:
+        value: 'enabled.interwoven ? storage_depth/2 : storage_depth'
+
       raw_1:
-        io: _root._io
         pos: channel_offset[0]
-        size: storage_depth
+        size: raw_depth
         if: channel_offset[0] > 0
 
       raw_2:
-        io: _root._io
         pos: channel_offset[1]
-        size: storage_depth
+        size: raw_depth
         if: channel_offset[1] > 0
 
       raw_3:
-        io: _root._io
         pos: channel_offset[2]
-        size: storage_depth
+        size: raw_depth
         if: channel_offset[2] > 0
 
       raw_4:
-        io: _root._io
         pos: channel_offset[3]
-        size: storage_depth
+        size: raw_depth
         if: channel_offset[3] > 0
 
 
