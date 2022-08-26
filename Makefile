@@ -75,7 +75,7 @@ ksycheck:
 
 notecheck:
 	make clean
-	pytest --verbose -n 4 test_all_notebooks.py
+	pytest --verbose test_all_notebooks.py
 
 pycheck:
 	-pylint RigolWFM/wfm.py
