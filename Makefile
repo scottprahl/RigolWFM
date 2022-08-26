@@ -145,6 +145,8 @@ test2:
 	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-5.wfm
 	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-6.wfm
 	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-7.wfm
+	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-8.wfm
+	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-9.wfm
 	RigolWFM/wfmconvert.py 2 info wfm/DS2000-A.wfm
 	RigolWFM/wfmconvert.py 2 info wfm/DS2000-B.wfm
 
