@@ -244,7 +244,15 @@ clean:
 	rm -rf docs/raw.githubusercontent.com
 	rm -rf build
 	rm -rf .pytest_cache
-
+	rm -rf wfm/DS1202Z-1.csv
+	rm -rf wfm/DS1202Z-1.png
+	rm -rf wfm/DS1202Z-1.txt
+	rm -rf wfm/DS1202Z-1.wfm
+	rm -rf wfm/DS1202Z-2.csv
+	rm -rf wfm/DS1202Z-2.png
+	rm -rf wfm/DS1202Z-2.txt
+	rm -rf wfm/DS1202Z-2.wfm
+	
 realclean:
 	make clean
 	rm -f RigolWFM/wfm1000b.py 
