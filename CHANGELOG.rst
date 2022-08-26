@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v0.9.6
+------
+*    fix DS2072 CH2 wide memory fixes (James Pitts)
+*    get html docs building under nbsphinx again
+
 v0.9.5
 ------
 *    use __version__ in __init__.py
