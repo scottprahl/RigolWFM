@@ -172,12 +172,36 @@ class Wfm2000(KaitaiStruct):
             self.frame_cur = self._io.read_u4le()
 
         @property
+        def len_raw_3(self):
+            if hasattr(self, '_m_len_raw_3'):
+                return self._m_len_raw_3
+
+            self._m_len_raw_3 = (self.raw_depth if self.channel_offset[2] > 0 else 0)
+            return getattr(self, '_m_len_raw_3', None)
+
+        @property
         def points(self):
             if hasattr(self, '_m_points'):
                 return self._m_points
 
             self._m_points = self.mem_depth
             return getattr(self, '_m_points', None)
+
+        @property
+        def len_raw_4(self):
+            if hasattr(self, '_m_len_raw_4'):
+                return self._m_len_raw_4
+
+            self._m_len_raw_4 = (self.raw_depth if self.channel_offset[3] > 0 else 0)
+            return getattr(self, '_m_len_raw_4', None)
+
+        @property
+        def len_raw_2(self):
+            if hasattr(self, '_m_len_raw_2'):
+                return self._m_len_raw_2
+
+            self._m_len_raw_2 = (self.raw_depth if self.channel_offset[1] > 0 else 0)
+            return getattr(self, '_m_len_raw_2', None)
 
         @property
         def time_offset(self):
@@ -203,7 +227,7 @@ class Wfm2000(KaitaiStruct):
             if self.channel_offset[1] > 0:
                 _pos = self._io.pos()
                 self._io.seek(self.channel_offset[1])
-                self._m_raw_2 = self._io.read_bytes(self.raw_depth)
+                self._m_raw_2 = self._io.read_bytes(self.len_raw_2)
                 self._io.seek(_pos)
 
             return getattr(self, '_m_raw_2', None)
@@ -232,7 +256,7 @@ class Wfm2000(KaitaiStruct):
             if self.channel_offset[3] > 0:
                 _pos = self._io.pos()
                 self._io.seek(self.channel_offset[3])
-                self._m_raw_4 = self._io.read_bytes(self.raw_depth)
+                self._m_raw_4 = self._io.read_bytes(self.len_raw_4)
                 self._io.seek(_pos)
 
             return getattr(self, '_m_raw_4', None)
@@ -245,10 +269,18 @@ class Wfm2000(KaitaiStruct):
             if self.channel_offset[2] > 0:
                 _pos = self._io.pos()
                 self._io.seek(self.channel_offset[2])
-                self._m_raw_3 = self._io.read_bytes(self.raw_depth)
+                self._m_raw_3 = self._io.read_bytes(self.len_raw_3)
                 self._io.seek(_pos)
 
             return getattr(self, '_m_raw_3', None)
+
+        @property
+        def len_raw_1(self):
+            if hasattr(self, '_m_len_raw_1'):
+                return self._m_len_raw_1
+
+            self._m_len_raw_1 = (self.raw_depth if self.channel_offset[0] > 0 else 0)
+            return getattr(self, '_m_len_raw_1', None)
 
         @property
         def raw_1(self):
@@ -258,7 +290,7 @@ class Wfm2000(KaitaiStruct):
             if self.channel_offset[0] > 0:
                 _pos = self._io.pos()
                 self._io.seek(self.channel_offset[0])
-                self._m_raw_1 = self._io.read_bytes(self.raw_depth)
+                self._m_raw_1 = self._io.read_bytes(self.len_raw_1)
                 self._io.seek(_pos)
 
             return getattr(self, '_m_raw_1', None)

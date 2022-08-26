@@ -1,12 +1,11 @@
 # This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
 
-from pkg_resources import parse_version
 import kaitaistruct
 from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
 from enum import Enum
 
 
-if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
+if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
     raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Wfm1000b(KaitaiStruct):
@@ -73,18 +72,18 @@ class Wfm1000b(KaitaiStruct):
             self.points = self._io.read_u4le()
             self.active_channel = self._io.read_u1()
             self.unknown_3 = self._io.read_bytes(3)
-            self.ch = [None] * (4)
+            self.ch = []
             for i in range(4):
-                self.ch[i] = Wfm1000b.ChannelHeader(self._io, self, self._root)
+                self.ch.append(Wfm1000b.ChannelHeader(self._io, self, self._root))
 
             self.time_scale = self._io.read_u8le()
             self.time_offset = self._io.read_s8le()
             self.sample_rate_hz = self._io.read_f4le()
             self.time_scale_stop = self._io.read_u8le()
             self.time_scale_offset = self._io.read_s8le()
-            self.unknown_4 = [None] * (4)
+            self.unknown_4 = []
             for i in range(4):
-                self.unknown_4[i] = self._io.read_u4le()
+                self.unknown_4.append(self._io.read_u4le())
 
             self.coupling_ch12 = self._io.read_u1()
             self.coupling_ch34 = self._io.read_u1()
@@ -96,66 +95,98 @@ class Wfm1000b(KaitaiStruct):
         @property
         def ch2(self):
             if hasattr(self, '_m_ch2'):
-                return self._m_ch2 if hasattr(self, '_m_ch2') else None
+                return self._m_ch2
 
             if self.ch[1].enabled:
                 io = self._root._io
                 _pos = io.pos()
                 io.seek((420 + self._root.header.points))
-                self._m_ch2 = io.read_bytes(self.points)
+                self._m_ch2 = io.read_bytes(self.len_ch2)
                 io.seek(_pos)
 
-            return self._m_ch2 if hasattr(self, '_m_ch2') else None
+            return getattr(self, '_m_ch2', None)
+
+        @property
+        def len_ch1(self):
+            if hasattr(self, '_m_len_ch1'):
+                return self._m_len_ch1
+
+            self._m_len_ch1 = (self.points if self.ch[0].enabled else 0)
+            return getattr(self, '_m_len_ch1', None)
 
         @property
         def ch1(self):
             if hasattr(self, '_m_ch1'):
-                return self._m_ch1 if hasattr(self, '_m_ch1') else None
+                return self._m_ch1
 
             if self.ch[0].enabled:
                 io = self._root._io
                 _pos = io.pos()
                 io.seek(420)
-                self._m_ch1 = io.read_bytes(self.points)
+                self._m_ch1 = io.read_bytes(self.len_ch1)
                 io.seek(_pos)
 
-            return self._m_ch1 if hasattr(self, '_m_ch1') else None
+            return getattr(self, '_m_ch1', None)
+
+        @property
+        def len_ch4(self):
+            if hasattr(self, '_m_len_ch4'):
+                return self._m_len_ch4
+
+            self._m_len_ch4 = (self.points if self.ch[3].enabled else 0)
+            return getattr(self, '_m_len_ch4', None)
+
+        @property
+        def len_ch3(self):
+            if hasattr(self, '_m_len_ch3'):
+                return self._m_len_ch3
+
+            self._m_len_ch3 = (self.points if self.ch[2].enabled else 0)
+            return getattr(self, '_m_len_ch3', None)
+
+        @property
+        def len_ch2(self):
+            if hasattr(self, '_m_len_ch2'):
+                return self._m_len_ch2
+
+            self._m_len_ch2 = (self.points if self.ch[1].enabled else 0)
+            return getattr(self, '_m_len_ch2', None)
 
         @property
         def ch4(self):
             if hasattr(self, '_m_ch4'):
-                return self._m_ch4 if hasattr(self, '_m_ch4') else None
+                return self._m_ch4
 
             if self.ch[3].enabled:
                 io = self._root._io
                 _pos = io.pos()
                 io.seek((420 + (self._root.header.points * 3)))
-                self._m_ch4 = io.read_bytes(self.points)
+                self._m_ch4 = io.read_bytes(self.len_ch4)
                 io.seek(_pos)
 
-            return self._m_ch4 if hasattr(self, '_m_ch4') else None
+            return getattr(self, '_m_ch4', None)
 
         @property
         def seconds_per_point(self):
             if hasattr(self, '_m_seconds_per_point'):
-                return self._m_seconds_per_point if hasattr(self, '_m_seconds_per_point') else None
+                return self._m_seconds_per_point
 
             self._m_seconds_per_point = (1.0 / self.sample_rate_hz)
-            return self._m_seconds_per_point if hasattr(self, '_m_seconds_per_point') else None
+            return getattr(self, '_m_seconds_per_point', None)
 
         @property
         def ch3(self):
             if hasattr(self, '_m_ch3'):
-                return self._m_ch3 if hasattr(self, '_m_ch3') else None
+                return self._m_ch3
 
             if self.ch[2].enabled:
                 io = self._root._io
                 _pos = io.pos()
                 io.seek((420 + (self._root.header.points * 2)))
-                self._m_ch3 = io.read_bytes(self.points)
+                self._m_ch3 = io.read_bytes(self.len_ch3)
                 io.seek(_pos)
 
-            return self._m_ch3 if hasattr(self, '_m_ch3') else None
+            return getattr(self, '_m_ch3', None)
 
 
     class ChannelHeader(KaitaiStruct):
@@ -182,77 +213,77 @@ class Wfm1000b(KaitaiStruct):
         @property
         def unit(self):
             if hasattr(self, '_m_unit'):
-                return self._m_unit if hasattr(self, '_m_unit') else None
+                return self._m_unit
 
             self._m_unit = Wfm1000b.UnitEnum.v
-            return self._m_unit if hasattr(self, '_m_unit') else None
+            return getattr(self, '_m_unit', None)
 
         @property
         def time_offset(self):
             if hasattr(self, '_m_time_offset'):
-                return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+                return self._m_time_offset
 
             self._m_time_offset = self._root.header.time_offset
-            return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+            return getattr(self, '_m_time_offset', None)
 
         @property
         def inverted(self):
             if hasattr(self, '_m_inverted'):
-                return self._m_inverted if hasattr(self, '_m_inverted') else None
+                return self._m_inverted
 
             self._m_inverted = (True if self.invert_m_val != 0 else False)
-            return self._m_inverted if hasattr(self, '_m_inverted') else None
+            return getattr(self, '_m_inverted', None)
 
         @property
         def time_scale(self):
             if hasattr(self, '_m_time_scale'):
-                return self._m_time_scale if hasattr(self, '_m_time_scale') else None
+                return self._m_time_scale
 
             self._m_time_scale = self._root.header.time_scale
-            return self._m_time_scale if hasattr(self, '_m_time_scale') else None
+            return getattr(self, '_m_time_scale', None)
 
         @property
         def volt_offset(self):
             if hasattr(self, '_m_volt_offset'):
-                return self._m_volt_offset if hasattr(self, '_m_volt_offset') else None
+                return self._m_volt_offset
 
             self._m_volt_offset = (self.shift_measured * self.volt_scale)
-            return self._m_volt_offset if hasattr(self, '_m_volt_offset') else None
+            return getattr(self, '_m_volt_offset', None)
 
         @property
         def volt_per_division(self):
             if hasattr(self, '_m_volt_per_division'):
-                return self._m_volt_per_division if hasattr(self, '_m_volt_per_division') else None
+                return self._m_volt_per_division
 
             self._m_volt_per_division = (((-0.0000010 * self.scale_measured) * self.probe_value) if self.inverted else ((0.0000010 * self.scale_measured) * self.probe_value))
-            return self._m_volt_per_division if hasattr(self, '_m_volt_per_division') else None
+            return getattr(self, '_m_volt_per_division', None)
 
         @property
         def volt_scale(self):
             if hasattr(self, '_m_volt_scale'):
-                return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
+                return self._m_volt_scale
 
             self._m_volt_scale = (self.volt_per_division / 25.0)
-            return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
+            return getattr(self, '_m_volt_scale', None)
 
         @property
         def enabled(self):
             if hasattr(self, '_m_enabled'):
-                return self._m_enabled if hasattr(self, '_m_enabled') else None
+                return self._m_enabled
 
             self._m_enabled = (True if self.enabled_val != 0 else False)
-            return self._m_enabled if hasattr(self, '_m_enabled') else None
+            return getattr(self, '_m_enabled', None)
 
 
     @property
     def header(self):
         if hasattr(self, '_m_header'):
-            return self._m_header if hasattr(self, '_m_header') else None
+            return self._m_header
 
         _pos = self._io.pos()
         self._io.seek(0)
         self._m_header = Wfm1000b.Header(self._io, self, self._root)
         self._io.seek(_pos)
-        return self._m_header if hasattr(self, '_m_header') else None
+        return getattr(self, '_m_header', None)
 
 
