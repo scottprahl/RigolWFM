@@ -230,24 +230,33 @@ types:
       raw_depth:
         value: 'enabled.interwoven ? storage_depth/2 : storage_depth'
 
+      len_raw_1:
+        value: "channel_offset[0] > 0 ? raw_depth : 0"
+      len_raw_2:
+        value: "channel_offset[1] > 0 ? raw_depth : 0"
+      len_raw_3:
+        value: "channel_offset[2] > 0 ? raw_depth : 0"
+      len_raw_4:
+        value: "channel_offset[3] > 0 ? raw_depth : 0"
+
       raw_1:
         pos: channel_offset[0]
-        size: raw_depth
+        size: len_raw_1
         if: channel_offset[0] > 0
 
       raw_2:
         pos: channel_offset[1]
-        size: raw_depth
+        size: len_raw_2
         if: channel_offset[1] > 0
 
       raw_3:
         pos: channel_offset[2]
-        size: raw_depth
+        size: len_raw_3
         if: channel_offset[2] > 0
 
       raw_4:
         pos: channel_offset[3]
-        size: raw_depth
+        size: len_raw_4
         if: channel_offset[3] > 0
 
 
