@@ -72,25 +72,33 @@ types:
     instances:
       seconds_per_point:
         value: 1.0/sample_rate_hz
+      len_ch1:
+        value: "ch[0].enabled ? points : 0"
+      len_ch2:
+        value: "ch[1].enabled ? points : 0"
+      len_ch3:
+        value: "ch[2].enabled ? points : 0"
+      len_ch4:
+        value: "ch[3].enabled ? points : 0"
       ch1:
         io: _root._io
         pos: 420
-        size: points
+        size: len_ch1
         if: ch[0].enabled
       ch2:
         io: _root._io
         pos: 420 + _root.header.points
-        size: points
+        size: len_ch2
         if: ch[1].enabled
       ch3:
         io: _root._io
         pos: 420 + _root.header.points * 2
-        size: points
+        size: len_ch3
         if: ch[2].enabled
       ch4:
         io: _root._io
         pos: 420 + _root.header.points * 3
-        size: points
+        size: len_ch4
         if: ch[3].enabled
 
 

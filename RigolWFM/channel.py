@@ -209,28 +209,28 @@ class Channel():
             if self.enabled_and_selected:
                 if (w.header.coupling_ch12 & 0xC0) == 0xC0:
                     self.coupling = 'DC'
-                self.points = len(w.header.ch1)
+                self.points = w.header.len_ch1
                 self.raw = np.frombuffer(w.header.ch1, dtype=np.uint8)
 
         if channel_number == 2:
             if self.enabled_and_selected:
                 if (w.header.coupling_ch12 & 0x0C) == 0x0C:
                     self.coupling = 'DC'
-                self.points = len(w.header.ch2)
+                self.points = w.header.len_ch2
                 self.raw = np.frombuffer(w.header.ch2, dtype=np.uint8)
 
         if channel_number == 3:
             if self.enabled_and_selected:
                 if (w.header.coupling_ch34 & 0xC0) == 0xC0:
                     self.coupling = 'DC'
-                self.points = len(w.header.ch3)
+                self.points = w.header.len_ch3
                 self.raw = np.frombuffer(w.header.ch3, dtype=np.uint8)
 
         if channel_number == 4:
             if self.enabled_and_selected:
                 if (w.header.coupling_ch34 & 0x0C) == 0x0C:
                     self.coupling = 'DC'
-                self.points = len(w.header.ch4)
+                self.points = w.header.len_ch4
                 self.raw = np.frombuffer(w.header.ch4, dtype=np.uint8)
 
         self.calc_times_and_volts()
