@@ -112,6 +112,14 @@ types:
         type: time_header
 
     instances:
+      len_raw_1:
+        value: "enabled.channel_1 ? mem_depth : 0"
+      len_raw_2:
+        value: "enabled.channel_2 ? mem_depth : 0"
+      len_raw_3:
+        value: "enabled.channel_3 ? mem_depth : 0"
+      len_raw_4:
+        value: "enabled.channel_4 ? mem_depth : 0"
       vertical_scale_factor:
         value: "model_number.substring(2, 3) == '2' ? 25 : 32"
       seconds_per_point:
@@ -126,22 +134,22 @@ types:
       raw_1:
         io: _root._io
         pos: position.channel_1
-        size: mem_depth
+        size: len_raw_1
         if: enabled.channel_1
       raw_2:
         io: _root._io
         pos: position.channel_2
-        size: mem_depth
+        size: len_raw_2
         if: enabled.channel_2
       raw_3:
         io: _root._io
         pos: position.channel_3
-        size: mem_depth
+        size: len_raw_3
         if: enabled.channel_3
       raw_4:
         io: _root._io
         pos: position.channel_4
-        size: mem_depth
+        size: len_raw_4
         if: enabled.channel_4
 
   position_type:
