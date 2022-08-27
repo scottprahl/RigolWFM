@@ -11,9 +11,9 @@ Command line utility to convert Rigol .wfm files.
     Examples::
 
         prompt> wfmconvert E info DS1102E-A.wfm
-        
+
         prompt> wfmconvert E csv DS1102E-A.wfm
-        
+
         prompt> wfmconvert E wav DS1102E-A.wfm
 """
 

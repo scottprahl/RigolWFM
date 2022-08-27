@@ -315,7 +315,7 @@ class Channel():
         self.coupling = w.header.ch[channel_number - 1].coupling.name.upper()
         self.y_scale = -self.volt_scale
         self.y_offset = self.volt_offset
-        
+
         if self.enabled_and_selected and not w.header.enabled.interwoven:
             if channel_number == 1:
                 self.raw = np.frombuffer(w.header.raw_1, dtype=np.uint8)
@@ -334,8 +334,8 @@ class Channel():
             # to sample at a higher resolution.  This means if CH1 is disabled
             # CH2 will use the memory from CH1.
             self.raw = np.empty((self.points,), dtype=np.uint8)
-            self.raw[0::2] = np.frombuffer(w.header.raw_1, count=self.points//2, dtype=np.uint8)
-            self.raw[1::2] = np.frombuffer(w.header.raw_2, count=self.points//2, dtype=np.uint8)
+            self.raw[0::2] = np.frombuffer(w.header.raw_1, count=self.points // 2, dtype=np.uint8)
+            self.raw[1::2] = np.frombuffer(w.header.raw_2, count=self.points // 2, dtype=np.uint8)
 
         self.calc_times_and_volts()
 

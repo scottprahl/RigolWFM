@@ -17,7 +17,6 @@ Extract signals or description from Rigol 1000E Oscilloscope waveform file.
 
 """
 import os.path
-import sys
 import tempfile
 import urllib.parse
 import wave
