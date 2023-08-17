@@ -45,7 +45,7 @@ DS1000C_scopes = ["C", "1000C", "DS1000C",
                   "DS1302CA", "DS1202CA", "DS1102CA", "DS1062CA",
                   "DS1042C"]
 
-# untested
+# tested
 DS1000D_scopes = ["D", "1000D", "DS1000D", "DS1102D", "DS1052D"]
 
 # tested
