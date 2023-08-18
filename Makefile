@@ -116,6 +116,9 @@ testc:
 	RigolWFM/wfmconvert.py C info wfm/DS1202CA-A.wfm
 	RigolWFM/wfmconvert.py C info wfm/DS1042C-A.wfm
 
+testd:
+	RigolWFM/wfmconvert.py D info wfm/DS1102D-A.wfm
+
 teste:
 	RigolWFM/wfmconvert.py E info wfm/DS1102E-A.wfm
 	RigolWFM/wfmconvert.py E info wfm/DS1102E-B.wfm
@@ -157,6 +160,7 @@ test4:
 	RigolWFM/wfmconvert.py 4 info wfm/DS4024-B.wfm
 
 test: $(PYTHON_PARSERS)
+	make testd
 	make teste
 	make testz
 	make test4
@@ -174,6 +178,7 @@ csv:
 	RigolWFM/wfmconvert.py 2 csv wfm/DS2202.wfm
 	RigolWFM/wfmconvert.py C csv wfm/DS1202CA-A.wfm
 	RigolWFM/wfmconvert.py B csv wfm/DS1204B-A.wfm
+	RigolWFM/wfmconvert.py D csv wfm/DS1102D-A.wfm
 
 wav:
 	RigolWFM/wfmconvert.py E wav wfm/DS1102E-A.wfm
@@ -182,6 +187,7 @@ wav:
 	RigolWFM/wfmconvert.py 2 wav wfm/DS2202.wfm
 	RigolWFM/wfmconvert.py C wav wfm/DS1202CA-A.wfm
 	RigolWFM/wfmconvert.py B wav wfm/DS1204B-A.wfm
+	RigolWFM/wfmconvert.py D wav wfm/DS1102D-A.wfm
 	
 vcsv:
 	RigolWFM/wfmconvert.py E vcsv wfm/DS1102E-A.wfm
@@ -196,6 +202,8 @@ vcsv:
 	mv wfm/DS1202CA-A.csv wfm/DS1202CA-A.vcsv
 	RigolWFM/wfmconvert.py B vcsv wfm/DS1204B-A.wfm
 	mv wfm/DS1204B-A.csv wfm/DS1204B-A.vcsv
+	RigolWFM/wfmconvert.py D vcsv wfm/DS1102D-A.wfm
+	mv wfm/DS1102D-A.csv wfm/DS1102D-A.vcsv
 
 sigrok:
 	@ echo "*********************************************************"
@@ -207,12 +215,9 @@ sigrok:
 	RigolWFM/wfmconvert.py 2 sigrok wfm/DS2202.wfm
 	RigolWFM/wfmconvert.py C sigrok wfm/DS1202CA-A.wfm
 	RigolWFM/wfmconvert.py B sigrok wfm/DS1204B-A.wfm
+	RigolWFM/wfmconvert.py D sigrok wfm/DS1102D-A.wfm
 
-clean:
-	rm -rf dist
-	rm -rf RigolWFM.egg-info
-	rm -rf docs/github.com
-	rm -rf RigolWFM/__pycache__
+cleantest:
 	rm -rf wfm/DS1102E-A.csv
 	rm -rf wfm/DS1102E-A.wav
 	rm -rf wfm/DS1102E-A.vcsv
@@ -237,13 +242,6 @@ clean:
 	rm -rf wfm/DS1204B-A.wav
 	rm -rf wfm/DS1204B-A.vcsv
 	rm -rf wfm/DS1204B-A.sr
-	rm -rf docs/_build
-	rm -rf docs/api
-	rm -rf .tox
-	rm -rf __pycache__
-	rm -rf docs/raw.githubusercontent.com
-	rm -rf build
-	rm -rf .pytest_cache
 	rm -rf wfm/DS1202Z-1.csv
 	rm -rf wfm/DS1202Z-1.png
 	rm -rf wfm/DS1202Z-1.txt
@@ -252,6 +250,23 @@ clean:
 	rm -rf wfm/DS1202Z-2.png
 	rm -rf wfm/DS1202Z-2.txt
 	rm -rf wfm/DS1202Z-2.wfm
+	rm -rf wfm/DS1102D-A.sr
+	rm -rf wfm/DS1102D-A.vcsv
+	rm -rf wfm/DS1102D-A.wav
+
+clean:
+	make cleantest
+	rm -rf dist
+	rm -rf RigolWFM.egg-info
+	rm -rf docs/github.com
+	rm -rf RigolWFM/__pycache__
+	rm -rf docs/_build
+	rm -rf docs/api
+	rm -rf .tox
+	rm -rf __pycache__
+	rm -rf docs/raw.githubusercontent.com
+	rm -rf build
+	rm -rf .pytest_cache
 	
 realclean:
 	make clean
