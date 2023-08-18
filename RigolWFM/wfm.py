@@ -250,7 +250,9 @@ class Wfm():
         try:
             # need a local file for conversion, download url and save as tempfile
             print("downloading '%s'" % url)
-            r = requests.get(url, allow_redirects=True)
+            r = requests.get(url, allow_redirects=True, timeout=10)
+            r.raise_for_status()
+
             if not r.ok:
                 error_string = "Downloading URL '%s' failed: '%s'" % (
                     url, r.reason)
@@ -272,7 +274,7 @@ class Wfm():
             except Exception as e:
                 raise Parse_WFM_Error(e)
 
-        except Exception as e:
+        except r.exceptions.RequestException as e:
             raise Parse_WFM_Error(e)
 
     def describe(self):
