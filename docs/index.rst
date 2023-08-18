@@ -5,7 +5,7 @@
 
 .. toctree::
    :caption: Introduction
-   
+
    0-Basics.ipynb
 
 .. toctree::
@@ -51,4 +51,4 @@
 .. toctree::
    :caption: Versions
    
-   changelog
+   changelog.rst
