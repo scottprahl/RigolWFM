@@ -60,7 +60,6 @@ rstcheck:
 	-rstcheck CHANGELOG.rst
 	-rstcheck docs/index.rst
 	-rstcheck docs/changelog.rst
-	-rstcheck docs/readme.rst
 	-rstcheck --ignore-directives automodule docs/RigolWFM.rst
 
 ksycheck:
