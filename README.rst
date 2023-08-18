@@ -83,6 +83,7 @@ There is a bit of work remaining (testing, validation, repackaging) but there ar
 
 * DS1000B tested 
 * DS1000C tested (two files only)
+* DS1000D tested (one file only)
 * DS1000E tested
 * DS1000Z tested, but with wonky voltage offsets
 * DS2000 tested
