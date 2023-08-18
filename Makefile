@@ -58,9 +58,7 @@ yamlcheck:
 rstcheck:
 	-rstcheck README.rst
 	-rstcheck CHANGELOG.rst
-	-rstcheck docs/index.rst
-	-rstcheck docs/changelog.rst
-	-rstcheck --ignore-directives automodule docs/RigolWFM.rst
+	-rstcheck --ignore-directives automodapi docs/RigolWFM.rst
 
 ksycheck:
 	-ksylint ksy/wfm1000b.ksy
@@ -264,6 +262,7 @@ clean:
 	rm -rf .tox
 	rm -rf __pycache__
 	rm -rf docs/raw.githubusercontent.com
+	rm -rf docs/media.githubusercontent.com
 	rm -rf build
 	rm -rf .pytest_cache
 	

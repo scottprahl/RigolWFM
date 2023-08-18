@@ -1,6 +1,13 @@
 Changelog
 =========
 
+v0.9.7
+------
+*    include DS1102D test files (Karl Palsson)
+*    bump python versions to 3.8 through 3.11
+*    add notebook for 1000D files
+*    remove unnecessary .rst testing
+
 v0.9.6
 ------
 *    fix DS2072 CH2 wide memory fixes (James Pitts)
