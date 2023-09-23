@@ -3,26 +3,46 @@ RigolWFM
 
 by Scott Prahl
 
-A utility to process Rigol oscilloscope `.wfm` files
+A utility to process Rigol oscilloscope ``.wfm`` files
 ----------------------------------------------------
 
-.. image:: https://colab.research.google.com/assets/colab-badge.svg
-   :target: https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master
-
-.. image:: https://img.shields.io/pypi/v/RigolWFM.svg
+.. image:: https://img.shields.io/pypi/v/RigolWFM?color=73C449
    :target: https://pypi.org/project/RigolWFM/
+   :alt: pypi
+
+.. image:: https://img.shields.io/github/v/tag/scottprahl/RigolWFM?label=github&color=73C449
+   :target: https://github.com/scottprahl/RigolWFM
+   :alt: github
+
+.. image:: https://img.shields.io/conda/vn/conda-forge/RigolWFM?label=conda&color=73C449
+   :target: https://github.com/conda-forge/RigolWFM-feedstock
+   :alt: conda
 
 .. image:: https://img.shields.io/badge/kaitai-struct-green.svg
    :target: https://ide.kaitai.io
+   :alt: kaitai-struct
 
-.. image:: https://img.shields.io/badge/readthedocs-latest-blue.svg
+.. image:: https://zenodo.org/badge/102148844.svg
+   :target: https://zenodo.org/badge/latestdoi/102148844
+   :alt: doi
+
+|
+
+.. image:: https://img.shields.io/github/license/scottprahl/RigolWFM?color=73C449
+   :target: https://github.com/scottprahl/RigolWFM/blob/master/LICENSE.txt
+   :alt: License
+
+.. image:: https://github.com/scottprahl/RigolWFM/actions/workflows/test.yaml/badge.svg
+   :target: https://github.com/scottprahl/RigolWFM/actions/workflows/test.yaml
+   :alt: Testing
+
+.. image:: https://readthedocs.org/projects/RigolWFM/badge
    :target: https://RigolWFM.readthedocs.io
+   :alt: Docs
 
-.. image:: https://img.shields.io/badge/github-code-green.svg
-   :target: https://github.com/scottprahl/RigolWFM
-
-.. image:: https://img.shields.io/badge/BSD-license-yellow.svg
-   :target: https://github.com/scottprahl/RigolWFM/blob/master/LICENSE
+.. image:: https://img.shields.io/pypi/dm/RigolWFM?color=73C449
+   :target: https://pypi.org/project/RigolWFM/
+   :alt: Downloads
 
 __________
 
