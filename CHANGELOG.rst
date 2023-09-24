@@ -1,6 +1,15 @@
 Changelog
 =========
 
+v0.9.8
+------
+*    no new features, just updating packaging
+*    add conda-forge support
+*    add zenodo DOI citation support
+*    add github action workflows
+*    add trivial test file
+*    improve readme
+
 v0.9.7
 ------
 *    include DS1102D test files (Karl Palsson)

@@ -1,3 +1,5 @@
 kaitaistruct
 numpy
 matplotlib
+
+RigolWFM

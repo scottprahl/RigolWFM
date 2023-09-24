@@ -52,16 +52,24 @@ This project leverages a domain specific language (kaitai struct) to represent t
 
 Documentation can be found at <https://RigolWFM.readthedocs.io>
 
-Using RigolWFM
+Installation
 ---------------
 
-1. You can install locally using pip::
+You can install locally using pip::
     
     pip install --user RigolWFM
 
-2. or `run this code in the cloud using Google Collaboratory <https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master>`_ by selecting the Jupyter notebook that interests you.
+or ``conda``::
 
-3. or `analyze your files using the kaitai struct IDE <https://ide.kaitai.io>`_ (you will need to manually upload the appropriate `.ksy` file and your `.wfm` to the IDE).  This allows one to interactively reverse engineer binary file formats directly in your browser.  This is super helpful for those Rigol ``.wfm`` formats that are undocumented or not parsing correctly.
+    conda install -c conda-forge pygrin
+
+or use immediately by clicking the Google Colaboratory button below
+
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+  :target: https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master
+  :alt: Colab
+
+or `analyze your files using the kaitai struct IDE <https://ide.kaitai.io>`_ (you will need to manually upload the appropriate `.ksy` file and your `.wfm` to the IDE).  This allows one to interactively reverse engineer binary file formats directly in your browser.  This is super helpful for those Rigol ``.wfm`` formats that are undocumented or not parsing correctly.
 
 
 Usage

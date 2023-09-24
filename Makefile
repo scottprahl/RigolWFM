@@ -54,6 +54,9 @@ yamlcheck:
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm2000.ksy
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm4000.ksy
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm6000.ksy
+	-yamllint .github/workflows/pypi.yaml
+	-yamllint .github/workflows/test.yaml
+	-yamllint .github/workflows/citation.yaml
 
 rstcheck:
 	-rstcheck README.rst
@@ -253,18 +256,19 @@ cleantest:
 
 clean:
 	make cleantest
+	rm -rf __pycache__
+	rm -rf .pytest_cache
+	rm -rf build
 	rm -rf dist
-	rm -rf RigolWFM.egg-info
+	rm -rf docs/.ipynb_checkpoints
 	rm -rf docs/github.com
-	rm -rf RigolWFM/__pycache__
 	rm -rf docs/_build
 	rm -rf docs/api
-	rm -rf .tox
-	rm -rf __pycache__
 	rm -rf docs/raw.githubusercontent.com
 	rm -rf docs/media.githubusercontent.com
-	rm -rf build
-	rm -rf .pytest_cache
+	rm -rf RigolWFM.egg-info
+	rm -rf RigolWFM/__pycache__
+	rm -rf tests/__pycache__
 	
 realclean:
 	make clean

@@ -1,18 +1,5 @@
 include CHANGELOG.rst
-include LICENSE
-include MANIFEST.in
-include README.rst
+include CITATION.cff
 include requirements.txt
-include requirements-dev.txt
-
-exclude .gitattributes
-exclude .gitignore
-exclude .readthedocs.yaml
-exclude release.txt
-exclude todo
-exclude Makefile
-exclude wfm/*
-exclude ksy/*
-exclude docs
-exclude docs/*
-exclude test_all_notebooks.py
+include tests/test_wfmconvert.py
+include tests/*.wfm
