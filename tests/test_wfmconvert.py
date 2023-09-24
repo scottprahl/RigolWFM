@@ -6,10 +6,10 @@ def test_wfmconvert_info():
         "RigolWFM/wfmconvert.py B info tests/DS1204B-A.wfm",
         "RigolWFM/wfmconvert.py C info tests/DS1202CA-A.wfm",
         "RigolWFM/wfmconvert.py D info tests/DS1102D-A.wfm",
-        "RigolWFM/wfmconvert.py E info tests/DS1052E.wfm",
-        "RigolWFM/wfmconvert.py Z info tests/DS1054Z-A.wfm",
-        "RigolWFM/wfmconvert.py 2 info tests/DS2000-A.wfm",
-        "RigolWFM/wfmconvert.py 4 info tests/DS4024-A.wfm"
+        "RigolWFM/wfmconvert.py E info tests/DS1102E-A.wfm",
+        "RigolWFM/wfmconvert.py Z info tests/MSO1104.wfm",
+        "RigolWFM/wfmconvert.py 2 info tests/DS2202.wfm",
+        "RigolWFM/wfmconvert.py 4 info tests/DS4022-A.wfm"
     ]
 
     for command in commands:

@@ -269,7 +269,10 @@ clean:
 	rm -rf RigolWFM.egg-info
 	rm -rf RigolWFM/__pycache__
 	rm -rf tests/__pycache__
-	
+	rm -rf tests/*.csv
+	rm -rf tests/*.wav
+	rm -rf tests/*.sr
+
 realclean:
 	make clean
 	rm -f RigolWFM/wfm1000b.py 
