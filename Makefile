@@ -171,6 +171,9 @@ test: $(PYTHON_PARSERS)
 	make wav
 	make sigrok
 
+make actiontest:
+	cd RigolWFM && pytest ../tests/test_wfmconvert.py
+
 csv:
 	RigolWFM/wfmconvert.py E csv wfm/DS1102E-A.wfm
 	RigolWFM/wfmconvert.py Z csv wfm/MSO1104.wfm
