@@ -31,6 +31,9 @@ jobs:
           pip install -U pip setuptools wheel
           pip install -r requirements.txt
 
+      - name: Check where wfmconvert is installed
+        run: which wfmconvert
+
       - name: Tests
         run: |
           pytest tests/test_wfmconvert.py

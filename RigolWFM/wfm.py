@@ -9,11 +9,11 @@
 """
 Extract signals or description from Rigol 1000E Oscilloscope waveform file.
 
-    Example:
-        >>> import RigolWFM.wfm as rigol
-        >>> waveform = rigol.Wfm.from_file("file_name.wfm", 'E')
-        >>> description = waveform.describe()
-        >>> print(description)
+Example:
+    >>> import RigolWFM.wfm as rigol
+    >>> waveform = rigol.Wfm.from_file("file_name.wfm", 'E')
+    >>> description = waveform.describe()
+    >>> print(description)
 
 """
 import os.path
