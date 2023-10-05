@@ -1,13 +1,13 @@
 Changelog
 =========
 
-v0.9.8
+0.9.8
 ------
 *    no new features, just updating packaging
 *    add conda-forge support
 *    add zenodo DOI citation support
 *    add github action workflows
-*    add trivial test file
+*    add tests for wfmconvert
 *    improve readme
 
 v0.9.7

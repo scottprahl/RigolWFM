@@ -3,8 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.ruff]
-line-length = 100
-ignore = ["F403"]
+ignore = ["F403", "E501", "F401"]
 exclude =['.git', '__pycache__', 'docs', 'wfm']
 
 [tool.check-manifest]

@@ -4,7 +4,7 @@ RigolWFM
 by Scott Prahl
 
 A utility to process Rigol oscilloscope ``.wfm`` files
-----------------------------------------------------
+------------------------------------------------------
 
 .. image:: https://img.shields.io/pypi/v/RigolWFM?color=73C449
    :target: https://pypi.org/project/RigolWFM/

@@ -73,10 +73,6 @@ ksycheck:
 	-ksylint ksy/wfm4000.ksy
 	-ksylint ksy/wfm6000.ksy
 
-notecheck:
-	make clean
-	pytest --verbose test_all_notebooks.py
-
 pycheck:
 	-pylint RigolWFM/wfm.py
 	-pydocstyle RigolWFM/wfm.py
@@ -84,22 +80,20 @@ pycheck:
 	-pydocstyle RigolWFM/channel.py
 	-pylint RigolWFM/wfmconvert.py
 	-pydocstyle RigolWFM/wfmconvert.py
-	-flake8 .
+	-ruff check .
 
 #check everything before a new release
 rcheck:
 	make realclean
+	make
 	make ksycheck
 	make yamlcheck
-	make
-	make notecheck
 	make rstcheck
 	make pycheck
 	make html
-	make test
 	check-manifest
 	pyroma -d .
-	tox
+	make test
 
 html:
 	$(SPHINXBUILD) -b html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
@@ -159,20 +153,10 @@ test4:
 	RigolWFM/wfmconvert.py 4 info wfm/DS4024-A.wfm
 	RigolWFM/wfmconvert.py 4 info wfm/DS4024-B.wfm
 
-test: $(PYTHON_PARSERS)
-	make testd
-	make teste
-	make testz
-	make test4
-	make test2
-	make testc
-	make vcsv
-	make csv
-	make wav
-	make sigrok
-
-make actiontest:
-	cd RigolWFM && pytest ../tests/test_wfmconvert.py
+testtests:
+	pytest --verbose tests/test_wfmconvert.py
+	pytest --verbose tests/test_wfmconvert_sigrok.py
+	pytest --verbose tests/test_all_notebooks.py
 
 csv:
 	RigolWFM/wfmconvert.py E csv wfm/DS1102E-A.wfm
@@ -219,6 +203,19 @@ sigrok:
 	RigolWFM/wfmconvert.py C sigrok wfm/DS1202CA-A.wfm
 	RigolWFM/wfmconvert.py B sigrok wfm/DS1204B-A.wfm
 	RigolWFM/wfmconvert.py D sigrok wfm/DS1102D-A.wfm
+
+test: $(PYTHON_PARSERS)
+	make testd
+	make teste
+	make testz
+	make test4
+	make test2
+	make testc
+	make vcsv
+	make csv
+	make wav
+	make sigrok
+	make testtests
 
 cleantest:
 	rm -rf wfm/DS1102E-A.csv
