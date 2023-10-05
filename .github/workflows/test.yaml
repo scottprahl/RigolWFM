@@ -31,8 +31,14 @@ jobs:
           pip install -U pip setuptools wheel
           pip install -r requirements.txt
 
+      - name: wmfconvert location
+        run: which wfmconvert
+
+      - name: is wmfconvert available
+        run: ls -al RigolWFM
+
       - name: is tests available
-        run: ls tests
+        run: ls -al tests
 
       - name: Tests
         run: |
