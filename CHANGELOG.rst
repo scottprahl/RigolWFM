@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.9.9
+------
+*    don't include large git lfs files!
+
 0.9.8
 ------
 *    no new features, just updating packaging
