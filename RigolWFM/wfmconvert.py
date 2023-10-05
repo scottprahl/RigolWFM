@@ -20,6 +20,7 @@ Command line utility to convert Rigol .wfm files.
 import re
 import os
 import sys
+import shutil
 import argparse
 import subprocess
 import textwrap
@@ -76,20 +77,41 @@ def sigrok(args, scope_data, infile):
     sigrok_name = os.path.splitext(infile)[0] + '.sr'
 
     if os.path.isfile(sigrok_name) and not args.force:
-        print("'%s' exists, use --force to overwrite" % sigrok_name)
-        return
+        print(f"'{sigrok_name}' exists, use --force to overwrite", file=sys.stderr)
+        return False
 
     s = scope_data.sigrokcsv()
+
+    # Check if sigrok-cli is installed and accessible
+    if not shutil.which("sigrok-cli"):
+        print("sigrok-cli is not installed or not found in PATH.", file=sys.stderr)
+        print("See https://sigrok.org/wiki/Sigrok-cli for more information.", file=sys.stderr)
+        return False
+
     # sigrok-cli reports a warning about /dev/stdin not being a regular file,
     # but the conversion works fine.
-    p = subprocess.run(
-        ['sigrok-cli', '-I', 'csv:start_line=2:column_formats=t,1a',
-         '-i', '/dev/stdin', '-o', sigrok_name],
-        input=s.encode(encoding='utf-8'),
-        check=True)
-    if p.returncode != 0:
-        print("sigrok-cli failed")
+    try:
+        p = subprocess.run(
+            ['sigrok-cli', '-I', 'csv:start_line=2:column_formats=t,1a',
+             '-i', '/dev/stdin', '-o', sigrok_name],
+            input=s,
+            check=True,
+            stderr=subprocess.PIPE,
+            text=True)
+    except subprocess.CalledProcessError as e:
+        print(f"sigrok-cli failed with error: {e.stderr}", file=sys.stderr)
+        print("See https://sigrok.org/wiki/Sigrok-cli for more information.", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}", file=sys.stderr)
+        return False
 
+    if p.returncode != 0:
+        print(f"sigrok-cli returned non-zero exit code: {p.returncode}", file=sys.stderr)
+        print("See https://sigrok.org/wiki/Sigrok-cli for more information.", file=sys.stderr)
+        return False
+
+    return True
 
 def main():
     """Parse console command line arguments."""
