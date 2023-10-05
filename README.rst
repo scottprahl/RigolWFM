@@ -22,8 +22,8 @@ A utility to process Rigol oscilloscope ``.wfm`` files
    :target: https://ide.kaitai.io
    :alt: kaitai-struct
 
-.. image:: https://zenodo.org/badge/102148844.svg
-   :target: https://zenodo.org/badge/latestdoi/102148844
+.. image:: https://zenodo.org/badge/244228290.svg
+   :target: https://zenodo.org/badge/latestdoi/244228290
    :alt: doi
 
 |
