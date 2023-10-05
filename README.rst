@@ -61,7 +61,7 @@ You can install locally using pip::
 
 or ``conda``::
 
-    conda install -c conda-forge pygrin
+    conda install -c conda-forge RigolWFM
 
 or use immediately by clicking the Google Colaboratory button below
 

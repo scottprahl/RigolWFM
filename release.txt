@@ -3,6 +3,10 @@ A checklist for releasing a new version
 # sanity test the release
   make rcheck
 
+# make sure package builds
+  python -m build
+  make clean
+
 # update the version in setup.cfg AND docs/conf.py
   git commit setup.cfg docs/conf.py -m 'update version'
 
@@ -11,14 +15,24 @@ A checklist for releasing a new version
   git push
 
 # create release tag on github
-  git tag v0.9.2
-  git push origin v0.9.2
+  git tag 0.9.9
+  git push origin 0.9.9
 
 # upload source to pypi
   python3 -m build
   python3 -m twine upload dist/*
 
-# verify releases on 
+# publish release on
   open https://github.com/scottprahl/RigolWFM
+  
+# check that published release gets sent to pypi
   open https://pypi.org/project/RigolWFM/
+
+# check that docs get updated
   open https://RigolWFM.readthedocs.io
+  
+# check that Zenodo is also updated
+  open https://https://zenodo.org/record/8411558
+  
+# check for conda feedstock
+  open https://github.com/conda-forge/RigolWFM-feedstock
