@@ -25,7 +25,8 @@ import argparse
 import subprocess
 import textwrap
 
-import RigolWFM.wfm as rigol
+import RigolWFM
+import RigolWFM.wfm
 
 
 def info(args, scope_data, infile):
@@ -125,7 +126,7 @@ def main():
             wfmconvert --channel 2 E csv DS1102E.wfm
             wfmconvert --channel 124 E vcsv DS1102E.wfm
             wfmconvert --channel 34 --autoscale E wav DS1102E.wfm
-        """) + rigol.valid_scope_list()
+        """) + RigolWFM.wfm.valid_scope_list()
     )
 
     parser.add_argument(
@@ -161,6 +162,12 @@ def main():
         type=str,
         choices=['B', 'C', 'D', 'E', 'Z', '2', '4', '6'],
         help='oscilloscope model.  See list below.'
+    )
+
+    parser.add_argument(
+        '--version',
+        action='version',
+        version='%(prog)s {version}'.format(version=RigolWFM.__version__)
     )
 
     parser.add_argument(
@@ -210,10 +217,10 @@ def main():
 
     for filename in args.infile:
         try:
-            scope_data = rigol.Wfm.from_file(filename, args.model, selected)
+            scope_data = RigolWFM.wfm.Wfm.from_file(filename, args.model, selected)
             actionMap[args.action](args, scope_data, filename)
 
-        except rigol.Parse_WFM_Error as e:
+        except RigolWFM.wfm.Parse_WFM_Error as e:
             print("File contents do not follow the format for", end='', file=sys.stderr)
             print("for the Rigol Oscilloscope Model %s." % args.model, file=sys.stderr)
             print("To help with development, please report this error\n", file=sys.stderr)
