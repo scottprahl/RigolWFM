@@ -6,19 +6,19 @@ by Scott Prahl
 A utility to process Rigol oscilloscope ``.wfm`` files
 ------------------------------------------------------
 
-.. image:: https://img.shields.io/pypi/v/RigolWFM?color=73C449
+.. image:: https://img.shields.io/pypi/v/RigolWFM?color=68CA66
    :target: https://pypi.org/project/RigolWFM/
    :alt: pypi
 
-.. image:: https://img.shields.io/github/v/tag/scottprahl/RigolWFM?label=github&color=73C449
+.. image:: https://img.shields.io/github/v/tag/scottprahl/RigolWFM?label=github&color=68CA66
    :target: https://github.com/scottprahl/RigolWFM
    :alt: github
 
-.. image:: https://img.shields.io/conda/vn/conda-forge/RigolWFM?label=conda&color=73C449
+.. image:: https://img.shields.io/conda/vn/conda-forge/RigolWFM?label=conda&color=v
    :target: https://github.com/conda-forge/RigolWFM-feedstock
    :alt: conda
 
-.. image:: https://img.shields.io/badge/kaitai-struct-green.svg
+.. image:: https://img.shields.io/badge/kaitai-struct-68CA66
    :target: https://ide.kaitai.io
    :alt: kaitai-struct
 
@@ -28,7 +28,7 @@ A utility to process Rigol oscilloscope ``.wfm`` files
 
 |
 
-.. image:: https://img.shields.io/github/license/scottprahl/RigolWFM?color=73C449
+.. image:: https://img.shields.io/github/license/scottprahl/RigolWFM?color=68CA66
    :target: https://github.com/scottprahl/RigolWFM/blob/master/LICENSE.txt
    :alt: License
 
@@ -40,7 +40,7 @@ A utility to process Rigol oscilloscope ``.wfm`` files
    :target: https://rigolwfm.readthedocs.io
    :alt: Docs
 
-.. image:: https://img.shields.io/pypi/dm/RigolWFM?color=73C449
+.. image:: https://img.shields.io/pypi/dm/RigolWFM?color=68CA66
    :target: https://pypi.org/project/RigolWFM/
    :alt: Downloads
 
