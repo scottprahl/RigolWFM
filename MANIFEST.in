@@ -1,6 +1,3 @@
 include CHANGELOG.rst
 include CITATION.cff
 include requirements.txt
-include tests/test_wfmconvert.py
-include tests/DS1102D-A.wfm
-exclude wfm/*
