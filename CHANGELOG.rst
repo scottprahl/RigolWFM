@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.0.0
+------
+*    fix `wfmconvert --version` so there is no error
+*    remove all lfs files in dist.  they're expensive
+
 0.9.9
 ------
 *    don't include large git lfs files!
