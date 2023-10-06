@@ -36,8 +36,8 @@ A utility to process Rigol oscilloscope ``.wfm`` files
    :target: https://github.com/scottprahl/RigolWFM/actions/workflows/test.yaml
    :alt: Testing
 
-.. image:: https://readthedocs.org/projects/RigolWFM/badge
-   :target: https://RigolWFM.readthedocs.io
+.. image:: https://readthedocs.org/projects/rigolwfm/badge
+   :target: https://rigolwfm.readthedocs.io
    :alt: Docs
 
 .. image:: https://img.shields.io/pypi/dm/RigolWFM?color=73C449
