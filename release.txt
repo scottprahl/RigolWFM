@@ -18,10 +18,6 @@ A checklist for releasing a new version
   git tag 0.9.9
   git push origin 0.9.9
 
-# upload source to pypi
-  python3 -m build
-  python3 -m twine upload dist/*
-
 # publish release on
   open https://github.com/scottprahl/RigolWFM
   
