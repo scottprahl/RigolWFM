@@ -8,4 +8,4 @@ doi: 10.5281/zenodo.8411558
 message: If you use this software, please cite it as below.
 title: 'RigolWFM: a python module with parser for Rigol oscilloscope .wfm binary files'
 url: https://zenodo.org/badge/latestdoi/244228290
-version: 0.9.8
+version: 0.9.9
