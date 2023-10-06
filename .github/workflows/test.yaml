@@ -32,16 +32,16 @@ jobs:
           pip install -r requirements.txt
 
       - name: is wfmconvert installed
-          which wfmconvert
+        run: which wfmconvert
 
       - name: what is the contents of the current directory
-          ls -al .
+        run: ls -al .
 
       - name: what is the contents of the current directory
-          ls -al RigolWFM
+        run: ls -al RigolWFM
 
       - name: what is the contents of the current directory
-          python RigolWFM/wfmconvert.py --version
+        run: python RigolWFM/wfmconvert.py --version
 
       - name: Tests
         run: |
