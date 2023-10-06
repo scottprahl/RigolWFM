@@ -31,18 +31,5 @@ jobs:
           pip install -U pip setuptools wheel
           pip install -r requirements.txt
 
-      - name: is wfmconvert installed
-        run: which wfmconvert
-
-      - name: what is the contents of the current directory
-        run: ls -al .
-
-      - name: what is the contents of the current directory
-        run: ls -al RigolWFM
-
-      - name: what is the contents of the current directory
+      - name: basic test
         run: python RigolWFM/wfmconvert.py --version
-
-      - name: Tests
-        run: |
-          wmfconvert --version
