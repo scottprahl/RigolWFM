@@ -28,8 +28,8 @@ jobs:
 
       - name: Install package and dependencies
         run: |
-          pip install -U pip setuptools wheel
           pip install -r requirements.txt
+          pip install -e .  # Current package in editable mode
 
       - name: basic test
         run: python RigolWFM/wfmconvert.py --version
