@@ -14,7 +14,7 @@ A utility to process Rigol oscilloscope ``.wfm`` files
    :target: https://github.com/scottprahl/RigolWFM
    :alt: github
 
-.. image:: https://img.shields.io/conda/vn/conda-forge/RigolWFM?label=conda&color=v
+.. image:: https://img.shields.io/conda/vn/conda-forge/RigolWFM?label=conda&color=68CA66
    :target: https://github.com/conda-forge/RigolWFM-feedstock
    :alt: conda
 
@@ -23,6 +23,10 @@ A utility to process Rigol oscilloscope ``.wfm`` files
    :alt: kaitai-struct
 
 .. image:: https://zenodo.org/badge/244228290.svg
+   :target: https://zenodo.org/badge/latestdoi/244228290
+   :alt: doi
+
+.. image:: https://img.shields.io/badge/DOI-10.5281/zenodo.8415550-68CA66.svg
    :target: https://zenodo.org/badge/latestdoi/244228290
    :alt: doi
 
