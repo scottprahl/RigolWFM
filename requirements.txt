@@ -1,3 +1,4 @@
 kaitaistruct
 numpy
 matplotlib
+pytest

@@ -1,12 +1,11 @@
 # This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
 
-from pkg_resources import parse_version
 import kaitaistruct
 from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
 from enum import Enum
 
 
-if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
+if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
     raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Wfm6000(KaitaiStruct):
@@ -101,9 +100,9 @@ class Wfm6000(KaitaiStruct):
             self.file_version = self._io.read_u2le()
             self.unused_1 = self._io.read_bytes(18)
             self.enabled = Wfm6000.ChannelMask(self._io, self, self._root)
-            self.channel_offset = [None] * (4)
+            self.channel_offset = []
             for i in range(4):
-                self.channel_offset[i] = self._io.read_u4le()
+                self.channel_offset.append(self._io.read_u4le())
 
             self.acquisition_mode = KaitaiStream.resolve_enum(Wfm6000.AcquisitionEnum, self._io.read_u1())
             self.average_time = self._io.read_u2le()
@@ -113,9 +112,9 @@ class Wfm6000(KaitaiStruct):
             self.time_mode = KaitaiStream.resolve_enum(Wfm6000.TimeEnum, self._io.read_u2le())
             self.time_scale_ps = self._io.read_u8le()
             self.time_offset_ps = self._io.read_s8le()
-            self.ch = [None] * (4)
+            self.ch = []
             for i in range(4):
-                self.ch[i] = Wfm6000.ChannelHeader(self._io, self, self._root)
+                self.ch.append(Wfm6000.ChannelHeader(self._io, self, self._root))
 
             self.setup_size = self._io.read_u4le()
             self.setup_offset = self._io.read_u4le()
@@ -123,33 +122,33 @@ class Wfm6000(KaitaiStruct):
             self.storage_depth = self._io.read_u4le()
             self.z_pt_offset = self._io.read_u4le()
             self.wfm_len = self._io.read_u4le()
-            self.mem_offset = [None] * (2)
+            self.mem_offset = []
             for i in range(2):
-                self.mem_offset[i] = self._io.read_u2le()
+                self.mem_offset.append(self._io.read_u2le())
 
-            self.equ_coarse = [None] * (2)
+            self.equ_coarse = []
             for i in range(2):
-                self.equ_coarse[i] = self._io.read_u2le()
+                self.equ_coarse.append(self._io.read_u2le())
 
-            self.equ_fine = [None] * (2)
+            self.equ_fine = []
             for i in range(2):
-                self.equ_fine[i] = self._io.read_u2le()
+                self.equ_fine.append(self._io.read_u2le())
 
-            self.mem_last_addr = [None] * (2)
+            self.mem_last_addr = []
             for i in range(2):
-                self.mem_last_addr[i] = self._io.read_u4le()
+                self.mem_last_addr.append(self._io.read_u4le())
 
-            self.mem_length = [None] * (2)
+            self.mem_length = []
             for i in range(2):
-                self.mem_length[i] = self._io.read_u4le()
+                self.mem_length.append(self._io.read_u4le())
 
-            self.mem_start_addr = [None] * (2)
+            self.mem_start_addr = []
             for i in range(2):
-                self.mem_start_addr[i] = self._io.read_u4le()
+                self.mem_start_addr.append(self._io.read_u4le())
 
-            self.bank_size = [None] * (2)
+            self.bank_size = []
             for i in range(2):
-                self.bank_size[i] = self._io.read_u4le()
+                self.bank_size.append(self._io.read_u4le())
 
             self.roll_scrn_wave_length = self._io.read_u2le()
             self.analog_interp_en = self._io.read_u1()
@@ -181,34 +180,34 @@ class Wfm6000(KaitaiStruct):
         @property
         def seconds_per_point(self):
             if hasattr(self, '_m_seconds_per_point'):
-                return self._m_seconds_per_point if hasattr(self, '_m_seconds_per_point') else None
+                return self._m_seconds_per_point
 
             self._m_seconds_per_point = (1 / self.sample_rate_hz)
-            return self._m_seconds_per_point if hasattr(self, '_m_seconds_per_point') else None
+            return getattr(self, '_m_seconds_per_point', None)
 
         @property
         def time_scale(self):
             if hasattr(self, '_m_time_scale'):
-                return self._m_time_scale if hasattr(self, '_m_time_scale') else None
+                return self._m_time_scale
 
             self._m_time_scale = (1.0E-12 * self.time_scale_ps)
-            return self._m_time_scale if hasattr(self, '_m_time_scale') else None
+            return getattr(self, '_m_time_scale', None)
 
         @property
         def time_offset(self):
             if hasattr(self, '_m_time_offset'):
-                return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+                return self._m_time_offset
 
             self._m_time_offset = (1.0E-12 * self.time_offset_ps)
-            return self._m_time_offset if hasattr(self, '_m_time_offset') else None
+            return getattr(self, '_m_time_offset', None)
 
         @property
         def points(self):
             if hasattr(self, '_m_points'):
-                return self._m_points if hasattr(self, '_m_points') else None
+                return self._m_points
 
             self._m_points = self._root.header.mem_depth
-            return self._m_points if hasattr(self, '_m_points') else None
+            return getattr(self, '_m_points', None)
 
 
     class ChannelHeader(KaitaiStruct):
@@ -239,10 +238,10 @@ class Wfm6000(KaitaiStruct):
         @property
         def probe_value(self):
             if hasattr(self, '_m_probe_value'):
-                return self._m_probe_value if hasattr(self, '_m_probe_value') else None
+                return self._m_probe_value
 
             self._m_probe_value = (0.01 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_01 else (0.02 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_02 else (0.05 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_05 else (0.1 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_1 else (0.2 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_2 else (0.5 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_5 else (1.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x1 else (2.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x2 else (5.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x5 else (10.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x10 else (20.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x20 else (50.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x50 else (100.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x100 else (200.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x200 else (500.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x500 else 1000.0)))))))))))))))
-            return self._m_probe_value if hasattr(self, '_m_probe_value') else None
+            return getattr(self, '_m_probe_value', None)
 
 
     class ChannelMask(KaitaiStruct):
@@ -285,23 +284,23 @@ class Wfm6000(KaitaiStruct):
     @property
     def header(self):
         if hasattr(self, '_m_header'):
-            return self._m_header if hasattr(self, '_m_header') else None
+            return self._m_header
 
         _pos = self._io.pos()
         self._io.seek(0)
         self._m_header = Wfm6000.Header(self._io, self, self._root)
         self._io.seek(_pos)
-        return self._m_header if hasattr(self, '_m_header') else None
+        return getattr(self, '_m_header', None)
 
     @property
     def data(self):
         if hasattr(self, '_m_data'):
-            return self._m_data if hasattr(self, '_m_data') else None
+            return self._m_data
 
         _pos = self._io.pos()
         self._io.seek(20916)
         self._m_data = Wfm6000.RawData(self._io, self, self._root)
         self._io.seek(_pos)
-        return self._m_data if hasattr(self, '_m_data') else None
+        return getattr(self, '_m_data', None)
 
 

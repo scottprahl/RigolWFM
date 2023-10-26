@@ -1,12 +1,11 @@
 # This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
 
-from pkg_resources import parse_version
 import kaitaistruct
 from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
 from enum import Enum
 
 
-if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
+if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
     raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Wfm1000e(KaitaiStruct):
@@ -103,9 +102,9 @@ class Wfm1000e(KaitaiStruct):
             if self._root.header.ch[1].enabled:
                 self.sentinel_between_datasets2 = self._io.read_u4le()
 
-            self.logic = [None] * ((self._root.header.ch1_points if self._root.header.logic.enabled else 0))
+            self.logic = []
             for i in range((self._root.header.ch1_points if self._root.header.logic.enabled else 0)):
-                self.logic[i] = self._io.read_u2le()
+                self.logic.append(self._io.read_u2le())
 
 
 
@@ -151,50 +150,50 @@ class Wfm1000e(KaitaiStruct):
         @property
         def unit(self):
             if hasattr(self, '_m_unit'):
-                return self._m_unit if hasattr(self, '_m_unit') else None
+                return self._m_unit
 
             self._m_unit = Wfm1000e.UnitEnum.v
-            return self._m_unit if hasattr(self, '_m_unit') else None
+            return getattr(self, '_m_unit', None)
 
         @property
         def inverted(self):
             if hasattr(self, '_m_inverted'):
-                return self._m_inverted if hasattr(self, '_m_inverted') else None
+                return self._m_inverted
 
             self._m_inverted = (True if self.inverted_m_val != 0 else False)
-            return self._m_inverted if hasattr(self, '_m_inverted') else None
+            return getattr(self, '_m_inverted', None)
 
         @property
         def volt_offset(self):
             if hasattr(self, '_m_volt_offset'):
-                return self._m_volt_offset if hasattr(self, '_m_volt_offset') else None
+                return self._m_volt_offset
 
             self._m_volt_offset = (self.shift_measured * self.volt_scale)
-            return self._m_volt_offset if hasattr(self, '_m_volt_offset') else None
+            return getattr(self, '_m_volt_offset', None)
 
         @property
         def volt_per_division(self):
             if hasattr(self, '_m_volt_per_division'):
-                return self._m_volt_per_division if hasattr(self, '_m_volt_per_division') else None
+                return self._m_volt_per_division
 
             self._m_volt_per_division = (((-0.0000010 * self.scale_measured) * self.probe_value) if self.inverted else ((0.0000010 * self.scale_measured) * self.probe_value))
-            return self._m_volt_per_division if hasattr(self, '_m_volt_per_division') else None
+            return getattr(self, '_m_volt_per_division', None)
 
         @property
         def volt_scale(self):
             if hasattr(self, '_m_volt_scale'):
-                return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
+                return self._m_volt_scale
 
             self._m_volt_scale = (((0.0000010 * self.scale_measured) * self.probe_value) / 25.0)
-            return self._m_volt_scale if hasattr(self, '_m_volt_scale') else None
+            return getattr(self, '_m_volt_scale', None)
 
         @property
         def enabled(self):
             if hasattr(self, '_m_enabled'):
-                return self._m_enabled if hasattr(self, '_m_enabled') else None
+                return self._m_enabled
 
             self._m_enabled = (True if self.enabled_val != 0 else False)
-            return self._m_enabled if hasattr(self, '_m_enabled') else None
+            return getattr(self, '_m_enabled', None)
 
 
     class Header(KaitaiStruct):
@@ -225,9 +224,9 @@ class Wfm1000e(KaitaiStruct):
             self.padding_3 = self._io.read_bytes(1)
             if not self.padding_3 == b"\x00":
                 raise kaitaistruct.ValidationNotEqualError(b"\x00", self.padding_3, self._io, u"/types/header/seq/9")
-            self.ch = [None] * (2)
+            self.ch = []
             for i in range(2):
-                self.ch[i] = Wfm1000e.ChannelHeader(self._io, self, self._root)
+                self.ch.append(Wfm1000e.ChannelHeader(self._io, self, self._root))
 
             self.time_offset = self._io.read_u1()
             self.padding_4 = self._io.read_bytes(1)
@@ -249,94 +248,94 @@ class Wfm1000e(KaitaiStruct):
         def ch2_volt_length(self):
             """In rolling mode, skip invalid samples."""
             if hasattr(self, '_m_ch2_volt_length'):
-                return self._m_ch2_volt_length if hasattr(self, '_m_ch2_volt_length') else None
+                return self._m_ch2_volt_length
 
             self._m_ch2_volt_length = (self.ch2_points - self.roll_stop)
-            return self._m_ch2_volt_length if hasattr(self, '_m_ch2_volt_length') else None
+            return getattr(self, '_m_ch2_volt_length', None)
 
         @property
         def ch2_time_offset(self):
             if hasattr(self, '_m_ch2_time_offset'):
-                return self._m_ch2_time_offset if hasattr(self, '_m_ch2_time_offset') else None
+                return self._m_ch2_time_offset
 
             self._m_ch2_time_offset = ((1.0E-12 * self.time2.offset_measured) if self.trigger_mode == Wfm1000e.TriggerModeEnum.alt else self.ch1_time_offset)
-            return self._m_ch2_time_offset if hasattr(self, '_m_ch2_time_offset') else None
+            return getattr(self, '_m_ch2_time_offset', None)
 
         @property
         def ch1_time_scale(self):
             if hasattr(self, '_m_ch1_time_scale'):
-                return self._m_ch1_time_scale if hasattr(self, '_m_ch1_time_scale') else None
+                return self._m_ch1_time_scale
 
             self._m_ch1_time_scale = (1.0E-12 * self.time.scale_measured)
-            return self._m_ch1_time_scale if hasattr(self, '_m_ch1_time_scale') else None
+            return getattr(self, '_m_ch1_time_scale', None)
 
         @property
         def sample_rate_hz(self):
             if hasattr(self, '_m_sample_rate_hz'):
-                return self._m_sample_rate_hz if hasattr(self, '_m_sample_rate_hz') else None
+                return self._m_sample_rate_hz
 
             self._m_sample_rate_hz = self.time.sample_rate_hz
-            return self._m_sample_rate_hz if hasattr(self, '_m_sample_rate_hz') else None
+            return getattr(self, '_m_sample_rate_hz', None)
 
         @property
         def ch1_volt_length(self):
             """In rolling mode, skip invalid samples."""
             if hasattr(self, '_m_ch1_volt_length'):
-                return self._m_ch1_volt_length if hasattr(self, '_m_ch1_volt_length') else None
+                return self._m_ch1_volt_length
 
             self._m_ch1_volt_length = (self.ch1_points - self.roll_stop)
-            return self._m_ch1_volt_length if hasattr(self, '_m_ch1_volt_length') else None
+            return getattr(self, '_m_ch1_volt_length', None)
 
         @property
         def ch1_skip(self):
             """In rolling mode, skip invalid points."""
             if hasattr(self, '_m_ch1_skip'):
-                return self._m_ch1_skip if hasattr(self, '_m_ch1_skip') else None
+                return self._m_ch1_skip
 
             self._m_ch1_skip = (0 if self.roll_stop == 0 else (self.roll_stop + 2))
-            return self._m_ch1_skip if hasattr(self, '_m_ch1_skip') else None
+            return getattr(self, '_m_ch1_skip', None)
 
         @property
         def ch1_time_offset(self):
             if hasattr(self, '_m_ch1_time_offset'):
-                return self._m_ch1_time_offset if hasattr(self, '_m_ch1_time_offset') else None
+                return self._m_ch1_time_offset
 
             self._m_ch1_time_offset = (1.0E-12 * self.time.offset_measured)
-            return self._m_ch1_time_offset if hasattr(self, '_m_ch1_time_offset') else None
+            return getattr(self, '_m_ch1_time_offset', None)
 
         @property
         def seconds_per_point(self):
             if hasattr(self, '_m_seconds_per_point'):
-                return self._m_seconds_per_point if hasattr(self, '_m_seconds_per_point') else None
+                return self._m_seconds_per_point
 
             self._m_seconds_per_point = (1 / self.sample_rate_hz)
-            return self._m_seconds_per_point if hasattr(self, '_m_seconds_per_point') else None
+            return getattr(self, '_m_seconds_per_point', None)
 
         @property
         def ch1_points(self):
             """In rolling mode, change the number of valid samples."""
             if hasattr(self, '_m_ch1_points'):
-                return self._m_ch1_points if hasattr(self, '_m_ch1_points') else None
+                return self._m_ch1_points
 
             self._m_ch1_points = ((self.ch1_points_tmp - 4) if self.roll_stop == 0 else ((self.ch1_points_tmp - self.roll_stop) - 6))
-            return self._m_ch1_points if hasattr(self, '_m_ch1_points') else None
+            return getattr(self, '_m_ch1_points', None)
 
         @property
         def ch2_points(self):
             """Use ch1_points when ch2_points is not written."""
             if hasattr(self, '_m_ch2_points'):
-                return self._m_ch2_points if hasattr(self, '_m_ch2_points') else None
+                return self._m_ch2_points
 
             self._m_ch2_points = (self.ch1_points if  ((self.ch[1].enabled) and (self.ch2_points_tmp == 0))  else self.ch2_points_tmp)
-            return self._m_ch2_points if hasattr(self, '_m_ch2_points') else None
+            return getattr(self, '_m_ch2_points', None)
 
         @property
         def ch2_time_scale(self):
             if hasattr(self, '_m_ch2_time_scale'):
-                return self._m_ch2_time_scale if hasattr(self, '_m_ch2_time_scale') else None
+                return self._m_ch2_time_scale
 
             self._m_ch2_time_scale = ((1.0E-12 * self.time2.scale_measured) if self.trigger_mode == Wfm1000e.TriggerModeEnum.alt else self.ch1_time_scale)
-            return self._m_ch2_time_scale if hasattr(self, '_m_ch2_time_scale') else None
+            return getattr(self, '_m_ch2_time_scale', None)
 
 
     class TriggerHeader(KaitaiStruct):
@@ -377,23 +376,23 @@ class Wfm1000e(KaitaiStruct):
     @property
     def header(self):
         if hasattr(self, '_m_header'):
-            return self._m_header if hasattr(self, '_m_header') else None
+            return self._m_header
 
         _pos = self._io.pos()
         self._io.seek(0)
         self._m_header = Wfm1000e.Header(self._io, self, self._root)
         self._io.seek(_pos)
-        return self._m_header if hasattr(self, '_m_header') else None
+        return getattr(self, '_m_header', None)
 
     @property
     def data(self):
         if hasattr(self, '_m_data'):
-            return self._m_data if hasattr(self, '_m_data') else None
+            return self._m_data
 
         _pos = self._io.pos()
         self._io.seek(276)
         self._m_data = Wfm1000e.RawData(self._io, self, self._root)
         self._io.seek(_pos)
-        return self._m_data if hasattr(self, '_m_data') else None
+        return getattr(self, '_m_data', None)
 
 

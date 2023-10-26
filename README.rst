@@ -3,26 +3,46 @@ RigolWFM
 
 by Scott Prahl
 
-A utility to process Rigol oscilloscope `.wfm` files
-----------------------------------------------------
+A utility to process Rigol oscilloscope ``.wfm`` files
+------------------------------------------------------
 
-.. image:: https://colab.research.google.com/assets/colab-badge.svg
-   :target: https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master
-
-.. image:: https://img.shields.io/pypi/v/RigolWFM.svg
+.. image:: https://img.shields.io/pypi/v/RigolWFM?color=68CA66
    :target: https://pypi.org/project/RigolWFM/
+   :alt: pypi
 
-.. image:: https://img.shields.io/badge/kaitai-struct-green.svg
-   :target: https://ide.kaitai.io
-
-.. image:: https://img.shields.io/badge/readthedocs-latest-blue.svg
-   :target: https://RigolWFM.readthedocs.io
-
-.. image:: https://img.shields.io/badge/github-code-green.svg
+.. image:: https://img.shields.io/github/v/tag/scottprahl/RigolWFM?label=github&color=68CA66
    :target: https://github.com/scottprahl/RigolWFM
+   :alt: github
 
-.. image:: https://img.shields.io/badge/BSD-license-yellow.svg
-   :target: https://github.com/scottprahl/RigolWFM/blob/master/LICENSE
+.. image:: https://img.shields.io/conda/vn/conda-forge/RigolWFM?label=conda&color=68CA66
+   :target: https://github.com/conda-forge/RigolWFM-feedstock
+   :alt: conda
+
+.. image:: https://img.shields.io/badge/kaitai-struct-68CA66
+   :target: https://ide.kaitai.io
+   :alt: kaitai-struct
+
+.. image:: https://zenodo.org/badge/244228290.svg
+   :target: https://zenodo.org/badge/latestdoi/244228290
+   :alt: doi
+
+|
+
+.. image:: https://img.shields.io/github/license/scottprahl/RigolWFM?color=68CA66
+   :target: https://github.com/scottprahl/RigolWFM/blob/master/LICENSE.txt
+   :alt: License
+
+.. image:: https://github.com/scottprahl/RigolWFM/actions/workflows/test.yaml/badge.svg
+   :target: https://github.com/scottprahl/RigolWFM/actions/workflows/test.yaml
+   :alt: Testing
+
+.. image:: https://readthedocs.org/projects/rigolwfm/badge?color=68CA66
+   :target: https://rigolwfm.readthedocs.io
+   :alt: Docs
+
+.. image:: https://img.shields.io/pypi/dm/RigolWFM?color=68CA66
+   :target: https://pypi.org/project/RigolWFM/
+   :alt: Downloads
 
 __________
 
@@ -32,16 +52,24 @@ This project leverages a domain specific language (kaitai struct) to represent t
 
 Documentation can be found at <https://RigolWFM.readthedocs.io>
 
-Using RigolWFM
+Installation
 ---------------
 
-1. You can install locally using pip::
+You can install locally using pip::
     
     pip install --user RigolWFM
 
-2. or `run this code in the cloud using Google Collaboratory <https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master>`_ by selecting the Jupyter notebook that interests you.
+or ``conda``::
 
-3. or `analyze your files using the kaitai struct IDE <https://ide.kaitai.io>`_ (you will need to manually upload the appropriate `.ksy` file and your `.wfm` to the IDE).  This allows one to interactively reverse engineer binary file formats directly in your browser.  This is super helpful for those Rigol ``.wfm`` formats that are undocumented or not parsing correctly.
+    conda install -c conda-forge RigolWFM
+
+or use immediately by clicking the Google Colaboratory button below
+
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+  :target: https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master
+  :alt: Colab
+
+or `analyze your files using the kaitai struct IDE <https://ide.kaitai.io>`_ (you will need to manually upload the appropriate `.ksy` file and your `.wfm` to the IDE).  This allows one to interactively reverse engineer binary file formats directly in your browser.  This is super helpful for those Rigol ``.wfm`` formats that are undocumented or not parsing correctly.
 
 
 Usage
@@ -83,6 +111,7 @@ There is a bit of work remaining (testing, validation, repackaging) but there ar
 
 * DS1000B tested 
 * DS1000C tested (two files only)
+* DS1000D tested (one file only)
 * DS1000E tested
 * DS1000Z tested, but with wonky voltage offsets
 * DS2000 tested

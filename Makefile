@@ -54,14 +54,14 @@ yamlcheck:
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm2000.ksy
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm4000.ksy
 	-yamllint $(YAML_LINT_OPTIONS) ksy/wfm6000.ksy
+	-yamllint .github/workflows/pypi.yaml
+	-yamllint .github/workflows/test.yaml
+	-yamllint .github/workflows/citation.yaml
 
 rstcheck:
 	-rstcheck README.rst
 	-rstcheck CHANGELOG.rst
-	-rstcheck docs/index.rst
-	-rstcheck docs/changelog.rst
-	-rstcheck docs/readme.rst
-	-rstcheck --ignore-directives automodule docs/RigolWFM.rst
+	-rstcheck --ignore-directives automodapi docs/RigolWFM.rst
 
 ksycheck:
 	-ksylint ksy/wfm1000b.ksy
@@ -73,10 +73,6 @@ ksycheck:
 	-ksylint ksy/wfm4000.ksy
 	-ksylint ksy/wfm6000.ksy
 
-notecheck:
-	make clean
-	pytest --verbose -n 4 test_all_notebooks.py
-
 pycheck:
 	-pylint RigolWFM/wfm.py
 	-pydocstyle RigolWFM/wfm.py
@@ -84,22 +80,20 @@ pycheck:
 	-pydocstyle RigolWFM/channel.py
 	-pylint RigolWFM/wfmconvert.py
 	-pydocstyle RigolWFM/wfmconvert.py
-	-flake8 .
+	-ruff check .
 
 #check everything before a new release
 rcheck:
 	make realclean
+	make
 	make ksycheck
 	make yamlcheck
-	make
-	make notecheck
 	make rstcheck
 	make pycheck
 	make html
-	make test
 	check-manifest
 	pyroma -d .
-	tox
+	make test
 
 html:
 	$(SPHINXBUILD) -b html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
@@ -115,6 +109,9 @@ testb:
 testc:
 	RigolWFM/wfmconvert.py C info wfm/DS1202CA-A.wfm
 	RigolWFM/wfmconvert.py C info wfm/DS1042C-A.wfm
+
+testd:
+	RigolWFM/wfmconvert.py D info wfm/DS1102D-A.wfm
 
 teste:
 	RigolWFM/wfmconvert.py E info wfm/DS1102E-A.wfm
@@ -145,6 +142,8 @@ test2:
 	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-5.wfm
 	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-6.wfm
 	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-7.wfm
+	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-8.wfm
+	RigolWFM/wfmconvert.py 2 info wfm/DS2072A-9.wfm
 	RigolWFM/wfmconvert.py 2 info wfm/DS2000-A.wfm
 	RigolWFM/wfmconvert.py 2 info wfm/DS2000-B.wfm
 
@@ -154,16 +153,10 @@ test4:
 	RigolWFM/wfmconvert.py 4 info wfm/DS4024-A.wfm
 	RigolWFM/wfmconvert.py 4 info wfm/DS4024-B.wfm
 
-test: $(PYTHON_PARSERS)
-	make teste
-	make testz
-	make test4
-	make test2
-	make testc
-	make vcsv
-	make csv
-	make wav
-	make sigrok
+testtests:
+	pytest --verbose tests/test_wfmconvert.py
+	pytest --verbose tests/test_wfmconvert_sigrok.py
+	pytest --verbose tests/test_all_notebooks.py
 
 csv:
 	RigolWFM/wfmconvert.py E csv wfm/DS1102E-A.wfm
@@ -172,6 +165,7 @@ csv:
 	RigolWFM/wfmconvert.py 2 csv wfm/DS2202.wfm
 	RigolWFM/wfmconvert.py C csv wfm/DS1202CA-A.wfm
 	RigolWFM/wfmconvert.py B csv wfm/DS1204B-A.wfm
+	RigolWFM/wfmconvert.py D csv wfm/DS1102D-A.wfm
 
 wav:
 	RigolWFM/wfmconvert.py E wav wfm/DS1102E-A.wfm
@@ -180,6 +174,7 @@ wav:
 	RigolWFM/wfmconvert.py 2 wav wfm/DS2202.wfm
 	RigolWFM/wfmconvert.py C wav wfm/DS1202CA-A.wfm
 	RigolWFM/wfmconvert.py B wav wfm/DS1204B-A.wfm
+	RigolWFM/wfmconvert.py D wav wfm/DS1102D-A.wfm
 	
 vcsv:
 	RigolWFM/wfmconvert.py E vcsv wfm/DS1102E-A.wfm
@@ -194,6 +189,8 @@ vcsv:
 	mv wfm/DS1202CA-A.csv wfm/DS1202CA-A.vcsv
 	RigolWFM/wfmconvert.py B vcsv wfm/DS1204B-A.wfm
 	mv wfm/DS1204B-A.csv wfm/DS1204B-A.vcsv
+	RigolWFM/wfmconvert.py D vcsv wfm/DS1102D-A.wfm
+	mv wfm/DS1102D-A.csv wfm/DS1102D-A.vcsv
 
 sigrok:
 	@ echo "*********************************************************"
@@ -205,12 +202,22 @@ sigrok:
 	RigolWFM/wfmconvert.py 2 sigrok wfm/DS2202.wfm
 	RigolWFM/wfmconvert.py C sigrok wfm/DS1202CA-A.wfm
 	RigolWFM/wfmconvert.py B sigrok wfm/DS1204B-A.wfm
+	RigolWFM/wfmconvert.py D sigrok wfm/DS1102D-A.wfm
 
-clean:
-	rm -rf dist
-	rm -rf RigolWFM.egg-info
-	rm -rf docs/github.com
-	rm -rf RigolWFM/__pycache__
+test: $(PYTHON_PARSERS)
+	make testd
+	make teste
+	make testz
+	make test4
+	make test2
+	make testc
+	make vcsv
+	make csv
+	make wav
+	make sigrok
+	make testtests
+
+cleantest:
 	rm -rf wfm/DS1102E-A.csv
 	rm -rf wfm/DS1102E-A.wav
 	rm -rf wfm/DS1102E-A.vcsv
@@ -235,13 +242,36 @@ clean:
 	rm -rf wfm/DS1204B-A.wav
 	rm -rf wfm/DS1204B-A.vcsv
 	rm -rf wfm/DS1204B-A.sr
+	rm -rf wfm/DS1202Z-1.csv
+	rm -rf wfm/DS1202Z-1.png
+	rm -rf wfm/DS1202Z-1.txt
+	rm -rf wfm/DS1202Z-1.wfm
+	rm -rf wfm/DS1202Z-2.csv
+	rm -rf wfm/DS1202Z-2.png
+	rm -rf wfm/DS1202Z-2.txt
+	rm -rf wfm/DS1202Z-2.wfm
+	rm -rf wfm/DS1102D-A.sr
+	rm -rf wfm/DS1102D-A.vcsv
+	rm -rf wfm/DS1102D-A.wav
+
+clean:
+	make cleantest
+	rm -rf __pycache__
+	rm -rf .pytest_cache
+	rm -rf build
+	rm -rf dist
+	rm -rf docs/.ipynb_checkpoints
+	rm -rf docs/github.com
 	rm -rf docs/_build
 	rm -rf docs/api
-	rm -rf .tox
-	rm -rf __pycache__
 	rm -rf docs/raw.githubusercontent.com
-	rm -rf build
-	rm -rf .pytest_cache
+	rm -rf docs/media.githubusercontent.com
+	rm -rf RigolWFM.egg-info
+	rm -rf RigolWFM/__pycache__
+	rm -rf tests/__pycache__
+	rm -rf tests/*.csv
+	rm -rf tests/*.wav
+	rm -rf tests/*.sr
 
 realclean:
 	make clean

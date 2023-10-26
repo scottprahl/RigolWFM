@@ -9,15 +9,14 @@
 """
 Extract signals or description from Rigol 1000E Oscilloscope waveform file.
 
-    Example:
-        >>> import RigolWFM.wfm as rigol
-        >>> waveform = rigol.Wfm.from_file("file_name.wfm", 'E')
-        >>> description = waveform.describe()
-        >>> print(description)
+Example:
+    >>> import RigolWFM.wfm as rigol
+    >>> waveform = rigol.Wfm.from_file("file_name.wfm", 'E')
+    >>> description = waveform.describe()
+    >>> print(description)
 
 """
 import os.path
-import sys
 import tempfile
 import urllib.parse
 import wave
@@ -46,7 +45,7 @@ DS1000C_scopes = ["C", "1000C", "DS1000C",
                   "DS1302CA", "DS1202CA", "DS1102CA", "DS1062CA",
                   "DS1042C"]
 
-# untested
+# tested
 DS1000D_scopes = ["D", "1000D", "DS1000D", "DS1102D", "DS1052D"]
 
 # tested
@@ -251,7 +250,9 @@ class Wfm():
         try:
             # need a local file for conversion, download url and save as tempfile
             print("downloading '%s'" % url)
-            r = requests.get(url, allow_redirects=True)
+            r = requests.get(url, allow_redirects=True, timeout=10)
+            r.raise_for_status()
+
             if not r.ok:
                 error_string = "Downloading URL '%s' failed: '%s'" % (
                     url, r.reason)
@@ -273,7 +274,7 @@ class Wfm():
             except Exception as e:
                 raise Parse_WFM_Error(e)
 
-        except Exception as e:
+        except r.exceptions.RequestException as e:
             raise Parse_WFM_Error(e)
 
     def describe(self):

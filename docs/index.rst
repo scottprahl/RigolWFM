@@ -5,7 +5,7 @@
 
 .. toctree::
    :caption: Introduction
-   
+
    0-Basics.ipynb
 
 .. toctree::
@@ -17,6 +17,11 @@
    :caption: C Series
 
    1-DS1000C-Waveforms.ipynb
+
+.. toctree::
+   :caption: D Series
+
+   1-DS1102D-Waveforms.ipynb
 
 .. toctree::
    :caption: E Series
@@ -46,4 +51,4 @@
 .. toctree::
    :caption: Versions
    
-   changelog
+   changelog.rst

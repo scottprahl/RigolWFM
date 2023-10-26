@@ -11,20 +11,22 @@ Command line utility to convert Rigol .wfm files.
     Examples::
 
         prompt> wfmconvert E info DS1102E-A.wfm
-        
+
         prompt> wfmconvert E csv DS1102E-A.wfm
-        
+
         prompt> wfmconvert E wav DS1102E-A.wfm
 """
 
 import re
 import os
 import sys
+import shutil
 import argparse
 import subprocess
 import textwrap
 
-import RigolWFM.wfm as rigol
+import RigolWFM
+import RigolWFM.wfm
 
 
 def info(args, scope_data, infile):
@@ -76,20 +78,41 @@ def sigrok(args, scope_data, infile):
     sigrok_name = os.path.splitext(infile)[0] + '.sr'
 
     if os.path.isfile(sigrok_name) and not args.force:
-        print("'%s' exists, use --force to overwrite" % sigrok_name)
-        return
+        print(f"'{sigrok_name}' exists, use --force to overwrite", file=sys.stderr)
+        return False
 
     s = scope_data.sigrokcsv()
+
+    # Check if sigrok-cli is installed and accessible
+    if not shutil.which("sigrok-cli"):
+        print("sigrok-cli is not installed or not found in PATH.", file=sys.stderr)
+        print("See https://sigrok.org/wiki/Sigrok-cli for more information.", file=sys.stderr)
+        return False
+
     # sigrok-cli reports a warning about /dev/stdin not being a regular file,
     # but the conversion works fine.
-    p = subprocess.run(
-        ['sigrok-cli', '-I', 'csv:start_line=2:column_formats=t,1a',
-         '-i', '/dev/stdin', '-o', sigrok_name],
-        input=s.encode(encoding='utf-8'),
-        check=True)
-    if p.returncode != 0:
-        print("sigrok-cli failed")
+    try:
+        p = subprocess.run(
+            ['sigrok-cli', '-I', 'csv:start_line=2:column_formats=t,1a',
+             '-i', '/dev/stdin', '-o', sigrok_name],
+            input=s,
+            check=True,
+            stderr=subprocess.PIPE,
+            text=True)
+    except subprocess.CalledProcessError as e:
+        print(f"sigrok-cli failed with error: {e.stderr}", file=sys.stderr)
+        print("See https://sigrok.org/wiki/Sigrok-cli for more information.", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}", file=sys.stderr)
+        return False
 
+    if p.returncode != 0:
+        print(f"sigrok-cli returned non-zero exit code: {p.returncode}", file=sys.stderr)
+        print("See https://sigrok.org/wiki/Sigrok-cli for more information.", file=sys.stderr)
+        return False
+
+    return True
 
 def main():
     """Parse console command line arguments."""
@@ -103,7 +126,7 @@ def main():
             wfmconvert --channel 2 E csv DS1102E.wfm
             wfmconvert --channel 124 E vcsv DS1102E.wfm
             wfmconvert --channel 34 --autoscale E wav DS1102E.wfm
-        """) + rigol.valid_scope_list()
+        """) + RigolWFM.wfm.valid_scope_list()
     )
 
     parser.add_argument(
@@ -139,6 +162,12 @@ def main():
         type=str,
         choices=['B', 'C', 'D', 'E', 'Z', '2', '4', '6'],
         help='oscilloscope model.  See list below.'
+    )
+
+    parser.add_argument(
+        '--version',
+        action='version',
+        version='%(prog)s {version}'.format(version=RigolWFM.__version__)
     )
 
     parser.add_argument(
@@ -188,10 +217,10 @@ def main():
 
     for filename in args.infile:
         try:
-            scope_data = rigol.Wfm.from_file(filename, args.model, selected)
+            scope_data = RigolWFM.wfm.Wfm.from_file(filename, args.model, selected)
             actionMap[args.action](args, scope_data, filename)
 
-        except rigol.Parse_WFM_Error as e:
+        except RigolWFM.wfm.Parse_WFM_Error as e:
             print("File contents do not follow the format for", end='', file=sys.stderr)
             print("for the Rigol Oscilloscope Model %s." % args.model, file=sys.stderr)
             print("To help with development, please report this error\n", file=sys.stderr)

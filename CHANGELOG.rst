@@ -1,6 +1,36 @@
 Changelog
 =========
 
+1.0.0
+------
+*    fix `wfmconvert --version` so there is no error
+*    remove all lfs files in dist.  they're expensive
+
+0.9.9
+------
+*    don't include large git lfs files!
+
+0.9.8
+------
+*    no new features, just updating packaging
+*    add conda-forge support
+*    add zenodo DOI citation support
+*    add github action workflows
+*    add tests for wfmconvert
+*    improve readme
+
+v0.9.7
+------
+*    include DS1102D test files (Karl Palsson)
+*    bump python versions to 3.8 through 3.11
+*    add notebook for 1000D files
+*    remove unnecessary .rst testing
+
+v0.9.6
+------
+*    fix DS2072 CH2 wide memory fixes (James Pitts)
+*    get html docs building under nbsphinx again
+
 v0.9.5
 ------
 *    use __version__ in __init__.py

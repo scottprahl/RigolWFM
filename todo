@@ -1,4 +1,5 @@
 Code development
+    - add conda package
     - add trigger information to description
     - simplify channel._channel_bytes() 
     - add --minimal option for problem .wfm files
@@ -10,10 +11,6 @@ wfm_convert development
     - expand options for wav export
     - add svg, pdf, png graphing options
     
-Add wrappers for other parser languages
-    - javascript
-    - c++
-
 Code clean up
     - try out dataviz stuff?
     - rationalize variable names

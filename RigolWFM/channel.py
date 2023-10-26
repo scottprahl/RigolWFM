@@ -110,7 +110,7 @@ class Channel():
             Channel object
         """
         self.channel_number = channel_number
-        self.name = "CH %d" % channel_number
+        self.name = f'CH {channel_number}'
         self.waveform = w
         self.seconds_per_point = w.header.seconds_per_point
         self.firmware = 'unknown'
@@ -134,7 +134,7 @@ class Channel():
         self.inverted = False
 
         # determine if this channel is one of those chosen by user
-        chosen = selected.find(str(channel_number)) != -1
+        chosen = str(channel_number) in selected
 
         if channel_number <= len(w.header.ch):
             channel = w.header.ch[channel_number - 1]
@@ -209,28 +209,28 @@ class Channel():
             if self.enabled_and_selected:
                 if (w.header.coupling_ch12 & 0xC0) == 0xC0:
                     self.coupling = 'DC'
-                self.points = len(w.header.ch1)
+                self.points = w.header.len_ch1
                 self.raw = np.frombuffer(w.header.ch1, dtype=np.uint8)
 
         if channel_number == 2:
             if self.enabled_and_selected:
                 if (w.header.coupling_ch12 & 0x0C) == 0x0C:
                     self.coupling = 'DC'
-                self.points = len(w.header.ch2)
+                self.points = w.header.len_ch2
                 self.raw = np.frombuffer(w.header.ch2, dtype=np.uint8)
 
         if channel_number == 3:
             if self.enabled_and_selected:
                 if (w.header.coupling_ch34 & 0xC0) == 0xC0:
                     self.coupling = 'DC'
-                self.points = len(w.header.ch3)
+                self.points = w.header.len_ch3
                 self.raw = np.frombuffer(w.header.ch3, dtype=np.uint8)
 
         if channel_number == 4:
             if self.enabled_and_selected:
                 if (w.header.coupling_ch34 & 0x0C) == 0x0C:
                     self.coupling = 'DC'
-                self.points = len(w.header.ch4)
+                self.points = w.header.len_ch4
                 self.raw = np.frombuffer(w.header.ch4, dtype=np.uint8)
 
         self.calc_times_and_volts()
@@ -316,7 +316,7 @@ class Channel():
         self.y_scale = -self.volt_scale
         self.y_offset = self.volt_offset
 
-        if self.enabled_and_selected:
+        if self.enabled_and_selected and not w.header.enabled.interwoven:
             if channel_number == 1:
                 self.raw = np.frombuffer(w.header.raw_1, dtype=np.uint8)
 
@@ -328,6 +328,14 @@ class Channel():
 
             if channel_number == 4:
                 self.raw = np.frombuffer(w.header.raw_4, dtype=np.uint8)
+
+        elif w.header.enabled.interwoven:
+            # 'Interwoven' wave captures use the memory available to all channels
+            # to sample at a higher resolution.  This means if CH1 is disabled
+            # CH2 will use the memory from CH1.
+            self.raw = np.empty((self.points,), dtype=np.uint8)
+            self.raw[0::2] = np.frombuffer(w.header.raw_1, count=self.points // 2, dtype=np.uint8)
+            self.raw[1::2] = np.frombuffer(w.header.raw_2, count=self.points // 2, dtype=np.uint8)
 
         self.calc_times_and_volts()
 
