@@ -1,3 +1,39 @@
+.. |pypi-badge| image:: https://img.shields.io/pypi/v/RigolWFM?color=68CA66
+   :target: https://pypi.org/project/RigolWFM/
+   :alt: pypi
+
+.. |github-badge| image:: https://img.shields.io/github/v/tag/scottprahl/RigolWFM?label=github&color=68CA66
+   :target: https://github.com/scottprahl/RigolWFM
+   :alt: github
+
+.. |conda-badge| image:: https://img.shields.io/conda/vn/conda-forge/RigolWFM?label=conda&color=68CA66
+   :target: https://github.com/conda-forge/RigolWFM-feedstock
+   :alt: conda
+
+.. |kaitaistruct| image:: https://img.shields.io/badge/kaitai-struct-68CA66
+   :target: https://ide.kaitai.io
+   :alt: kaitai-struct
+
+.. |zenodo-badge| image:: https://zenodo.org/badge/244228290.svg
+   :target: https://zenodo.org/badge/latestdoi/244228290
+   :alt: doi
+
+.. |license-badge| image:: https://img.shields.io/github/license/scottprahl/RigolWFM?color=68CA66
+   :target: https://github.com/scottprahl/RigolWFM/blob/master/LICENSE.txt
+   :alt: License
+
+.. |test-badge| image:: https://github.com/scottprahl/RigolWFM/actions/workflows/test.yaml/badge.svg
+   :target: https://github.com/scottprahl/RigolWFM/actions/workflows/test.yaml
+   :alt: Testing
+
+.. |docs-badge| image:: https://readthedocs.org/projects/rigolwfm/badge?color=68CA66
+   :target: https://rigolwfm.readthedocs.io
+   :alt: Docs
+
+.. |downloads-badge| image:: https://img.shields.io/pypi/dm/RigolWFM?color=68CA66
+   :target: https://pypi.org/project/RigolWFM/
+   :alt: Downloads
+
 RigolWFM
 =========
 
@@ -6,45 +42,9 @@ by Scott Prahl
 A utility to process Rigol oscilloscope ``.wfm`` files
 ------------------------------------------------------
 
-.. image:: https://img.shields.io/pypi/v/RigolWFM?color=68CA66
-   :target: https://pypi.org/project/RigolWFM/
-   :alt: pypi
+|pypi-badge| |github-badge| |conda-badge| |kaitaistruct| |zenodo-badge|
 
-.. image:: https://img.shields.io/github/v/tag/scottprahl/RigolWFM?label=github&color=68CA66
-   :target: https://github.com/scottprahl/RigolWFM
-   :alt: github
-
-.. image:: https://img.shields.io/conda/vn/conda-forge/RigolWFM?label=conda&color=68CA66
-   :target: https://github.com/conda-forge/RigolWFM-feedstock
-   :alt: conda
-
-.. image:: https://img.shields.io/badge/kaitai-struct-68CA66
-   :target: https://ide.kaitai.io
-   :alt: kaitai-struct
-
-.. image:: https://zenodo.org/badge/244228290.svg
-   :target: https://zenodo.org/badge/latestdoi/244228290
-   :alt: doi
-
-|
-
-.. image:: https://img.shields.io/github/license/scottprahl/RigolWFM?color=68CA66
-   :target: https://github.com/scottprahl/RigolWFM/blob/master/LICENSE.txt
-   :alt: License
-
-.. image:: https://github.com/scottprahl/RigolWFM/actions/workflows/test.yaml/badge.svg
-   :target: https://github.com/scottprahl/RigolWFM/actions/workflows/test.yaml
-   :alt: Testing
-
-.. image:: https://readthedocs.org/projects/rigolwfm/badge?color=68CA66
-   :target: https://rigolwfm.readthedocs.io
-   :alt: Docs
-
-.. image:: https://img.shields.io/pypi/dm/RigolWFM?color=68CA66
-   :target: https://pypi.org/project/RigolWFM/
-   :alt: Downloads
-
-__________
+|license-badge| |test-badge| |docs-badge| |downloads-badge|
 
 This project is intended to be a comprehensive resource for interpreting waveform ``.wmf`` files created by any Rigol oscilloscope.  Open source (and Rigol's own applications) that parse/convert Rigol's binary ``.wfm`` files are sadly balkanized: each program tends to support a single oscilloscope group and the available efforts are spread across a range of languages.
 
