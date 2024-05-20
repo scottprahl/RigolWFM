@@ -19,7 +19,7 @@
    :alt: doi
 
 .. |license-badge| image:: https://img.shields.io/github/license/scottprahl/RigolWFM?color=68CA66
-   :target: https://github.com/scottprahl/RigolWFM/blob/master/LICENSE.txt
+   :target: https://github.com/scottprahl/RigolWFM/blob/main/LICENSE.txt
    :alt: License
 
 .. |test-badge| image:: https://github.com/scottprahl/RigolWFM/actions/workflows/test.yaml/badge.svg
@@ -66,7 +66,7 @@ or ``conda``::
 or use immediately by clicking the Google Colaboratory button below
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
-  :target: https://colab.research.google.com/github/scottprahl/RigolWFM/blob/master
+  :target: https://colab.research.google.com/github/scottprahl/RigolWFM/blob/main
   :alt: Colab
 
 or `analyze your files using the kaitai struct IDE <https://ide.kaitai.io>`_ (you will need to manually upload the appropriate `.ksy` file and your `.wfm` to the IDE).  This allows one to interactively reverse engineer binary file formats directly in your browser.  This is super helpful for those Rigol ``.wfm`` formats that are undocumented or not parsing correctly.

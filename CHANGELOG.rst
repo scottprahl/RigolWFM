@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.0.1 (unreleased)
+------
+*    fix badges
+*    default to main branch
+*    use requirements.txt
+
 1.0.0
 ------
 *    fix `wfmconvert --version` so there is no error
