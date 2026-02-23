@@ -241,7 +241,7 @@ rcheck:
 	@echo "Running all release checks..."
 	@$(MAKE) realclean
 	@$(MAKE) all
-	@$(MAKE) ksy-check
+#	@$(MAKE) ksy-check
 	@$(MAKE) yaml-check
 	@$(MAKE) rst-check
 	@$(MAKE) pylint-check

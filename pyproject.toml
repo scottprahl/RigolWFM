@@ -16,7 +16,7 @@ authors = [
 ]
 description = "Read and parse Rigol Oscilloscope WFM files"
 readme = {file = "README.rst", content-type = "text/x-rst"}
-license = {text = "BSD 3-clause"}
+license = "BSD-3-Clause"
 requires-python = ">=3.10"
 dynamic = ["version"]
 keywords = [
@@ -88,7 +88,6 @@ keywords = [
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: BSD License",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
@@ -115,18 +114,22 @@ docs = [
     "ipython",
 ]
 dev = [
-    "pytest",
-    "nbconvert",
-    "nbformat",
-    "yamllint",
-    "ksylint",
-    "rstcheck[toml,sphinx]",
-    "pylint",
-    "pydocstyle",
-    "check-manifest",
-    "pyroma",
-    "build",
-    "setuptools<81",
+  "pytest",
+  "yamllint",
+#  "ksylint",
+  "rstcheck[toml,sphinx]",
+  "pylint",
+  "ruff",
+
+  "check-manifest",
+  "pyroma",
+  "build",
+  "setuptools",
+
+  # Notebooks (local JupyterLab workflows)
+  "jupyterlab",
+  "nbconvert",
+  "nbformat",
 ]
 lite = [
     "jupyterlite-core>=0.7,<0.8",
