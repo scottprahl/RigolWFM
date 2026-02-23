@@ -1,22 +1,49 @@
 # This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
+# type: ignore
 
 import kaitaistruct
 from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
-from enum import Enum
+from enum import IntEnum
 
 
-if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
+    raise Exception("Incompatible Kaitai Struct Python API: 0.11 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Wfm6000(KaitaiStruct):
 
-    class UnitEnum(Enum):
-        w = 0
-        a = 1
-        v = 2
-        u = 3
+    class AcquisitionEnum(IntEnum):
+        normal = 0
+        average = 1
+        peak = 2
+        high_resolution = 3
 
-    class ProbeRatioEnum(Enum):
+    class BandwidthEnum(IntEnum):
+        no_limit = 0
+        mhz_20 = 1
+        mhz_100 = 2
+        mhz_200 = 3
+        mhz_250 = 4
+
+    class CouplingEnum(IntEnum):
+        dc = 0
+        ac = 1
+        gnd = 2
+
+    class FilterEnum(IntEnum):
+        low_pass = 0
+        high_pass = 1
+        band_pass = 2
+        band_reject = 3
+
+    class ImpedanceEnum(IntEnum):
+        ohm_50 = 0
+        ohm_1meg = 1
+
+    class ProbeEnum(IntEnum):
+        single = 0
+        diff = 1
+
+    class ProbeRatioEnum(IntEnum):
         x0_01 = 0
         x0_02 = 1
         x0_05 = 2
@@ -34,68 +61,113 @@ class Wfm6000(KaitaiStruct):
         x500 = 14
         x1000 = 15
 
-    class ImpedanceEnum(Enum):
-        ohm_50 = 0
-        ohm_1meg = 1
-
-    class ProbeTypeEnum(Enum):
+    class ProbeTypeEnum(IntEnum):
         normal_type = 0
         differential = 1
 
-    class ProbeEnum(Enum):
-        single = 0
-        diff = 1
-
-    class FilterEnum(Enum):
-        low_pass = 0
-        high_pass = 1
-        band_pass = 2
-        band_reject = 3
-
-    class BandwidthEnum(Enum):
-        no_limit = 0
-        mhz_20 = 1
-        mhz_100 = 2
-        mhz_200 = 3
-        mhz_250 = 4
-
-    class TimeEnum(Enum):
+    class TimeEnum(IntEnum):
         yt = 0
         xy = 1
         roll = 2
 
-    class AcquisitionEnum(Enum):
-        normal = 0
-        average = 1
-        peak = 2
-        high_resolution = 3
-
-    class CouplingEnum(Enum):
-        dc = 0
-        ac = 1
-        gnd = 2
+    class UnitEnum(IntEnum):
+        w = 0
+        a = 1
+        v = 2
+        u = 3
     def __init__(self, _io, _parent=None, _root=None):
-        self._io = _io
+        super(Wfm6000, self).__init__(_io)
         self._parent = _parent
-        self._root = _root if _root else self
+        self._root = _root or self
         self._read()
 
     def _read(self):
         pass
 
+
+    def _fetch_instances(self):
+        pass
+        _ = self.data
+        if hasattr(self, '_m_data'):
+            pass
+            self._m_data._fetch_instances()
+
+        _ = self.header
+        if hasattr(self, '_m_header'):
+            pass
+            self._m_header._fetch_instances()
+
+
+    class ChannelHeader(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            super(Wfm6000.ChannelHeader, self).__init__(_io)
+            self._parent = _parent
+            self._root = _root
+            self._read()
+
+        def _read(self):
+            self.enabled = self._io.read_u1()
+            self.coupling = KaitaiStream.resolve_enum(Wfm6000.CouplingEnum, self._io.read_u1())
+            self.bandwidth_limit = KaitaiStream.resolve_enum(Wfm6000.BandwidthEnum, self._io.read_u1())
+            self.probe_type = KaitaiStream.resolve_enum(Wfm6000.ProbeTypeEnum, self._io.read_u1())
+            self.probe_ratio = KaitaiStream.resolve_enum(Wfm6000.ProbeRatioEnum, self._io.read_u1())
+            self.probe_diff = KaitaiStream.resolve_enum(Wfm6000.ProbeEnum, self._io.read_u1())
+            self.probe_signal = KaitaiStream.resolve_enum(Wfm6000.ProbeEnum, self._io.read_u1())
+            self.probe_impedance = KaitaiStream.resolve_enum(Wfm6000.ImpedanceEnum, self._io.read_u1())
+            self.volt_per_division = self._io.read_f4le()
+            self.volt_offset = self._io.read_f4le()
+            self.invert = self._io.read_u1()
+            self.unit = KaitaiStream.resolve_enum(Wfm6000.UnitEnum, self._io.read_u1())
+            self.filter_enabled = self._io.read_u1()
+            self.filter_type = KaitaiStream.resolve_enum(Wfm6000.FilterEnum, self._io.read_u1())
+            self.filter_high = self._io.read_u4le()
+            self.filter_low = self._io.read_u4le()
+
+
+        def _fetch_instances(self):
+            pass
+
+        @property
+        def probe_value(self):
+            if hasattr(self, '_m_probe_value'):
+                return self._m_probe_value
+
+            self._m_probe_value = (0.01 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_01 else (0.02 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_02 else (0.05 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_05 else (0.1 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_1 else (0.2 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_2 else (0.5 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_5 else (1.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x1 else (2.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x2 else (5.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x5 else (10.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x10 else (20.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x20 else (50.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x50 else (100.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x100 else (200.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x200 else (500.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x500 else 1000.0)))))))))))))))
+            return getattr(self, '_m_probe_value', None)
+
+
+    class ChannelMask(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            super(Wfm6000.ChannelMask, self).__init__(_io)
+            self._parent = _parent
+            self._root = _root
+            self._read()
+
+        def _read(self):
+            self.unused = self._io.read_bits_int_be(4)
+            self.channel_4 = self._io.read_bits_int_be(1) != 0
+            self.channel_3 = self._io.read_bits_int_be(1) != 0
+            self.channel_2 = self._io.read_bits_int_be(1) != 0
+            self.channel_1 = self._io.read_bits_int_be(1) != 0
+
+
+        def _fetch_instances(self):
+            pass
+
+
     class Header(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
+            super(Wfm6000.Header, self).__init__(_io)
             self._parent = _parent
-            self._root = _root if _root else self
+            self._root = _root
             self._read()
 
         def _read(self):
             self.magic = self._io.read_bytes(4)
             if not self.magic == b"\xA5\xA5\x38\x00":
                 raise kaitaistruct.ValidationNotEqualError(b"\xA5\xA5\x38\x00", self.magic, self._io, u"/types/header/seq/0")
-            self.model_number = (KaitaiStream.bytes_terminate(self._io.read_bytes(20), 0, False)).decode(u"ascii")
-            self.firmware_version = (KaitaiStream.bytes_terminate(self._io.read_bytes(20), 0, False)).decode(u"ascii")
+            self.model_number = (KaitaiStream.bytes_terminate(self._io.read_bytes(20), 0, False)).decode(u"ASCII")
+            self.firmware_version = (KaitaiStream.bytes_terminate(self._io.read_bytes(20), 0, False)).decode(u"ASCII")
             self.block_num = self._io.read_u2le()
             self.file_version = self._io.read_u2le()
             self.unused_1 = self._io.read_bytes(18)
@@ -177,29 +249,38 @@ class Wfm6000(KaitaiStruct):
             self.zoom_dgtl_trig_data_offset = self._io.read_u2le()
             self.record_frame_index = self._io.read_u4le()
 
-        @property
-        def seconds_per_point(self):
-            if hasattr(self, '_m_seconds_per_point'):
-                return self._m_seconds_per_point
 
-            self._m_seconds_per_point = (1 / self.sample_rate_hz)
-            return getattr(self, '_m_seconds_per_point', None)
+        def _fetch_instances(self):
+            pass
+            self.enabled._fetch_instances()
+            for i in range(len(self.channel_offset)):
+                pass
 
-        @property
-        def time_scale(self):
-            if hasattr(self, '_m_time_scale'):
-                return self._m_time_scale
+            for i in range(len(self.ch)):
+                pass
+                self.ch[i]._fetch_instances()
 
-            self._m_time_scale = (1.0E-12 * self.time_scale_ps)
-            return getattr(self, '_m_time_scale', None)
+            for i in range(len(self.mem_offset)):
+                pass
 
-        @property
-        def time_offset(self):
-            if hasattr(self, '_m_time_offset'):
-                return self._m_time_offset
+            for i in range(len(self.equ_coarse)):
+                pass
 
-            self._m_time_offset = (1.0E-12 * self.time_offset_ps)
-            return getattr(self, '_m_time_offset', None)
+            for i in range(len(self.equ_fine)):
+                pass
+
+            for i in range(len(self.mem_last_addr)):
+                pass
+
+            for i in range(len(self.mem_length)):
+                pass
+
+            for i in range(len(self.mem_start_addr)):
+                pass
+
+            for i in range(len(self.bank_size)):
+                pass
+
 
         @property
         def points(self):
@@ -209,88 +290,72 @@ class Wfm6000(KaitaiStruct):
             self._m_points = self._root.header.mem_depth
             return getattr(self, '_m_points', None)
 
+        @property
+        def seconds_per_point(self):
+            if hasattr(self, '_m_seconds_per_point'):
+                return self._m_seconds_per_point
 
-    class ChannelHeader(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.enabled = self._io.read_u1()
-            self.coupling = KaitaiStream.resolve_enum(Wfm6000.CouplingEnum, self._io.read_u1())
-            self.bandwidth_limit = KaitaiStream.resolve_enum(Wfm6000.BandwidthEnum, self._io.read_u1())
-            self.probe_type = KaitaiStream.resolve_enum(Wfm6000.ProbeTypeEnum, self._io.read_u1())
-            self.probe_ratio = KaitaiStream.resolve_enum(Wfm6000.ProbeRatioEnum, self._io.read_u1())
-            self.probe_diff = KaitaiStream.resolve_enum(Wfm6000.ProbeEnum, self._io.read_u1())
-            self.probe_signal = KaitaiStream.resolve_enum(Wfm6000.ProbeEnum, self._io.read_u1())
-            self.probe_impedance = KaitaiStream.resolve_enum(Wfm6000.ImpedanceEnum, self._io.read_u1())
-            self.volt_per_division = self._io.read_f4le()
-            self.volt_offset = self._io.read_f4le()
-            self.invert = self._io.read_u1()
-            self.unit = KaitaiStream.resolve_enum(Wfm6000.UnitEnum, self._io.read_u1())
-            self.filter_enabled = self._io.read_u1()
-            self.filter_type = KaitaiStream.resolve_enum(Wfm6000.FilterEnum, self._io.read_u1())
-            self.filter_high = self._io.read_u4le()
-            self.filter_low = self._io.read_u4le()
+            self._m_seconds_per_point = 1 / self.sample_rate_hz
+            return getattr(self, '_m_seconds_per_point', None)
 
         @property
-        def probe_value(self):
-            if hasattr(self, '_m_probe_value'):
-                return self._m_probe_value
+        def time_offset(self):
+            if hasattr(self, '_m_time_offset'):
+                return self._m_time_offset
 
-            self._m_probe_value = (0.01 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_01 else (0.02 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_02 else (0.05 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_05 else (0.1 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_1 else (0.2 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_2 else (0.5 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_5 else (1.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x1 else (2.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x2 else (5.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x5 else (10.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x10 else (20.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x20 else (50.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x50 else (100.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x100 else (200.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x200 else (500.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x500 else 1000.0)))))))))))))))
-            return getattr(self, '_m_probe_value', None)
+            self._m_time_offset = 1.0E-12 * self.time_offset_ps
+            return getattr(self, '_m_time_offset', None)
 
+        @property
+        def time_scale(self):
+            if hasattr(self, '_m_time_scale'):
+                return self._m_time_scale
 
-    class ChannelMask(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.unused = self._io.read_bits_int_be(4)
-            self.channel_4 = self._io.read_bits_int_be(1) != 0
-            self.channel_3 = self._io.read_bits_int_be(1) != 0
-            self.channel_2 = self._io.read_bits_int_be(1) != 0
-            self.channel_1 = self._io.read_bits_int_be(1) != 0
+            self._m_time_scale = 1.0E-12 * self.time_scale_ps
+            return getattr(self, '_m_time_scale', None)
 
 
     class RawData(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
+            super(Wfm6000.RawData, self).__init__(_io)
             self._parent = _parent
-            self._root = _root if _root else self
+            self._root = _root
             self._read()
 
         def _read(self):
             if self._root.header.enabled.channel_1:
+                pass
                 self.channel_1 = self._io.read_bytes(self._root.header.mem_depth)
 
             if self._root.header.enabled.channel_2:
+                pass
                 self.channel_2 = self._io.read_bytes(self._root.header.mem_depth)
 
             if self._root.header.enabled.channel_3:
+                pass
                 self.channel_3 = self._io.read_bytes(self._root.header.mem_depth)
 
             if self._root.header.enabled.channel_4:
+                pass
                 self.channel_4 = self._io.read_bytes(self._root.header.mem_depth)
 
 
 
-    @property
-    def header(self):
-        if hasattr(self, '_m_header'):
-            return self._m_header
+        def _fetch_instances(self):
+            pass
+            if self._root.header.enabled.channel_1:
+                pass
 
-        _pos = self._io.pos()
-        self._io.seek(0)
-        self._m_header = Wfm6000.Header(self._io, self, self._root)
-        self._io.seek(_pos)
-        return getattr(self, '_m_header', None)
+            if self._root.header.enabled.channel_2:
+                pass
+
+            if self._root.header.enabled.channel_3:
+                pass
+
+            if self._root.header.enabled.channel_4:
+                pass
+
+
 
     @property
     def data(self):
@@ -302,5 +367,16 @@ class Wfm6000(KaitaiStruct):
         self._m_data = Wfm6000.RawData(self._io, self, self._root)
         self._io.seek(_pos)
         return getattr(self, '_m_data', None)
+
+    @property
+    def header(self):
+        if hasattr(self, '_m_header'):
+            return self._m_header
+
+        _pos = self._io.pos()
+        self._io.seek(0)
+        self._m_header = Wfm6000.Header(self._io, self, self._root)
+        self._io.seek(_pos)
+        return getattr(self, '_m_header', None)
 
 

@@ -33,12 +33,12 @@ types:
         type: str
         size: 20
         terminator: 0
-        encoding: ascii
+        encoding: ASCII
       - id: firmware_version
         type: str
         size: 20
         terminator: 0
-        encoding: ascii
+        encoding: ASCII
       - id: block
         contents: [0x01, 0x00]
       - id: file_version

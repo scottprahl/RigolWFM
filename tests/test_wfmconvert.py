@@ -1,7 +1,10 @@
-import subprocess
+"""Integration checks for core `wfmconvert` output modes."""
+
+from tests.cli_helpers import run_command
 
 
 def test_wfmconvert_info():
+    """Verify `info` conversion succeeds for representative scopes."""
     commands = [
         "wfmconvert B info wfm/DS1204B-A.wfm",
         "wfmconvert C info wfm/DS1202CA-A.wfm",
@@ -9,14 +12,15 @@ def test_wfmconvert_info():
         "wfmconvert E info wfm/DS1102E-A.wfm",
         "wfmconvert Z info wfm/MSO1104.wfm",
         "wfmconvert 2 info wfm/DS2202.wfm",
-        "wfmconvert 4 info wfm/DS4022-A.wfm"
+        "wfmconvert 4 info wfm/DS4022-A.wfm",
     ]
 
     for command in commands:
-        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        assert result.returncode == 0
+        run_command(command)
+
 
 def test_wfmconvert_csv():
+    """Verify CSV export succeeds for representative scopes."""
     commands = [
         "wfmconvert --force B csv wfm/DS1204B-A.wfm",
         "wfmconvert --force C csv wfm/DS1202CA-A.wfm",
@@ -24,14 +28,15 @@ def test_wfmconvert_csv():
         "wfmconvert --force E csv wfm/DS1102E-A.wfm",
         "wfmconvert --force Z csv wfm/MSO1104.wfm",
         "wfmconvert --force 2 csv wfm/DS2202.wfm",
-        "wfmconvert --force 4 csv wfm/DS4022-A.wfm"
+        "wfmconvert --force 4 csv wfm/DS4022-A.wfm",
     ]
 
     for command in commands:
-        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        assert result.returncode == 0
+        run_command(command)
+
 
 def test_wfmconvert_wav():
+    """Verify WAV export succeeds for representative scopes."""
     commands = [
         "wfmconvert --force B wav wfm/DS1204B-A.wfm",
         "wfmconvert --force C wav wfm/DS1202CA-A.wfm",
@@ -39,14 +44,15 @@ def test_wfmconvert_wav():
         "wfmconvert --force E wav wfm/DS1102E-A.wfm",
         "wfmconvert --force Z wav wfm/MSO1104.wfm",
         "wfmconvert --force 2 wav wfm/DS2202.wfm",
-        "wfmconvert --force 4 wav wfm/DS4022-A.wfm"
+        "wfmconvert --force 4 wav wfm/DS4022-A.wfm",
     ]
 
     for command in commands:
-        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        assert result.returncode == 0
+        run_command(command)
+
 
 def test_wfmconvert_vcsv():
+    """Verify VCSV export succeeds for representative scopes."""
     commands = [
         "wfmconvert --force B vcsv wfm/DS1204B-A.wfm",
         "wfmconvert --force C vcsv wfm/DS1202CA-A.wfm",
@@ -54,12 +60,12 @@ def test_wfmconvert_vcsv():
         "wfmconvert --force E vcsv wfm/DS1102E-A.wfm",
         "wfmconvert --force Z vcsv wfm/MSO1104.wfm",
         "wfmconvert --force 2 vcsv wfm/DS2202.wfm",
-        "wfmconvert --force 4 vcsv wfm/DS4022-A.wfm"
+        "wfmconvert --force 4 vcsv wfm/DS4022-A.wfm",
     ]
 
     for command in commands:
-        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        assert result.returncode == 0
+        run_command(command)
+
 
 # Run the tests
 if __name__ == "__main__":
@@ -68,4 +74,3 @@ if __name__ == "__main__":
     test_wfmconvert_wav()
     test_wfmconvert_vcsv()
     print("All tests passed!")
-

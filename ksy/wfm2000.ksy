@@ -20,13 +20,13 @@ types:
         size: 20
         type: str
         terminator: 0
-        encoding: ascii
+        encoding: ASCII
 
       - id: firmware_version
         size: 20
         type: str
         terminator: 0
-        encoding: ascii
+        encoding: ASCII
 
       - id: block_num
         contents: [0x01, 0x00]

@@ -36,14 +36,23 @@ import RigolWFM.wfm6000
 import RigolWFM.channel
 
 # in progress
-DS1000B_scopes = ["B", "1000B", "DS1000B",
-                  "DS1074B", "DS1104B", "DS1204B"]
+DS1000B_scopes = ["B", "1000B", "DS1000B", "DS1074B", "DS1104B", "DS1204B"]
 
 # tested
-DS1000C_scopes = ["C", "1000C", "DS1000C",
-                  "DS1000CD", "DS1000C", "DS1000MD", "DS1000M",
-                  "DS1302CA", "DS1202CA", "DS1102CA", "DS1062CA",
-                  "DS1042C"]
+DS1000C_scopes = [
+    "C",
+    "1000C",
+    "DS1000C",
+    "DS1000CD",
+    "DS1000C",
+    "DS1000MD",
+    "DS1000M",
+    "DS1302CA",
+    "DS1202CA",
+    "DS1102CA",
+    "DS1062CA",
+    "DS1042C",
+]
 
 # tested
 DS1000D_scopes = ["D", "1000D", "DS1000D", "DS1102D", "DS1052D"]
@@ -52,27 +61,63 @@ DS1000D_scopes = ["D", "1000D", "DS1000D", "DS1102D", "DS1052D"]
 DS1000E_scopes = ["E", "1000E", "DS1000E", "DS1102E", "DS1052E"]
 
 # tested, wonky voltages
-DS1000Z_scopes = ["Z", "1000Z", "DS1000Z",
-                  "DS1202Z",
-                  "DS1054Z", "MSO1054Z",
-                  "DS1074Z", "MSO1074Z", "DS1074Z-S",
-                  "DS1104Z", "MSO1104Z", "DS1104Z-S"]
+DS1000Z_scopes = [
+    "Z",
+    "1000Z",
+    "DS1000Z",
+    "DS1202Z",
+    "DS1054Z",
+    "MSO1054Z",
+    "DS1074Z",
+    "MSO1074Z",
+    "DS1074Z-S",
+    "DS1104Z",
+    "MSO1104Z",
+    "DS1104Z-S",
+]
 
 # tested
-DS2000_scopes = ["2", "2000", "DS2000", "DS2072A",
-                 "DS2102A", "MSO2102A", "MSO2102A-S",
-                 "DS2202A", "MSO2202A", "MSO2202A-S",
-                 "DS2302A", "MSO2302A", "MSO2302A-S"]
+DS2000_scopes = [
+    "2",
+    "2000",
+    "DS2000",
+    "DS2072A",
+    "DS2102A",
+    "MSO2102A",
+    "MSO2102A-S",
+    "DS2202A",
+    "MSO2202A",
+    "MSO2202A-S",
+    "DS2302A",
+    "MSO2302A",
+    "MSO2302A-S",
+]
 
 # tested
-DS4000_scopes = ["4", "4000", "DS4000",
-                 "DS4054", "DS4052", "DS4034", "DS4032", "DS4024",
-                 "DS4022", "DS4014", "DS4012", "MSO4054", "MSO4052", "MSO4034",
-                 "MSO4032", "MSO4024", "MSO4022", "MSO4014", "MSO4012"]
+DS4000_scopes = [
+    "4",
+    "4000",
+    "DS4000",
+    "DS4054",
+    "DS4052",
+    "DS4034",
+    "DS4032",
+    "DS4024",
+    "DS4022",
+    "DS4014",
+    "DS4012",
+    "MSO4054",
+    "MSO4052",
+    "MSO4034",
+    "MSO4032",
+    "MSO4024",
+    "MSO4022",
+    "MSO4014",
+    "MSO4012",
+]
 
 # untested
-DS6000_scopes = ["6", "6000", "DS6000",
-                 "DS6062", "DS6064", "DS6102", "DS6104"]
+DS6000_scopes = ["6", "6000", "DS6000", "DS6062", "DS6064", "DS6102", "DS6104"]
 
 
 def valid_scope_list():
@@ -112,7 +157,7 @@ class Channel_Not_In_WFM_Error(Exception):
     """The channel is not in the .wfm file."""
 
 
-class Wfm():
+class Wfm:
     """Class with parsed data from a .wfm file."""
 
     def __init__(self, file_name):
@@ -121,18 +166,18 @@ class Wfm():
         self.original_name = file_name
         self.file_name = file_name
         self.basename = file_name
-        self.firmware = 'unknown'
+        self.firmware = "unknown"
 
         # there are multiple possible scope names
         # 1. user_name   - the name passed to the program
         # 2. header_name - the name found in the header of the file
         # 3. parser_name - the name of parser used
-        self.user_name = 'unknown'
-        self.parser_name = 'unknown'
-        self.header_name = 'unknown'
+        self.user_name = "unknown"
+        self.parser_name = "unknown"
+        self.header_name = "unknown"
 
     @classmethod
-    def from_file(cls, file_name, model, selected='1234'):
+    def from_file(cls, file_name, model, selected="1234"):
         """
         Create Wfm object from a file.
 
@@ -145,7 +190,7 @@ class Wfm():
         """
         # ensure that file exists
         try:
-            f = open(file_name, 'rb')
+            f = open(file_name, "rb")
             f.close()
         except IOError as e:
             raise Read_WFM_Error(e)
@@ -160,19 +205,19 @@ class Wfm():
 
         if umodel in DS1000B_scopes:
             w = RigolWFM.wfm1000b.Wfm1000b.from_file(file_name)
-            new_wfm.header_name = 'DS1000B'
+            new_wfm.header_name = "DS1000B"
 
         elif umodel in DS1000C_scopes:
             w = RigolWFM.wfm1000c.Wfm1000c.from_file(file_name)
-            new_wfm.header_name = 'DS1000C'
+            new_wfm.header_name = "DS1000C"
 
         elif umodel in DS1000D_scopes:
             w = RigolWFM.wfm1000d.Wfm1000d.from_file(file_name)
-            new_wfm.header_name = 'DS1000D'
+            new_wfm.header_name = "DS1000D"
 
         elif umodel in DS1000E_scopes:
             w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)
-            new_wfm.header_name = 'DS1000E'
+            new_wfm.header_name = "DS1000E"
 
         elif umodel in DS1000Z_scopes:
             w = RigolWFM.wfm1000z.Wfm1000z.from_file(file_name)
@@ -180,7 +225,7 @@ class Wfm():
 
         elif umodel in DS2000_scopes:
             w = RigolWFM.wfm2000.Wfm2000.from_file(file_name)
-            new_wfm.header_name = 'DS2000'
+            new_wfm.header_name = "DS2000"
 
         elif umodel in DS4000_scopes:
             w = RigolWFM.wfm4000.Wfm4000.from_file(file_name)
@@ -200,7 +245,7 @@ class Wfm():
         new_wfm.parser_name = pname
 
         # assemble into uniform set of names
-        enabled = ''
+        enabled = ""
         for ch_number in range(1, 5):
 
             ch = RigolWFM.channel.Channel(w, ch_number, pname, selected)
@@ -225,7 +270,7 @@ class Wfm():
         return new_wfm
 
     @classmethod
-    def from_url(cls, url, model, selected='1234'):
+    def from_url(cls, url, model, selected="1234"):
         """
         Return a waveform object given a URL.
 
@@ -244,7 +289,7 @@ class Wfm():
         u = urllib.parse.urlparse(url)
         scheme = u[0]
 
-        if scheme not in ['http', 'https']:
+        if scheme not in ["http", "https"]:
             raise Invalid_URL()
 
         try:
@@ -254,8 +299,7 @@ class Wfm():
             r.raise_for_status()
 
             if not r.ok:
-                error_string = "Downloading URL '%s' failed: '%s'" % (
-                    url, r.reason)
+                error_string = "Downloading URL '%s' failed: '%s'" % (url, r.reason)
                 raise Read_WFM_Error(error_string)
 
             f = tempfile.NamedTemporaryFile()
@@ -280,20 +324,20 @@ class Wfm():
     def describe(self):
         """Return a string describing the contents of a Rigol wfm file."""
         s = "    General:\n"
-        s += '        File Model   = %s\n' % self.parser_name
+        s += "        File Model   = %s\n" % self.parser_name
         s += "        User Model   = %s\n" % self.user_name
-        s += '        Parser Model = %s\n' % self.parser_name
+        s += "        Parser Model = %s\n" % self.parser_name
         s += "        Firmware     = %s\n" % self.firmware
-        s += '        Filename     = %s\n' % self.basename
-        s += '        Channels     = ['
+        s += "        Filename     = %s\n" % self.basename
+        s += "        Channels     = ["
 
         first = True
         for ch in self.channels:
             if not first:
-                s += ', '
-            s += '%s' % ch.channel_number
+                s += ", "
+            s += "%s" % ch.channel_number
             first = False
-        s += ']\n\n'
+        s += "]\n\n"
 
         for ch in self.channels:
             s += str(ch)
@@ -303,9 +347,9 @@ class Wfm():
     def best_scaling(self):
         """Return appropriate scaling for plot."""
         v_scale = 1e-12
-        v_prefix = ''
+        v_prefix = ""
         h_scale = 1e-12
-        h_prefix = ''
+        h_prefix = ""
         for ch in self.channels:
             v, p = RigolWFM.channel.best_scale(ch.volt_per_division)
             if v > v_scale:
@@ -320,25 +364,26 @@ class Wfm():
     def plot(self):
         """Plot the data."""
         h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()
-        colors = ['red', 'blue', 'orange', 'magenta']
+        colors = ["red", "blue", "orange", "magenta"]
 
         for i, ch in enumerate(self.channels):
-            plt.plot(ch.times * h_scale, ch.volts * v_scale,
-                     label=ch.name, color=colors[i])
+            plt.plot(
+                ch.times * h_scale, ch.volts * v_scale, label=ch.name, color=colors[i]
+            )
 
         plt.xlabel("Time (%ss)" % h_prefix)
         plt.ylabel("Voltage (%sV)" % v_prefix)
         plt.title(self.basename)
-        plt.legend(loc='upper right')
+        plt.legend(loc="upper right")
 
     def csv(self):
         """Return a string of comma separated values."""
         if len(self.channels) == 0:
-            return ''
+            return ""
 
         h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()
 
-        s = 'X'
+        s = "X"
         for ch in self.channels:
             s += ",%s" % ch.name
         s += ",Start,Increment\n"
@@ -347,7 +392,7 @@ class Wfm():
         ch = self.channels[0]
         incr = ch.time_scale / 100
         off = -6 * ch.time_scale
-        s += '%ss' % h_prefix
+        s += "%ss" % h_prefix
         for ch in self.channels:
             s += ",%s%s" % (v_prefix, ch.unit.name.upper())
         s += ",%e,%e\n" % (off, incr)
@@ -362,9 +407,9 @@ class Wfm():
     def sigrokcsv(self):
         """Return a string of comma separated values for sigrok."""
         if len(self.channels) == 0:
-            return ''
+            return ""
 
-        s = 'X'
+        s = "X"
         for ch in self.channels:
             s += ",%s (%s)" % (ch.name, ch.unit.name.upper())
         s += "\n"
@@ -383,7 +428,7 @@ class Wfm():
         channel_length = self.channels[0].points
         total_len = channel_length * n_channels
 
-        out = np.empty((total_len,), dtype=np.uint8, order='C')
+        out = np.empty((total_len,), dtype=np.uint8, order="C")
 
         # channels are interleaved e.g., 123123123
         for i, ch in enumerate(self.channels):
@@ -397,11 +442,11 @@ class Wfm():
 
         sample_rate = 1.0 / self.channels[0].seconds_per_point
 
-        wavef = wave.open(wav_filename, 'wb')
+        wavef = wave.open(wav_filename, "wb")
         wavef.setnchannels(n_channels)  # 1 = mono, 2 = stereo
         wavef.setsampwidth(1)
         wavef.setframerate(sample_rate)
-        wavef.setcomptype('NONE', '')
+        wavef.setcomptype("NONE", "")
         wavef.setnframes(channel_length)
 
         wavef.writeframes(out)

@@ -1,7 +1,0 @@
-kaitaistruct
-numpy
-matplotlib
-nbsphinx
-sphinx-automodapi
-sphinx-rtd-theme
-RigolWFM

@@ -39,22 +39,22 @@ def best_scale(number):
     absnr = abs(number)
 
     if absnr == 0:
-        return 1, ' '
+        return 1, " "
     if absnr < 0.99999999e-9:
-        return 1e12, 'p'
+        return 1e12, "p"
     if absnr < 0.99999999e-6:
-        return 1e9, 'n'
+        return 1e9, "n"
     if absnr < 0.99999999e-3:
-        return 1e6, 'µ'
+        return 1e6, "µ"
     if absnr < 0.99999999:
-        return 1e3, 'm'
+        return 1e3, "m"
     if absnr < 0.99999999e3:
-        return 1, ' '
+        return 1, " "
     if absnr < 0.99999999e6:
-        return 1e-3, 'k'
+        return 1e-3, "k"
     if absnr < 0.999999991e9:
-        return 1e-6, 'M'
-    return 1e-9, 'G'
+        return 1e-6, "M"
+    return 1e-9, "G"
 
 
 def engineering_string(number, n_digits):
@@ -80,7 +80,7 @@ def _channel_bytes(channel_number, w):
     """
     offset = 0
 
-    if w.header.stride == 2:   # byte pattern e.g., CH4 CH1 CH4 CH 1
+    if w.header.stride == 2:  # byte pattern e.g., CH4 CH1 CH4 CH 1
         # use odd bytes when this is the second enabled channel
         if not any(w.header.ch[i].enabled for i in range(channel_number - 1)):
             offset = 1
@@ -89,15 +89,15 @@ def _channel_bytes(channel_number, w):
         offset = 4 - channel_number
 
     data = np.frombuffer(w.data.raw, dtype=np.uint8)
-    raw_bytes = data[offset::w.header.stride]
+    raw_bytes = data[offset :: w.header.stride]
 
     return raw_bytes
 
 
-class Channel():
+class Channel:
     """Base class for a single channel."""
 
-    def __init__(self, w, channel_number, scope, selected='1234'):
+    def __init__(self, w, channel_number, scope, selected="1234"):
         """
         Initialize a Channel Object.
 
@@ -110,16 +110,16 @@ class Channel():
             Channel object
         """
         self.channel_number = channel_number
-        self.name = f'CH {channel_number}'
+        self.name = f"CH {channel_number}"
         self.waveform = w
         self.seconds_per_point = w.header.seconds_per_point
-        self.firmware = 'unknown'
+        self.firmware = "unknown"
         self.unit = UnitEnum.v
         self.points = 0
         self.raw = None
         self.volts = None
         self.times = None
-        self.coupling = 'unknown'
+        self.coupling = "unknown"
         self.roll_stop = 0
         self.time_offset = 0
         self.time_scale = 1
@@ -149,42 +149,52 @@ class Channel():
             self.unit = channel.unit
             self.inverted = channel.inverted
 
-        if scope == 'wfm1000b':
+        if scope == "wfm1000b":
             self.y_offset += 1.12 * channel.volt_per_division
             self.ds1000b(w, channel_number)
-        elif scope == 'wfm1000c':
+        elif scope == "wfm1000c":
             self.ds1000c(w, channel_number)
-        elif scope == 'wfm1000d':
+        elif scope == "wfm1000d":
             self.ds1000d(w, channel_number)
-        elif scope == 'wfm1000e':
+        elif scope == "wfm1000e":
             self.ds1000e(w, channel_number)
-        elif scope == 'wfm1000z':
+        elif scope == "wfm1000z":
             self.ds1000z(w, channel_number)
-        elif scope == 'wfm2000':
+        elif scope == "wfm2000":
             self.ds2000(w, channel_number)
-        elif scope == 'wfm4000':
+        elif scope == "wfm4000":
             self.ds4000(w, channel_number)
-        elif scope == 'wfm6000':
+        elif scope == "wfm6000":
             self.ds6000(w, channel_number)
 
     def __str__(self):
         """Describe this channel."""
         s = "     Channel %d:\n" % self.channel_number
-        s += "         Coupling = %8s\n" % self.coupling.rjust(7, ' ')
-        s += "            Scale = %10sV/div\n" % engineering_string(self.volt_per_division, 2)
+        s += "         Coupling = %8s\n" % self.coupling.rjust(7, " ")
+        s += "            Scale = %10sV/div\n" % engineering_string(
+            self.volt_per_division, 2
+        )
         s += "           Offset = %10sV\n" % engineering_string(self.volt_offset, 2)
         s += "            Probe = %7gX\n" % self.probe_value
         s += "         Inverted = %8s\n\n" % self.inverted
         s += "        Time Base = %10ss/div\n" % engineering_string(self.time_scale, 3)
         s += "           Offset = %10ss\n" % engineering_string(self.time_offset, 3)
-        s += "            Delta = %10ss/point\n" % engineering_string(self.seconds_per_point, 3)
+        s += "            Delta = %10ss/point\n" % engineering_string(
+            self.seconds_per_point, 3
+        )
         s += "           Points = %8d\n\n" % self.points
 
         if self.enabled_and_selected:
             format_str = "         Count    = [%9d,%9d,%9d  ... %9d,%9d]\n"
             s += format_str % (1, 2, 3, self.points - 1, self.points)
             format_str = "           Raw    = [%9d,%9d,%9d  ... %9d,%9d]\n"
-            s += format_str % (self.raw[0], self.raw[1], self.raw[2], self.raw[-2], self.raw[-1])
+            s += format_str % (
+                self.raw[0],
+                self.raw[1],
+                self.raw[2],
+                self.raw[-2],
+                self.raw[-1],
+            )
             t = [engineering_string(self.times[i], 3) + "s" for i in [0, 1, 2, -2, -1]]
             format_str = "           Times  = [%9s,%9s,%9s  ... %9s,%9s]\n"
             s += format_str % (t[0], t[1], t[2], t[-2], t[-1])
@@ -204,32 +214,32 @@ class Channel():
         """Interpret waveform data for 1000B series scopes."""
         self.time_scale = 1.0e-12 * w.header.time_scale
         self.time_offset = 1.0e-12 * w.header.time_offset
-        self.coupling = 'AC'
+        self.coupling = "AC"
         if channel_number == 1:
             if self.enabled_and_selected:
                 if (w.header.coupling_ch12 & 0xC0) == 0xC0:
-                    self.coupling = 'DC'
+                    self.coupling = "DC"
                 self.points = w.header.len_ch1
                 self.raw = np.frombuffer(w.header.ch1, dtype=np.uint8)
 
         if channel_number == 2:
             if self.enabled_and_selected:
                 if (w.header.coupling_ch12 & 0x0C) == 0x0C:
-                    self.coupling = 'DC'
+                    self.coupling = "DC"
                 self.points = w.header.len_ch2
                 self.raw = np.frombuffer(w.header.ch2, dtype=np.uint8)
 
         if channel_number == 3:
             if self.enabled_and_selected:
                 if (w.header.coupling_ch34 & 0xC0) == 0xC0:
-                    self.coupling = 'DC'
+                    self.coupling = "DC"
                 self.points = w.header.len_ch3
                 self.raw = np.frombuffer(w.header.ch3, dtype=np.uint8)
 
         if channel_number == 4:
             if self.enabled_and_selected:
                 if (w.header.coupling_ch34 & 0x0C) == 0x0C:
-                    self.coupling = 'DC'
+                    self.coupling = "DC"
                 self.points = w.header.len_ch4
                 self.raw = np.frombuffer(w.header.ch4, dtype=np.uint8)
 
@@ -334,8 +344,12 @@ class Channel():
             # to sample at a higher resolution.  This means if CH1 is disabled
             # CH2 will use the memory from CH1.
             self.raw = np.empty((self.points,), dtype=np.uint8)
-            self.raw[0::2] = np.frombuffer(w.header.raw_1, count=self.points // 2, dtype=np.uint8)
-            self.raw[1::2] = np.frombuffer(w.header.raw_2, count=self.points // 2, dtype=np.uint8)
+            self.raw[0::2] = np.frombuffer(
+                w.header.raw_1, count=self.points // 2, dtype=np.uint8
+            )
+            self.raw[1::2] = np.frombuffer(
+                w.header.raw_2, count=self.points // 2, dtype=np.uint8
+            )
 
         self.calc_times_and_volts()
 

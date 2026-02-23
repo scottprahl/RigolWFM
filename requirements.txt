@@ -1,4 +1,0 @@
-kaitaistruct
-numpy
-matplotlib
-pytest

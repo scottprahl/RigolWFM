@@ -7,8 +7,8 @@ A checklist for releasing a new version
   python -m build
   make clean
 
-# update the version in setup.cfg AND docs/conf.py
-  git commit setup.cfg docs/conf.py -m 'update version'
+# update the version in RigolWFM/__init__.py
+  git commit RigolWFM/__init__.py -m 'update version'
 
 # update CHANGELOG.rst  `git shortlog v0.6.4..HEAD`
   git commit CHANGELOG.rst -m 'update recent changes' 
