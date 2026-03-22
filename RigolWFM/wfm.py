@@ -33,6 +33,7 @@ import RigolWFM.wfm1000z
 import RigolWFM.wfm2000
 import RigolWFM.wfm4000
 import RigolWFM.wfm6000
+import RigolWFM.wfmdho1000
 import RigolWFM.channel
 
 # in progress
@@ -119,6 +120,14 @@ DS4000_scopes = [
 # untested
 DS6000_scopes = ["6", "6000", "DS6000", "DS6062", "DS6064", "DS6102", "DS6104"]
 
+# DHO800/DHO900/DHO1000 series (.bin and .wfm — format detected by file extension)
+DHO1000_scopes = [
+    "DHO", "DHO800", "DHO900", "DHO1000",
+    "DHO804", "DHO812", "DHO814",
+    "DHO914", "DHO914S", "DHO924", "DHO924S",
+    "DHO1072", "DHO1074", "DHO1102", "DHO1202", "DHO1204",
+]
+
 
 def valid_scope_list():
     """List all the oscilloscope types."""
@@ -129,8 +138,18 @@ def valid_scope_list():
     s += ", ".join(DS1000Z_scopes) + "\n    "
     s += ", ".join(DS2000_scopes) + "\n    "
     s += ", ".join(DS4000_scopes) + "\n    "
-    s += ", ".join(DS6000_scopes) + "\n"
+    s += ", ".join(DS6000_scopes) + "\n    "
+    s += ", ".join(DHO1000_scopes) + "\n"
     return s
+
+
+def _is_dho_bin(file_name):
+    """Return True if the file starts with the 'RG' DHO .bin cookie."""
+    try:
+        with open(file_name, "rb") as f:
+            return f.read(2) == b"RG"
+    except OSError:
+        return False
 
 
 class Read_WFM_Error(Exception):
@@ -234,6 +253,13 @@ class Wfm:
         elif umodel in DS6000_scopes:
             w = RigolWFM.wfm6000.Wfm6000.from_file(file_name)
             new_wfm.header_name = w.header.model_number
+
+        elif umodel in DHO1000_scopes:
+            if _is_dho_bin(file_name):
+                w = RigolWFM.wfmdho1000.Dho1000.from_file(file_name)
+            else:
+                w = RigolWFM.wfmdho1000.WfmDho1000.from_file(file_name)
+            new_wfm.header_name = w.header.model_number or "DHO1000"
 
         else:
             print("Unknown Rigol oscilloscope type: '%s'" % umodel)

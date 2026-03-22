@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Unreleased (2026-03-22)
+------------------------
+*    add support for DHO800/DHO900/DHO1000 series (`.bin` and `.wfm` formats)
+*    add Kaitai Struct descriptions for DHO1000 binary (``bindho1000.ksy``) and proprietary (``wfmdho1000.ksy``) formats
+*    add notebook ``1-DHO1000-Waveforms.ipynb`` with examples for both formats
+
 Unreleased ()
 ------------------------
 *    migrate package metadata and dependencies fully into ``pyproject.toml``

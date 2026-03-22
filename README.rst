@@ -117,6 +117,7 @@ There is a bit of work remaining (testing, validation, repackaging) but there ar
 * DS2000 tested
 * DS4000 tested
 * DS6000 untested
+* DHO1000 tested
 
 Resources
 ---------

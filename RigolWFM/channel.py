@@ -166,6 +166,10 @@ class Channel:
             self.ds4000(w, channel_number)
         elif scope == "wfm6000":
             self.ds6000(w, channel_number)
+        elif scope == "dho1000":
+            self.dho1000(w, channel_number)
+        elif scope == "wfmdho1000":
+            self.wfmdho1000(w, channel_number)
 
     def __str__(self):
         """Describe this channel."""
@@ -401,3 +405,50 @@ class Channel:
                 self.raw = np.array(w.header.raw_4, dtype=np.uint8)
 
         self.calc_times_and_volts()
+
+    def dho1000(self, w, channel_number):
+        """Interpret waveform for the Rigol DHO800/DHO900/DHO1000 series (.bin format)."""
+        self.time_scale = w.header.time_scale
+        self.time_offset = 0.0
+        self.points = w.header.points
+        self.firmware = w.header.firmware_version
+
+        idx = channel_number - 1
+        ch_data = w.header.channel_data[idx] if idx < len(w.header.channel_data) else None
+        if ch_data is not None and self.enabled_and_selected:
+            # DHO .bin files contain float32 volts directly (already calibrated)
+            self.volts = ch_data.astype(np.float64)
+            # Compress 16-bit ADC range to uint8 (upper 8 bits) for WAV export
+            # compatibility — consistent with uint8 raw in all other parsers.
+            raw16 = np.clip(
+                (self.volts * 1000 + 32768).astype(np.int32), 0, 65535
+            ).astype(np.uint16)
+            self.raw = (raw16 >> 8).astype(np.uint8)
+            self.points = len(self.volts)
+            # BIN format stores x_origin as positive distance from trigger to
+            # first sample. Negate to get actual first sample time (negative
+            # for pre-trigger captures, e.g. x_origin=2.5ms → t[0]=-2.5ms).
+            t0 = -w.header.x_origin
+            self.times = t0 + np.arange(self.points) * w.header.x_increment
+
+    def wfmdho1000(self, w, channel_number):
+        """Interpret waveform for DHO series from .wfm format (raw uint16 ADC samples)."""
+        self.time_scale = w.header.time_scale
+        self.time_offset = 0.0
+        self.points = w.header.points
+        self.firmware = w.header.firmware_version
+
+        idx = channel_number - 1
+        if idx < len(w.header.channel_data) and self.enabled_and_selected:
+            # Calibrated float voltages computed by WfmDho1000 parser
+            self.volts = w.header.channel_data[idx].astype(np.float64)
+            # Compress 16-bit ADC to uint8 (upper 8 bits) for WAV export
+            # compatibility — consistent with uint8 raw in all other parsers.
+            if w.header.raw_data is not None:
+                self.raw = (w.header.raw_data >> 8).astype(np.uint8)
+            else:
+                self.raw = np.zeros(self.points, dtype=np.uint8)
+            self.points = len(self.volts)
+            # Time axis: t[i] = x_origin + i * x_increment
+            t0 = w.header.x_origin
+            self.times = t0 + np.arange(self.points) * w.header.x_increment
