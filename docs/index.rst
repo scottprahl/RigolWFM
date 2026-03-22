@@ -44,6 +44,12 @@
    1-DS4000-Waveforms.ipynb
 
 .. toctree::
+   :caption: DHO Series
+
+   1-DHO800-Waveforms.ipynb
+   1-DHO1000-Waveforms.ipynb
+
+.. toctree::
    :caption: API
    
    RigolWFM

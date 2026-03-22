@@ -1,23 +1,23 @@
 meta:
   id: bindho1000
-  title: Rigol DHO800/DHO900/DHO1000 binary waveform file
+  title: Rigol DHO800/DHO1000 binary waveform file
   file-extension: bin
   endian: le
-  doc: |
-    Official binary waveform export format documented in DHO1000 User Guide §19.2.4
-    (Tables 19.1–19.4).  Stores calibrated float32 voltage samples for each enabled
-    channel.
+doc: |
+  Official binary waveform export format documented in DHO1000 User Guide
+  §19.2.4 (Tables 19.1–19.4). Stores calibrated float32 voltage samples
+  for each enabled channel.
 
-    File layout:
-      [File Header:      16 bytes]
-      for each waveform (channel):
-        [Waveform Header: 140 bytes]
-        [Data Header:      16 bytes]
-        [Sample Data:      buffer_size bytes — float32 LE, volts]
+  File layout:
+    [File Header:      16 bytes]
+    for each waveform (channel):
+      [Waveform Header: 140 bytes]
+      [Data Header:      16 bytes]
+      [Sample Data:      buffer_size bytes - float32 LE, volts]
 
-    Time axis reconstruction:
-      t[i] = -x_origin + i * x_increment
-      (x_origin is stored as a positive distance from the trigger point)
+  Time axis reconstruction:
+    t[i] = -x_origin + i * x_increment
+    (x_origin is stored as a positive distance from the trigger point)
 
 seq:
   - id: file_header
@@ -47,7 +47,7 @@ types:
         doc: Number of waveform records (one per enabled channel).
 
   waveform:
-    doc: One waveform record — header, data header, and float32 samples.
+    doc: One waveform record - header, data header, and float32 samples.
     seq:
       - id: wfm_header
         type: waveform_header

@@ -33,6 +33,7 @@ import RigolWFM.wfm1000z
 import RigolWFM.wfm2000
 import RigolWFM.wfm4000
 import RigolWFM.wfm6000
+import RigolWFM.bindho1000
 import RigolWFM.wfmdho1000
 import RigolWFM.channel
 
@@ -120,11 +121,10 @@ DS4000_scopes = [
 # untested
 DS6000_scopes = ["6", "6000", "DS6000", "DS6062", "DS6064", "DS6102", "DS6104"]
 
-# DHO800/DHO900/DHO1000 series (.bin and .wfm — format detected by file extension)
+# DHO800/DHO1000 series (.bin and .wfm - format detected by file extension)
 DHO1000_scopes = [
-    "DHO", "DHO800", "DHO900", "DHO1000",
-    "DHO804", "DHO812", "DHO814",
-    "DHO914", "DHO914S", "DHO924", "DHO924S",
+    "DHO", "DHO800", "DHO1000",
+    "DHO804", "DHO812", "DHO814", "DHO824",
     "DHO1072", "DHO1074", "DHO1102", "DHO1202", "DHO1204",
 ]
 

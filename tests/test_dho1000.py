@@ -1,12 +1,12 @@
 """
-Tests for Rigol DHO800/DHO900/DHO1000 series parsers.
+Tests for Rigol DHO800/DHO1000 series parsers.
 
 Tests both the .bin parser and the .wfm parser from wfmdho1000.py.
 Validates sample count, voltage range, time axis, and channel count.
 
 Test files:
     wfm/DHO1074.bin   (10000 samples, 4 channels enabled, DHO1074)
-    wfm/DHO1047.wfm   (10000 samples, CH1 only, 3.3V logic signal)
+    wfm/DHO1074.wfm   (10000 samples, CH1 only, 3.3V logic signal)
 """
 
 import importlib
@@ -38,13 +38,13 @@ def _find_file(name):
 
 
 DHO1074_BIN = _find_file("DHO1074.bin")
-DHO1047_WFM = _find_file("DHO1047.wfm")
+DHO1074_WFM = _find_file("DHO1074.wfm")
 
 HAS_DHO1074_BIN = DHO1074_BIN is not None
-HAS_DHO1047_WFM = DHO1047_WFM is not None
+HAS_DHO1074_WFM = DHO1074_WFM is not None
 
 # Correlation tests require a matching .bin/.wfm pair from the same capture.
-# DHO1074.bin and DHO1047.wfm are different captures, so correlation is not expected.
+# DHO1074.bin and DHO1074.wfm are different captures, so correlation is not expected.
 HAS_MATCHING_PAIR = False
 
 
@@ -125,62 +125,65 @@ class TestWfmDho1000Parser(unittest.TestCase):
         _, wfmdho1000 = _import_parsers()
         cls.wfmdho1000 = wfmdho1000
 
-    @unittest.skipUnless(HAS_DHO1047_WFM, "DHO1047.wfm not found")
+    @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_dho1047_wfm_parse(self):
-        """DHO1047.wfm should parse without errors."""
-        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1047_WFM)
+        """DHO1074.wfm should parse without errors."""
+        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
         self.assertIsNotNone(obj)
         self.assertIsNotNone(obj.header)
 
-    @unittest.skipUnless(HAS_DHO1047_WFM, "DHO1047.wfm not found")
+    @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_dho1047_wfm_sample_count(self):
-        """DHO1047.wfm should have 10000 samples."""
-        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1047_WFM)
+        """DHO1074.wfm should have 10000 samples."""
+        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
         self.assertEqual(obj.header.n_pts, 10000)
 
-    @unittest.skipUnless(HAS_DHO1047_WFM, "DHO1047.wfm not found")
+    @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_dho1047_wfm_channel_data(self):
-        """DHO1047.wfm should have calibrated voltage data for channel 1."""
-        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1047_WFM)
-        self.assertEqual(len(obj.header.channel_data), 1)
+        """DHO1074.wfm should have calibrated voltage data for channel 1 (4-slot list)."""
+        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
+        self.assertEqual(len(obj.header.channel_data), 4)
         volts = obj.header.channel_data[0]
+        self.assertIsNotNone(volts)
         self.assertEqual(len(volts), 10000)
 
-    @unittest.skipUnless(HAS_DHO1047_WFM, "DHO1047.wfm not found")
+    @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_dho1047_wfm_raw_data(self):
-        """DHO1047.wfm raw_data should be uint16 with 10000 samples."""
-        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1047_WFM)
+        """DHO1074.wfm raw_data is a 4-slot list; slot 0 has uint16 array of 10000 samples."""
+        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
         self.assertIsNotNone(obj.header.raw_data)
-        self.assertEqual(obj.header.raw_data.dtype, np.dtype("<u2"))
-        self.assertEqual(len(obj.header.raw_data), 10000)
+        raw_ch1 = obj.header.raw_data[0]
+        self.assertIsNotNone(raw_ch1)
+        self.assertEqual(raw_ch1.dtype, np.dtype("<u2"))
+        self.assertEqual(len(raw_ch1), 10000)
 
-    @unittest.skipUnless(HAS_DHO1047_WFM, "DHO1047.wfm not found")
+    @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_dho1047_wfm_voltage_range(self):
-        """DHO1047.wfm voltages should be in a realistic range for a 3.3V logic signal."""
-        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1047_WFM)
+        """DHO1074.wfm voltages should be in a realistic range for a 3.3V logic signal."""
+        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
         volts = obj.header.channel_data[0]
         self.assertGreater(float(volts.max()), -5.0)
         self.assertLess(float(volts.max()), 10.0)
 
-    @unittest.skipUnless(HAS_DHO1047_WFM, "DHO1047.wfm not found")
+    @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_dho1047_wfm_time_axis(self):
-        """DHO1047.wfm time parameters should be valid."""
-        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1047_WFM)
+        """DHO1074.wfm time parameters should be valid."""
+        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
         self.assertGreater(obj.header.x_increment, 1e-12)
         self.assertLess(obj.header.x_increment, 1.0)
 
-    @unittest.skipUnless(HAS_DHO1047_WFM, "DHO1047.wfm not found")
+    @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_dho1047_wfm_channel_headers(self):
-        """DHO1047.wfm should have 4 channel headers (1 enabled + 3 disabled)."""
-        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1047_WFM)
+        """DHO1074.wfm should have 4 channel headers (1 enabled + 3 disabled)."""
+        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
         self.assertEqual(len(obj.header.ch), 4)
         self.assertTrue(obj.header.ch[0].enabled)
         self.assertFalse(obj.header.ch[1].enabled)
 
-    @unittest.skipUnless(HAS_DHO1047_WFM, "DHO1047.wfm not found")
+    @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_dho1047_wfm_str_parser_name(self):
         """str(obj) should contain 'wfmdho1000' for parser name extraction."""
-        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1047_WFM)
+        obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
         self.assertIn("wfmdho1000", str(obj))
 
 
@@ -188,7 +191,7 @@ class TestWfmBinCorrelation(unittest.TestCase):
     """Cross-validation: compare WFM and BIN voltage data.
 
     These tests require a matching .bin and .wfm pair from the same capture.
-    DHO1074.bin and DHO1047.wfm are different captures, so tests are skipped.
+    DHO1074.bin and DHO1074.wfm are different captures, so tests are skipped.
     To enable: provide matching files and set HAS_MATCHING_PAIR = True.
     """
 
@@ -201,7 +204,7 @@ class TestWfmBinCorrelation(unittest.TestCase):
     @unittest.skipUnless(HAS_MATCHING_PAIR, "No matching .bin/.wfm pair available")
     def test_wfm_bin_rms_error(self):
         """WFM voltage calibration should match BIN to within 1mV RMS."""
-        wfm_obj = self.wfmdho1000.WfmDho1000.from_file(DHO1047_WFM)
+        wfm_obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
         bin_obj = self.dho1000.Dho1000.from_file(DHO1074_BIN)
         wfm_v = wfm_obj.header.channel_data[0].astype(np.float64)
         bin_v = bin_obj.header.channel_data[0].astype(np.float64)
@@ -212,7 +215,7 @@ class TestWfmBinCorrelation(unittest.TestCase):
     @unittest.skipUnless(HAS_MATCHING_PAIR, "No matching .bin/.wfm pair available")
     def test_wfm_bin_correlation(self):
         """WFM and BIN voltage data should be highly correlated (r > 0.9999)."""
-        wfm_obj = self.wfmdho1000.WfmDho1000.from_file(DHO1047_WFM)
+        wfm_obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
         bin_obj = self.dho1000.Dho1000.from_file(DHO1074_BIN)
         wfm_v = wfm_obj.header.channel_data[0].astype(np.float64)
         bin_v = bin_obj.header.channel_data[0].astype(np.float64)
@@ -223,7 +226,7 @@ class TestWfmBinCorrelation(unittest.TestCase):
     @unittest.skipUnless(HAS_MATCHING_PAIR, "No matching .bin/.wfm pair available")
     def test_wfm_bin_max_error(self):
         """Maximum per-sample error should be less than 5mV."""
-        wfm_obj = self.wfmdho1000.WfmDho1000.from_file(DHO1047_WFM)
+        wfm_obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
         bin_obj = self.dho1000.Dho1000.from_file(DHO1074_BIN)
         wfm_v = wfm_obj.header.channel_data[0].astype(np.float64)
         bin_v = bin_obj.header.channel_data[0].astype(np.float64)
@@ -293,10 +296,10 @@ class TestChannelIntegration(unittest.TestCase):
             self.assertIsNotNone(ch.volts)
             self.assertIsNotNone(ch.times)
 
-    @unittest.skipUnless(HAS_DHO1047_WFM, "DHO1047.wfm not found")
+    @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_wfm_from_file_wfm_format(self):
         """Wfm.from_file() with DHO model and .wfm file should use WFM parser."""
-        wfm = self.wfm_module.Wfm.from_file(DHO1047_WFM, "DHO", "1")
+        wfm = self.wfm_module.Wfm.from_file(DHO1074_WFM, "DHO", "1")
         self.assertEqual(len(wfm.channels), 1)
         ch = wfm.channels[0]
         self.assertIsNotNone(ch.volts)
@@ -306,6 +309,6 @@ class TestChannelIntegration(unittest.TestCase):
 if __name__ == "__main__":
     print("Test file locations:")
     print(f"  DHO1074_BIN: {DHO1074_BIN}")
-    print(f"  DHO1047_WFM: {DHO1047_WFM}")
+    print(f"  DHO1074_WFM: {DHO1074_WFM}")
     print()
     unittest.main(verbosity=2)

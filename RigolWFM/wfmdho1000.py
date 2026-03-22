@@ -4,53 +4,18 @@
 # pylint: disable=too-many-statements
 
 """
-Parsers for Rigol DHO800/DHO900/DHO1000 series oscilloscope waveform files.
+Parsers for Rigol DHO800/DHO1000 series oscilloscope waveform files.
 
 Two file formats are supported:
 
 .bin  Official binary format documented in DHO1000 User Guide, §19.2.4.
-      Contains float32 calibrated voltage samples.
+      Parsed via kaitai-generated Bindho1000 class (see ksy/bindho1000.ksy).
+      Contains float32 calibrated voltage samples.  Works identically for
+      DHO800 and DHO1000.
 
-.wfm  Proprietary format (reverse-engineered from DHO1074 captures).
-      Contains zlib-compressed metadata blocks followed by uint16 ADC samples.
-
---- .bin file structure (Tables 19.1–19.4) ---
-
-    [File Header: 16 bytes]
-    For each waveform (channel):
-        [Waveform Header: 140 bytes]
-        [Waveform Data Header: 16 bytes]
-        [Channel Data: buffer_size bytes (float32 LE)]
-
-File Header (16 bytes):
-    Cookie              2 bytes   "RG"
-    Version             2 bytes   file version
-    File Size           8 bytes   u64le, total file size
-    Number of Waveforms 4 bytes   u32le
-
-Waveform Header (140 bytes):
-    Header Size         4 bytes   u32le (= 140)
-    Waveform Type       4 bytes   u32le (1=Normal, 2=Peak, 3=Average, 6=Logic)
-    Number of Buffers   4 bytes   u32le (= 1)
-    Number of Points    4 bytes   u32le
-    Count               4 bytes   u32le (= 0)
-    X Display Range     4 bytes   f32le
-    X Display Origin    8 bytes   f64le
-    X Increment         8 bytes   f64le
-    X Origin            8 bytes   f64le  (positive = distance from trigger)
-    X Units             4 bytes   u32le
-    Y Units             4 bytes   u32le
-    Date               16 bytes   ASCII
-    Time               16 bytes   ASCII
-    Model              24 bytes   ASCII "MODEL#:SERIAL#"
-    Channel Name       16 bytes   ASCII
-    (padding)          12 bytes   zeros
-
-Waveform Data Header (16 bytes):
-    Header Size         4 bytes   u32le (= 16)
-    Buffer Type         2 bytes   u16le (1=Normal float32)
-    Bytes Per Point     2 bytes   u16le (= 4)
-    Buffer Size         8 bytes   u64le
+.wfm  Proprietary format (reverse-engineered from DHO1074 and DHO800 captures).
+      Contains zlib-compressed metadata blocks followed by interleaved uint16
+      ADC samples for all enabled channels.
 
 --- .wfm file structure ---
 
@@ -58,7 +23,7 @@ Waveform Data Header (16 bytes):
     [Metadata blocks: variable count, each 12-byte header + content]
     [Zero padding]
     [Data section header: 40 bytes]
-    [Raw ADC samples: n_pts × uint16 LE]
+    [Raw ADC samples: n_pts_total × uint16 LE, interleaved by channel]
 
 Block header (12 bytes, all u16 LE):
     block_id      u16  channel/block identifier
@@ -68,30 +33,29 @@ Block header (12 bytes, all u16 LE):
     padded_size   u16  padded size in file
     zero          u16  always 0
 
-Key blocks:
-    id=1, type=9  (96 bytes decompressed)  - CH1 channel parameters
-        bytes[1:9]   i64 LE  voltage scale factor: scale = i64 / 750_000_000_000
-    type=6  (~1628 bytes decompressed)  - trigger/display settings
+--- DHO1000 (.wfm) calibration blocks ---
+
+    id=1, type=9  - CH1 channel parameters
+        bytes[1:9]   i64 LE  scale factor: scale = i64 / 750_000_000_000
+    type=6  - trigger/display settings
         bytes[36:40] i32 LE  CH1 voltage center × 1e8
 
-Voltage calibration (verified, RMS error < 0.012 mV):
-    scale    = i64_ch1 / 750_000_000_000
-    v_center = i32_settings / 1e8
-    offset   = v_center - scale * 32768
-    voltage  = scale * raw_uint16 + offset
+    Voltage: scale = i64/750B, v_center = i32/1e8
+    Data section: offset+0 u64 = n_pts + 64 (single channel only)
 
-Data section layout (40 bytes before samples):
-    offset+0:   u64  n_pts + 64
-    offset+8:   8B   capture marker
-    offset+16:  u32  x_increment in nanoseconds
-    offset+20:  u32  unknown (79 in observed files)
-    offset+24:  u32  n_pts (repeated)
-    offset+28:  u32  n_pts (repeated)
-    offset+32:  u32  timestamp/unknown
-    offset+36:  u32  unknown (120 in observed files)
-    offset+40:  uint16 samples begin
+--- DHO800 (.wfm) calibration blocks (reverse-engineered) ---
 
-    x_origin is not stored; derived as -(n_pts / 2) × x_increment.
+    id=1..4, type=5  - per-channel parameters (one block per enabled channel)
+        bytes[1:9]   i64 LE  scale factor: scale = i64 / 7_500_000_000_000
+        bytes[38:42] i32 LE  -v_center × 1e9 (negated, divisor 1e9)
+
+    Voltage: scale = i64/7.5T, v_center = -i32/1e9
+    Data section: offset+0 u64 = n_pts_total (all channels), offset+24 u32 = n_pts/ch
+    Multi-channel: samples interleaved as [CH1, CH2, ..., CHn, CH1, CH2, ...]
+
+Common calibration formula (both variants):
+    offset  = v_center - scale * 32768
+    voltage = scale * raw_uint16 + offset   (RMS error < 0.006 mV vs .bin)
 
 Example:
     >>> import RigolWFM.wfmdho1000 as wdho
@@ -105,20 +69,21 @@ from enum import IntEnum
 
 import numpy as np
 
+import RigolWFM.bindho1000
 
-# .bin parser constants
-_BIN_FILE_HEADER_SIZE = 16
-_BIN_DATA_HEADER_SIZE = 16
 
 # .wfm parser constants
 _WFM_FILE_HEADER_SIZE = 24
 _WFM_BLOCK_HEADER_SIZE = 12
 _WFM_CH1_BLOCK_ID = 1
-_WFM_CH1_BLOCK_TYPE = 9
+_WFM_CH1_BLOCK_TYPE = 9           # DHO1000 channel calibration block type
+_WFM_CH_BLOCK_TYPE_DHO800 = 5     # DHO800 channel calibration block type
 _WFM_SETTINGS_BLOCK_TYPE = 6
-_WFM_SCALE_DIVISOR = 750_000_000_000
+_WFM_SCALE_DIVISOR = 750_000_000_000          # DHO1000 scale divisor
+_WFM_SCALE_DIVISOR_DHO800 = 7_500_000_000_000  # DHO800 scale divisor (10× larger)
 _WFM_ADC_MIDPOINT = 32768
 _WFM_V_CENTER_DIVISOR = 1e8
+_WFM_V_CENTER_DIVISOR_DHO800 = 1e9  # DHO800: bytes[38:42] of type=5 block, negated
 
 
 class UnitEnum(IntEnum):
@@ -169,61 +134,47 @@ class ChannelHeader:
 
 
 # ---------------------------------------------------------------------------
-# .bin parser
+# .bin parser - thin wrapper around kaitai-generated Bindho1000
 # ---------------------------------------------------------------------------
 
+def _channel_slot(ch_name, fallback):
+    """Derive 0-based channel slot from name like 'CH2' → 1; return fallback on failure."""
+    name_upper = ch_name.upper()
+    for prefix in ("CH", "C"):
+        if name_upper.startswith(prefix):
+            try:
+                n = int(name_upper[len(prefix):]) - 1
+                if 0 <= n < 4:
+                    return n
+            except ValueError:
+                pass
+            break
+    return fallback
+
+
 class BinHeader:
-    """Parsed header from DHO .bin file."""
+    """Interface object holding parsed DHO .bin data for use by channel.py."""
 
     def __init__(self):
         """Initialize empty header."""
         self.cookie = ""
-        self.version = ""
-        self.file_size = 0
         self.n_waveforms = 0
-
-        self.waveform_header_size = 0
-        self.waveform_type = 0
-        self.n_buffers = 0
         self.n_pts = 0
-        self.count = 0
-        self.x_range = 0.0
-        self.x_disp_origin = 0.0
-        self.x_increment = 0.0
         self.x_origin = 0.0
-        self.x_units_code = 0
-        self.y_units_global = 0
-        self.f_date = ""
-        self.f_time = ""
+        self.x_increment = 1e-6
         self.model = ""
-
-        self.data_header_size = 0
-        self.buffer_type = 0
-        self.bytes_per_point = 0
-        self.buffer_size = 0
-
         self.ch = []
         self.channel_data = []
 
     @property
     def seconds_per_point(self):
-        """Time between samples."""
+        """Time between samples in seconds."""
         return self.x_increment
 
     @property
-    def time_offset(self):
-        """Horizontal trigger position."""
-        return 0.0
-
-    @property
     def time_scale(self):
-        """Time per division (12 divs)."""
+        """Time per division (12 divisions per screen)."""
         return self.n_pts * self.x_increment / 12.0
-
-    @property
-    def storage_depth(self):
-        """Number of sample points."""
-        return self.n_pts
 
     @property
     def points(self):
@@ -232,7 +183,7 @@ class BinHeader:
 
     @property
     def firmware_version(self):
-        """Firmware version (not available in .bin format)."""
+        """Firmware version (not stored in .bin format)."""
         return "unknown"
 
     @property
@@ -241,29 +192,8 @@ class BinHeader:
         return self.model
 
 
-def _read_exact(f, n):
-    """Read exactly n bytes or raise EOFError."""
-    b = f.read(n)
-    if len(b) != n:
-        raise EOFError(f"Unexpected EOF: wanted {n} bytes, got {len(b)}")
-    return b
-
-
-def _read_str(f, n):
-    """Read n bytes as ASCII string, strip nulls."""
-    raw = _read_exact(f, n)
-    return raw.decode("ascii", errors="ignore").rstrip("\x00 ").strip()
-
-
-def _unpack(f, fmt):
-    """Read and unpack little-endian struct from file."""
-    fmt_le = "<" + fmt
-    size = struct.calcsize(fmt_le)
-    return struct.unpack(fmt_le, _read_exact(f, size))
-
-
 class Dho1000:
-    """Parser for DHO800/DHO900/DHO1000 .bin files per official spec."""
+    """Wrapper around kaitai Bindho1000 for DHO800/DHO1000 .bin files."""
 
     def __init__(self):
         """Initialize parser."""
@@ -276,105 +206,42 @@ class Dho1000:
     @classmethod
     def from_file(cls, file_name):
         """
-        Parse a DHO series .bin file.
-
-        Format documented in DHO1000 User Guide, Section 19.2.4,
-        Tables 19.1 through 19.4.
+        Parse a DHO series .bin file using the kaitai-generated Bindho1000 parser.
 
         Args:
             file_name: path to .bin file
 
         Returns:
-            Dho1000 object with parsed header and channel data
+            Dho1000 object with header and per-channel voltage data
         """
+        raw = RigolWFM.bindho1000.Bindho1000.from_file(file_name)
+
         obj = cls()
         h = obj.header
 
-        with open(file_name, "rb") as f:
-            # === File Header (16 bytes) ===
-            h.cookie = _read_str(f, 2)
-            if h.cookie != "RG":
-                raise ValueError(
-                    f"Not a Rigol DHO .bin file: cookie='{h.cookie}', expected 'RG'"
-                )
-            h.version = _read_str(f, 2)
-            (h.file_size,) = _unpack(f, "Q")
-            (h.n_waveforms,) = _unpack(f, "I")
+        h.cookie = raw.file_header.cookie.decode("ascii", errors="ignore")
+        h.n_waveforms = raw.file_header.n_waveforms
+        h.ch = [ChannelHeader(f"CH{i + 1}", enabled=False) for i in range(4)]
+        h.channel_data = [None] * 4
 
-            h.ch = [ChannelHeader(f"CH{i + 1}", enabled=False) for i in range(4)]
-            h.channel_data = [None] * 4
+        for i, wfm in enumerate(raw.waveforms):
+            wh = wfm.wfm_header
 
-            for i in range(h.n_waveforms):
-                wfm_start = f.tell()
+            if i == 0:
+                h.n_pts = wh.n_pts
+                h.x_increment = wh.x_increment
+                h.x_origin = wh.x_origin
+                h.model = wh.model
 
-                # === Waveform Header (140 bytes) ===
-                (wfm_header_size,) = _unpack(f, "I")
-                (waveform_type,) = _unpack(f, "I")
-                (n_buffers,) = _unpack(f, "I")
-                (n_pts,) = _unpack(f, "I")
-                (count,) = _unpack(f, "I")
-                (x_range,) = _unpack(f, "f")
-                (x_disp_origin,) = _unpack(f, "d")
-                (x_increment,) = _unpack(f, "d")
-                (x_origin,) = _unpack(f, "d")
-                (x_units_code,) = _unpack(f, "I")
-                (y_units_code,) = _unpack(f, "I")
-                f_date = _read_str(f, 16)
-                f_time = _read_str(f, 16)
-                model = _read_str(f, 24)
-                ch_name = _read_str(f, 16) or f"CH{i + 1}"
+            ch_name = wh.channel_name.strip() or f"CH{i + 1}"
+            slot = _channel_slot(ch_name, fallback=i)
 
-                f.seek(wfm_start + wfm_header_size)
+            y_units_code = wh.y_units.value
+            h.ch[slot] = ChannelHeader(ch_name, enabled=True, unit_code=y_units_code)
 
-                if i == 0:
-                    h.waveform_header_size = wfm_header_size
-                    h.waveform_type = waveform_type
-                    h.n_buffers = n_buffers
-                    h.n_pts = n_pts
-                    h.count = count
-                    h.x_range = x_range
-                    h.x_disp_origin = x_disp_origin
-                    h.x_increment = x_increment
-                    h.x_origin = x_origin
-                    h.x_units_code = x_units_code
-                    h.y_units_global = y_units_code
-                    h.f_date = f_date
-                    h.f_time = f_time
-                    h.model = model
-
-                # Derive the real channel slot from ch_name ("CH2" → slot 1).
-                # Fall back to loop index so files without a name still work.
-                slot = i
-                name_upper = ch_name.upper()
-                for prefix in ("CH", "C"):
-                    if name_upper.startswith(prefix):
-                        try:
-                            n = int(name_upper[len(prefix):]) - 1
-                            if 0 <= n < 4:
-                                slot = n
-                        except ValueError:
-                            pass
-                        break
-
-                h.ch[slot] = ChannelHeader(ch_name, enabled=True, unit_code=y_units_code)
-
-                # === Waveform Data Header (16 bytes) ===
-                (data_hdr_size,) = _unpack(f, "I")
-                (buffer_type,) = _unpack(f, "H")
-                (bytes_per_point,) = _unpack(f, "H")
-                (buffer_size,) = _unpack(f, "Q")
-
-                if i == 0:
-                    h.data_header_size = data_hdr_size
-                    h.buffer_type = buffer_type
-                    h.bytes_per_point = bytes_per_point
-                    h.buffer_size = buffer_size
-
-                # === Channel Data ===
-                raw = _read_exact(f, buffer_size)
-                data = np.frombuffer(raw, dtype="<f4").copy()
-                data = np.nan_to_num(data, copy=False)
-                h.channel_data[slot] = data
+            data = np.array(wfm.samples.values, dtype=np.float32)
+            np.nan_to_num(data, copy=False)
+            h.channel_data[slot] = data
 
         return obj
 
@@ -399,7 +266,7 @@ class WfmHeader:
         self.volt_per_div = 0.1
 
         self.ch = []
-        self.raw_data = None
+        self.raw_data = None        # per-channel list of uint16 arrays, or None
         self.channel_data = []
 
     @property
@@ -485,67 +352,94 @@ def _extract_volt_calibration(blocks):
     """
     Extract voltage calibration parameters from metadata blocks.
 
+    Detects DHO800 (type=5 CH blocks) vs DHO1000 (type=9 CH block) format automatically.
+
     Returns:
-        (scale, v_center, offset) where voltage = scale * raw_uint16 + offset
-        Returns (None, None, None) if required blocks not found.
+        (is_dho800, cal) where cal is a dict {ch_id: (scale, v_center, offset)}.
+        voltage = scale * raw_uint16 + offset
+        Returns (False, {}) if required blocks not found.
     """
-    scale = None
-    v_center = None
+    # Detect format by presence of type=5 vs type=9 CH calibration blocks (id 1-4)
+    is_dho800 = any(
+        bt == _WFM_CH_BLOCK_TYPE_DHO800 and 1 <= bid <= 4
+        for bid, bt, _, _ in blocks
+    )
 
-    for block_id, block_type, content, _ in blocks:
-        if block_id == _WFM_CH1_BLOCK_ID and block_type == _WFM_CH1_BLOCK_TYPE:
-            if len(content) >= 9:
-                (i64_val,) = struct.unpack_from("<q", content, 1)
-                scale = i64_val / _WFM_SCALE_DIVISOR
+    cal = {}
+    if is_dho800:
+        for block_id, block_type, content, _ in blocks:
+            if block_type == _WFM_CH_BLOCK_TYPE_DHO800 and 1 <= block_id <= 4:
+                if len(content) >= 42:
+                    (i64_val,) = struct.unpack_from("<q", content, 1)
+                    scale = i64_val / _WFM_SCALE_DIVISOR_DHO800
+                    (i32_val,) = struct.unpack_from("<i", content, 38)
+                    v_center = -i32_val / _WFM_V_CENTER_DIVISOR_DHO800
+                    cal[block_id] = (scale, v_center, v_center - scale * _WFM_ADC_MIDPOINT)
+    else:
+        scale = None
+        v_center = None
+        for block_id, block_type, content, _ in blocks:
+            if block_id == _WFM_CH1_BLOCK_ID and block_type == _WFM_CH1_BLOCK_TYPE:
+                if len(content) >= 9:
+                    (i64_val,) = struct.unpack_from("<q", content, 1)
+                    scale = i64_val / _WFM_SCALE_DIVISOR
+            elif block_type == _WFM_SETTINGS_BLOCK_TYPE and len(content) >= 40:
+                (i32_val,) = struct.unpack_from("<i", content, 36)
+                v_center = i32_val / _WFM_V_CENTER_DIVISOR
+        if scale is not None and v_center is not None:
+            cal[1] = (scale, v_center, v_center - scale * _WFM_ADC_MIDPOINT)
 
-        elif block_type == _WFM_SETTINGS_BLOCK_TYPE and len(content) >= 40:
-            (i32_val,) = struct.unpack_from("<i", content, 36)
-            v_center = i32_val / _WFM_V_CENTER_DIVISOR
-
-    if scale is None or v_center is None:
-        return None, None, None
-
-    offset = v_center - scale * _WFM_ADC_MIDPOINT
-    return scale, v_center, offset
+    return is_dho800, cal
 
 
-def _find_data_section(data, blocks_end_offset):
+def _find_data_section(data, blocks_end_offset, is_dho800=False):
     """
     Find the start of the data section after zero padding.
 
+    DHO800: u64 at offset+0 is total sample count (all channels); n_pts/ch at offset+24.
+    DHO1000: u64 at offset+0 is n_pts + 64 (single channel only).
+
     Returns:
-        (n_pts, x_origin, x_increment, data_start_offset)
-        or (None, None, None, None) on failure
+        (n_pts, n_ch, x_origin, x_increment, data_start_offset)
+        or (None, None, None, None, None) on failure
     """
     offset = blocks_end_offset
     while offset < len(data) and data[offset] == 0:
         offset += 1
 
     if offset + 40 >= len(data):
-        return None, None, None, None
+        return None, None, None, None, None
 
-    (n_pts_plus64,) = struct.unpack_from("<Q", data, offset)
-    if n_pts_plus64 <= 64 or n_pts_plus64 > 2_000_000_000:
-        return None, None, None, None
-    n_pts = n_pts_plus64 - 64
+    (n_pts_u64,) = struct.unpack_from("<Q", data, offset)
 
-    if offset + 20 > len(data):
-        return None, None, None, None
+    if is_dho800:
+        if n_pts_u64 == 0 or n_pts_u64 > 2_000_000_000:
+            return None, None, None, None, None
+        if offset + 28 > len(data):
+            return None, None, None, None, None
+        (n_pts_per_ch,) = struct.unpack_from("<I", data, offset + 24)
+        if n_pts_per_ch == 0:
+            return None, None, None, None, None
+        n_ch = int(n_pts_u64 // n_pts_per_ch)
+    else:
+        if n_pts_u64 <= 64 or n_pts_u64 > 2_000_000_000:
+            return None, None, None, None, None
+        n_pts_per_ch = n_pts_u64 - 64
+        n_ch = 1
 
     (x_increment_ns,) = struct.unpack_from("<I", data, offset + 16)
-
     if x_increment_ns == 0 or x_increment_ns > 1_000_000_000:
         x_increment_ns = 1
 
     x_increment = x_increment_ns * 1e-9
-    x_origin = -(n_pts / 2) * x_increment
+    x_origin = -(n_pts_per_ch / 2) * x_increment
     data_start = offset + 40
 
-    return n_pts, x_origin, x_increment, data_start
+    return n_pts_per_ch, n_ch, x_origin, x_increment, data_start
 
 
 class WfmDho1000:
-    """Parser for DHO800/DHO900/DHO1000 .wfm files."""
+    """Parser for DHO800/DHO1000 .wfm files."""
 
     def __init__(self):
         """Initialize parser."""
@@ -580,30 +474,33 @@ class WfmDho1000:
         if not blocks:
             raise ValueError(f"No valid metadata blocks found in {file_name}")
 
-        scale, v_center, volt_offset = _extract_volt_calibration(blocks)
+        is_dho800, cal = _extract_volt_calibration(blocks)
 
-        if scale is None:
+        if not cal:
             raise ValueError(
                 f"Could not extract voltage calibration from {file_name}. "
                 "Ensure this is a DHO series .wfm file."
             )
 
-        n_pts, x_origin, x_increment, data_start = _find_data_section(data, blocks_end)
+        n_pts, n_ch, x_origin, x_increment, data_start = _find_data_section(
+            data, blocks_end, is_dho800=is_dho800
+        )
 
         if n_pts is None:
             raise ValueError(f"Could not locate data section in {file_name}")
 
-        if data_start + n_pts * 2 > len(data):
+        if data_start + n_pts * n_ch * 2 > len(data):
             raise ValueError(
-                f"Data section claims {n_pts} samples but file is too small"
+                f"Data section claims {n_pts * n_ch} samples but file is too small"
             )
 
+        scale1, v_center1, offset1 = cal.get(1, next(iter(cal.values())))
         h.n_pts = n_pts
         h.x_origin = x_origin
         h.x_increment = x_increment
-        h.volt_scale = scale
-        h.volt_offset = volt_offset
-        h.volt_per_div = abs(scale * 65536 / 8)
+        h.volt_scale = scale1
+        h.volt_offset = offset1
+        h.volt_per_div = abs(scale1 * 65536 / 8)
 
         for _, _, content, _ in blocks:
             try:
@@ -625,19 +522,27 @@ class WfmDho1000:
             except Exception:
                 continue
 
-        raw_bytes = data[data_start:data_start + n_pts * 2]
-        raw = np.frombuffer(raw_bytes, dtype="<u2").copy()
-        h.raw_data = raw
+        raw_bytes = data[data_start:data_start + n_pts * n_ch * 2]
+        raw_all = np.frombuffer(raw_bytes, dtype="<u2").copy()
 
-        volts = scale * raw.astype(np.float64) + volt_offset
-        volts = volts.astype(np.float32)
-        h.channel_data = [volts]
+        # Interleaved multi-channel layout: [CH1, CH2, ..., CHn, CH1, CH2, ...]
+        h.channel_data = [None] * 4
+        h.raw_data = [None] * 4
+        h.ch = []
 
-        ch1 = ChannelHeader("CH1", enabled=True)
-        ch1.volt_per_division = h.volt_per_div
-        ch1.volt_offset = v_center
-        h.ch = [ch1]
-        for i in range(2, 5):
-            h.ch.append(ChannelHeader(f"CH{i}", enabled=False))
+        for ch_idx in range(n_ch):
+            ch_num = ch_idx + 1
+            raw_ch = raw_all[ch_idx::n_ch]
+            sc, vc, off_c = cal.get(ch_num, (scale1, v_center1, offset1))
+            volts = (sc * raw_ch.astype(np.float64) + off_c).astype(np.float32)
+            h.channel_data[ch_idx] = volts
+            h.raw_data[ch_idx] = raw_ch
+            ch_hdr = ChannelHeader(f"CH{ch_num}", enabled=True)
+            ch_hdr.volt_per_division = abs(sc * 65536 / 8)
+            ch_hdr.volt_offset = vc
+            h.ch.append(ch_hdr)
+
+        for i in range(n_ch, 4):
+            h.ch.append(ChannelHeader(f"CH{i + 1}", enabled=False))
 
         return obj

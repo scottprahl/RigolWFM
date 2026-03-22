@@ -407,7 +407,7 @@ class Channel:
         self.calc_times_and_volts()
 
     def dho1000(self, w, channel_number):
-        """Interpret waveform for the Rigol DHO800/DHO900/DHO1000 series (.bin format)."""
+        """Interpret waveform for the Rigol DHO800/DHO1000 series (.bin format)."""
         self.time_scale = w.header.time_scale
         self.time_offset = 0.0
         self.points = w.header.points
@@ -419,7 +419,7 @@ class Channel:
             # DHO .bin files contain float32 volts directly (already calibrated)
             self.volts = ch_data.astype(np.float64)
             # Compress 16-bit ADC range to uint8 (upper 8 bits) for WAV export
-            # compatibility — consistent with uint8 raw in all other parsers.
+            # compatibility - consistent with uint8 raw in all other parsers.
             raw16 = np.clip(
                 (self.volts * 1000 + 32768).astype(np.int32), 0, 65535
             ).astype(np.uint16)
@@ -443,9 +443,12 @@ class Channel:
             # Calibrated float voltages computed by WfmDho1000 parser
             self.volts = w.header.channel_data[idx].astype(np.float64)
             # Compress 16-bit ADC to uint8 (upper 8 bits) for WAV export
-            # compatibility — consistent with uint8 raw in all other parsers.
-            if w.header.raw_data is not None:
-                self.raw = (w.header.raw_data >> 8).astype(np.uint8)
+            # compatibility - consistent with uint8 raw in all other parsers.
+            raw_data = w.header.raw_data
+            if isinstance(raw_data, list):
+                raw_data = raw_data[idx] if idx < len(raw_data) else None
+            if raw_data is not None:
+                self.raw = (raw_data >> 8).astype(np.uint8)
             else:
                 self.raw = np.zeros(self.points, dtype=np.uint8)
             self.points = len(self.volts)

@@ -1,17 +1,17 @@
 meta:
   id: wfmdho1000
-  title: Rigol DHO800/DHO900/DHO1000 proprietary waveform file
+  title: Rigol DHO800/DHO1000 proprietary waveform file
   file-extension: wfm
   endian: le
   doc: |
-    Proprietary waveform format used by Rigol DHO800/DHO900/DHO1000 series
-    oscilloscopes (reverse-engineered from DHO1074 captures).
+    Proprietary waveform format used by Rigol DHO800/DHO1000 series
+    oscilloscopes (reverse-engineered from DHO1074 and DHO824 captures).
 
     File layout:
-      [File Header:      24 bytes  — partially unknown]
-      [Metadata blocks:  variable  — 12-byte header + zlib-compressed content each]
-      [Zero padding:     variable  — null bytes between block region and data]
-      [Data section:     variable  — 40-byte header + uint16 ADC samples]
+      [File Header:      24 bytes  - partially unknown]
+      [Metadata blocks:  variable  - 12-byte header + zlib-compressed content each]
+      [Zero padding:     variable  - null bytes between block region and data]
+      [Data section:     variable  - 40-byte header + uint16 ADC samples]
 
     ---- Metadata blocks ----
     Each block has a 12-byte header (six u16 LE fields) followed by padded_size
@@ -21,11 +21,11 @@ meta:
 
     Key blocks (identified by block_id and block_type):
       block_id=1, block_type=9  (~96 bytes decompressed)
-        Offset  1..8  — int64 LE — voltage scale numerator
+        Offset  1..8  - int64 LE - voltage scale numerator
         scale = i64 / 750_000_000_000
 
       block_type=6  (~1628 bytes decompressed)
-        Offset 36..39 — int32 LE — CH1 voltage centre × 1e8
+        Offset 36..39 - int32 LE - CH1 voltage centre x 1e8
         v_center = i32 / 1e8
 
     ---- Voltage calibration ----
@@ -40,14 +40,14 @@ meta:
     sequential scan for the first non-zero byte is required.
 
     Data section header (40 bytes):
-      offset+ 0:  u64 LE  — n_pts + 64  (identifies the section)
-      offset+ 8:  8 bytes — capture marker (opaque)
-      offset+16:  u32 LE  — x_increment in nanoseconds
-      offset+20:  u32 LE  — unknown (79 in observed files)
-      offset+24:  u32 LE  — n_pts (repeated)
-      offset+28:  u32 LE  — n_pts (repeated)
-      offset+32:  u32 LE  — timestamp / unknown
-      offset+36:  u32 LE  — unknown (120 in observed files)
+      offset+ 0:  u64 LE  - n_pts + 64  (identifies the section)
+      offset+ 8:  8 bytes - capture marker (opaque)
+      offset+16:  u32 LE  - x_increment in nanoseconds
+      offset+20:  u32 LE  - unknown (79 in observed files)
+      offset+24:  u32 LE  - n_pts (repeated)
+      offset+28:  u32 LE  - n_pts (repeated)
+      offset+32:  u32 LE  - timestamp / unknown
+      offset+36:  u32 LE  - unknown (120 in observed files)
       offset+40:  uint16 LE samples begin (n_pts × 2 bytes)
 
     x_origin is not stored; it is derived as:
@@ -75,7 +75,7 @@ types:
     seq:
       - id: reserved
         size: 24
-        doc: File header bytes — internal layout not yet fully known.
+        doc: File header bytes - internal layout not yet fully known.
 
   block:
     doc: |
