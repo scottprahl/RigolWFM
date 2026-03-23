@@ -11,8 +11,13 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
 
 class Bindho1000(KaitaiStruct):
     """Official binary waveform export format documented in DHO1000 User Guide
-    §19.2.4 (Tables 19.1–19.4). Stores calibrated float32 voltage samples
-    for each enabled channel.
+    §19.2.4 (Tables 19.1–19.4).
+    
+    This schema currently models the float32 analog waveform buffers used by
+    this project. The user guide also documents digital unsigned 8-bit buffers
+    and math waveforms; those buffer types are identified in the enums below,
+    and the downstream wrapper rejects them explicitly instead of treating them
+    as calibrated volt samples.
     
     File layout:
       [File Header:      16 bytes]
@@ -21,15 +26,21 @@ class Bindho1000(KaitaiStruct):
         [Data Header:      16 bytes]
         [Sample Data:      buffer_size bytes - float32 LE, volts]
     
-    Time axis reconstruction:
+    Time axis reconstruction used by the current parser:
       t[i] = -x_origin + i * x_increment
-      (x_origin is stored as a positive distance from the trigger point)
+    
+    The manual describes X Origin as the x-value of the first data point.
+    Empirically, the analog captures used by this repo behave as if x_origin
+    stores a positive pre-trigger distance, so downstream code negates it.
     """
 
     class BufferTypeEnum(IntEnum):
+        unknown = 0
         float32_normal = 1
         float32_maximum = 2
         float32_minimum = 3
+        not_used = 4
+        digital_u8 = 5
 
     class UnitEnum(IntEnum):
         unknown = 0
@@ -41,9 +52,12 @@ class Bindho1000(KaitaiStruct):
         hz = 6
 
     class WaveformTypeEnum(IntEnum):
+        unknown = 0
         normal = 1
         peak = 2
         average = 3
+        not_used_4 = 4
+        not_used_5 = 5
         logic = 6
     def __init__(self, _io, _parent=None, _root=None):
         super(Bindho1000, self).__init__(_io)
@@ -87,7 +101,7 @@ class Bindho1000(KaitaiStruct):
 
 
     class FileHeader(KaitaiStruct):
-        """16-byte file header (Table 19.1)."""
+        """16-byte file header (Table 19.2)."""
         def __init__(self, _io, _parent=None, _root=None):
             super(Bindho1000.FileHeader, self).__init__(_io)
             self._parent = _parent
@@ -108,7 +122,7 @@ class Bindho1000(KaitaiStruct):
 
 
     class SampleData(KaitaiStruct):
-        """Stream of calibrated float32 voltage samples."""
+        """Stream of calibrated float32 voltage samples for analog buffers."""
         def __init__(self, _io, _parent=None, _root=None):
             super(Bindho1000.SampleData, self).__init__(_io)
             self._parent = _parent
@@ -132,7 +146,8 @@ class Bindho1000(KaitaiStruct):
 
 
     class Waveform(KaitaiStruct):
-        """One waveform record - header, data header, and float32 samples."""
+        """One waveform record: header, data header, and sample payload.
+        """
         def __init__(self, _io, _parent=None, _root=None):
             super(Bindho1000.Waveform, self).__init__(_io)
             self._parent = _parent
@@ -155,7 +170,7 @@ class Bindho1000(KaitaiStruct):
 
 
     class WaveformHeader(KaitaiStruct):
-        """140-byte per-waveform header (Table 19.2).
+        """140-byte per-waveform header (Table 19.3).
         Describes acquisition settings and time-axis parameters for one channel.
         """
         def __init__(self, _io, _parent=None, _root=None):
@@ -197,7 +212,7 @@ class Bindho1000(KaitaiStruct):
 
         @property
         def t0(self):
-            """Time of the first sample in seconds (x_origin negated)."""
+            """Empirical first-sample time used by the current analog parser."""
             if hasattr(self, '_m_t0'):
                 return self._m_t0
 

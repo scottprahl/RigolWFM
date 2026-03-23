@@ -215,6 +215,11 @@ class Dho1000:
             Dho1000 object with header and per-channel voltage data
         """
         raw = RigolWFM.bindho1000.Bindho1000.from_file(file_name)
+        supported_buffer_types = {
+            RigolWFM.bindho1000.Bindho1000.BufferTypeEnum.float32_normal,
+            RigolWFM.bindho1000.Bindho1000.BufferTypeEnum.float32_maximum,
+            RigolWFM.bindho1000.Bindho1000.BufferTypeEnum.float32_minimum,
+        }
 
         obj = cls()
         h = obj.header
@@ -226,6 +231,8 @@ class Dho1000:
 
         for i, wfm in enumerate(raw.waveforms):
             wh = wfm.wfm_header
+            buffer_type = wfm.data_header.buffer_type
+            bytes_per_point = wfm.data_header.bytes_per_point
 
             if i == 0:
                 h.n_pts = wh.n_pts
@@ -235,6 +242,14 @@ class Dho1000:
 
             ch_name = wh.channel_name.strip() or f"CH{i + 1}"
             slot = _channel_slot(ch_name, fallback=i)
+
+            if buffer_type not in supported_buffer_types or bytes_per_point != 4:
+                raise ValueError(
+                    "Unsupported DHO .bin waveform buffer "
+                    f"(channel={ch_name!r}, buffer_type={int(buffer_type)}, "
+                    f"bytes_per_point={bytes_per_point}). "
+                    "Only float32 analog buffers are currently supported."
+                )
 
             y_units_code = wh.y_units.value
             h.ch[slot] = ChannelHeader(ch_name, enabled=True, unit_code=y_units_code)

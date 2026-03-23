@@ -5,8 +5,13 @@ meta:
   endian: le
 doc: |
   Official binary waveform export format documented in DHO1000 User Guide
-  §19.2.4 (Tables 19.1–19.4). Stores calibrated float32 voltage samples
-  for each enabled channel.
+  §19.2.4 (Tables 19.1–19.4).
+
+  This schema currently models the float32 analog waveform buffers used by
+  this project. The user guide also documents digital unsigned 8-bit buffers
+  and math waveforms; those buffer types are identified in the enums below,
+  and the downstream wrapper rejects them explicitly instead of treating them
+  as calibrated volt samples.
 
   File layout:
     [File Header:      16 bytes]
@@ -15,9 +20,12 @@ doc: |
       [Data Header:      16 bytes]
       [Sample Data:      buffer_size bytes - float32 LE, volts]
 
-  Time axis reconstruction:
+  Time axis reconstruction used by the current parser:
     t[i] = -x_origin + i * x_increment
-    (x_origin is stored as a positive distance from the trigger point)
+
+  The manual describes X Origin as the x-value of the first data point.
+  Empirically, the analog captures used by this repo behave as if x_origin
+  stores a positive pre-trigger distance, so downstream code negates it.
 
 seq:
   - id: file_header
@@ -29,7 +37,7 @@ seq:
 
 types:
   file_header:
-    doc: 16-byte file header (Table 19.1).
+    doc: 16-byte file header (Table 19.2).
     seq:
       - id: cookie
         contents: "RG"
@@ -47,7 +55,8 @@ types:
         doc: Number of waveform records (one per enabled channel).
 
   waveform:
-    doc: One waveform record - header, data header, and float32 samples.
+    doc: |
+      One waveform record: header, data header, and sample payload.
     seq:
       - id: wfm_header
         type: waveform_header
@@ -60,7 +69,7 @@ types:
 
   waveform_header:
     doc: |
-      140-byte per-waveform header (Table 19.2).
+      140-byte per-waveform header (Table 19.3).
       Describes acquisition settings and time-axis parameters for one channel.
     seq:
       - id: header_size
@@ -91,8 +100,9 @@ types:
       - id: x_origin
         type: f8
         doc: |
-          Distance from trigger to first sample in seconds.
-          Stored as a POSITIVE value; negate to get t[0]:
+          Manual: x-value of the first data point in seconds.
+          Empirical analog captures used by this repo behave as if this is a
+          positive trigger distance; downstream code therefore negates it:
             t[0] = -x_origin
             t[i] = -x_origin + i * x_increment
       - id: x_units
@@ -133,7 +143,7 @@ types:
     instances:
       t0:
         value: -x_origin
-        doc: Time of the first sample in seconds (x_origin negated).
+        doc: Empirical first-sample time used by the current analog parser.
       seconds_per_point:
         value: x_increment
         doc: Sampling interval in seconds.
@@ -147,7 +157,9 @@ types:
       - id: buffer_type
         type: u2
         enum: buffer_type_enum
-        doc: Sample encoding (1 = float32 normal).
+        doc: |
+          Sample encoding per Table 19.4.
+          The current wrapper supports float32 analog buffers only.
       - id: bytes_per_point
         type: u2
         doc: Bytes per sample (= 4 for float32).
@@ -156,7 +168,7 @@ types:
         doc: Total byte count of sample data (= n_pts * 4).
 
   sample_data:
-    doc: Stream of calibrated float32 voltage samples.
+    doc: Stream of calibrated float32 voltage samples for analog buffers.
     seq:
       - id: values
         type: f4
@@ -165,15 +177,21 @@ types:
 
 enums:
   waveform_type_enum:
+    0: unknown
     1: normal
     2: peak
     3: average
+    4: not_used_4
+    5: not_used_5
     6: logic
 
   buffer_type_enum:
+    0: unknown
     1: float32_normal
     2: float32_maximum
     3: float32_minimum
+    4: not_used
+    5: digital_u8
 
   unit_enum:
     0: unknown
