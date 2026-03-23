@@ -166,6 +166,8 @@ class Channel:
             self.ds4000(w, channel_number)
         elif scope == "wfm6000":
             self.ds6000(w, channel_number)
+        elif scope == "dho1000":
+            self.dho1000(w, channel_number)
 
     def __str__(self):
         """Describe this channel."""
@@ -401,3 +403,29 @@ class Channel:
                 self.raw = np.array(w.header.raw_4, dtype=np.uint8)
 
         self.calc_times_and_volts()
+
+    def dho1000(self, w, channel_number):
+        """Interpret normalized waveform data for the Rigol DHO800/DHO1000 series."""
+        self.time_scale = w.header.time_scale
+        self.time_offset = 0.0
+        self.points = w.header.points
+        self.firmware = w.header.firmware_version
+
+        idx = channel_number - 1
+        ch_data = w.header.channel_data[idx] if idx < len(w.header.channel_data) else None
+        if ch_data is not None and self.enabled_and_selected:
+            self.volts = ch_data.astype(np.float64)
+            raw_data = getattr(w.header, "raw_data", None)
+            if isinstance(raw_data, list):
+                raw16 = raw_data[idx] if idx < len(raw_data) else None
+            else:
+                raw16 = None
+
+            if raw16 is None:
+                raw16 = np.clip(
+                    (self.volts * 1000 + 32768).astype(np.int32), 0, 65535
+                ).astype(np.uint16)
+            self.raw = (raw16 >> 8).astype(np.uint8)
+            self.points = len(self.volts)
+            t0 = w.header.x_origin
+            self.times = t0 + np.arange(self.points) * w.header.x_increment

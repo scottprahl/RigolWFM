@@ -130,6 +130,8 @@ dev = [
   "jupyterlab",
   "nbconvert",
   "nbformat",
+  "imageio",
+  "pandas",
 ]
 lite = [
     "jupyterlite-core>=0.7,<0.8",
@@ -148,13 +150,13 @@ Tracker = "https://github.com/scottprahl/RigolWFM/issues"
 [tool.pylint]
 disable = [
     "C0103", "C0209", "C0302",
-    "R0902", "R0904", "R0912", "R0913", "R0914", "R0915", "R0917", "R1702",
+    "R0801", "R0902", "R0904", "R0912", "R0913", "R0914", "R0915", "R0917", "R1702",
     "W0511", "W0718"
 ]
 max-line-length = 120
 
 [tool.pylint.main]
-ignore-patterns = ["^\\.#", "^wfm[0-9].*\\.py$"]
+ignore-patterns = ["^\\.#", "^wfm[0-9].*\\.py$", "^wfmdho1000\\.py$", "^bindho.*\\.py$", "^.*_ksy\\.py$"]
 
 [tool.black]
 line-length = 120
@@ -162,7 +164,7 @@ target-version = ["py310", "py311", "py312", "py313", "py314"]
 
 [tool.ruff]
 line-length = 120
-exclude = [".venv", "__pycache__", "docs", "wfm", "RigolWFM/wfm[0-9]*.py"]
+exclude = [".venv", "__pycache__", "docs", "wfm", "RigolWFM/wfm[0-9]*.py", "RigolWFM/wfmdho1000.py", "RigolWFM/bindho*.py", "RigolWFM/*_ksy.py"]
 
 [tool.ruff.lint]
 select = ["D", "E", "F", "W"]

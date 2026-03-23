@@ -14,6 +14,21 @@ docs/api
 docs/_build
 ksy/zzz/*
 test/*
+
+# JupyterLite build artifacts
+.cache/
+.lite_src/
+_site/
+.jupyterlite.doit.db
+
+# uv lockfile
+uv.lock
+
+# Python virtual environment
+.venv/
+
+# pytest cache
+.pytest_cache/
 wfm/DS1054Z-C-original.csv
 wfm/DS1102E-A.csv
 wfm/DS1102E-A.wav

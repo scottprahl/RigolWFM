@@ -109,7 +109,7 @@ Status
 
 There is a bit of work remaining (testing, validation, repackaging) but there are binary file descriptions for ``.wfm`` files created by the following scopes:
 
-* DS1000B tested 
+* DS1000B tested
 * DS1000C tested (two files only)
 * DS1000D tested (one file only)
 * DS1000E tested
@@ -117,6 +117,21 @@ There is a bit of work remaining (testing, validation, repackaging) but there ar
 * DS2000 tested
 * DS4000 tested
 * DS6000 untested
+* DHO800 tested
+* DHO1000 tested
+
+DHO Series Notes
+~~~~~~~~~~~~~~~~
+
+DHO800 and DHO1000 series oscilloscopes export waveforms in two formats:
+
+* ``.bin`` - official format documented in the User Guide (§19.2.4); stores calibrated
+  float32 voltage samples; works identically across all DHO variants.
+* ``.wfm`` - proprietary undocumented format; reverse-engineered for both DHO1000
+  and DHO800.  The DHO800 uses a different block type (5 vs 9), a 10× larger scale
+  divisor, and interleaves all enabled channels in a single data section.
+
+Both formats support up to 4 simultaneous channels.
 
 Resources
 ---------

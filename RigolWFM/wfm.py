@@ -25,6 +25,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import requests
 
+import RigolWFM.dho
 import RigolWFM.wfm1000b
 import RigolWFM.wfm1000c
 import RigolWFM.wfm1000d
@@ -119,6 +120,13 @@ DS4000_scopes = [
 # untested
 DS6000_scopes = ["6", "6000", "DS6000", "DS6062", "DS6064", "DS6102", "DS6104"]
 
+# DHO800/DHO1000 series (.bin and .wfm - format detected by file extension)
+DHO1000_scopes = [
+    "DHO", "DHO800", "DHO1000",
+    "DHO804", "DHO812", "DHO814", "DHO824",
+    "DHO1072", "DHO1074", "DHO1102", "DHO1202", "DHO1204",
+]
+
 
 def valid_scope_list():
     """List all the oscilloscope types."""
@@ -129,8 +137,14 @@ def valid_scope_list():
     s += ", ".join(DS1000Z_scopes) + "\n    "
     s += ", ".join(DS2000_scopes) + "\n    "
     s += ", ".join(DS4000_scopes) + "\n    "
-    s += ", ".join(DS6000_scopes) + "\n"
+    s += ", ".join(DS6000_scopes) + "\n    "
+    s += ", ".join(DHO1000_scopes) + "\n"
     return s
+
+
+def dho_from_file(file_name):
+    """Backward-compatible wrapper around `RigolWFM.dho.from_file()`."""
+    return RigolWFM.dho.from_file(file_name)
 
 
 class Read_WFM_Error(Exception):
@@ -234,6 +248,10 @@ class Wfm:
         elif umodel in DS6000_scopes:
             w = RigolWFM.wfm6000.Wfm6000.from_file(file_name)
             new_wfm.header_name = w.header.model_number
+
+        elif umodel in DHO1000_scopes:
+            w = RigolWFM.dho.from_file(file_name)
+            new_wfm.header_name = w.header.model_number or "DHO1000"
 
         else:
             print("Unknown Rigol oscilloscope type: '%s'" % umodel)
