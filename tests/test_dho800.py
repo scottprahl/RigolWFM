@@ -1,7 +1,7 @@
 """
-Tests for Rigol DHO800 parser compatibility.
+Tests for Rigol DHO800 parsing through `RigolWFM.wfm`.
 
-Validates that the DHO1000 parser correctly handles DHO800 .bin and .wfm files,
+Validates that the normalized DHO path correctly handles DHO800 `.bin` and `.wfm` files,
 including multi-channel captures and WFM vs BIN voltage correlation.
 
 Test files (in wfm/ directory, captured from a DHO824 oscilloscope):
@@ -52,12 +52,12 @@ _RMS_THRESHOLD_MV = 0.1
 
 
 def _import_parsers():
-    """Import the shared DHO parser module used by these tests."""
-    return importlib.import_module("RigolWFM.wfmdho1000")
+    """Import the top-level WFM module used by these tests."""
+    return importlib.import_module("RigolWFM.wfm")
 
 
 class TestDho800BinParser(unittest.TestCase):
-    """DHO800 .bin files should parse with the existing Dho1000 parser."""
+    """DHO800 `.bin` files should normalize correctly through `RigolWFM.wfm`."""
 
     @classmethod
     def setUpClass(cls):
@@ -67,19 +67,19 @@ class TestDho800BinParser(unittest.TestCase):
     @unittest.skipUnless(HAS_CH1, "DHO800 ch1/data.bin not found")
     def test_ch1_bin_cookie(self):
         """DHO800 .bin should have 'RG' cookie."""
-        obj = self.m.Dho1000.from_file(CH1_BIN)
+        obj = self.m.dho_from_file(CH1_BIN)
         self.assertEqual(obj.header.cookie, "RG")
 
     @unittest.skipUnless(HAS_CH1, "DHO800 ch1/data.bin not found")
     def test_ch1_bin_sample_count(self):
         """DHO800 ch1/data.bin should have 10000 samples."""
-        obj = self.m.Dho1000.from_file(CH1_BIN)
+        obj = self.m.dho_from_file(CH1_BIN)
         self.assertEqual(obj.header.n_pts, 10000)
 
     @unittest.skipUnless(HAS_CH1, "DHO800 ch1/data.bin not found")
     def test_ch1_bin_channel1_data(self):
         """DHO800 ch1/data.bin CH1 should have 10000 float32 samples."""
-        obj = self.m.Dho1000.from_file(CH1_BIN)
+        obj = self.m.dho_from_file(CH1_BIN)
         data = obj.header.channel_data[0]
         self.assertIsNotNone(data)
         self.assertEqual(len(data), 10000)
@@ -88,7 +88,7 @@ class TestDho800BinParser(unittest.TestCase):
     @unittest.skipUnless(HAS_CH1, "DHO800 ch1/data.bin not found")
     def test_ch1_bin_voltage_range(self):
         """DHO800 ch1/data.bin voltages should be in ±10V range."""
-        obj = self.m.Dho1000.from_file(CH1_BIN)
+        obj = self.m.dho_from_file(CH1_BIN)
         v = obj.header.channel_data[0]
         self.assertGreater(float(v.max()), -10.0)
         self.assertLess(float(v.max()), 10.0)
@@ -96,7 +96,7 @@ class TestDho800BinParser(unittest.TestCase):
     @unittest.skipUnless(HAS_CH1234, "DHO800 ch1234/data.bin not found")
     def test_ch1234_bin_all_channels(self):
         """DHO800 ch1234/data.bin should have 4 enabled channels."""
-        obj = self.m.Dho1000.from_file(CH1234_BIN)
+        obj = self.m.dho_from_file(CH1234_BIN)
         self.assertEqual(obj.header.n_waveforms, 4)
         for i in range(4):
             data = obj.header.channel_data[i]
@@ -105,7 +105,7 @@ class TestDho800BinParser(unittest.TestCase):
 
 
 class TestDho800WfmParser(unittest.TestCase):
-    """DHO800 .wfm files should parse with the updated WfmDho1000 parser."""
+    """DHO800 `.wfm` files should normalize correctly through `RigolWFM.wfm`."""
 
     @classmethod
     def setUpClass(cls):
@@ -115,20 +115,20 @@ class TestDho800WfmParser(unittest.TestCase):
     @unittest.skipUnless(HAS_CH1, "DHO800 ch1/data.wfm not found")
     def test_ch1_wfm_parse(self):
         """DHO800 ch1/data.wfm should parse without errors."""
-        obj = self.m.WfmDho1000.from_file(CH1_WFM)
+        obj = self.m.dho_from_file(CH1_WFM)
         self.assertIsNotNone(obj)
         self.assertIsNotNone(obj.header)
 
     @unittest.skipUnless(HAS_CH1, "DHO800 ch1/data.wfm not found")
     def test_ch1_wfm_sample_count(self):
         """DHO800 ch1/data.wfm should have 10000 samples per channel."""
-        obj = self.m.WfmDho1000.from_file(CH1_WFM)
+        obj = self.m.dho_from_file(CH1_WFM)
         self.assertEqual(obj.header.n_pts, 10000)
 
     @unittest.skipUnless(HAS_CH1, "DHO800 ch1/data.wfm not found")
     def test_ch1_wfm_channel_data_structure(self):
         """DHO800 ch1/data.wfm: channel_data is a 4-slot list; slot 0 has data."""
-        obj = self.m.WfmDho1000.from_file(CH1_WFM)
+        obj = self.m.dho_from_file(CH1_WFM)
         self.assertEqual(len(obj.header.channel_data), 4)
         self.assertIsNotNone(obj.header.channel_data[0])
         self.assertEqual(len(obj.header.channel_data[0]), 10000)
@@ -136,7 +136,7 @@ class TestDho800WfmParser(unittest.TestCase):
     @unittest.skipUnless(HAS_CH1, "DHO800 ch1/data.wfm not found")
     def test_ch1_wfm_channel_headers(self):
         """DHO800 ch1/data.wfm should have 4 headers: 1 enabled, 3 disabled."""
-        obj = self.m.WfmDho1000.from_file(CH1_WFM)
+        obj = self.m.dho_from_file(CH1_WFM)
         self.assertEqual(len(obj.header.ch), 4)
         self.assertTrue(obj.header.ch[0].enabled)
         for i in range(1, 4):
@@ -145,14 +145,14 @@ class TestDho800WfmParser(unittest.TestCase):
     @unittest.skipUnless(HAS_CH1, "DHO800 ch1/data.wfm not found")
     def test_ch1_wfm_time_axis(self):
         """DHO800 ch1/data.wfm time parameters should be physically plausible."""
-        obj = self.m.WfmDho1000.from_file(CH1_WFM)
+        obj = self.m.dho_from_file(CH1_WFM)
         self.assertGreater(obj.header.x_increment, 1e-12)
         self.assertLess(obj.header.x_increment, 1.0)
 
     @unittest.skipUnless(HAS_CH1, "DHO800 ch1/data.wfm not found")
     def test_ch1_wfm_raw_data(self):
         """DHO800 ch1/data.wfm raw_data[0] should be uint16 with 10000 samples."""
-        obj = self.m.WfmDho1000.from_file(CH1_WFM)
+        obj = self.m.dho_from_file(CH1_WFM)
         self.assertIsNotNone(obj.header.raw_data)
         raw_ch1 = obj.header.raw_data[0]
         self.assertIsNotNone(raw_ch1)
@@ -162,7 +162,7 @@ class TestDho800WfmParser(unittest.TestCase):
     @unittest.skipUnless(HAS_CH12, "DHO800 ch12/data.wfm not found")
     def test_ch12_wfm_two_channels(self):
         """DHO800 ch12/data.wfm should have 2 enabled channels."""
-        obj = self.m.WfmDho1000.from_file(CH12_WFM)
+        obj = self.m.dho_from_file(CH12_WFM)
         self.assertEqual(obj.header.n_pts, 10000)
         self.assertIsNotNone(obj.header.channel_data[0])
         self.assertIsNotNone(obj.header.channel_data[1])
@@ -172,7 +172,7 @@ class TestDho800WfmParser(unittest.TestCase):
     @unittest.skipUnless(HAS_CH1234, "DHO800 ch1234/data.wfm not found")
     def test_ch1234_wfm_four_channels(self):
         """DHO800 ch1234/data.wfm should have 4 enabled channels."""
-        obj = self.m.WfmDho1000.from_file(CH1234_WFM)
+        obj = self.m.dho_from_file(CH1234_WFM)
         self.assertEqual(obj.header.n_pts, 10000)
         for i in range(4):
             self.assertIsNotNone(obj.header.channel_data[i], f"CH{i+1} data missing")
@@ -181,9 +181,9 @@ class TestDho800WfmParser(unittest.TestCase):
 
     @unittest.skipUnless(HAS_CH1, "DHO800 ch1/data.wfm not found")
     def test_ch1_wfm_str_parser_name(self):
-        """str(obj) should contain 'wfmdho1000' for parser name extraction."""
-        obj = self.m.WfmDho1000.from_file(CH1_WFM)
-        self.assertIn("wfmdho1000", str(obj))
+        """str(obj) should contain 'dho1000' for parser name extraction."""
+        obj = self.m.dho_from_file(CH1_WFM)
+        self.assertIn("dho1000", str(obj))
 
 
 class TestDho800WfmBinCorrelation(unittest.TestCase):
@@ -196,8 +196,8 @@ class TestDho800WfmBinCorrelation(unittest.TestCase):
 
     def _check_correlation(self, wfm_path, bin_path, n_ch):
         """Assert that matching WFM and BIN channel voltages closely agree."""
-        wfm = self.m.WfmDho1000.from_file(wfm_path)
-        bin_obj = self.m.Dho1000.from_file(bin_path)
+        wfm = self.m.dho_from_file(wfm_path)
+        bin_obj = self.m.dho_from_file(bin_path)
         for i in range(n_ch):
             v_wfm = wfm.header.channel_data[i]
             v_bin = bin_obj.header.channel_data[i]

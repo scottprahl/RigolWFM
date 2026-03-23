@@ -156,7 +156,7 @@ disable = [
 max-line-length = 120
 
 [tool.pylint.main]
-ignore-patterns = ["^\\.#", "^wfm[0-9].*\\.py$", "^bindho.*\\.py$"]
+ignore-patterns = ["^\\.#", "^wfm[0-9].*\\.py$", "^wfmdho1000\\.py$", "^bindho.*\\.py$", "^.*_ksy\\.py$"]
 
 [tool.black]
 line-length = 120
@@ -164,7 +164,7 @@ target-version = ["py310", "py311", "py312", "py313", "py314"]
 
 [tool.ruff]
 line-length = 120
-exclude = [".venv", "__pycache__", "docs", "wfm", "RigolWFM/wfm[0-9]*.py", "RigolWFM/bindho*.py"]
+exclude = [".venv", "__pycache__", "docs", "wfm", "RigolWFM/wfm[0-9]*.py", "RigolWFM/wfmdho1000.py", "RigolWFM/bindho*.py", "RigolWFM/*_ksy.py"]
 
 [tool.ruff.lint]
 select = ["D", "E", "F", "W"]
