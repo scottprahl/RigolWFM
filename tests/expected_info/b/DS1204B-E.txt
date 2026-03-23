@@ -1,0 +1,25 @@
+    General:
+        File Model   = wfm1000b
+        User Model   = B
+        Parser Model = wfm1000b
+        Firmware     = unknown
+        Filename     = DS1204B-E.wfm
+        Channels     = [4]
+
+     Channel 4:
+         Coupling =       AC
+            Scale =     5.00  V/div
+           Offset =     0.00  V
+            Probe =      10X
+         Inverted =    False
+
+        Time Base =    1.000 ms/div
+           Offset =    0.000  s
+            Delta =    4.000 µs/point
+           Points =     8192
+
+         Count    = [        1,        2,        3  ...      8191,     8192]
+           Raw    = [      174,      174,      174  ...        25,       25]
+           Times  = [-16.384 ms,-16.380 ms,-16.376 ms  ... 16.380 ms,16.384 ms]
+           Volts  = [-15.00  V,-15.00  V,-15.00  V  ...  14.80  V, 14.80  V]
+

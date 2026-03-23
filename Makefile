@@ -161,7 +161,7 @@ pyroma-check:
 
 .PHONY: testb
 testb:
-	@for f in $(TEST_B_FILES); do $(RUN) wfmconvert B info $$f; done
+	$(RUN) pytest --verbose tests/test_b.py
 
 .PHONY: testc
 testc:
