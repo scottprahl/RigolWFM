@@ -1,18 +1,18 @@
 Changelog
 =========
 
-Unreleased (2026-03-22)
+Unreleased (2026-03-23)
 ------------------------
-*    add support for DHO800/DHO1000 series (`.bin` and `.wfm` formats)
-*    add Kaitai Struct descriptions for DHO1000 binary (``bindho1000.ksy``) and proprietary (``wfmdho1000.ksy``) formats
-*    add notebook ``1-DHO1000-Waveforms.ipynb`` with examples for both formats
-*    validate and extend DHO1000 parser for confirmed DHO824 compatibility
-*    extend `.wfm` parser to handle DHO800 format differences (block type 5, 10× scale divisor, per-channel v_center, interleaved multi-channel data)
-*    add DHO824 test files: ``DHO824-ch1``, ``DHO824-ch12``, ``DHO824-ch1234`` (`.bin`, `.wfm`, `.png`)
-*    add ``tests/test_dho800.py`` with 21 tests covering BIN, WFM, WFM-vs-BIN correlation, and Channel integration for DHO824
-*    add notebook ``1-DHO800-Waveforms.ipynb`` with DHO824 single-channel and multi-channel examples
-*    fix hardcoded absolute path in ``1-DS1000B-Waveforms.ipynb`` (was ``/Users/prahl/...``), replaced with relative path ``../wfm/DS1204B-A-original.csv``
-*    mark ``1-DS1000E-Waveforms.ipynb`` as ``xfail`` in ``test_all_notebooks.py``; notebook references a dead GitHub LFS URL for ``DS1052E.csv`` (LFS removed in an earlier commit, ``media.githubusercontent.com`` URL no longer resolves)
+*    add Rigol DHO800 and DHO1000 support for both official ``.bin`` exports and proprietary ``.wfm`` captures
+*    add Kaitai Struct descriptions for DHO binary and proprietary formats (``ksy/bindho1000.ksy`` and ``ksy/wfmdho1000.ksy``) plus generated parsers
+*    add handwritten ``RigolWFM.dho`` adapter logic so DHO ``.bin`` and ``.wfm`` files are normalized into the common ``Wfm`` and ``Channel`` interfaces
+*    extend DHO ``.wfm`` decoding for DHO800 differences and DHO1000 multichannel captures, including per-channel calibration and alignment with matching ``.bin`` files
+*    fail fast on unsupported DHO ``.bin`` buffer types instead of silently misinterpreting non-analog payloads
+*    add DHO1074 and DHO824 fixture files (``.bin``, ``.wfm``, and ``.png``) plus parser, correlation, and integration coverage in ``tests/test_dho1000.py`` and ``tests/test_dho800.py``
+*    add notebooks ``1-DHO1000-Waveforms.ipynb`` and ``1-DHO800-Waveforms.ipynb`` and include the new waveform docs in the notebook test suite
+*    ignore generated parser modules in Ruff and Pylint to keep lint results focused on handwritten code
+*    update README, docs index, Makefile targets, and manifest entries for the new DHO parser and documentation workflow
+*    fix the hardcoded absolute path in ``1-DS1000B-Waveforms.ipynb`` and mark ``1-DS1000E-Waveforms.ipynb`` as ``xfail`` after its external GitHub LFS URL stopped resolving
 
 Unreleased ()
 ------------------------

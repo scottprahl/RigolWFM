@@ -1,11 +1,3 @@
-# pylint: disable=invalid-name
-# pylint: disable=too-many-instance-attributes
-# pylint: disable=raise-missing-from
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-statements
-# pylint: disable=consider-using-f-string
-# pylint: disable=consider-using-with
-
 """
 Extract signals or description from Rigol 1000E Oscilloscope waveform file.
 
@@ -204,10 +196,10 @@ class Wfm:
         """
         # ensure that file exists
         try:
-            f = open(file_name, "rb")
-            f.close()
-        except IOError as e:
-            raise Read_WFM_Error(e)
+            with open(file_name, "rb"):
+                pass
+        except OSError as e:
+            raise Read_WFM_Error(e) from e
 
         new_wfm = cls(file_name)
         new_wfm.original_name = file_name
@@ -259,7 +251,7 @@ class Wfm:
             return new_wfm
 
         new_wfm.user_name = model
-        pname = str(w).split(".")[1]
+        pname = getattr(w, "parser_name", str(w).split(".")[1])
         new_wfm.parser_name = pname
 
         # assemble into uniform set of names
@@ -320,10 +312,9 @@ class Wfm:
                 error_string = "Downloading URL '%s' failed: '%s'" % (url, r.reason)
                 raise Read_WFM_Error(error_string)
 
-            f = tempfile.NamedTemporaryFile()
-            f.write(r.content)
-            f.seek(0)
-            working_name = f.name
+            with tempfile.NamedTemporaryFile(delete=False) as f:
+                f.write(r.content)
+                working_name = f.name
 
             try:
                 new_wfm = cls.from_file(working_name, model, selected)
@@ -334,10 +325,12 @@ class Wfm:
                 new_wfm.basename = os.path.basename(path)
                 return new_wfm
             except Exception as e:
-                raise Parse_WFM_Error(e)
+                raise Parse_WFM_Error(e) from e
+            finally:
+                os.unlink(working_name)
 
-        except r.exceptions.RequestException as e:
-            raise Parse_WFM_Error(e)
+        except requests.exceptions.RequestException as e:
+            raise Parse_WFM_Error(e) from e
 
     def describe(self):
         """Return a string describing the contents of a Rigol wfm file."""

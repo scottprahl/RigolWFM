@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 
-# pylint: disable=invalid-name
-# pylint: disable=missing-function-docstring
-# pylint: disable=unused-argument
-# pylint: disable=consider-using-f-string
-
 """
 Command line utility to convert Rigol .wfm files.
 
@@ -29,7 +24,7 @@ import RigolWFM
 import RigolWFM.wfm
 
 
-def info(args, scope_data, infile):
+def info(_args, scope_data, _infile):
     """Create a string that describes content of .wfm file."""
     s = scope_data.describe()
     print(s)

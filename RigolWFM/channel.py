@@ -1,9 +1,3 @@
-# pylint: disable=invalid-name
-# pylint: disable=too-many-instance-attributes
-# pylint: disable=too-many-return-statements
-# pylint: disable=too-many-statements
-# pylint: disable=consider-using-f-string
-
 """
 Class structure and methods for an oscilloscope channel.
 
@@ -37,23 +31,23 @@ class UnitEnum(Enum):
 def best_scale(number):
     """Scale and units for a number with proper prefix."""
     absnr = abs(number)
+    thresholds = [
+        (0.99999999e-9, 1e12, "p"),
+        (0.99999999e-6, 1e9, "n"),
+        (0.99999999e-3, 1e6, "µ"),
+        (0.99999999, 1e3, "m"),
+        (0.99999999e3, 1, " "),
+        (0.99999999e6, 1e-3, "k"),
+        (0.999999991e9, 1e-6, "M"),
+    ]
 
     if absnr == 0:
         return 1, " "
-    if absnr < 0.99999999e-9:
-        return 1e12, "p"
-    if absnr < 0.99999999e-6:
-        return 1e9, "n"
-    if absnr < 0.99999999e-3:
-        return 1e6, "µ"
-    if absnr < 0.99999999:
-        return 1e3, "m"
-    if absnr < 0.99999999e3:
-        return 1, " "
-    if absnr < 0.99999999e6:
-        return 1e-3, "k"
-    if absnr < 0.999999991e9:
-        return 1e-6, "M"
+
+    for limit, scale, prefix in thresholds:
+        if absnr < limit:
+            return scale, prefix
+
     return 1e-9, "G"
 
 

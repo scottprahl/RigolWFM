@@ -1,5 +1,3 @@
-# pylint: disable=too-few-public-methods
-
 """
 Adapter layer for Rigol DHO800/DHO1000 waveform files.
 
@@ -148,9 +146,14 @@ class DhoWaveform:
         """Initialize the normalized DHO wrapper."""
         self.header = Header()
 
+    @property
+    def parser_name(self):
+        """Return the normalized parser name used by `Wfm.from_file()`."""
+        return "dho1000"
+
     def __str__(self):
         """Return a parser tag compatible with the rest of `Wfm.from_file()`."""
-        return "x.dho1000"
+        return f"x.{self.parser_name}"
 
 
 def _is_bin(file_name):
