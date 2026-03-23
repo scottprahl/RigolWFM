@@ -1,12 +1,13 @@
 # This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
+# type: ignore
 
 import kaitaistruct
 from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
-from enum import Enum
+from enum import IntEnum
 
 
-if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
+    raise Exception("Incompatible Kaitai Struct Python API: 0.11 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Bindho1000(KaitaiStruct):
     """Official binary waveform export format documented in DHO1000 User Guide
@@ -25,18 +26,12 @@ class Bindho1000(KaitaiStruct):
       (x_origin is stored as a positive distance from the trigger point)
     """
 
-    class WaveformTypeEnum(Enum):
-        normal = 1
-        peak = 2
-        average = 3
-        logic = 6
-
-    class BufferTypeEnum(Enum):
+    class BufferTypeEnum(IntEnum):
         float32_normal = 1
         float32_maximum = 2
         float32_minimum = 3
 
-    class UnitEnum(Enum):
+    class UnitEnum(IntEnum):
         unknown = 0
         v = 1
         s = 2
@@ -44,10 +39,16 @@ class Bindho1000(KaitaiStruct):
         a = 4
         db = 5
         hz = 6
+
+    class WaveformTypeEnum(IntEnum):
+        normal = 1
+        peak = 2
+        average = 3
+        logic = 6
     def __init__(self, _io, _parent=None, _root=None):
-        self._io = _io
+        super(Bindho1000, self).__init__(_io)
         self._parent = _parent
-        self._root = _root if _root else self
+        self._root = _root or self
         self._read()
 
     def _read(self):
@@ -57,12 +58,21 @@ class Bindho1000(KaitaiStruct):
             self.waveforms.append(Bindho1000.Waveform(self._io, self, self._root))
 
 
+
+    def _fetch_instances(self):
+        pass
+        self.file_header._fetch_instances()
+        for i in range(len(self.waveforms)):
+            pass
+            self.waveforms[i]._fetch_instances()
+
+
     class DataHeader(KaitaiStruct):
         """16-byte data buffer header (Table 19.4)."""
         def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
+            super(Bindho1000.DataHeader, self).__init__(_io)
             self._parent = _parent
-            self._root = _root if _root else self
+            self._root = _root
             self._read()
 
         def _read(self):
@@ -72,14 +82,86 @@ class Bindho1000(KaitaiStruct):
             self.buffer_size = self._io.read_u8le()
 
 
+        def _fetch_instances(self):
+            pass
+
+
+    class FileHeader(KaitaiStruct):
+        """16-byte file header (Table 19.1)."""
+        def __init__(self, _io, _parent=None, _root=None):
+            super(Bindho1000.FileHeader, self).__init__(_io)
+            self._parent = _parent
+            self._root = _root
+            self._read()
+
+        def _read(self):
+            self.cookie = self._io.read_bytes(2)
+            if not self.cookie == b"\x52\x47":
+                raise kaitaistruct.ValidationNotEqualError(b"\x52\x47", self.cookie, self._io, u"/types/file_header/seq/0")
+            self.version = (self._io.read_bytes(2)).decode(u"ASCII")
+            self.file_size = self._io.read_u8le()
+            self.n_waveforms = self._io.read_u4le()
+
+
+        def _fetch_instances(self):
+            pass
+
+
+    class SampleData(KaitaiStruct):
+        """Stream of calibrated float32 voltage samples."""
+        def __init__(self, _io, _parent=None, _root=None):
+            super(Bindho1000.SampleData, self).__init__(_io)
+            self._parent = _parent
+            self._root = _root
+            self._read()
+
+        def _read(self):
+            self.values = []
+            i = 0
+            while not self._io.is_eof():
+                self.values.append(self._io.read_f4le())
+                i += 1
+
+
+
+        def _fetch_instances(self):
+            pass
+            for i in range(len(self.values)):
+                pass
+
+
+
+    class Waveform(KaitaiStruct):
+        """One waveform record - header, data header, and float32 samples."""
+        def __init__(self, _io, _parent=None, _root=None):
+            super(Bindho1000.Waveform, self).__init__(_io)
+            self._parent = _parent
+            self._root = _root
+            self._read()
+
+        def _read(self):
+            self.wfm_header = Bindho1000.WaveformHeader(self._io, self, self._root)
+            self.data_header = Bindho1000.DataHeader(self._io, self, self._root)
+            self._raw_samples = self._io.read_bytes(self.data_header.buffer_size)
+            _io__raw_samples = KaitaiStream(BytesIO(self._raw_samples))
+            self.samples = Bindho1000.SampleData(_io__raw_samples, self, self._root)
+
+
+        def _fetch_instances(self):
+            pass
+            self.wfm_header._fetch_instances()
+            self.data_header._fetch_instances()
+            self.samples._fetch_instances()
+
+
     class WaveformHeader(KaitaiStruct):
         """140-byte per-waveform header (Table 19.2).
         Describes acquisition settings and time-axis parameters for one channel.
         """
         def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
+            super(Bindho1000.WaveformHeader, self).__init__(_io)
             self._parent = _parent
-            self._root = _root if _root else self
+            self._root = _root
             self._read()
 
         def _read(self):
@@ -100,14 +182,9 @@ class Bindho1000(KaitaiStruct):
             self.channel_name = (KaitaiStream.bytes_terminate(self._io.read_bytes(16), 0, False)).decode(u"ASCII")
             self.padding = self._io.read_bytes(12)
 
-        @property
-        def t0(self):
-            """Time of the first sample in seconds (x_origin negated)."""
-            if hasattr(self, '_m_t0'):
-                return self._m_t0
 
-            self._m_t0 = -(self.x_origin)
-            return getattr(self, '_m_t0', None)
+        def _fetch_instances(self):
+            pass
 
         @property
         def seconds_per_point(self):
@@ -118,55 +195,14 @@ class Bindho1000(KaitaiStruct):
             self._m_seconds_per_point = self.x_increment
             return getattr(self, '_m_seconds_per_point', None)
 
+        @property
+        def t0(self):
+            """Time of the first sample in seconds (x_origin negated)."""
+            if hasattr(self, '_m_t0'):
+                return self._m_t0
 
-    class SampleData(KaitaiStruct):
-        """Stream of calibrated float32 voltage samples."""
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.values = []
-            i = 0
-            while not self._io.is_eof():
-                self.values.append(self._io.read_f4le())
-                i += 1
-
-
-
-    class Waveform(KaitaiStruct):
-        """One waveform record - header, data header, and float32 samples."""
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.wfm_header = Bindho1000.WaveformHeader(self._io, self, self._root)
-            self.data_header = Bindho1000.DataHeader(self._io, self, self._root)
-            self._raw_samples = self._io.read_bytes(self.data_header.buffer_size)
-            _io__raw_samples = KaitaiStream(BytesIO(self._raw_samples))
-            self.samples = Bindho1000.SampleData(_io__raw_samples, self, self._root)
-
-
-    class FileHeader(KaitaiStruct):
-        """16-byte file header (Table 19.1)."""
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.cookie = self._io.read_bytes(2)
-            if not self.cookie == b"\x52\x47":
-                raise kaitaistruct.ValidationNotEqualError(b"\x52\x47", self.cookie, self._io, u"/types/file_header/seq/0")
-            self.version = (self._io.read_bytes(2)).decode(u"ASCII")
-            self.file_size = self._io.read_u8le()
-            self.n_waveforms = self._io.read_u4le()
+            self._m_t0 = -(self.x_origin)
+            return getattr(self, '_m_t0', None)
 
 
 

@@ -57,6 +57,7 @@ TEST_E_FILES    := wfm/DS1102E-A.wfm wfm/DS1102E-B.wfm wfm/DS1102E-C.wfm wfm/DS1
 TEST_Z_FILES    := wfm/DS1074Z-C.wfm wfm/DS1054Z-A.wfm wfm/MSO1104.wfm wfm/DS1074Z-A.wfm wfm/DS1074Z-B.wfm
 TEST_2_FILES    := wfm/DS2072A-1.wfm wfm/DS2072A-2.wfm wfm/DS2072A-3.wfm wfm/DS2072A-4.wfm wfm/DS2072A-5.wfm wfm/DS2072A-6.wfm wfm/DS2072A-7.wfm wfm/DS2072A-8.wfm wfm/DS2072A-9.wfm wfm/DS2000-A.wfm wfm/DS2000-B.wfm
 TEST_4_FILES    := wfm/DS4022-A.wfm wfm/DS4022-B.wfm wfm/DS4024-A.wfm wfm/DS4024-B.wfm
+TEST_H_FILES    := wfm/DHO1074.wfm wfm/DHO824-ch1.wfm wfm/DHO824-ch12.wfm wfm/DHO824-ch1234.wfm
 
 CONVERT_CASES   := E:wfm/DS1102E-A.wfm Z:wfm/MSO1104.wfm 4:wfm/DS4022-A.wfm 2:wfm/DS2202.wfm C:wfm/DS1202CA-A.wfm B:wfm/DS1204B-A.wfm D:wfm/DS1102D-A.wfm
 
@@ -185,6 +186,10 @@ test2:
 test4:
 	@for f in $(TEST_4_FILES); do $(RUN) wfmconvert 4 info $$f; done
 
+.PHONY: testH
+testH:
+	@for f in $(TEST_H_FILES); do $(RUN) wfmconvert DHO info $$f; done
+
 .PHONY: csv
 csv:
 	@for item in $(CONVERT_CASES); do \
@@ -225,12 +230,14 @@ testtests note-test:
 
 .PHONY: test
 test: $(PYTHON_PARSERS)
+	@$(MAKE) testb
+	@$(MAKE) testc
 	@$(MAKE) testd
 	@$(MAKE) teste
 	@$(MAKE) testz
-	@$(MAKE) test4
 	@$(MAKE) test2
-	@$(MAKE) testc
+	@$(MAKE) test4
+	@$(MAKE) testH
 	@$(MAKE) vcsv
 	@$(MAKE) csv
 	@$(MAKE) wav

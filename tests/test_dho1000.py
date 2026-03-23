@@ -60,6 +60,7 @@ class TestDho1000BinParser(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        """Load the BIN parser module once for this test class."""
         wfmdho1000, _ = _import_parsers()
         cls.dho1000 = wfmdho1000
 
@@ -122,6 +123,7 @@ class TestWfmDho1000Parser(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        """Load the WFM parser module once for this test class."""
         _, wfmdho1000 = _import_parsers()
         cls.wfmdho1000 = wfmdho1000
 
@@ -197,6 +199,7 @@ class TestWfmBinCorrelation(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        """Load shared parser modules for correlation-based comparisons."""
         wfmdho1000, _ = _import_parsers()
         cls.dho1000 = wfmdho1000
         cls.wfmdho1000 = wfmdho1000
@@ -254,13 +257,13 @@ class TestChannelIntegration(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        """Cache imported integration modules used by `Wfm.from_file()` tests."""
         cls.wfm_module = _WFM_MODULE
         cls.channel_module = _CHANNEL_MODULE
 
     @unittest.skipUnless(HAS_DHO1074_BIN, "DHO1074.bin not found")
     def test_wfm_from_file_bin(self):
-        """Wfm.from_file() with DHO model returns all enabled channels;
-        selected='1' means only CH1 has volts/times populated."""
+        """Wfm.from_file() should return enabled channels for DHO BIN input."""
         wfm = self.wfm_module.Wfm.from_file(DHO1074_BIN, "DHO", "1")
         # All 4 channels are enabled in the file, all are returned
         self.assertEqual(len(wfm.channels), 4)

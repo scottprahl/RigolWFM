@@ -31,6 +31,7 @@ sys.path.insert(0, _REPO_ROOT)
 
 
 def _p(fname):
+    """Return the absolute path to a waveform fixture in `wfm/`."""
     return os.path.join(_WFM_DIR, fname)
 
 
@@ -51,6 +52,7 @@ _RMS_THRESHOLD_MV = 0.1
 
 
 def _import_parsers():
+    """Import the shared DHO parser module used by these tests."""
     return importlib.import_module("RigolWFM.wfmdho1000")
 
 
@@ -59,6 +61,7 @@ class TestDho800BinParser(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        """Load the parser module once for all BIN parser tests."""
         cls.m = _import_parsers()
 
     @unittest.skipUnless(HAS_CH1, "DHO800 ch1/data.bin not found")
@@ -106,6 +109,7 @@ class TestDho800WfmParser(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        """Load the parser module once for all WFM parser tests."""
         cls.m = _import_parsers()
 
     @unittest.skipUnless(HAS_CH1, "DHO800 ch1/data.wfm not found")
@@ -187,9 +191,11 @@ class TestDho800WfmBinCorrelation(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        """Load the parser module once for WFM-vs-BIN correlation checks."""
         cls.m = _import_parsers()
 
     def _check_correlation(self, wfm_path, bin_path, n_ch):
+        """Assert that matching WFM and BIN channel voltages closely agree."""
         wfm = self.m.WfmDho1000.from_file(wfm_path)
         bin_obj = self.m.Dho1000.from_file(bin_path)
         for i in range(n_ch):
@@ -243,6 +249,7 @@ class TestDho800ChannelIntegration(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        """Cache the top-level WFM module for integration tests."""
         cls.wfm = _WFM_MODULE
 
     @unittest.skipUnless(HAS_CH1, "DHO824-ch1.bin not found in wfm/")
