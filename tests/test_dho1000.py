@@ -6,7 +6,7 @@ Validates sample count, voltage range, time axis, and channel count.
 
 Test files:
     wfm/DHO1074.bin   (10000 samples, 4 channels enabled, DHO1074)
-    wfm/DHO1074.wfm   (10000 samples, CH1 only, 3.3V logic signal)
+    wfm/DHO1074.wfm   (10000 samples per channel, 4 channels enabled, DHO1074)
 """
 
 import importlib
@@ -142,45 +142,57 @@ class TestWfmDho1000Parser(unittest.TestCase):
 
     @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_dho1047_wfm_channel_data(self):
-        """DHO1074.wfm should have calibrated voltage data for channel 1 (4-slot list)."""
+        """DHO1074.wfm should expose calibrated voltage data for all four channels."""
         obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
         self.assertEqual(len(obj.header.channel_data), 4)
-        volts = obj.header.channel_data[0]
-        self.assertIsNotNone(volts)
-        self.assertEqual(len(volts), 10000)
+        for i, volts in enumerate(obj.header.channel_data):
+            self.assertIsNotNone(volts, f"CH{i+1} voltage data should not be None")
+            self.assertEqual(len(volts), 10000)
 
     @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_dho1047_wfm_raw_data(self):
-        """DHO1074.wfm raw_data is a 4-slot list; slot 0 has uint16 array of 10000 samples."""
+        """DHO1074.wfm raw_data should contain four uint16 arrays of 10000 samples."""
         obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
         self.assertIsNotNone(obj.header.raw_data)
-        raw_ch1 = obj.header.raw_data[0]
-        self.assertIsNotNone(raw_ch1)
-        self.assertEqual(raw_ch1.dtype, np.dtype("<u2"))
-        self.assertEqual(len(raw_ch1), 10000)
+        for i, raw in enumerate(obj.header.raw_data):
+            self.assertIsNotNone(raw, f"CH{i+1} raw data should not be None")
+            self.assertEqual(raw.dtype, np.dtype("<u2"))
+            self.assertEqual(len(raw), 10000)
 
     @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_dho1047_wfm_voltage_range(self):
-        """DHO1074.wfm voltages should be in a realistic range for a 3.3V logic signal."""
+        """DHO1074.wfm voltages should match the four-channel screenshot capture."""
         obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
-        volts = obj.header.channel_data[0]
-        self.assertGreater(float(volts.max()), -5.0)
-        self.assertLess(float(volts.max()), 10.0)
+        ch1, ch2, ch3, ch4 = obj.header.channel_data
+        for i, volts in enumerate((ch1, ch2, ch3, ch4), start=1):
+            self.assertTrue(np.isfinite(volts).all(), f"CH{i} should not contain NaNs")
+
+        self.assertGreater(float(ch1.mean()), 250.0)
+        self.assertGreater(float(ch2.mean()), 10.0)
+        self.assertLess(float(ch3.mean()), -4.0)
+        self.assertLess(float(ch4.mean()), -100.0)
+
+        self.assertGreater(float(ch1.max() - ch1.min()), 40.0)
+        self.assertGreater(float(ch2.max() - ch2.min()), 40.0)
+        self.assertGreater(float(ch3.max() - ch3.min()), 2.0)
+        self.assertGreater(float(ch4.max() - ch4.min()), 20.0)
 
     @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_dho1047_wfm_time_axis(self):
-        """DHO1074.wfm time parameters should be valid."""
+        """DHO1074.wfm time parameters should match the 200 kSa/s capture."""
         obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
-        self.assertGreater(obj.header.x_increment, 1e-12)
-        self.assertLess(obj.header.x_increment, 1.0)
+        self.assertEqual(obj.header.n_pts, 10000)
+        self.assertAlmostEqual(obj.header.x_increment, 5e-6)
+        self.assertAlmostEqual(obj.header.x_origin, -0.025)
 
     @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_dho1047_wfm_channel_headers(self):
-        """DHO1074.wfm should have 4 channel headers (1 enabled + 3 disabled)."""
+        """DHO1074.wfm should have 4 enabled channel headers labeled CH1-CH4."""
         obj = self.wfmdho1000.WfmDho1000.from_file(DHO1074_WFM)
         self.assertEqual(len(obj.header.ch), 4)
-        self.assertTrue(obj.header.ch[0].enabled)
-        self.assertFalse(obj.header.ch[1].enabled)
+        for i, ch in enumerate(obj.header.ch, start=1):
+            self.assertTrue(ch.enabled, f"CH{i} should be enabled")
+            self.assertEqual(ch.name, f"CH{i}")
 
     @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_dho1047_wfm_str_parser_name(self):
@@ -301,12 +313,16 @@ class TestChannelIntegration(unittest.TestCase):
 
     @unittest.skipUnless(HAS_DHO1074_WFM, "DHO1074.wfm not found")
     def test_wfm_from_file_wfm_format(self):
-        """Wfm.from_file() with DHO model and .wfm file should use WFM parser."""
+        """Wfm.from_file() should keep all enabled DHO WFM channels and select CH1 data."""
         wfm = self.wfm_module.Wfm.from_file(DHO1074_WFM, "DHO", "1")
-        self.assertEqual(len(wfm.channels), 1)
+        self.assertEqual(len(wfm.channels), 4)
         ch = wfm.channels[0]
         self.assertIsNotNone(ch.volts)
         self.assertIsNotNone(ch.times)
+        self.assertEqual(len(ch.volts), 10000)
+        for ch in wfm.channels[1:]:
+            self.assertIsNone(ch.volts)
+            self.assertIsNone(ch.times)
 
 
 if __name__ == "__main__":

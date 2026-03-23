@@ -35,13 +35,14 @@ Block header (12 bytes, all u16 LE):
 
 --- DHO1000 (.wfm) calibration blocks ---
 
-    id=1, type=9  - CH1 channel parameters
+    id=1..4, type=9  - per-channel parameters
         bytes[1:9]   i64 LE  scale factor: scale = i64 / 750_000_000_000
-    type=6  - trigger/display settings
+        bytes[38:46] i64 LE  v_center × 1e8
+    type=6  - trigger/display settings (legacy fallback for CH1)
         bytes[36:40] i32 LE  CH1 voltage center × 1e8
 
-    Voltage: scale = i64/750B, v_center = i32/1e8
-    Data section: offset+0 u64 = n_pts + 64 (single channel only)
+    Voltage: scale = i64/750B, v_center = i64/1e8
+    Data section: offset+0 u64 = n_pts_total + 64, offset+24 u32 = n_pts/ch
 
 --- DHO800 (.wfm) calibration blocks (reverse-engineered) ---
 
@@ -84,6 +85,8 @@ _WFM_SCALE_DIVISOR_DHO800 = 7_500_000_000_000  # DHO800 scale divisor (10× larg
 _WFM_ADC_MIDPOINT = 32768
 _WFM_V_CENTER_DIVISOR = 1e8
 _WFM_V_CENTER_DIVISOR_DHO800 = 1e9  # DHO800: bytes[38:42] of type=5 block, negated
+_WFM_X_INCREMENT_SCALE = 1e-8       # DHO1000: observed 10 ns units in data section
+_WFM_X_INCREMENT_SCALE_DHO800 = 1e-9
 
 
 class UnitEnum(IntEnum):
@@ -391,18 +394,29 @@ def _extract_volt_calibration(blocks):
                     v_center = -i32_val / _WFM_V_CENTER_DIVISOR_DHO800
                     cal[block_id] = (scale, v_center, v_center - scale * _WFM_ADC_MIDPOINT)
     else:
-        scale = None
-        v_center = None
         for block_id, block_type, content, _ in blocks:
-            if block_id == _WFM_CH1_BLOCK_ID and block_type == _WFM_CH1_BLOCK_TYPE:
-                if len(content) >= 9:
+            if block_type == _WFM_CH1_BLOCK_TYPE and 1 <= block_id <= 4:
+                if len(content) >= 46:
                     (i64_val,) = struct.unpack_from("<q", content, 1)
                     scale = i64_val / _WFM_SCALE_DIVISOR
-            elif block_type == _WFM_SETTINGS_BLOCK_TYPE and len(content) >= 40:
-                (i32_val,) = struct.unpack_from("<i", content, 36)
-                v_center = i32_val / _WFM_V_CENTER_DIVISOR
-        if scale is not None and v_center is not None:
-            cal[1] = (scale, v_center, v_center - scale * _WFM_ADC_MIDPOINT)
+                    (i64_center,) = struct.unpack_from("<q", content, 38)
+                    v_center = i64_center / _WFM_V_CENTER_DIVISOR
+                    cal[block_id] = (scale, v_center, v_center - scale * _WFM_ADC_MIDPOINT)
+
+        # Older captures may only expose CH1 center in the settings block.
+        if not cal:
+            scale = None
+            v_center = None
+            for block_id, block_type, content, _ in blocks:
+                if block_id == _WFM_CH1_BLOCK_ID and block_type == _WFM_CH1_BLOCK_TYPE:
+                    if len(content) >= 9:
+                        (i64_val,) = struct.unpack_from("<q", content, 1)
+                        scale = i64_val / _WFM_SCALE_DIVISOR
+                elif block_type == _WFM_SETTINGS_BLOCK_TYPE and len(content) >= 40:
+                    (i32_val,) = struct.unpack_from("<i", content, 36)
+                    v_center = i32_val / _WFM_V_CENTER_DIVISOR
+            if scale is not None and v_center is not None:
+                cal[1] = (scale, v_center, v_center - scale * _WFM_ADC_MIDPOINT)
 
     return is_dho800, cal
 
@@ -412,7 +426,7 @@ def _find_data_section(data, blocks_end_offset, is_dho800=False):
     Find the start of the data section after zero padding.
 
     DHO800: u64 at offset+0 is total sample count (all channels); n_pts/ch at offset+24.
-    DHO1000: u64 at offset+0 is n_pts + 64 (single channel only).
+    DHO1000: u64 at offset+0 is total sample count + 64; n_pts/ch at offset+24.
 
     Returns:
         (n_pts, n_ch, x_origin, x_increment, data_start_offset)
@@ -427,26 +441,35 @@ def _find_data_section(data, blocks_end_offset, is_dho800=False):
 
     (n_pts_u64,) = struct.unpack_from("<Q", data, offset)
 
+    if offset + 28 > len(data):
+        return None, None, None, None, None
+
     if is_dho800:
         if n_pts_u64 == 0 or n_pts_u64 > 2_000_000_000:
             return None, None, None, None, None
-        if offset + 28 > len(data):
-            return None, None, None, None, None
-        (n_pts_per_ch,) = struct.unpack_from("<I", data, offset + 24)
-        if n_pts_per_ch == 0:
-            return None, None, None, None, None
-        n_ch = int(n_pts_u64 // n_pts_per_ch)
+        total_pts = n_pts_u64
     else:
         if n_pts_u64 <= 64 or n_pts_u64 > 2_000_000_000:
             return None, None, None, None, None
-        n_pts_per_ch = n_pts_u64 - 64
+        total_pts = n_pts_u64 - 64
+
+    (n_pts_hint,) = struct.unpack_from("<I", data, offset + 24)
+    if n_pts_hint > 0 and total_pts % n_pts_hint == 0:
+        n_pts_per_ch = n_pts_hint
+        n_ch = int(total_pts // n_pts_hint)
+    else:
+        n_pts_per_ch = total_pts
         n_ch = 1
+
+    if n_pts_per_ch == 0 or n_ch <= 0 or n_ch > 4:
+        return None, None, None, None, None
 
     (x_increment_ns,) = struct.unpack_from("<I", data, offset + 16)
     if x_increment_ns == 0 or x_increment_ns > 1_000_000_000:
         x_increment_ns = 1
 
-    x_increment = x_increment_ns * 1e-9
+    scale = _WFM_X_INCREMENT_SCALE_DHO800 if is_dho800 else _WFM_X_INCREMENT_SCALE
+    x_increment = x_increment_ns * scale
     x_origin = -(n_pts_per_ch / 2) * x_increment
     data_start = offset + 40
 
