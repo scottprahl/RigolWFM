@@ -1,0 +1,43 @@
+    General:
+        File Model   = wfm1000d
+        User Model   = D
+        Parser Model = wfm1000d
+        Firmware     = unknown
+        Filename     = DS1102D-A.wfm
+        Channels     = [1, 2]
+
+     Channel 1:
+         Coupling =  unknown
+            Scale =     1.00  V/div
+           Offset =    -3.00  V
+            Probe =       1X
+         Inverted =    False
+
+        Time Base =  500.000 µs/div
+           Offset =  432.000 µs
+            Delta =   10.000 µs/point
+           Points =     1024
+
+         Count    = [        1,        2,        3  ...      1023,     1024]
+           Raw    = [        0,       80,      195  ...        80,       80]
+           Times  = [-4.688 ms,-4.678 ms,-4.668 ms  ...  5.542 ms, 5.552 ms]
+           Volts  = [  8.08  V,  4.88  V,280.00 mV  ...   4.88  V,  4.88  V]
+
+     Channel 2:
+         Coupling =  unknown
+            Scale =     2.00  V/div
+           Offset =    -4.64  V
+            Probe =       1X
+         Inverted =    False
+
+        Time Base =  500.000 µs/div
+           Offset =  432.000 µs
+            Delta =   10.000 µs/point
+           Points =     1024
+
+         Count    = [        1,        2,        3  ...      1023,     1024]
+           Raw    = [       80,       80,       80  ...       183,      183]
+           Times  = [-4.688 ms,-4.678 ms,-4.668 ms  ...  5.542 ms, 5.552 ms]
+           Volts  = [  8.40  V,  8.40  V,  8.40  V  ... 160.00 mV,160.00 mV]
+
+

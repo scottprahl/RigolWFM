@@ -51,15 +51,6 @@ PYDOC_TARGETS   := $(PACKAGE_DIR)/wfm.py $(PACKAGE_DIR)/channel.py $(PACKAGE_DIR
 YAML_TARGETS    := .github/workflows/citation.yaml .github/workflows/pypi.yaml .github/workflows/test.yaml .readthedocs.yaml
 RST_TARGETS     := README.rst CHANGELOG.rst $(DOCS_DIR)/index.rst $(DOCS_DIR)/changelog.rst
 
-TEST_B_FILES    := wfm/DS1204B-A.wfm wfm/DS1204B-B.wfm wfm/DS1204B-C.wfm wfm/DS1204B-D.wfm wfm/DS1204B-E.wfm
-TEST_C_FILES    := wfm/DS1202CA-A.wfm wfm/DS1042C-A.wfm
-TEST_D_FILES    := wfm/DS1102D-A.wfm
-TEST_E_FILES    := wfm/DS1102E-A.wfm wfm/DS1102E-B.wfm wfm/DS1102E-C.wfm wfm/DS1102E-D.wfm wfm/DS1102E-E.wfm wfm/DS1102E-F.wfm wfm/DS1102E-G.wfm wfm/DS1052E.wfm wfm/DS1000E-A.wfm wfm/DS1000E-B.wfm wfm/DS1000E-C.wfm wfm/DS1000E-D.wfm
-TEST_Z_FILES    := wfm/DS1074Z-C.wfm wfm/DS1054Z-A.wfm wfm/MSO1104.wfm wfm/DS1074Z-A.wfm wfm/DS1074Z-B.wfm
-TEST_2_FILES    := wfm/DS2072A-1.wfm wfm/DS2072A-2.wfm wfm/DS2072A-3.wfm wfm/DS2072A-4.wfm wfm/DS2072A-5.wfm wfm/DS2072A-6.wfm wfm/DS2072A-7.wfm wfm/DS2072A-8.wfm wfm/DS2072A-9.wfm wfm/DS2000-A.wfm wfm/DS2000-B.wfm
-TEST_4_FILES    := wfm/DS4022-A.wfm wfm/DS4022-B.wfm wfm/DS4024-A.wfm wfm/DS4024-B.wfm
-TEST_H_FILES    := wfm/DHO1074.wfm wfm/DHO824-ch1.wfm wfm/DHO824-ch12.wfm wfm/DHO824-ch1234.wfm
-
 CONVERT_CASES   := E:wfm/DS1102E-A.wfm Z:wfm/MSO1104.wfm 4:wfm/DS4022-A.wfm 2:wfm/DS2202.wfm C:wfm/DS1202CA-A.wfm B:wfm/DS1204B-A.wfm D:wfm/DS1102D-A.wfm
 
 CLEANTEST_FILES := \
@@ -165,31 +156,31 @@ testb:
 
 .PHONY: testc
 testc:
-	@for f in $(TEST_C_FILES); do $(RUN) wfmconvert C info $$f; done
+	$(RUN) pytest --verbose tests/test_c.py
 
 .PHONY: testd
 testd:
-	@for f in $(TEST_D_FILES); do $(RUN) wfmconvert D info $$f; done
+	$(RUN) pytest --verbose tests/test_d.py
 
 .PHONY: teste
 teste:
-	@for f in $(TEST_E_FILES); do $(RUN) wfmconvert E info $$f; done
+	$(RUN) pytest --verbose tests/test_e.py
 
 .PHONY: testz
 testz:
-	@for f in $(TEST_Z_FILES); do $(RUN) wfmconvert Z info $$f; done
+	$(RUN) pytest --verbose tests/test_z.py
 
 .PHONY: test2
 test2:
-	@for f in $(TEST_2_FILES); do $(RUN) wfmconvert 2 info $$f; done
+	$(RUN) pytest --verbose tests/test_2.py
 
 .PHONY: test4
 test4:
-	@for f in $(TEST_4_FILES); do $(RUN) wfmconvert 4 info $$f; done
+	$(RUN) pytest --verbose tests/test_4.py
 
 .PHONY: testH
 testH:
-	@for f in $(TEST_H_FILES); do $(RUN) wfmconvert DHO info $$f; done
+	$(RUN) pytest --verbose tests/test_dho1000.py tests/test_dho800.py
 
 .PHONY: csv
 csv:

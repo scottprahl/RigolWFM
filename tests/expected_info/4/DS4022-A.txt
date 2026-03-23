@@ -1,0 +1,77 @@
+    General:
+        File Model   = wfm4000
+        User Model   = 4
+        Parser Model = wfm4000
+        Firmware     = 00.02.03.00.03
+        Filename     = DS4022-A.wfm
+        Channels     = [1, 2, 3, 4]
+
+     Channel 1:
+         Coupling =       DC
+            Scale =    50.00  V/div
+           Offset =     0.00  V
+            Probe =      10X
+         Inverted =    False
+
+        Time Base =    1.000 µs/div
+           Offset =  500.000 ns
+            Delta =    2.000 ns/point
+           Points =     7000
+
+         Count    = [        1,        2,        3  ...      6999,     7000]
+           Raw    = [      215,      222,      227  ...        20,       20]
+           Times  = [-6.500 µs,-6.498 µs,-6.496 µs  ...  7.498 µs, 7.500 µs]
+           Volts  = [137.50  V,148.44  V,156.25  V  ... -167.19  V,-167.19  V]
+
+     Channel 2:
+         Coupling =       DC
+            Scale =   200.00  V/div
+           Offset =     0.00  V
+            Probe =     100X
+         Inverted =    False
+
+        Time Base =    1.000 µs/div
+           Offset =  500.000 ns
+            Delta =    2.000 ns/point
+           Points =     7000
+
+         Count    = [        1,        2,        3  ...      6999,     7000]
+           Raw    = [      127,      127,      127  ...       127,      127]
+           Times  = [-6.500 µs,-6.498 µs,-6.496 µs  ...  7.498 µs, 7.500 µs]
+           Volts  = [ -0.00  V, -0.00  V, -0.00  V  ...  -0.00  V, -0.00  V]
+
+     Channel 3:
+         Coupling =       DC
+            Scale =    50.00  V/div
+           Offset =     0.00  V
+            Probe =      10X
+         Inverted =    False
+
+        Time Base =    1.000 µs/div
+           Offset =  500.000 ns
+            Delta =    2.000 ns/point
+           Points =     7000
+
+         Count    = [        1,        2,        3  ...      6999,     7000]
+           Raw    = [       65,       57,       49  ...       236,      236]
+           Times  = [-6.500 µs,-6.498 µs,-6.496 µs  ...  7.498 µs, 7.500 µs]
+           Volts  = [-96.88  V,-109.38  V,-121.88  V  ... 170.31  V,170.31  V]
+
+     Channel 4:
+         Coupling =       DC
+            Scale =   200.00  V/div
+           Offset =     0.00  V
+            Probe =     100X
+         Inverted =    False
+
+        Time Base =    1.000 µs/div
+           Offset =  500.000 ns
+            Delta =    2.000 ns/point
+           Points =     7000
+
+         Count    = [        1,        2,        3  ...      6999,     7000]
+           Raw    = [      127,      127,      127  ...       128,      127]
+           Times  = [-6.500 µs,-6.498 µs,-6.496 µs  ...  7.498 µs, 7.500 µs]
+           Volts  = [ -0.00  V, -0.00  V, -0.00  V  ...   6.25  V, -0.00  V]
+
+

@@ -1,0 +1,43 @@
+    General:
+        File Model   = wfm4000
+        User Model   = 4
+        Parser Model = wfm4000
+        Firmware     = 00.02.03.02.00
+        Filename     = DS4024-B.wfm
+        Channels     = [1, 2]
+
+     Channel 1:
+         Coupling =       AC
+            Scale =    10.00  V/div
+           Offset =    14.80  V
+            Probe =       5X
+         Inverted =    False
+
+        Time Base =    1.000 ms/div
+           Offset =  500.000 µs
+            Delta =   20.000 ns/point
+           Points =   700000
+
+         Count    = [        1,        2,        3  ...    699999,   700000]
+           Raw    = [      174,      173,      174  ...       173,      173]
+           Times  = [-6.500 ms,-6.500 ms,-6.500 ms  ...  7.500 ms, 7.500 ms]
+           Volts  = [-112.50 mV,-425.00 mV,-112.50 mV  ... -425.00 mV,-425.00 mV]
+
+     Channel 2:
+         Coupling =       AC
+            Scale =    10.00 mV/div
+           Offset =    -8.80 mV
+            Probe =       1X
+         Inverted =    False
+
+        Time Base =    1.000 ms/div
+           Offset =  500.000 µs
+            Delta =   20.000 ns/point
+           Points =   700000
+
+         Count    = [        1,        2,        3  ...    699999,   700000]
+           Raw    = [      100,       99,      100  ...       101,      100]
+           Times  = [-6.500 ms,-6.500 ms,-6.500 ms  ...  7.500 ms, 7.500 ms]
+           Volts  = [362.50 µV, 50.00 µV,362.50 µV  ... 675.00 µV,362.50 µV]
+
+

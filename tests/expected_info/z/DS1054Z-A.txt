@@ -1,0 +1,77 @@
+    General:
+        File Model   = wfm1000z
+        User Model   = Z
+        Parser Model = wfm1000z
+        Firmware     = 00.04.04.SP4
+        Filename     = DS1054Z-A.wfm
+        Channels     = [1, 2, 3, 4]
+
+     Channel 1:
+         Coupling =       DC
+            Scale =     2.00  V/div
+           Offset =     3.00  V
+            Probe =      10X
+         Inverted =    False
+
+        Time Base =   50.000 ns/div
+           Offset =    0.000  s
+            Delta =    4.000 ns/point
+           Points =      278
+
+         Count    = [        1,        2,        3  ...       277,      278]
+           Raw    = [      158,      157,      159  ...       176,      176]
+           Times  = [-556.000 ns,-551.986 ns,-547.971 ns  ... 551.986 ns,556.000 ns]
+           Volts  = [  2.10  V,  2.00  V,  2.20  V  ...   3.90  V,  3.90  V]
+
+     Channel 2:
+         Coupling =       DC
+            Scale =     2.00  V/div
+           Offset =   820.00 mV
+            Probe =      10X
+         Inverted =    False
+
+        Time Base =   50.000 ns/div
+           Offset =    0.000  s
+            Delta =    4.000 ns/point
+           Points =      278
+
+         Count    = [        1,        2,        3  ...       277,      278]
+           Raw    = [      124,      123,      124  ...       128,      129]
+           Times  = [-556.000 ns,-551.986 ns,-547.971 ns  ... 551.986 ns,556.000 ns]
+           Volts  = [880.00 mV,780.00 mV,880.00 mV  ...   1.28  V,  1.38  V]
+
+     Channel 3:
+         Coupling =       DC
+            Scale =     2.00  V/div
+           Offset =    -3.60  V
+            Probe =      10X
+         Inverted =    False
+
+        Time Base =   50.000 ns/div
+           Offset =    0.000  s
+            Delta =    4.000 ns/point
+           Points =      278
+
+         Count    = [        1,        2,        3  ...       277,      278]
+           Raw    = [      103,      103,      102  ...       102,      104]
+           Times  = [-556.000 ns,-551.986 ns,-547.971 ns  ... 551.986 ns,556.000 ns]
+           Volts  = [  3.20  V,  3.20  V,  3.10  V  ...   3.10  V,  3.30  V]
+
+     Channel 4:
+         Coupling =       DC
+            Scale =     5.00  V/div
+           Offset =   -16.36  V
+            Probe =      10X
+         Inverted =    False
+
+        Time Base =   50.000 ns/div
+           Offset =    0.000  s
+            Delta =    4.000 ns/point
+           Points =      278
+
+         Count    = [        1,        2,        3  ...       277,      278]
+           Raw    = [       41,       40,       40  ...        28,       28]
+           Times  = [-556.000 ns,-551.986 ns,-547.971 ns  ... 551.986 ns,556.000 ns]
+           Volts  = [-140.00 mV,-390.00 mV,-390.00 mV  ...  -3.39  V, -3.39  V]
+
+

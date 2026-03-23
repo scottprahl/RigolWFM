@@ -1,0 +1,43 @@
+    General:
+        File Model   = wfm2000
+        User Model   = 2
+        Parser Model = wfm2000
+        Firmware     = 00.03.00.01.03
+        Filename     = DS2000-A.wfm
+        Channels     = [1, 2]
+
+     Channel 1:
+         Coupling =       DC
+            Scale =     5.00  V/div
+           Offset =     0.00  V
+            Probe =      10X
+         Inverted =    False
+
+        Time Base =   50.000 µs/div
+           Offset = -199.200 µs
+            Delta =    1.000 ns/point
+           Points =   700000
+
+         Count    = [        1,        2,        3  ...    699999,   700000]
+           Raw    = [      128,      127,      129  ...       128,      128]
+           Times  = [-549.200 µs,-549.199 µs,-549.198 µs  ... 150.799 µs,150.800 µs]
+           Volts  = [200.00 mV, -0.00  V,400.00 mV  ... 200.00 mV,200.00 mV]
+
+     Channel 2:
+         Coupling =       DC
+            Scale =     2.00  V/div
+           Offset =    -6.00  V
+            Probe =      10X
+         Inverted =    False
+
+        Time Base =   50.000 µs/div
+           Offset = -199.200 µs
+            Delta =    1.000 ns/point
+           Points =   700000
+
+         Count    = [        1,        2,        3  ...    699999,   700000]
+           Raw    = [       53,       52,       53  ...        52,       53]
+           Times  = [-549.200 µs,-549.199 µs,-549.198 µs  ... 150.799 µs,150.800 µs]
+           Volts  = [ 80.00 mV,476.84 nV, 80.00 mV  ... 476.84 nV, 80.00 mV]
+
+

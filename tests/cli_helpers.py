@@ -41,3 +41,10 @@ def assert_command_matches_file(command, expected_path):
         .rstrip("\n")
     )
     assert actual == expected
+
+
+def assert_wfmconvert_info_snapshot(scope, stem, family):
+    """Assert that `wfmconvert <scope> info` matches a checked-in snapshot."""
+    expected = Path(__file__).resolve().parent / "expected_info" / family / f"{stem}.txt"
+    command = f"wfmconvert {scope} info wfm/{stem}.wfm"
+    assert_command_matches_file(command, expected)

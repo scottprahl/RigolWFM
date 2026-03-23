@@ -1,0 +1,43 @@
+    General:
+        File Model   = wfm1000e
+        User Model   = E
+        Parser Model = wfm1000e
+        Firmware     = unknown
+        Filename     = DS1052E.wfm
+        Channels     = [1, 2]
+
+     Channel 1:
+         Coupling =  unknown
+            Scale =     1.00  V/div
+           Offset =     2.00  V
+            Probe =      10X
+         Inverted =    False
+
+        Time Base =  100.000 ns/div
+           Offset =    0.000  s
+            Delta =    2.000 ns/point
+           Points =     8188
+
+         Count    = [        1,        2,        3  ...      8187,     8188]
+           Raw    = [       76,       76,       76  ...        76,       76]
+           Times  = [-8.188 µs,-8.186 µs,-8.184 µs  ...  8.186 µs, 8.188 µs]
+           Volts  = [ 40.00 mV, 40.00 mV, 40.00 mV  ...  40.00 mV, 40.00 mV]
+
+     Channel 2:
+         Coupling =  unknown
+            Scale =     2.00  V/div
+           Offset =    -6.00  V
+            Probe =       1X
+         Inverted =    False
+
+        Time Base =  100.000 ns/div
+           Offset =    0.000  s
+            Delta =    2.000 ns/point
+           Points =     8188
+
+         Count    = [        1,        2,        3  ...      8187,     8188]
+           Raw    = [      203,      203,      203  ...       138,      138]
+           Times  = [-8.188 µs,-8.186 µs,-8.184 µs  ...  8.186 µs, 8.188 µs]
+           Volts  = [-80.00 mV,-80.00 mV,-80.00 mV  ...   5.12  V,  5.12  V]
+
+

@@ -1,0 +1,43 @@
+    General:
+        File Model   = wfm2000
+        User Model   = 2
+        Parser Model = wfm2000
+        Firmware     = 00.03.05.03.03
+        Filename     = DS2072A-4.wfm
+        Channels     = [1, 2]
+
+     Channel 1:
+         Coupling =       DC
+            Scale =    50.00 mV/div
+           Offset =  -171.00 mV
+            Probe =    0.01X
+         Inverted =    False
+
+        Time Base =   10.000 ms/div
+           Offset =    0.000  s
+            Delta =   20.000 ns/point
+           Points =  7000000
+
+         Count    = [        1,        2,        3  ...   6999999,  7000000]
+           Raw    = [       42,       42,       41  ...        42,       42]
+           Times  = [-70.000 ms,-70.000 ms,-70.000 ms  ... 70.000 ms,70.000 ms]
+           Volts  = [  1.00 mV,  1.00 mV,-1000.00 µV  ...   1.00 mV,  1.00 mV]
+
+     Channel 2:
+         Coupling =       DC
+            Scale =     1.00  V/div
+           Offset =     3.20  V
+            Probe =    0.01X
+         Inverted =    False
+
+        Time Base =   10.000 ms/div
+           Offset =    0.000  s
+            Delta =   20.000 ns/point
+           Points =  7000000
+
+         Count    = [        1,        2,        3  ...   6999999,  7000000]
+           Raw    = [      207,      207,      207  ...       207,      207]
+           Times  = [-70.000 ms,-70.000 ms,-70.000 ms  ... 70.000 ms,70.000 ms]
+           Volts  = [-47.68 nV,-47.68 nV,-47.68 nV  ... -47.68 nV,-47.68 nV]
+
+

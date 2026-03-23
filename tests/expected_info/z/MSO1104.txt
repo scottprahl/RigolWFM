@@ -1,0 +1,26 @@
+    General:
+        File Model   = wfm1000z
+        User Model   = Z
+        Parser Model = wfm1000z
+        Firmware     = 00.04.03.SP2
+        Filename     = MSO1104.wfm
+        Channels     = [1]
+
+     Channel 1:
+         Coupling =       AC
+            Scale =     5.00  V/div
+           Offset =   400.00 mV
+            Probe =      10X
+         Inverted =    False
+
+        Time Base =    1.000 ms/div
+           Offset = -200.000 ps
+            Delta = 1000.000 ns/point
+           Points =  1200512
+
+         Count    = [        1,        2,        3  ...   1200511,  1200512]
+           Raw    = [      174,      175,      176  ...        70,       70]
+           Times  = [-600.256 ms,-600.255 ms,-600.254 ms  ... 600.255 ms,600.256 ms]
+           Volts  = [ 16.35  V, 16.60  V, 16.85  V  ...  -9.65  V, -9.65  V]
+
+

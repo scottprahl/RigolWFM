@@ -1,0 +1,60 @@
+    General:
+        File Model   = wfm1000z
+        User Model   = Z
+        Parser Model = wfm1000z
+        Firmware     = 00.04.04.SP3
+        Filename     = DS1074Z-B.wfm
+        Channels     = [1, 2, 3]
+
+     Channel 1:
+         Coupling =       AC
+            Scale =     1.00 mV/div
+           Offset =     0.00  V
+            Probe =       1X
+         Inverted =    False
+
+        Time Base =    5.000 µs/div
+           Offset =    9.000 ms
+            Delta =    8.000 ns/point
+           Points =  3000128
+
+         Count    = [        1,        2,        3  ...   3000127,  3000128]
+           Raw    = [       93,       93,       93  ...        90,       90]
+           Times  = [-3.001 ms,-3.001 ms,-3.000 ms  ... 21.001 ms,21.001 ms]
+           Volts  = [-700.00 µV,-700.00 µV,-700.00 µV  ... -850.00 µV,-850.00 µV]
+
+     Channel 2:
+         Coupling =       AC
+            Scale =     1.00 mV/div
+           Offset =     0.00  V
+            Probe =       1X
+         Inverted =    False
+
+        Time Base =    5.000 µs/div
+           Offset =    9.000 ms
+            Delta =    8.000 ns/point
+           Points =  3000128
+
+         Count    = [        1,        2,        3  ...   3000127,  3000128]
+           Raw    = [       95,       98,       98  ...       101,      101]
+           Times  = [-3.001 ms,-3.001 ms,-3.000 ms  ... 21.001 ms,21.001 ms]
+           Volts  = [-600.00 µV,-450.00 µV,-450.00 µV  ... -300.00 µV,-300.00 µV]
+
+     Channel 3:
+         Coupling =       AC
+            Scale =     1.00 mV/div
+           Offset =     0.00  V
+            Probe =       1X
+         Inverted =    False
+
+        Time Base =    5.000 µs/div
+           Offset =    9.000 ms
+            Delta =    8.000 ns/point
+           Points =  3000128
+
+         Count    = [        1,        2,        3  ...   3000127,  3000128]
+           Raw    = [       88,       91,       88  ...        87,       85]
+           Times  = [-3.001 ms,-3.001 ms,-3.000 ms  ... 21.001 ms,21.001 ms]
+           Volts  = [-950.00 µV,-800.00 µV,-950.00 µV  ...  -1.00 mV, -1.10 mV]
+
+
