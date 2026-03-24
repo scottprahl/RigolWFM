@@ -103,6 +103,10 @@ types:
         type: f8
       - id: segment_index
         type: u4
+      - id: extra_padding
+        size: header_size - 140
+        if: header_size > 140
+        doc: Reserved extension bytes present in some firmware versions (e.g. MSO5074).
 
   data_header:
     seq:
