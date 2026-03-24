@@ -4,18 +4,14 @@ Changelog
 Unreleased (2026-03-23)
 ------------------------
 *    add Rigol DHO800 and DHO1000 support for both official ``.bin`` exports and proprietary ``.wfm`` captures
-*    add Kaitai Struct descriptions for DHO binary and proprietary formats (``ksy/bindho1000.ksy`` and ``ksy/wfmdho1000.ksy``) plus generated parsers
-*    add handwritten ``RigolWFM.dho`` adapter logic so DHO ``.bin`` and ``.wfm`` files are normalized into the common ``Wfm`` and ``Channel`` interfaces
-*    extend DHO ``.wfm`` decoding for DHO800 differences and DHO1000 multichannel captures, including per-channel calibration and alignment with matching ``.bin`` files
+*    add Kaitai Struct descriptions for DHO binary and proprietary formats
+*    add ``RigolWFM.dho`` adapter logic so DHO ``.bin`` and ``.wfm`` files match ``Wfm`` and ``Channel`` interfaces
+*    extend DHO ``.wfm`` decoding for DHO800 differences and DHO1000 multichannel captures
 *    fail fast on unsupported DHO ``.bin`` buffer types instead of silently misinterpreting non-analog payloads
-*    add DHO1074 and DHO824 fixture files (``.bin``, ``.wfm``, and ``.png``) plus parser, correlation, and integration coverage in ``tests/test_dho1000.py`` and ``tests/test_dho800.py``
+*    add test coverage in ``tests/test_dho1000.py`` and ``tests/test_dho800.py``
 *    add notebooks ``1-DHO1000-Waveforms.ipynb`` and ``1-DHO800-Waveforms.ipynb`` and include the new waveform docs in the notebook test suite
 *    ignore generated parser modules in Ruff and Pylint to keep lint results focused on handwritten code
 *    update README, docs index, Makefile targets, and manifest entries for the new DHO parser and documentation workflow
-*    fix the hardcoded absolute path in ``1-DS1000B-Waveforms.ipynb`` and mark ``1-DS1000E-Waveforms.ipynb`` as ``xfail`` after its external GitHub LFS URL stopped resolving
-
-Unreleased ()
-------------------------
 *    migrate package metadata and dependencies fully into ``pyproject.toml``
 *    switch Makefile workflows to uv-based tooling and shared command wrappers
 *    add consistent ``RM``/``RMR`` cleanup variables and remove hardcoded ``rm`` usage
@@ -25,6 +21,9 @@ Unreleased ()
 *    modernize Read the Docs install/runtime configuration
 *    improve docs configuration and project automation/help targets
 *    fix badges and default branch references
+*    improve testing structure
+
+*    fix the hardcoded absolute path in ``1-DS1000B-Waveforms.ipynb`` and mark ``1-DS1000E-Waveforms.ipynb`` as ``xfail`` after its external GitHub LFS URL stopped resolving
 
 1.0.0 (2023-10-06)
 ------------------------
