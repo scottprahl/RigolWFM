@@ -19,6 +19,7 @@ import requests
 
 import RigolWFM.dho
 import RigolWFM.mso5000
+import RigolWFM.mso7000_8000
 import RigolWFM.wfm1000b
 import RigolWFM.wfm1000c
 import RigolWFM.wfm1000d
@@ -116,6 +117,12 @@ DS6000_scopes = ["6", "6000", "DS6000", "DS6062", "DS6064", "DS6102", "DS6104"]
 # example-backed `.bin` support
 DS5000_scopes = ["5", "5000", "MSO5000"]
 
+# manual-backed `.bin` support
+DS7000_scopes = ["7", "7000", "DS7000", "MSO7000"]
+
+# manual-backed `.bin` support
+DS8000_scopes = ["8", "8000", "MSO8000"]
+
 # DHO800/DHO1000 series (.bin and .wfm - format detected by file extension)
 DHO1000_scopes = [
     "DHO", "DHO800", "DHO1000",
@@ -134,6 +141,8 @@ def valid_scope_list():
     s += ", ".join(DS2000_scopes) + "\n    "
     s += ", ".join(DS4000_scopes) + "\n    "
     s += ", ".join(DS5000_scopes) + "\n    "
+    s += ", ".join(DS7000_scopes) + "\n    "
+    s += ", ".join(DS8000_scopes) + "\n    "
     s += ", ".join(DS6000_scopes) + "\n    "
     s += ", ".join(DHO1000_scopes) + "\n"
     return s
@@ -245,6 +254,14 @@ class Wfm:
         elif umodel in DS5000_scopes:
             w = RigolWFM.mso5000.from_file(file_name)
             new_wfm.header_name = w.header.model_number or "MSO5000"
+
+        elif umodel in DS7000_scopes:
+            w = RigolWFM.mso7000_8000.from_file(file_name)
+            new_wfm.header_name = w.header.model_number or "MSO7000"
+
+        elif umodel in DS8000_scopes:
+            w = RigolWFM.mso7000_8000.from_file(file_name)
+            new_wfm.header_name = w.header.model_number or "MSO8000"
 
         elif umodel in DS6000_scopes:
             w = RigolWFM.wfm6000.Wfm6000.from_file(file_name)

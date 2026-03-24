@@ -162,6 +162,8 @@ class Channel:
             self.ds6000(w, channel_number)
         elif scope == "bin5000":
             self.bin5000(w, channel_number)
+        elif scope == "bin7000_8000":
+            self.bin7000_8000(w, channel_number)
         elif scope == "dho1000":
             self.dho1000(w, channel_number)
 
@@ -456,6 +458,10 @@ class Channel:
             self.raw = raw8
             self.points = len(self.volts)
             self.times = -w.header.x_origin + np.arange(self.points) * w.header.x_increment
+
+    def bin7000_8000(self, w, channel_number):
+        """Interpret normalized waveform data for Rigol 7000/8000 `.bin` files."""
+        self.bin5000(w, channel_number)
 
     def dho1000(self, w, channel_number):
         """Interpret normalized waveform data for the Rigol DHO800/DHO1000 series."""
