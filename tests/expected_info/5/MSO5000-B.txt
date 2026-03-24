@@ -1,0 +1,75 @@
+    General:
+        File Model   = bin5000
+        User Model   = 5
+        Parser Model = bin5000
+        Firmware     = 01
+        Filename     = MSO5000-B.bin
+        Channels     = [1, 2, 3, 4]
+
+     Channel 1:
+         Coupling =  unknown
+            Scale =   426.28 mV/div
+           Offset =     0.00  V
+            Probe =       1X
+         Inverted =    False
+
+        Time Base =   10.000 ms/div
+           Offset =    0.000  s
+            Delta =  100.000 ns/point
+           Points =  1000000
+
+         Count    = [        1,        2,        3  ...    999999,  1000000]
+           Raw    = [      121,      110,      104  ...       156,      150]
+           Times  = [-50.000 ms,-50.000 ms,-50.000 ms  ... 50.000 ms,50.000 ms]
+           Volts  = [  1.71  V,  1.86  V,  1.94  V  ...   1.24  V,  1.32  V]
+
+     Channel 2:
+         Coupling =  unknown
+            Scale =   144.83 mV/div
+           Offset =     0.00  V
+            Probe =       1X
+         Inverted =    False
+
+        Time Base =   10.000 ms/div
+           Offset =    0.000  s
+            Delta =  100.000 ns/point
+           Points =  1000000
+
+         Count    = [        1,        2,        3  ...    999999,  1000000]
+           Raw    = [       26,       26,       26  ...        26,       26]
+           Times  = [-50.000 ms,-50.000 ms,-50.000 ms  ... 50.000 ms,50.000 ms]
+           Volts  = [439.47 mV,439.47 mV,439.47 mV  ... 439.47 mV,439.47 mV]
+
+     Channel 3:
+         Coupling =  unknown
+            Scale =   139.77 mV/div
+           Offset =     0.00  V
+            Probe =       1X
+         Inverted =    False
+
+        Time Base =   10.000 ms/div
+           Offset =    0.000  s
+            Delta =  100.000 ns/point
+           Points =  1000000
+
+         Count    = [        1,        2,        3  ...    999999,  1000000]
+           Raw    = [       18,       18,       18  ...        18,       18]
+           Times  = [-50.000 ms,-50.000 ms,-50.000 ms  ... 50.000 ms,50.000 ms]
+           Volts  = [479.22 mV,479.22 mV,479.22 mV  ... 479.22 mV,479.22 mV]
+
+     Channel 4:
+         Coupling =  unknown
+            Scale =   414.25 mV/div
+           Offset =     0.00  V
+            Probe =       1X
+         Inverted =    False
+
+        Time Base =   10.000 ms/div
+           Offset =    0.000  s
+            Delta =  100.000 ns/point
+           Points =  1000000
+
+         Count    = [        1,        2,        3  ...    999999,  1000000]
+           Raw    = [      109,      103,      103  ...       157,      151]
+           Times  = [-50.000 ms,-50.000 ms,-50.000 ms  ... 50.000 ms,50.000 ms]
+           Volts  = [  1.81  V,  1.89  V,  1.89  V  ...   1.18  V,  1.26  V]

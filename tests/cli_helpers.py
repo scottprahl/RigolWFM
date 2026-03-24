@@ -48,3 +48,10 @@ def assert_wfmconvert_info_snapshot(scope, stem, family):
     expected = Path(__file__).resolve().parent / "expected_info" / family / f"{stem}.txt"
     command = f"wfmconvert {scope} info wfm/{stem}.wfm"
     assert_command_matches_file(command, expected)
+
+
+def assert_wfmconvert_info_snapshot_file(scope, infile, family, stem):
+    """Assert that `wfmconvert <scope> info <infile>` matches a snapshot."""
+    expected = Path(__file__).resolve().parent / "expected_info" / family / f"{stem}.txt"
+    command = f"wfmconvert {scope} info {infile}"
+    assert_command_matches_file(command, expected)

@@ -160,6 +160,8 @@ class Channel:
             self.ds4000(w, channel_number)
         elif scope == "wfm6000":
             self.ds6000(w, channel_number)
+        elif scope == "bin5000":
+            self.bin5000(w, channel_number)
         elif scope == "dho1000":
             self.dho1000(w, channel_number)
 
@@ -430,6 +432,30 @@ class Channel:
             sample_aligned=True,
             memory_depth_points=w.header.storage_depth,
         )
+
+    def bin5000(self, w, channel_number):
+        """Interpret normalized waveform data for Rigol MSO5000 `.bin` files."""
+        self.time_scale = w.header.time_scale
+        self.time_offset = w.header.time_offset
+        self.points = w.header.points
+        self.firmware = w.header.firmware_version
+
+        idx = channel_number - 1
+        ch_data = w.header.channel_data[idx] if idx < len(w.header.channel_data) else None
+        if ch_data is not None and self.enabled_and_selected:
+            self.volts = ch_data.astype(np.float64)
+            raw_data = getattr(w.header, "raw_data", None)
+            if isinstance(raw_data, list):
+                raw8 = raw_data[idx] if idx < len(raw_data) else None
+            else:
+                raw8 = None
+
+            if raw8 is None:
+                raw8 = np.full(self.volts.shape, 127, dtype=np.uint8)
+
+            self.raw = raw8
+            self.points = len(self.volts)
+            self.times = -w.header.x_origin + np.arange(self.points) * w.header.x_increment
 
     def dho1000(self, w, channel_number):
         """Interpret normalized waveform data for the Rigol DHO800/DHO1000 series."""

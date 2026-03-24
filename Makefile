@@ -43,6 +43,7 @@ KSY_FILES       := \
 	ksy/wfm1000z.ksy \
 	ksy/wfm2000.ksy \
 	ksy/wfm4000.ksy \
+	ksy/bin5000.ksy \
 	ksy/wfm6000.ksy \
 	ksy/bindho1000.ksy \
 	ksy/wfmdho1000.ksy
