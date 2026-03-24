@@ -9,6 +9,7 @@ Example:
 
 """
 import os.path
+import sys
 import tempfile
 import urllib.parse
 import wave
@@ -39,7 +40,6 @@ DS1000C_scopes = [
     "1000C",
     "DS1000C",
     "DS1000CD",
-    "DS1000C",
     "DS1000MD",
     "DS1000M",
     "DS1302CA",
@@ -134,6 +134,7 @@ DHO1000_scopes = [
 def valid_scope_list():
     """List all the oscilloscope types."""
     s = "\nRigol oscilloscope models:\n    "
+    s += ", ".join(DS1000B_scopes) + "\n    "
     s += ", ".join(DS1000C_scopes) + "\n    "
     s += ", ".join(DS1000D_scopes) + "\n    "
     s += ", ".join(DS1000E_scopes) + "\n    "
@@ -272,12 +273,10 @@ class Wfm:
             new_wfm.header_name = w.header.model_number or "DHO1000"
 
         else:
-            print("Unknown Rigol oscilloscope type: '%s'" % umodel)
-            print(valid_scope_list())
-            return new_wfm
+            raise Unknown_Scope_Error(f"Unknown Rigol oscilloscope type: '{umodel}'\n{valid_scope_list()}")
 
         new_wfm.user_name = model
-        pname = getattr(w, "parser_name", str(w).split(".")[1])
+        pname = getattr(w, "parser_name", type(w).__module__.rsplit(".", 1)[-1])
         new_wfm.parser_name = pname
 
         # assemble into uniform set of names
@@ -296,10 +295,10 @@ class Wfm:
             new_wfm.channels.append(ch)
 
         if len(new_wfm.channels) == 0:
-            print("Sorry! No channels in the waveform are both selected and enabled")
-            print("    User selected channels = '%s'" % selected)
-            print("    Scope enabled channels = '%s'" % enabled)
-            print()
+            print("Sorry! No channels in the waveform are both selected and enabled", file=sys.stderr)
+            print(f"    User selected channels = '{selected}'", file=sys.stderr)
+            print(f"    Scope enabled channels = '{enabled}'", file=sys.stderr)
+            print(file=sys.stderr)
         else:
             new_wfm.firmware = new_wfm.channels[0].firmware
 
@@ -330,13 +329,9 @@ class Wfm:
 
         try:
             # need a local file for conversion, download url and save as tempfile
-            print("downloading '%s'" % url)
+            print(f"downloading '{url}'", file=sys.stderr)
             r = requests.get(url, allow_redirects=True, timeout=10)
             r.raise_for_status()
-
-            if not r.ok:
-                error_string = "Downloading URL '%s' failed: '%s'" % (url, r.reason)
-                raise Read_WFM_Error(error_string)
 
             with tempfile.NamedTemporaryFile(delete=False) as f:
                 f.write(r.content)
@@ -361,7 +356,7 @@ class Wfm:
     def describe(self):
         """Return a string describing the contents of a Rigol wfm file."""
         s = "    General:\n"
-        s += "        File Model   = %s\n" % self.parser_name
+        s += "        File Model   = %s\n" % self.header_name
         s += "        User Model   = %s\n" % self.user_name
         s += "        Parser Model = %s\n" % self.parser_name
         s += "        Firmware     = %s\n" % self.firmware
@@ -434,8 +429,9 @@ class Wfm:
             s += ",%s%s" % (v_prefix, ch.unit.name.upper())
         s += ",%e,%e\n" % (off, incr)
 
+        times = self.channels[0].times
         for i in range(self.channels[0].points):
-            s += "%.6f" % (ch.times[i] * h_scale)
+            s += "%.6f" % (times[i] * h_scale)
             for ch in self.channels:
                 s += ",%.2f" % (ch.volts[i] * v_scale)
             s += "\n"
@@ -451,9 +447,9 @@ class Wfm:
             s += ",%s (%s)" % (ch.name, ch.unit.name.upper())
         s += "\n"
 
-        ch = self.channels[0]
+        times = self.channels[0].times
         for i in range(self.channels[0].points):
-            s += "%.8f" % (ch.times[i])
+            s += "%.8f" % (times[i])
             for ch in self.channels:
                 s += ",%.2f" % (ch.volts[i])
             s += "\n"
@@ -479,12 +475,10 @@ class Wfm:
 
         sample_rate = 1.0 / self.channels[0].seconds_per_point
 
-        wavef = wave.open(wav_filename, "wb")
-        wavef.setnchannels(n_channels)  # 1 = mono, 2 = stereo
-        wavef.setsampwidth(1)
-        wavef.setframerate(sample_rate)
-        wavef.setcomptype("NONE", "")
-        wavef.setnframes(channel_length)
-
-        wavef.writeframes(out)
-        wavef.close()
+        with wave.open(wav_filename, "wb") as wavef:
+            wavef.setnchannels(n_channels)  # 1 = mono, 2 = stereo
+            wavef.setsampwidth(1)
+            wavef.setframerate(sample_rate)
+            wavef.setcomptype("NONE", "")
+            wavef.setnframes(channel_length)
+            wavef.writeframes(out)

@@ -35,7 +35,7 @@ def csv(args, scope_data, infile):
     csv_name = os.path.splitext(infile)[0] + ".csv"
 
     if os.path.isfile(csv_name) and not args.force:
-        print("'%s' exists, use --force to overwrite" % csv_name)
+        print(f"'{csv_name}' exists, use --force to overwrite")
         return
 
     s = scope_data.csv()
@@ -49,7 +49,7 @@ def vcsv(args, scope_data, infile):
     csv_name = os.path.splitext(infile)[0] + ".csv"
 
     if os.path.isfile(csv_name) and not args.force:
-        print("'%s' exists, use --force to overwrite" % csv_name)
+        print(f"'{csv_name}' exists, use --force to overwrite")
         return
 
     s = scope_data.sigrokcsv()
@@ -62,7 +62,7 @@ def wav(args, scope_data, infile):
     """Create an audible .wav file for use in LTspice."""
     wav_name = os.path.splitext(infile)[0] + ".wav"
     if os.path.isfile(wav_name) and not args.force:
-        print("'%s' exists, use --force to overwrite" % wav_name)
+        print(f"'{wav_name}' exists, use --force to overwrite")
         return
 
     scope_data.wav(wav_name, autoscale=args.autoscale)
@@ -226,15 +226,15 @@ def main():
         print(
             "Channels are identified by number and must be a combination of 1, 2, 3, or 4"
         )
-        print('You used "--channel %s"' % args.channel)
-        sys.exit()
+        print(f'You used "--channel {args.channel}"')
+        sys.exit(1)
 
     if len(selected) > 4:
         print("\nwfmconvert error")
         print("Only 1-2 channel (monophonic) or 3-4 channels (stereo) ", end="")
         print("can be used when creating a .wav file")
-        print('You used "--channel %s"' % args.channel)
-        sys.exit()
+        print(f'You used "--channel {args.channel}"')
+        sys.exit(1)
 
     actionMap = {"info": info, "csv": csv, "wav": wav, "vcsv": vcsv, "sigrok": sigrok}
 
@@ -243,18 +243,16 @@ def main():
             scope_data = RigolWFM.wfm.Wfm.from_file(filename, args.model, selected)
             actionMap[args.action](args, scope_data, filename)
 
-        except RigolWFM.wfm.Parse_WFM_Error as e:
-            print("File contents do not follow the format for", end="", file=sys.stderr)
-            print("for the Rigol Oscilloscope Model %s." % args.model, file=sys.stderr)
-            print(
-                "To help with development, please report this error\n", file=sys.stderr
-            )
-            print(
-                "as an issue to https://github.com/scottprahl/RigolWFM\n",
-                file=sys.stderr,
-            )
+        except RigolWFM.wfm.Unknown_Scope_Error as e:
             print(e, file=sys.stderr)
-            sys.exit()
+            sys.exit(1)
+
+        except RigolWFM.wfm.Parse_WFM_Error as e:
+            print(f"File contents do not follow the format for the Rigol Oscilloscope Model {args.model}.", file=sys.stderr)
+            print("To help with development, please report this error", file=sys.stderr)
+            print("as an issue to https://github.com/scottprahl/RigolWFM\n", file=sys.stderr)
+            print(e, file=sys.stderr)
+            sys.exit(1)
 
 
 if __name__ == "__main__":

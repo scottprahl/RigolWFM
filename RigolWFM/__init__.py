@@ -31,6 +31,6 @@ oscilloscope `.wfm` files.
 __version__ = "1.0.0"
 __author__ = "Scott Prahl"
 __email__ = "scott.prahl@oit.edu"
-__copyright__ = "2020-23, Scott Prahl"
+__copyright__ = "2020-26, Scott Prahl"
 __license__ = "BSD 3-clause"
 __url__ = "https://github.com/scottprahl/RigolWFM.git"
