@@ -392,7 +392,10 @@ class Channel:
             if channel_number == 4:
                 self.raw = np.frombuffer(w.header.raw_4, dtype=np.uint8)
 
-        self.calc_times_and_volts()
+        self.calc_times_and_volts(
+            sample_aligned=True,
+            memory_depth_points=w.header.mem_depth,
+        )
 
     def ds6000(self, w, channel_number):
         """Interpret waveform for the Rigol DS6000 series."""
