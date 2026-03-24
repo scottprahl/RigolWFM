@@ -10,7 +10,7 @@
          Coupling =       DC
             Scale =   200.00 mV/div
            Offset =   336.00 mV
-            Probe =    0.01X
+            Probe =       1X
          Inverted =    False
 
         Time Base =  500.000 µs/div
@@ -27,7 +27,7 @@
          Coupling =       DC
             Scale =   200.00 mV/div
            Offset =  -412.00 mV
-            Probe =    0.01X
+            Probe =       1X
          Inverted =    False
 
         Time Base =  500.000 µs/div

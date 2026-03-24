@@ -102,14 +102,13 @@ class Wfm2000(KaitaiStruct):
 
         def _read(self):
             self.enabled_temp = self._io.read_u1()
-            self.coupling = KaitaiStream.resolve_enum(Wfm2000.CouplingEnum, self._io.read_bits_int_be(2))
-            self.skip_coupling = self._io.read_bits_int_be(6)
+            self.coupling_raw = self._io.read_u1()
             self.bandwidth_limit = KaitaiStream.resolve_enum(Wfm2000.BandwidthEnum, self._io.read_u1())
             self.probe_type = KaitaiStream.resolve_enum(Wfm2000.ProbeTypeEnum, self._io.read_u1())
-            self.probe_ratio = KaitaiStream.resolve_enum(Wfm2000.ProbeRatioEnum, self._io.read_u1())
+            self.probe_ratio_raw = KaitaiStream.resolve_enum(Wfm2000.ProbeRatioEnum, self._io.read_u1())
             self.probe_diff = KaitaiStream.resolve_enum(Wfm2000.ProbeEnum, self._io.read_u1())
             self.probe_signal = KaitaiStream.resolve_enum(Wfm2000.ProbeEnum, self._io.read_u1())
-            self.probe_impedance = KaitaiStream.resolve_enum(Wfm2000.ImpedanceEnum, self._io.read_u1())
+            self.probe_impedance_raw = KaitaiStream.resolve_enum(Wfm2000.ImpedanceEnum, self._io.read_u1())
             self.volt_per_division = self._io.read_f4le()
             self.volt_offset = self._io.read_f4le()
             self.inverted_temp = self._io.read_u1()
@@ -122,6 +121,14 @@ class Wfm2000(KaitaiStruct):
 
         def _fetch_instances(self):
             pass
+
+        @property
+        def coupling(self):
+            if hasattr(self, '_m_coupling'):
+                return self._m_coupling
+
+            self._m_coupling = (Wfm2000.CouplingEnum.dc if self.coupling_raw >> 6 == 0 else (Wfm2000.CouplingEnum.ac if self.coupling_raw >> 6 == 1 else Wfm2000.CouplingEnum.gnd))
+            return getattr(self, '_m_coupling', None)
 
         @property
         def enabled(self):
@@ -144,8 +151,37 @@ class Wfm2000(KaitaiStruct):
             if hasattr(self, '_m_inverted_actual'):
                 return self._m_inverted_actual
 
-            self._m_inverted_actual = (self.inverted_temp if self.enabled_temp == 1 else self.unit_temp)
+            self._m_inverted_actual = (self.inverted_temp if self.legacy_vertical_layout else self.unit_temp)
             return getattr(self, '_m_inverted_actual', None)
+
+        @property
+        def legacy_vertical_layout(self):
+            """The older DS2000 captures in this repo store invert/unit in the
+            documented order when bChanEn is 1.  The DS2072A captures instead
+            store unit first and use zeroed probe fields, so a small compatibility
+            shim is needed to recover the visible settings.
+            """
+            if hasattr(self, '_m_legacy_vertical_layout'):
+                return self._m_legacy_vertical_layout
+
+            self._m_legacy_vertical_layout = (True if self.enabled_temp == 1 else False)
+            return getattr(self, '_m_legacy_vertical_layout', None)
+
+        @property
+        def probe_impedance(self):
+            if hasattr(self, '_m_probe_impedance'):
+                return self._m_probe_impedance
+
+            self._m_probe_impedance = (Wfm2000.ImpedanceEnum.ohm_1meg if  (((not (self.legacy_vertical_layout))) and (self.probe_ratio_raw == Wfm2000.ProbeRatioEnum.x0_01) and (self.probe_impedance_raw == Wfm2000.ImpedanceEnum.ohm_50))  else self.probe_impedance_raw)
+            return getattr(self, '_m_probe_impedance', None)
+
+        @property
+        def probe_ratio(self):
+            if hasattr(self, '_m_probe_ratio'):
+                return self._m_probe_ratio
+
+            self._m_probe_ratio = (Wfm2000.ProbeRatioEnum.x1 if  (((not (self.legacy_vertical_layout))) and (self.probe_ratio_raw == Wfm2000.ProbeRatioEnum.x0_01) and (self.probe_impedance_raw == Wfm2000.ImpedanceEnum.ohm_50))  else self.probe_ratio_raw)
+            return getattr(self, '_m_probe_ratio', None)
 
         @property
         def probe_value(self):
@@ -168,7 +204,7 @@ class Wfm2000(KaitaiStruct):
             if hasattr(self, '_m_unit_actual'):
                 return self._m_unit_actual
 
-            self._m_unit_actual = (self.unit_temp if self.enabled_temp == 1 else self.inverted_temp)
+            self._m_unit_actual = (self.unit_temp if self.legacy_vertical_layout else self.inverted_temp)
             return getattr(self, '_m_unit_actual', None)
 
         @property
@@ -371,7 +407,7 @@ class Wfm2000(KaitaiStruct):
             if hasattr(self, '_m_points'):
                 return self._m_points
 
-            self._m_points = self.mem_depth
+            self._m_points = self.wfm_len
             return getattr(self, '_m_points', None)
 
         @property
@@ -382,7 +418,7 @@ class Wfm2000(KaitaiStruct):
             if self.channel_offset[0] > 0:
                 pass
                 _pos = self._io.pos()
-                self._io.seek(self.channel_offset[0])
+                self._io.seek(self.channel_offset[0] + self.z_pt_offset)
                 self._m_raw_1 = self._io.read_bytes(self.len_raw_1)
                 self._io.seek(_pos)
 
@@ -396,7 +432,7 @@ class Wfm2000(KaitaiStruct):
             if self.channel_offset[1] > 0:
                 pass
                 _pos = self._io.pos()
-                self._io.seek(self.channel_offset[1])
+                self._io.seek(self.channel_offset[1] + self.z_pt_offset)
                 self._m_raw_2 = self._io.read_bytes(self.len_raw_2)
                 self._io.seek(_pos)
 
@@ -410,7 +446,7 @@ class Wfm2000(KaitaiStruct):
             if self.channel_offset[2] > 0:
                 pass
                 _pos = self._io.pos()
-                self._io.seek(self.channel_offset[2])
+                self._io.seek(self.channel_offset[2] + self.z_pt_offset)
                 self._m_raw_3 = self._io.read_bytes(self.len_raw_3)
                 self._io.seek(_pos)
 
@@ -424,7 +460,7 @@ class Wfm2000(KaitaiStruct):
             if self.channel_offset[3] > 0:
                 pass
                 _pos = self._io.pos()
-                self._io.seek(self.channel_offset[3])
+                self._io.seek(self.channel_offset[3] + self.z_pt_offset)
                 self._m_raw_4 = self._io.read_bytes(self.len_raw_4)
                 self._io.seek(_pos)
 
@@ -435,7 +471,7 @@ class Wfm2000(KaitaiStruct):
             if hasattr(self, '_m_raw_depth'):
                 return self._m_raw_depth
 
-            self._m_raw_depth = (self.storage_depth // 2 if self.enabled.interwoven else self.storage_depth)
+            self._m_raw_depth = (self.wfm_len // 2 if self.enabled.interwoven else self.wfm_len)
             return getattr(self, '_m_raw_depth', None)
 
         @property

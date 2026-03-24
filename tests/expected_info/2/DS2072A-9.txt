@@ -10,7 +10,7 @@
          Coupling =       DC
             Scale =     2.00  V/div
            Offset =     0.00  V
-            Probe =    0.01X
+            Probe =       1X
          Inverted =    False
 
         Time Base =  500.000 µs/div
@@ -20,7 +20,7 @@
 
          Count    = [        1,        2,        3  ...     13999,    14000]
            Raw    = [      110,      111,      111  ...       146,      146]
-           Times  = [-3.500 ms,-3.499 ms,-3.499 ms  ...  3.499 ms, 3.500 ms]
+           Times  = [-3.500 ms,-3.499 ms,-3.499 ms  ...  3.499 ms, 3.499 ms]
            Volts  = [ -1.36  V, -1.28  V, -1.28  V  ...   1.52  V,  1.52  V]
 
 

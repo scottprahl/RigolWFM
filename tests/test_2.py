@@ -1,6 +1,12 @@
 """Snapshot tests for Rigol 2000-family `wfmconvert info` output."""
 
+import re
+import struct
+from pathlib import Path
+
 import pytest
+import RigolWFM.wfm
+import RigolWFM.wfm2000
 
 from tests.cli_helpers import assert_wfmconvert_info_snapshot
 
@@ -18,8 +24,164 @@ _2_INFO_CASES = [
     "DS2000-B",
 ]
 
+_2_TXT_CASES = [
+    "DS2072A-1",
+    "DS2072A-2",
+    "DS2072A-3",
+    "DS2072A-4",
+    "DS2072A-5",
+    "DS2072A-6",
+    "DS2072A-7",
+    "DS2072A-8",
+    "DS2072A-9",
+]
+
+_WFMINFO_OFFSET = 56
+_STORAGE_DEPTH_OFFSET = _WFMINFO_OFFSET + 188
+_Z_PT_OFFSET_OFFSET = _WFMINFO_OFFSET + 192
+_WFM_LEN_OFFSET = _WFMINFO_OFFSET + 196
+
+
+def _read_scope_metadata(stem):
+    """Return CH1/CH2 metadata extracted from a DS2000 scope text export."""
+    text = (Path("wfm") / f"{stem}.txt").read_text(encoding="utf-8", errors="ignore")
+    metadata = {}
+    for channel_number in (1, 2):
+        match = re.search(
+            (
+                rf"CH{channel_number}:(On|Off)\n"
+                rf".*?Coupling:(?P<coupling>[^\n]+)\n"
+                rf"Invert:(?P<invert>[^\n]+)\n"
+                rf"Bandwidth Limit:(?P<bandwidth>[^\n]+)\n"
+                rf"Probe Ratio:(?P<probe>[^\n]+)\n"
+                rf"Impedance:(?P<impedance>[^\n]+)\n"
+                rf"Unit:(?P<unit>[^\n]+)\n"
+            ),
+            text,
+            re.S,
+        )
+        if match:
+            metadata[channel_number] = {
+                "enabled": match.group(1) == "On",
+                "coupling": match.group("coupling"),
+                "invert": match.group("invert") == "On",
+                "probe": float(match.group("probe").rstrip("X")),
+                "impedance": match.group("impedance"),
+                "unit": match.group("unit"),
+            }
+    return metadata
+
+
+def _patch_u32(data, offset, value):
+    """Write a little-endian u32 value into a mutable buffer."""
+    struct.pack_into("<I", data, offset, value)
+
 
 @pytest.mark.parametrize("stem", _2_INFO_CASES)
 def test_wfmconvert_2_info_matches_snapshot(stem):
     """`wfmconvert 2 info` should match the checked-in snapshot output."""
     assert_wfmconvert_info_snapshot("2", stem, "2")
+
+
+@pytest.mark.parametrize("stem", _2_INFO_CASES)
+def test_ds2000_time_grid_matches_sample_period(stem):
+    """Adjacent DS2000 timestamps should match the reported sample period."""
+    waveform = RigolWFM.wfm.Wfm.from_file(f"wfm/{stem}.wfm", "2")
+    for channel in waveform.channels:
+        if channel.enabled:
+            assert channel.times[1] - channel.times[0] == pytest.approx(
+                channel.seconds_per_point
+            )
+
+
+@pytest.mark.parametrize("stem", _2_TXT_CASES)
+def test_ds2000_parser_matches_scope_metadata(stem):
+    """Low-level DS2000 metadata should match the sidecar scope export."""
+    waveform = RigolWFM.wfm2000.Wfm2000.from_file(f"wfm/{stem}.wfm")
+    metadata = _read_scope_metadata(stem)
+
+    impedance_map = {"50": "ohm_50", "1M": "ohm_1meg"}
+    unit_map = {"W": 0, "A": 1, "V": 2, "U": 3}
+
+    for channel_number, expected in metadata.items():
+        channel = waveform.header.ch[channel_number - 1]
+        assert channel.enabled == expected["enabled"]
+        assert channel.coupling.name.upper() == expected["coupling"]
+        assert channel.inverted == expected["invert"]
+        assert channel.probe_value == pytest.approx(expected["probe"])
+        assert channel.probe_impedance.name == impedance_map[expected["impedance"]]
+        assert channel.unit_actual == unit_map[expected["unit"]]
+
+
+def test_ds2000_windowed_data_uses_effective_length_and_offset(tmp_path):
+    """Windowed non-interwoven DS2000 data should honor `z_pt_offset` and `wfm_len`."""
+    source = Path("wfm/DS2000-A.wfm")
+    original = RigolWFM.wfm2000.Wfm2000.from_file(str(source))
+    data = bytearray(source.read_bytes())
+    z_pt_offset = 100
+    wfm_len = 700
+
+    _patch_u32(data, _Z_PT_OFFSET_OFFSET, z_pt_offset)
+    _patch_u32(data, _WFM_LEN_OFFSET, wfm_len)
+
+    path = tmp_path / "windowed-ds2000.wfm"
+    path.write_bytes(data)
+
+    patched = RigolWFM.wfm2000.Wfm2000.from_file(str(path))
+    assert patched.header.points == wfm_len
+    assert len(patched.header.raw_1) == wfm_len
+    assert len(patched.header.raw_2) == wfm_len
+    assert patched.header.raw_1[0] == original.header.raw_1[z_pt_offset]
+    assert patched.header.raw_2[0] == original.header.raw_2[z_pt_offset]
+
+    waveform = RigolWFM.wfm.Wfm.from_file(str(path), "2")
+    channel = waveform.channels[0]
+    expected_start = (
+        original.header.time_offset
+        - original.header.storage_depth * original.header.seconds_per_point / 2
+        + z_pt_offset * original.header.seconds_per_point
+    )
+    assert channel.points == wfm_len
+    assert channel.raw[0] == original.header.raw_1[z_pt_offset]
+    assert channel.times[0] == pytest.approx(expected_start)
+    assert channel.times[1] - channel.times[0] == pytest.approx(
+        original.header.seconds_per_point
+    )
+
+
+def test_ds2000_interwoven_data_uses_effective_half_windows(tmp_path):
+    """Interwoven DS2000 data should read half windows and interleave them."""
+    source = Path("wfm/DS2072A-6.wfm")
+    original = RigolWFM.wfm2000.Wfm2000.from_file(str(source))
+    data = bytearray(source.read_bytes())
+    z_pt_offset = 50
+    wfm_len = 1400
+
+    _patch_u32(data, _STORAGE_DEPTH_OFFSET, original.header.storage_depth)
+    _patch_u32(data, _Z_PT_OFFSET_OFFSET, z_pt_offset)
+    _patch_u32(data, _WFM_LEN_OFFSET, wfm_len)
+
+    path = tmp_path / "windowed-ds2072a-6.wfm"
+    path.write_bytes(data)
+
+    patched = RigolWFM.wfm2000.Wfm2000.from_file(str(path))
+    assert patched.header.points == wfm_len
+    assert len(patched.header.raw_1) == wfm_len // 2
+    assert len(patched.header.raw_2) == wfm_len // 2
+    assert patched.header.raw_1[0] == original.header.raw_1[z_pt_offset]
+    assert patched.header.raw_2[0] == original.header.raw_2[z_pt_offset]
+
+    waveform = RigolWFM.wfm.Wfm.from_file(str(path), "2")
+    channel = next(ch for ch in waveform.channels if ch.enabled)
+    expected_start = (
+        original.header.time_offset
+        - original.header.storage_depth * original.header.seconds_per_point / 2
+        + z_pt_offset * original.header.seconds_per_point
+    )
+    assert channel.points == wfm_len
+    assert channel.raw[0] == original.header.raw_1[z_pt_offset]
+    assert channel.raw[1] == original.header.raw_2[z_pt_offset]
+    assert channel.times[0] == pytest.approx(expected_start)
+    assert channel.times[1] - channel.times[0] == pytest.approx(
+        original.header.seconds_per_point
+    )

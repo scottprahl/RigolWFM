@@ -326,9 +326,12 @@ class Channel:
 
     def ds2000(self, w, channel_number):
         """Interpret waveform for the Rigol DS2000 series."""
-        self.time_offset = w.header.time_offset
+        self.time_offset = (
+            w.header.time_offset
+            + w.header.z_pt_offset * w.header.seconds_per_point
+        )
         self.time_scale = w.header.time_scale
-        self.points = w.header.storage_depth
+        self.points = w.header.points
         self.firmware = w.header.firmware_version
         self.unit = UnitEnum(w.header.ch[channel_number - 1].unit_actual)
         self.coupling = w.header.ch[channel_number - 1].coupling.name.upper()
@@ -348,19 +351,23 @@ class Channel:
             if channel_number == 4:
                 self.raw = np.frombuffer(w.header.raw_4, dtype=np.uint8)
 
-        elif w.header.enabled.interwoven:
+        elif self.enabled_and_selected and w.header.enabled.interwoven:
             # 'Interwoven' wave captures use the memory available to all channels
             # to sample at a higher resolution.  This means if CH1 is disabled
             # CH2 will use the memory from CH1.
-            self.raw = np.empty((self.points,), dtype=np.uint8)
-            self.raw[0::2] = np.frombuffer(
-                w.header.raw_1, count=self.points // 2, dtype=np.uint8
-            )
-            self.raw[1::2] = np.frombuffer(
-                w.header.raw_2, count=self.points // 2, dtype=np.uint8
-            )
+            raw_a = np.frombuffer(w.header.raw_1, dtype=np.uint8)
+            raw_b = np.frombuffer(w.header.raw_2, dtype=np.uint8)
+            self.raw = np.empty((len(raw_a) + len(raw_b),), dtype=np.uint8)
+            self.raw[0::2] = raw_a
+            self.raw[1::2] = raw_b
 
-        self.calc_times_and_volts()
+        if self.enabled_and_selected:
+            self.points = len(self.raw)
+
+        self.calc_times_and_volts(
+            sample_aligned=True,
+            memory_depth_points=w.header.storage_depth,
+        )
 
     def ds4000(self, w, channel_number):
         """Interpret waveform for the Rigol DS4000 series."""

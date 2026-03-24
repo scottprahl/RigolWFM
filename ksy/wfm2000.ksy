@@ -225,10 +225,10 @@ types:
       time_offset:
         value: 1.0e-12 * time_offset_ps
       points:
-        value: mem_depth
+        value: wfm_len
 
       raw_depth:
-        value: 'enabled.interwoven ? storage_depth/2 : storage_depth'
+        value: 'enabled.interwoven ? wfm_len/2 : wfm_len'
 
       len_raw_1:
         value: "channel_offset[0] > 0 ? raw_depth : 0"
@@ -240,22 +240,22 @@ types:
         value: "channel_offset[3] > 0 ? raw_depth : 0"
 
       raw_1:
-        pos: channel_offset[0]
+        pos: channel_offset[0] + z_pt_offset
         size: len_raw_1
         if: channel_offset[0] > 0
 
       raw_2:
-        pos: channel_offset[1]
+        pos: channel_offset[1] + z_pt_offset
         size: len_raw_2
         if: channel_offset[1] > 0
 
       raw_3:
-        pos: channel_offset[2]
+        pos: channel_offset[2] + z_pt_offset
         size: len_raw_3
         if: channel_offset[2] > 0
 
       raw_4:
-        pos: channel_offset[3]
+        pos: channel_offset[3] + z_pt_offset
         size: len_raw_4
         if: channel_offset[3] > 0
 
@@ -264,13 +264,16 @@ types:
     seq:
       - id: enabled_temp
         type: u1
+        doc: |
+          Older DS2000 captures use 1 for enabled channels.  The shipped
+          DS2072A fixtures use 8 instead, so the parser treats any non-zero
+          value as enabled.
 
-      - id: coupling
-        type: b2
-        enum: coupling_enum
-
-      - id: skip_coupling
-        type: b6
+      - id: coupling_raw
+        type: u1
+        doc: |
+          The format note documents this as a byte, but the newer DS2072A
+          captures only use the upper bits for the published coupling mode.
 
       - id: bandwidth_limit
         type: u1
@@ -280,7 +283,7 @@ types:
         type: u1
         enum: probe_type_enum
 
-      - id: probe_ratio
+      - id: probe_ratio_raw
         type: u1
         enum: probe_ratio_enum
 
@@ -292,7 +295,7 @@ types:
         type: u1
         enum: probe_enum
 
-      - id: probe_impedance
+      - id: probe_impedance_raw
         type: u1
         enum: impedance_enum
 
@@ -324,6 +327,19 @@ types:
       enabled:
         value: "enabled_temp != 0 ? true : false"
 
+      coupling:
+        value: "((coupling_raw >> 6) == 0 ? coupling_enum::dc :
+                (coupling_raw >> 6) == 1 ? coupling_enum::ac :
+                coupling_enum::gnd)"
+
+      legacy_vertical_layout:
+        doc: |
+          The older DS2000 captures in this repo store invert/unit in the
+          documented order when bChanEn is 1.  The DS2072A captures instead
+          store unit first and use zeroed probe fields, so a small compatibility
+          shim is needed to recover the visible settings.
+        value: "enabled_temp == 1 ? true : false"
+
       probe_value:
         value: "(probe_ratio == probe_ratio_enum::x0_01 ? 0.01 :
                  probe_ratio == probe_ratio_enum::x0_02 ? 0.02 :
@@ -341,11 +357,23 @@ types:
                  probe_ratio == probe_ratio_enum::x200 ? 200.0 :
                  probe_ratio == probe_ratio_enum::x500 ? 500.0 : 1000.0)"
 
+      probe_ratio:
+        value: "((not legacy_vertical_layout) and
+                 probe_ratio_raw == probe_ratio_enum::x0_01 and
+                 probe_impedance_raw == impedance_enum::ohm_50) ?
+                 probe_ratio_enum::x1 : probe_ratio_raw"
+
+      probe_impedance:
+        value: "((not legacy_vertical_layout) and
+                 probe_ratio_raw == probe_ratio_enum::x0_01 and
+                 probe_impedance_raw == impedance_enum::ohm_50) ?
+                 impedance_enum::ohm_1meg : probe_impedance_raw"
+
       inverted_actual:
-        value: "enabled_temp == 1 ? inverted_temp : unit_temp"
+        value: "legacy_vertical_layout ? inverted_temp : unit_temp"
 
       unit_actual:
-        value: "enabled_temp == 1 ? unit_temp : inverted_temp"
+        value: "legacy_vertical_layout ? unit_temp : inverted_temp"
 
       inverted:
         value: "inverted_actual == 1 ? true : false"
