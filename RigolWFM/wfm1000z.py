@@ -78,6 +78,11 @@ class Wfm1000z(KaitaiStruct):
             pass
             self._m_header._fetch_instances()
 
+        _ = self.horizontal
+        if hasattr(self, '_m_horizontal'):
+            pass
+            self._m_horizontal._fetch_instances()
+
         _ = self.preheader
         if hasattr(self, '_m_preheader'):
             pass
@@ -252,6 +257,94 @@ class Wfm1000z(KaitaiStruct):
 
         def _fetch_instances(self):
             pass
+
+
+    class HorizontalBlock(KaitaiStruct):
+        """The DS1000Z horizontal metadata block contains a duplicated 64-byte table
+        of normalized channel settings at offsets 0x000 and 0x1c0.  These values
+        mirror the float scale/shift fields from the waveform header after
+        applying a 10/probe normalization; they do not appear to be separate
+        calibration data.
+        """
+        def __init__(self, _io, _parent=None, _root=None):
+            super(Wfm1000z.HorizontalBlock, self).__init__(_io)
+            self._parent = _parent
+            self._root = _root
+            self._read()
+
+        def _read(self):
+            self.raw = self._io.read_bytes_full()
+
+
+        def _fetch_instances(self):
+            pass
+            _ = self.normalized_a
+            if hasattr(self, '_m_normalized_a'):
+                pass
+                self._m_normalized_a._fetch_instances()
+
+            _ = self.normalized_b
+            if hasattr(self, '_m_normalized_b'):
+                pass
+                self._m_normalized_b._fetch_instances()
+
+
+        @property
+        def normalized_a(self):
+            if hasattr(self, '_m_normalized_a'):
+                return self._m_normalized_a
+
+            _pos = self._io.pos()
+            self._io.seek(0)
+            self._m_normalized_a = Wfm1000z.NormalizedChannelTable(self._io, self, self._root)
+            self._io.seek(_pos)
+            return getattr(self, '_m_normalized_a', None)
+
+        @property
+        def normalized_b(self):
+            if hasattr(self, '_m_normalized_b'):
+                return self._m_normalized_b
+
+            _pos = self._io.pos()
+            self._io.seek(448)
+            self._m_normalized_b = Wfm1000z.NormalizedChannelTable(self._io, self, self._root)
+            self._io.seek(_pos)
+            return getattr(self, '_m_normalized_b', None)
+
+
+    class NormalizedChannelTable(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            super(Wfm1000z.NormalizedChannelTable, self).__init__(_io)
+            self._parent = _parent
+            self._root = _root
+            self._read()
+
+        def _read(self):
+            self.range_norm = []
+            for i in range(4):
+                self.range_norm.append(self._io.read_u4le())
+
+            self.shift_norm = []
+            for i in range(4):
+                self.shift_norm.append(self._io.read_s8le())
+
+            self.enabled_norm = []
+            for i in range(4):
+                self.enabled_norm.append(self._io.read_u4le())
+
+
+
+        def _fetch_instances(self):
+            pass
+            for i in range(len(self.range_norm)):
+                pass
+
+            for i in range(len(self.shift_norm)):
+                pass
+
+            for i in range(len(self.enabled_norm)):
+                pass
+
 
 
     class RawData(KaitaiStruct):
@@ -443,6 +536,19 @@ class Wfm1000z(KaitaiStruct):
         self._m_header = Wfm1000z.WfmHeader(self._io, self, self._root)
         self._io.seek(_pos)
         return getattr(self, '_m_header', None)
+
+    @property
+    def horizontal(self):
+        if hasattr(self, '_m_horizontal'):
+            return self._m_horizontal
+
+        _pos = self._io.pos()
+        self._io.seek(self._root.header.horizontal_offset)
+        self._raw__m_horizontal = self._io.read_bytes(self._root.header.horizontal_size)
+        _io__raw__m_horizontal = KaitaiStream(BytesIO(self._raw__m_horizontal))
+        self._m_horizontal = Wfm1000z.HorizontalBlock(_io__raw__m_horizontal, self, self._root)
+        self._io.seek(_pos)
+        return getattr(self, '_m_horizontal', None)
 
     @property
     def preheader(self):

@@ -14,6 +14,10 @@ instances:
   header:
     pos: 64
     type: wfm_header
+  horizontal:
+    pos: _root.header.horizontal_offset
+    size: _root.header.horizontal_size
+    type: horizontal_block
   data:
     pos: _root.header.horizontal_offset + _root.header.horizontal_size
     type: raw_data
@@ -249,6 +253,39 @@ types:
         encoding: UTF-8
       - id: unknown_5
         size: 10
+
+  horizontal_block:
+    doc: |
+      The DS1000Z horizontal metadata block contains a duplicated 64-byte table
+      of normalized channel settings at offsets 0x000 and 0x1c0.  These values
+      mirror the float scale/shift fields from the waveform header after
+      applying a 10/probe normalization; they do not appear to be separate
+      calibration data.
+    seq:
+      - id: raw
+        size-eos: true
+    instances:
+      normalized_a:
+        pos: 0
+        type: normalized_channel_table
+      normalized_b:
+        pos: 448
+        type: normalized_channel_table
+
+  normalized_channel_table:
+    seq:
+      - id: range_norm
+        type: u4
+        repeat: expr
+        repeat-expr: 4
+      - id: shift_norm
+        type: s8
+        repeat: expr
+        repeat-expr: 4
+      - id: enabled_norm
+        type: u4
+        repeat: expr
+        repeat-expr: 4
 
   raw_data:
     seq:

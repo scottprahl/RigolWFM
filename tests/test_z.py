@@ -23,6 +23,18 @@ _Z_SP3_CSV_CASES = [
     ("DS1054Z-ch1SquareCH4Uart", (1, 4)),
 ]
 
+_Z_SP4_CSV_CASES = [
+    ("DS1054Z-A", 1),
+    ("DS1054Z-A", 2),
+    ("DS1054Z-A", 3),
+    ("DS1054Z-B", 1),
+    ("DS1054Z-B", 2),
+    ("DS1054Z-B", 3),
+    ("DS1054Z-B", 4),
+    ("DS1054Z-C", 1),
+    ("DS1054Z-C", 3),
+]
+
 _Z_WAVEFORM_CASES = _Z_INFO_CASES + [stem for stem, _channels in _Z_SP3_CSV_CASES]
 
 
@@ -50,6 +62,16 @@ def _center_crop(values, count):
     extra = len(values) - count
     start = max(extra // 2, 0)
     return values[start : start + count]
+
+
+def _sorted_voltage_error(actual, expected):
+    """Return sorted-voltage error statistics for two same-length traces."""
+    delta = np.sort(actual) - np.sort(expected)
+    return {
+        "mean": float(np.mean(delta)),
+        "rms": float(np.sqrt(np.mean(delta**2))),
+        "max": float(np.max(np.abs(delta))),
+    }
 
 
 @pytest.mark.parametrize("stem", _Z_INFO_CASES)
@@ -83,6 +105,28 @@ def test_ds1000z_parser_tracks_documented_display_fields(stem):
     assert data_pos + len(waveform.data.raw) == path.stat().st_size
 
 
+@pytest.mark.parametrize("stem", _Z_WAVEFORM_CASES)
+def test_ds1000z_horizontal_normalized_table_matches_header(stem):
+    """The duplicated horizontal table should mirror header scale/shift values."""
+    path = Path("wfm") / f"{stem}.wfm"
+    waveform = RigolWFM.wfm1000z.Wfm1000z.from_file(str(path))
+    normalized_a = waveform.horizontal.normalized_a
+    normalized_b = waveform.horizontal.normalized_b
+
+    assert normalized_a.range_norm == normalized_b.range_norm
+    assert normalized_a.shift_norm == normalized_b.shift_norm
+    assert normalized_a.enabled_norm == normalized_b.enabled_norm
+
+    for index, channel in enumerate(waveform.header.ch):
+        normalization = 10.0 / channel.probe_value
+        expected_range = channel.scale * 100000.0 * normalization
+        expected_shift = channel.shift * 100000.0 * normalization
+
+        assert normalized_a.range_norm[index] == pytest.approx(expected_range, abs=1.0)
+        assert normalized_a.shift_norm[index] == pytest.approx(expected_shift, abs=1.0)
+        assert normalized_a.enabled_norm[index] == int(channel.enabled)
+
+
 @pytest.mark.parametrize("stem, channels", _Z_SP3_CSV_CASES)
 def test_ds1000z_sp3_two_channel_levels_match_csv(stem, channels):
     """SP3 two-channel DS1000Z captures should match CSV DC levels."""
@@ -102,3 +146,27 @@ def test_ds1000z_sp3_two_channel_levels_match_csv(stem, channels):
         expected = expected_channels[channel_number]
         level_error = float(np.mean(actual[:1000] - expected[:1000]))
         assert abs(level_error) < 0.06
+
+
+@pytest.mark.parametrize("stem, channel_number", _Z_SP4_CSV_CASES)
+def test_ds1000z_sp4_voltage_distribution_matches_csv(stem, channel_number):
+    """Selected SP4 Rigol CSV fixtures should agree with the parsed voltages."""
+    waveform = RigolWFM.wfm.Wfm.from_file(f"wfm/{stem}.wfm", "Z")
+    actual_channels = {
+        channel.channel_number: channel
+        for channel in waveform.channels
+        if channel.enabled
+    }
+    expected_channels = _read_csv_channels(stem)
+
+    count = min(
+        len(actual_channels[channel_number].volts),
+        len(expected_channels[channel_number]),
+    )
+    actual = _center_crop(actual_channels[channel_number].volts, count)
+    expected = _center_crop(expected_channels[channel_number], count)
+    stats = _sorted_voltage_error(actual, expected)
+
+    assert abs(stats["mean"]) < 0.4
+    assert stats["rms"] < 0.5
+    assert stats["max"] < 0.6
