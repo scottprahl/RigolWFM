@@ -200,7 +200,7 @@ def _parse_blocks(data, file_header_size=_DHO_FILE_HEADER_SIZE):
 
         raw_content = block.content_raw[:block.comp_size]
         blocks.append((block, _try_decompress(raw_content), offset))
-        offset += _DHO_BLOCK_HEADER_SIZE + block.padded_size
+        offset += _DHO_BLOCK_HEADER_SIZE + block.len_content_raw
 
     return blocks, offset
 

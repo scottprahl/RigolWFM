@@ -14,10 +14,10 @@ doc: |
     [Data section:     variable  - 40-byte header + uint16 ADC samples]
 
   ---- Metadata blocks ----
-  Each block has a 12-byte header (six u16 LE fields) followed by padded_size
+  Each block has a 12-byte header (six u16 LE fields) followed by len_content_raw
   bytes of content.  When comp_size < decomp_size the content bytes
   [0 .. comp_size-1] are zlib-compressed; the remainder is zero padding.
-  Blocks are read until a terminator block where padded_size == 0.
+  Blocks are read until a terminator block where len_content_raw == 0.
 
   Key blocks (identified by block_id and block_type):
     block_id=1..4, block_type=9  (~88-96 bytes decompressed)
@@ -66,7 +66,7 @@ seq:
   - id: blocks
     type: block
     repeat: until
-    repeat-until: _.padded_size == 0 and _.comp_size == 0
+    repeat-until: _.len_content_raw == 0 and _.comp_size == 0
     doc: Metadata blocks terminated by an all-zero block header.
 
 types:
@@ -81,7 +81,7 @@ types:
 
   block:
     doc: |
-      One metadata block.  A block with padded_size == 0 and comp_size == 0
+      One metadata block.  A block with len_content_raw == 0 and comp_size == 0
       signals the end of the metadata region.
     seq:
       - id: block_id
@@ -104,7 +104,7 @@ types:
         doc: |
           Compressed content size in bytes.
           Equal to decomp_size when content is stored verbatim (not compressed).
-      - id: padded_size
+      - id: len_content_raw
         type: u2
         doc: |
           Total bytes consumed in the file for this block's content
@@ -114,11 +114,11 @@ types:
         type: u2
         doc: Always 0.
       - id: content_raw
-        size: padded_size
+        size: len_content_raw
         doc: |
           Block content bytes.  The first comp_size bytes hold the payload
           (zlib-compressed when comp_size != decomp_size; verbatim otherwise).
-          Remaining bytes (padded_size - comp_size) are zero padding.
+          Remaining bytes (len_content_raw - comp_size) are zero padding.
     instances:
       is_channel_params:
         value: block_type == block_type_enum::channel_params and block_id >= 1 and block_id <= 4
@@ -133,7 +133,7 @@ types:
           Decompressed content bytes [36..39] hold an int32 LE voltage centre
           value: v_center = i32 / 1e8.
       is_terminator:
-        value: padded_size == 0 and comp_size == 0
+        value: len_content_raw == 0 and comp_size == 0
         doc: True for the sentinel block that ends the metadata region.
 
   dho1000_channel_params:

@@ -108,7 +108,7 @@ dist:
 	$(RUN) python -m build
 
 .PHONY: html
-html:
+html: $(PYTHON_PARSERS)
 	@mkdir -p "$(HTML_DIR)"
 	$(RUN_DOCS) sphinx-build $(SPHINX_OPTS) "$(DOCS_DIR)" "$(HTML_DIR)"
 	@command -v open >/dev/null 2>&1 && open "$(HTML_DIR)/index.html" || true

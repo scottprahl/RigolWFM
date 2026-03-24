@@ -20,10 +20,10 @@ class Wfmdho1000(KaitaiStruct):
       [Data section:     variable  - 40-byte header + uint16 ADC samples]
     
     ---- Metadata blocks ----
-    Each block has a 12-byte header (six u16 LE fields) followed by padded_size
+    Each block has a 12-byte header (six u16 LE fields) followed by len_content_raw
     bytes of content.  When comp_size < decomp_size the content bytes
     [0 .. comp_size-1] are zlib-compressed; the remainder is zero padding.
-    Blocks are read until a terminator block where padded_size == 0.
+    Blocks are read until a terminator block where len_content_raw == 0.
     
     Key blocks (identified by block_id and block_type):
       block_id=1..4, block_type=9  (~88-96 bytes decompressed)
@@ -84,7 +84,7 @@ class Wfmdho1000(KaitaiStruct):
         while True:
             _ = Wfmdho1000.Block(self._io, self, self._root)
             self.blocks.append(_)
-            if  ((_.padded_size == 0) and (_.comp_size == 0)) :
+            if  ((_.len_content_raw == 0) and (_.comp_size == 0)) :
                 break
             i += 1
 
@@ -98,7 +98,7 @@ class Wfmdho1000(KaitaiStruct):
 
 
     class Block(KaitaiStruct):
-        """One metadata block.  A block with padded_size == 0 and comp_size == 0
+        """One metadata block.  A block with len_content_raw == 0 and comp_size == 0
         signals the end of the metadata region.
         """
         def __init__(self, _io, _parent=None, _root=None):
@@ -112,9 +112,9 @@ class Wfmdho1000(KaitaiStruct):
             self.block_type = KaitaiStream.resolve_enum(Wfmdho1000.BlockTypeEnum, self._io.read_u2le())
             self.decomp_size = self._io.read_u2le()
             self.comp_size = self._io.read_u2le()
-            self.padded_size = self._io.read_u2le()
+            self.len_content_raw = self._io.read_u2le()
             self.reserved = self._io.read_u2le()
-            self.content_raw = self._io.read_bytes(self.padded_size)
+            self.content_raw = self._io.read_bytes(self.len_content_raw)
 
 
         def _fetch_instances(self):
@@ -150,7 +150,7 @@ class Wfmdho1000(KaitaiStruct):
             if hasattr(self, '_m_is_terminator'):
                 return self._m_is_terminator
 
-            self._m_is_terminator =  ((self.padded_size == 0) and (self.comp_size == 0)) 
+            self._m_is_terminator =  ((self.len_content_raw == 0) and (self.comp_size == 0)) 
             return getattr(self, '_m_is_terminator', None)
 
 
