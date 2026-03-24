@@ -73,15 +73,17 @@ help:
 	@echo "  venv           - Install dependencies with uv"
 	@echo ""
 	@echo "Quality Targets:"
-	@echo "  yamlcheck      - Lint ksy and workflow YAML files"
-	@echo "  rstcheck       - Lint rst files"
-	@echo "  ksycheck       - Lint ksy schema files"
-	@echo "  pycheck        - Run pylint/pydocstyle/ruff checks"
 	@echo "  rcheck         - Run full release checks"
+	@echo "  manifest-check  - Run MANIFEST.in checks"
+	@echo "  pylint-check    - Run pylint checks"
+	@echo "  pyroma-check    - Run pyroma checks"
+	@echo "  ruff-check      - Run ruff checks"
+	@echo "  rst-check       - Lint rst files"
+	@echo "  yaml-check      - Lint ksy and workflow YAML files"
 	@echo ""
 	@echo "Test Targets:"
 	@echo "  test           - Run all waveform conversion checks"
-	@echo "  testtests      - Run pytest suite"
+	@echo "  note-test      - Run notebook check"
 	@echo ""
 	@echo "JupyterLite Targets:"
 	@echo "  lite           - Build JupyterLite output into $(OUT_DIR)"
@@ -104,7 +106,7 @@ $(PACKAGE_DIR)/%.py: ksy/%.ksy
 	$(KSC) $(KSY_PY_OPTIONS) $<
 
 .PHONY: dist
-dist:
+dist: $(PYTHON_PARSERS)
 	$(RUN) python -m build
 
 .PHONY: html
@@ -131,10 +133,6 @@ ksy-check:
 pylint-check:
 	@$(RUN) pylint $(PYLINT_TARGETS)
 
-.PHONY: pydocstyle-check
-pydocstyle-check:
-	@$(RUN) pydocstyle $(PYDOC_TARGETS)
-
 .PHONY: ruff-check
 ruff-check:
 	@$(RUN) ruff check .
@@ -149,38 +147,6 @@ manifest-check:
 .PHONY: pyroma-check
 pyroma-check:
 	@$(RUN) pyroma -d .
-
-.PHONY: testb
-testb:
-	$(RUN) pytest --verbose tests/test_b.py
-
-.PHONY: testc
-testc:
-	$(RUN) pytest --verbose tests/test_c.py
-
-.PHONY: testd
-testd:
-	$(RUN) pytest --verbose tests/test_d.py
-
-.PHONY: teste
-teste:
-	$(RUN) pytest --verbose tests/test_e.py
-
-.PHONY: testz
-testz:
-	$(RUN) pytest --verbose tests/test_z.py
-
-.PHONY: test2
-test2:
-	$(RUN) pytest --verbose tests/test_2.py
-
-.PHONY: test4
-test4:
-	$(RUN) pytest --verbose tests/test_4.py
-
-.PHONY: testH
-testH:
-	$(RUN) pytest --verbose tests/test_dho1000.py tests/test_dho800.py
 
 .PHONY: csv
 csv:
@@ -214,27 +180,13 @@ sigrok:
 		$(RUN) wfmconvert $$scope sigrok $$file; \
 	done
 
-.PHONY: testtests note-test
-testtests note-test:
-	$(RUN) pytest --verbose tests/test_wfmconvert.py
-	$(RUN) pytest --verbose tests/test_wfmconvert_sigrok.py
-	$(RUN) pytest --verbose tests/test_all_notebooks.py
-
 .PHONY: test
 test: $(PYTHON_PARSERS)
-	@$(MAKE) testb
-	@$(MAKE) testc
-	@$(MAKE) testd
-	@$(MAKE) teste
-	@$(MAKE) testz
-	@$(MAKE) test2
-	@$(MAKE) test4
-	@$(MAKE) testH
+	$(RUN) pytest $(PYTEST_OPTS) tests --ignore=tests/test_all_notebooks.py
 	@$(MAKE) vcsv
 	@$(MAKE) csv
 	@$(MAKE) wav
 	@$(MAKE) sigrok
-	@$(MAKE) testtests
 
 .PHONY: rcheck
 rcheck:
