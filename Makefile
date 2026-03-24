@@ -115,13 +115,18 @@ html: $(PYTHON_PARSERS)
 	$(RUN_DOCS) sphinx-build $(SPHINX_OPTS) "$(DOCS_DIR)" "$(HTML_DIR)"
 	@command -v open >/dev/null 2>&1 && open "$(HTML_DIR)/index.html" || true
 
-.PHONY: yamlcheck yaml-check
-yamlcheck yaml-check:
+.PHONY: lab
+lab:
+	@echo "==> Launching JupyterLab with uv-managed environment"
+	$(RUN) python -m jupyter lab --ServerApp.root_dir="$(CURDIR)"
+
+.PHONY: yaml-check
+yaml-check:
 	@$(RUN) yamllint $(YAML_LINT_OPTS) $(KSY_FILES)
 	@$(RUN) yamllint $(YAML_TARGETS)
 
-.PHONY: rstcheck rst-check
-rstcheck rst-check:
+.PHONY: rst-check
+rst-check:
 	@$(RUN) rstcheck $(RST_TARGETS)
 	@$(RUN) rstcheck --ignore-directives automodapi $(DOCS_DIR)/$(PACKAGE_DIR).rst
 
@@ -136,9 +141,6 @@ pylint-check:
 .PHONY: ruff-check
 ruff-check:
 	@$(RUN) ruff check .
-
-.PHONY: pycheck
-pycheck: pylint-check pydocstyle-check ruff-check
 
 .PHONY: manifest-check
 manifest-check:
@@ -188,12 +190,15 @@ test: $(PYTHON_PARSERS)
 	@$(MAKE) wav
 	@$(MAKE) sigrok
 
+.PHONY: note-test
+note-test: $(PYTHON_PARSERS)
+	$(RUN) pytest --verbose tests/test_all_notebooks.py
+
 .PHONY: rcheck
 rcheck:
 	@echo "Running all release checks..."
 	@$(MAKE) realclean
 	@$(MAKE) all
-#	@$(MAKE) ksy-check
 	@$(MAKE) yaml-check
 	@$(MAKE) rst-check
 	@$(MAKE) pylint-check
@@ -203,6 +208,7 @@ rcheck:
 	@$(MAKE) lite
 	@$(MAKE) dist
 	@$(MAKE) test
+	@$(MAKE) note-test
 	@echo "Release checks complete"
 
 .PHONY: lite
