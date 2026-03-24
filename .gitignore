@@ -9,13 +9,14 @@ __pycache__
 .venv/
 
 Claude.md
-dist/*
+dist/
 docs/_build
 docs/.ipynb_checkpoints
 docs/api
-docs/research/*
-RigolWFM.egg-info/*
-RigolWFM/__pycache__/*
+docs/github.com/
+docs/research/
+RigolWFM.egg-info/
+RigolWFM/__pycache__/
 uv.lock
 
 wfm/DS1054Z-C-original.csv

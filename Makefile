@@ -244,5 +244,7 @@ realclean: clean
 	@git worktree prune || true
 	@$(RMR) "$(WORKTREE)"
 	@$(RMR) .venv
+	@$(RMR) docs/github.com
 	@$(RM) uv.lock
 	@$(RM) $(PYTHON_PARSERS)
+
