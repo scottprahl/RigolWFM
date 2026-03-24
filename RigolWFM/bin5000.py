@@ -158,10 +158,17 @@ class Bin5000(KaitaiStruct):
             self.waveform_label = (KaitaiStream.bytes_terminate(self._io.read_bytes(16), 0, False)).decode(u"ASCII")
             self.time_tag = self._io.read_f8le()
             self.segment_index = self._io.read_u4le()
+            if self.header_size > 140:
+                pass
+                self.extra_padding = self._io.read_bytes(self.header_size - 140)
+
 
 
         def _fetch_instances(self):
             pass
+            if self.header_size > 140:
+                pass
+
 
 
 
