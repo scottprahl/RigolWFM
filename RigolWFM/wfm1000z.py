@@ -149,6 +149,21 @@ class Wfm1000z(KaitaiStruct):
             return getattr(self, '_m_time_scale', None)
 
         @property
+        def vertical_bias(self):
+            """Most DS1000Z captures line up with the existing `+1 div` bias that the
+            project has used for years.  The older 00.04.04.SP3 firmware is an
+            exception for two-channel captures: the sparse CH1+CH2 and CH1+CH4
+            fixtures only match their same-rate CSV exports when negative-offset
+            channels use a much smaller +0.2 div bias and zero-offset channels use
+            no extra bias at all.
+            """
+            if hasattr(self, '_m_vertical_bias'):
+                return self._m_vertical_bias
+
+            self._m_vertical_bias = ((self.volt_per_division / 5.0 if self.shift < 0 else 0.0) if  ((self._root.preheader.firmware_version == u"00.04.04.SP3") and (self._root.header.total_channels == 2))  else self.volt_per_division)
+            return getattr(self, '_m_vertical_bias', None)
+
+        @property
         def volt_offset(self):
             if hasattr(self, '_m_volt_offset'):
                 return self._m_volt_offset
@@ -177,7 +192,7 @@ class Wfm1000z(KaitaiStruct):
             if hasattr(self, '_m_y_offset'):
                 return self._m_y_offset
 
-            self._m_y_offset = self.shift - self.volt_per_division
+            self._m_y_offset = self.shift - self.vertical_bias
             return getattr(self, '_m_y_offset', None)
 
         @property
@@ -297,6 +312,10 @@ class Wfm1000z(KaitaiStruct):
             self.setup_offset = self._io.read_u4le()
             self.horizontal_size = self._io.read_u4le()
             self.horizontal_offset = self._io.read_u4le()
+            self.display_delay = self._io.read_u4le()
+            self.display_address = self._io.read_u4le()
+            self.display_fine = self._io.read_u4le()
+            self.memory_address = self._io.read_u4le()
 
 
         def _fetch_instances(self):
@@ -409,7 +428,7 @@ class Wfm1000z(KaitaiStruct):
             return self._m_data
 
         _pos = self._io.pos()
-        self._io.seek((304 + self._root.header.setup_size) + self._root.header.horizontal_size)
+        self._io.seek(self._root.header.horizontal_offset + self._root.header.horizontal_size)
         self._m_data = Wfm1000z.RawData(self._io, self, self._root)
         self._io.seek(_pos)
         return getattr(self, '_m_data', None)

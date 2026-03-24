@@ -322,7 +322,7 @@ class Channel:
             self.raw = _channel_bytes(channel_number, w)
             self.points = len(self.raw)
 
-        self.calc_times_and_volts()
+        self.calc_times_and_volts(sample_aligned=True)
 
     def ds2000(self, w, channel_number):
         """Interpret waveform for the Rigol DS2000 series."""

@@ -15,7 +15,7 @@ instances:
     pos: 64
     type: wfm_header
   data:
-    pos: 304 + _root.header.setup_size + _root.header.horizontal_size
+    pos: _root.header.horizontal_offset + _root.header.horizontal_size
     type: raw_data
 
 types:
@@ -109,6 +109,14 @@ types:
         type: u4
       - id: horizontal_offset
         type: u4
+      - id: display_delay
+        type: u4
+      - id: display_address
+        type: u4
+      - id: display_fine
+        type: u4
+      - id: memory_address
+        type: u4
 
     instances:
       ch1_int:
@@ -192,12 +200,23 @@ types:
                 +1.0 * scale"
       volt_scale:
         value: volt_per_division/25.0
+      vertical_bias:
+        doc: |
+          Most DS1000Z captures line up with the existing `+1 div` bias that the
+          project has used for years.  The older 00.04.04.SP3 firmware is an
+          exception for two-channel captures: the sparse CH1+CH2 and CH1+CH4
+          fixtures only match their same-rate CSV exports when negative-offset
+          channels use a much smaller +0.2 div bias and zero-offset channels use
+          no extra bias at all.
+        value: "(_root.preheader.firmware_version == '00.04.04.SP3' and _root.header.total_channels == 2) ?
+                (shift < 0 ? volt_per_division / 5.0 : 0.0) :
+                volt_per_division"
       y_scale:
         value: -volt_per_division/20.0
       volt_offset:
         value: shift
       y_offset:
-        value: shift - volt_per_division
+        value: shift - vertical_bias
       time_scale:
         value: _root.header.time_scale
       time_offset:
