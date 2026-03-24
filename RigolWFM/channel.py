@@ -199,12 +199,19 @@ class Channel:
             s += format_str % (v[0], v[1], v[2], v[-2], v[-1])
         return s
 
-    def calc_times_and_volts(self):
+    def calc_times_and_volts(self, sample_aligned=False, memory_depth_points=None):
         """Calculate the times and voltages for this channel."""
         if self.enabled_and_selected:
             self.volts = self.y_scale * (127.0 - self.raw) - self.y_offset
-            h = self.points * self.seconds_per_point / 2
-            self.times = np.linspace(-h, h, self.points) + self.time_offset
+            if sample_aligned:
+                depth_points = self.points
+                if memory_depth_points is not None:
+                    depth_points = memory_depth_points
+                start = self.time_offset - depth_points * self.seconds_per_point / 2
+                self.times = start + np.arange(self.points) * self.seconds_per_point
+            else:
+                h = self.points * self.seconds_per_point / 2
+                self.times = np.linspace(-h, h, self.points) + self.time_offset
 
     def ds1000b(self, w, channel_number):
         """Interpret waveform data for 1000B series scopes."""
@@ -276,6 +283,7 @@ class Channel:
     def ds1000e(self, w, channel_number):
         """Interpret waveform data for 1000D and 1000E series scopes."""
         self.roll_stop = w.header.roll_stop
+        memory_depth_points = None
 
         if channel_number == 1:
             self.time_offset = w.header.ch1_time_offset
@@ -283,6 +291,7 @@ class Channel:
             if self.enabled_and_selected:
                 self.points = len(w.data.ch1)
                 self.raw = np.frombuffer(w.data.ch1, dtype=np.uint8)
+                memory_depth_points = w.header.ch1_memory_depth
 
         elif channel_number == 2:
             self.time_offset = w.header.ch2_time_offset
@@ -290,8 +299,12 @@ class Channel:
             if self.enabled_and_selected:
                 self.points = len(w.data.ch2)
                 self.raw = np.frombuffer(w.data.ch2, dtype=np.uint8)
+                memory_depth_points = w.header.ch2_memory_depth
 
-        self.calc_times_and_volts()
+        self.calc_times_and_volts(
+            sample_aligned=True,
+            memory_depth_points=memory_depth_points,
+        )
 
     def ds1000z(self, w, channel_number):
         """Interpret waveform for the Rigol DS1000Z series."""

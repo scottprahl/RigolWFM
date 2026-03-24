@@ -212,17 +212,26 @@ class Wfm1000e(KaitaiStruct):
             self.time2._fetch_instances()
 
         @property
+        def ch1_memory_depth(self):
+            """Analog acquisition depth stored for channel 1."""
+            if hasattr(self, '_m_ch1_memory_depth'):
+                return self._m_ch1_memory_depth
+
+            self._m_ch1_memory_depth = self.ch1_points_tmp
+            return getattr(self, '_m_ch1_memory_depth', None)
+
+        @property
         def ch1_points(self):
-            """In rolling mode, change the number of valid samples."""
+            """Valid channel 1 samples after trimming rolling-mode padding."""
             if hasattr(self, '_m_ch1_points'):
                 return self._m_ch1_points
 
-            self._m_ch1_points = (self.ch1_points_tmp - 4 if self.roll_stop == 0 else (self.ch1_points_tmp - self.roll_stop) - 6)
+            self._m_ch1_points = self.ch1_memory_depth - self.ch1_skip
             return getattr(self, '_m_ch1_points', None)
 
         @property
         def ch1_skip(self):
-            """In rolling mode, skip invalid points."""
+            """In rolling mode, firmware keeps invalid bytes after the valid samples."""
             if hasattr(self, '_m_ch1_skip'):
                 return self._m_ch1_skip
 
@@ -246,21 +255,21 @@ class Wfm1000e(KaitaiStruct):
             return getattr(self, '_m_ch1_time_scale', None)
 
         @property
-        def ch1_volt_length(self):
-            """In rolling mode, skip invalid samples."""
-            if hasattr(self, '_m_ch1_volt_length'):
-                return self._m_ch1_volt_length
+        def ch2_memory_depth(self):
+            """Channel 2 depth is omitted by some files and then matches channel 1."""
+            if hasattr(self, '_m_ch2_memory_depth'):
+                return self._m_ch2_memory_depth
 
-            self._m_ch1_volt_length = self.ch1_points - self.roll_stop
-            return getattr(self, '_m_ch1_volt_length', None)
+            self._m_ch2_memory_depth = (self.ch1_points_tmp if  ((self.ch[1].enabled) and (self.ch2_points_tmp == 0))  else self.ch2_points_tmp)
+            return getattr(self, '_m_ch2_memory_depth', None)
 
         @property
         def ch2_points(self):
-            """Use ch1_points when ch2_points is not written."""
+            """Valid channel 2 samples after trimming rolling-mode padding."""
             if hasattr(self, '_m_ch2_points'):
                 return self._m_ch2_points
 
-            self._m_ch2_points = (self.ch1_points if  ((self.ch[1].enabled) and (self.ch2_points_tmp == 0))  else self.ch2_points_tmp)
+            self._m_ch2_points = self.ch2_memory_depth - self.ch1_skip
             return getattr(self, '_m_ch2_points', None)
 
         @property
@@ -280,13 +289,16 @@ class Wfm1000e(KaitaiStruct):
             return getattr(self, '_m_ch2_time_scale', None)
 
         @property
-        def ch2_volt_length(self):
-            """In rolling mode, skip invalid samples."""
-            if hasattr(self, '_m_ch2_volt_length'):
-                return self._m_ch2_volt_length
+        def logic_words(self):
+            """Logic samples are stored as `u2` values. The format note lists a
+            16K logic block for an 8K analog depth and a 1M block for a 512K
+            analog depth, so the logic section is `2 * ch1_memory_depth` bytes.
+            """
+            if hasattr(self, '_m_logic_words'):
+                return self._m_logic_words
 
-            self._m_ch2_volt_length = self.ch2_points - self.roll_stop
-            return getattr(self, '_m_ch2_volt_length', None)
+            self._m_logic_words = (self.ch1_memory_depth if self.logic.enabled else 0)
+            return getattr(self, '_m_logic_words', None)
 
         @property
         def sample_rate_hz(self):
@@ -342,10 +354,6 @@ class Wfm1000e(KaitaiStruct):
                 pass
                 self.roll_stop_padding1 = self._io.read_bytes(self._root.header.ch1_skip)
 
-            if self._root.header.ch[0].enabled:
-                pass
-                self.sentinel_between_datasets = self._io.read_u4le()
-
             if self._root.header.ch[1].enabled:
                 pass
                 self.ch2 = self._io.read_bytes(self._root.header.ch2_points)
@@ -354,12 +362,8 @@ class Wfm1000e(KaitaiStruct):
                 pass
                 self.roll_stop_padding2 = self._io.read_bytes(self._root.header.ch1_skip)
 
-            if self._root.header.ch[1].enabled:
-                pass
-                self.sentinel_between_datasets2 = self._io.read_u4le()
-
             self.logic = []
-            for i in range((self._root.header.ch1_points if self._root.header.logic.enabled else 0)):
+            for i in range(self._root.header.logic_words):
                 self.logic.append(self._io.read_u2le())
 
 
@@ -370,12 +374,6 @@ class Wfm1000e(KaitaiStruct):
                 pass
 
             if self._root.header.ch[0].enabled:
-                pass
-
-            if self._root.header.ch[0].enabled:
-                pass
-
-            if self._root.header.ch[1].enabled:
                 pass
 
             if self._root.header.ch[1].enabled:
