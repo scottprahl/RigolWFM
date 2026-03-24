@@ -1,34 +1,23 @@
-.DS_Store
-.tox/*
-__pycache__
-docs/raw.githubusercontent.com/*
-RigolWFM.egg-info/*
-RigolWFM/__pycache__/*
-dist/*
-docs/.ipynb_checkpoints
-docs/manuals
-docs/sources
-docs/github.com
-docs/first_version
-docs/api
-docs/_build
-ksy/zzz/*
-test/*
-
-# JupyterLite build artifacts
-.cache/
-.lite_src/
 _site/
+__pycache__
+
+.DS_Store
+.cache/
 .jupyterlite.doit.db
-
-# uv lockfile
-uv.lock
-
-# Python virtual environment
+.lite_src/
+.pytest_cache/
 .venv/
 
-# pytest cache
-.pytest_cache/
+Claude.md
+dist/*
+docs/_build
+docs/.ipynb_checkpoints
+docs/api
+docs/research/*
+RigolWFM.egg-info/*
+RigolWFM/__pycache__/*
+uv.lock
+
 wfm/DS1054Z-C-original.csv
 wfm/DS1102E-A.csv
 wfm/DS1102E-A.wav
