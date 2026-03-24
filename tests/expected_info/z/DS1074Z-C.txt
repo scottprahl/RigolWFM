@@ -1,9 +1,5 @@
-Sorry! No channels in the waveform are both selected and enabled
-    User selected channels = '1234'
-    Scope enabled channels = ''
-
     General:
-        File Model   = wfm1000z
+        File Model   = DS1074Z Plus
         User Model   = Z
         Parser Model = wfm1000z
         Firmware     = unknown

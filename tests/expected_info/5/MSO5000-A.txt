@@ -1,5 +1,5 @@
     General:
-        File Model   = bin5000
+        File Model   = MSO5XXX
         User Model   = 5
         Parser Model = bin5000
         Firmware     = 01
@@ -73,3 +73,5 @@
            Raw    = [      190,      241,      248  ...         6,        6]
            Times  = [-2.500 ms,-2.495 ms,-2.490 ms  ...  2.490 ms, 2.495 ms]
            Volts  = [789.04 mV,157.81 mV, 78.90 mV  ...   3.08  V,  3.08  V]
+
+

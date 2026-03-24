@@ -1,5 +1,5 @@
     General:
-        File Model   = wfm4000
+        File Model   = DS4A200500078
         User Model   = 4
         Parser Model = wfm4000
         Firmware     = 00.02.03.02.00

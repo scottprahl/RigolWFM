@@ -1,5 +1,5 @@
     General:
-        File Model   = wfm1000e
+        File Model   = DS1000E
         User Model   = E
         Parser Model = wfm1000e
         Firmware     = unknown

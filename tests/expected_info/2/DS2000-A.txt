@@ -1,5 +1,5 @@
     General:
-        File Model   = wfm2000
+        File Model   = DS2000
         User Model   = 2
         Parser Model = wfm2000
         Firmware     = 00.03.00.01.03

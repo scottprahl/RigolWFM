@@ -1,5 +1,5 @@
     General:
-        File Model   = wfm1000c
+        File Model   = DS1000C
         User Model   = C
         Parser Model = wfm1000c
         Firmware     = unknown

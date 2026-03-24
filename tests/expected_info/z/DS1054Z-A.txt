@@ -1,5 +1,5 @@
     General:
-        File Model   = wfm1000z
+        File Model   = DS1054Z
         User Model   = Z
         Parser Model = wfm1000z
         Firmware     = 00.04.04.SP4
@@ -73,3 +73,5 @@
            Raw    = [       41,       40,       40  ...        28,       28]
            Times  = [-556.000 ns,-552.000 ns,-548.000 ns  ... 548.000 ns,552.000 ns]
            Volts  = [-140.00 mV,-390.00 mV,-390.00 mV  ...  -3.39  V, -3.39  V]
+
+

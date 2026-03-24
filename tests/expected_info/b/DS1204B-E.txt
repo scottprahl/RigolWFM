@@ -1,5 +1,5 @@
     General:
-        File Model   = wfm1000b
+        File Model   = DS1000B
         User Model   = B
         Parser Model = wfm1000b
         Firmware     = unknown
@@ -22,4 +22,5 @@
            Raw    = [      174,      174,      174  ...        25,       25]
            Times  = [-16.384 ms,-16.380 ms,-16.376 ms  ... 16.380 ms,16.384 ms]
            Volts  = [-15.00  V,-15.00  V,-15.00  V  ...  14.80  V, 14.80  V]
+
 

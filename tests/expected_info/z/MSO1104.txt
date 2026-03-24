@@ -1,5 +1,5 @@
     General:
-        File Model   = wfm1000z
+        File Model   = MSO1104Z
         User Model   = Z
         Parser Model = wfm1000z
         Firmware     = 00.04.03.SP2
@@ -22,3 +22,5 @@
            Raw    = [      174,      175,      176  ...        70,       70]
            Times  = [-600.256 ms,-600.255 ms,-600.254 ms  ... 600.254 ms,600.255 ms]
            Volts  = [ 16.35  V, 16.60  V, 16.85  V  ...  -9.65  V, -9.65  V]
+
+

@@ -1,5 +1,5 @@
     General:
-        File Model   = wfm4000
+        File Model   = DS4B141000055
         User Model   = 4
         Parser Model = wfm4000
         Firmware     = 00.02.02.01.01
@@ -22,4 +22,5 @@
            Raw    = [      139,      141,      140  ...       141,      141]
            Times  = [-130.000 µs,-130.000 µs,-130.000 µs  ... 150.000 µs,150.000 µs]
            Volts  = [  3.75  V,  4.38  V,  4.06  V  ...   4.38  V,  4.38  V]
+
 
