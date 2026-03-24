@@ -118,9 +118,9 @@ class Header:
 
     @property
     def time_scale(self):
-        """Time per division (12 divisions per screen)."""
+        """Time per division (10 divisions per screen)."""
         if self.n_pts > 0 and self.x_increment > 0:
-            return self.n_pts * self.x_increment / 12.0
+            return self.n_pts * self.x_increment / 10.0
         return 1e-3
 
     @property

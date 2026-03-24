@@ -1,5 +1,8 @@
 """
-Extract signals or description from Rigol 1000E Oscilloscope waveform file.
+Parse and convert Rigol oscilloscope waveform files.
+
+Supports DS1000B/C/D/E/Z, DS2000, DS4000, DS6000, MSO5000, MSO5074,
+MSO7000/8000, and DHO800/DHO1000 scope families via `Wfm.from_file()`.
 
 Example:
     >>> import RigolWFM.wfm as rigol
@@ -154,6 +157,18 @@ def valid_scope_list():
     return s
 
 
+def _scope_family(name):
+    """Return the alphabetic prefix of a scope name (e.g. 'MSO' from 'MSO5074').
+
+    Used to detect obvious model mismatches between user-supplied model codes
+    and the model string embedded in the file.  Single-character aliases (B, C,
+    D, E, Z) and purely-numeric codes ('2', '5074') are intentionally short and
+    can never be compared reliably, so callers should skip the warning when
+    len(_scope_family(umodel)) <= 1.
+    """
+    return "".join(c for c in name.upper() if c.isalpha())
+
+
 def dho_from_file(file_name):
     """Backward-compatible wrapper around `RigolWFM.dho.from_file()`."""
     return RigolWFM.dho.from_file(file_name)
@@ -168,7 +183,7 @@ class Parse_WFM_Error(Exception):
 
 
 class Invalid_URL(Exception):
-    """Cannot use this URL.  It must start with https or http."""
+    """URL scheme is not http or https."""
 
 
 class Unknown_Scope_Error(Exception):
@@ -288,6 +303,24 @@ class Wfm:
         pname = getattr(w, "parser_name", type(w).__module__.rsplit(".", 1)[-1])
         new_wfm.parser_name = pname
 
+        # Warn when the model embedded in the file clearly disagrees with the
+        # user-supplied model.  Single-character aliases (B, C, D, E, Z) and
+        # purely-numeric codes ('2', '5074') are intentionally short and cannot
+        # be compared reliably, so skip the check for them.
+        file_family = _scope_family(new_wfm.header_name)
+        user_family = _scope_family(umodel)
+        if (
+            file_family
+            and len(user_family) > 1
+            and file_family not in user_family
+            and user_family not in file_family
+        ):
+            print(
+                f"Warning: file reports model '{new_wfm.header_name}' "
+                f"but scope type '{model}' was specified.",
+                file=sys.stderr,
+            )
+
         # assemble into uniform set of names
         enabled = ""
         for ch_number in range(1, 5):
@@ -334,7 +367,7 @@ class Wfm:
         scheme = u[0]
 
         if scheme not in ["http", "https"]:
-            raise Invalid_URL()
+            raise Invalid_URL(f"URL scheme must be 'http' or 'https', got '{scheme}': {url}")
 
         try:
             # need a local file for conversion, download url and save as tempfile
@@ -354,13 +387,15 @@ class Wfm:
                 path = urllib.parse.unquote(rawpath)
                 new_wfm.basename = os.path.basename(path)
                 return new_wfm
+            except (Read_WFM_Error, Parse_WFM_Error, Unknown_Scope_Error):
+                raise
             except Exception as e:
                 raise Parse_WFM_Error(e) from e
             finally:
                 os.unlink(working_name)
 
         except requests.exceptions.RequestException as e:
-            raise Parse_WFM_Error(e) from e
+            raise Read_WFM_Error(f"Failed to download '{url}': {e}") from e
 
     def describe(self):
         """Return a string describing the contents of a Rigol wfm file."""
@@ -419,70 +454,82 @@ class Wfm:
 
     def csv(self):
         """Return a string of comma separated values."""
-        if len(self.channels) == 0:
+        data_channels = [ch for ch in self.channels if ch.enabled_and_selected]
+        if not data_channels:
             return ""
 
         h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()
 
         s = "X"
-        for ch in self.channels:
+        for ch in data_channels:
             s += ",%s" % ch.name
         s += ",Start,Increment\n"
 
         # just output the display 100 pts/division
-        ch = self.channels[0]
+        ch = data_channels[0]
         incr = ch.time_scale / 100
         off = -6 * ch.time_scale
         s += "%ss" % h_prefix
-        for ch in self.channels:
+        for ch in data_channels:
             s += ",%s%s" % (v_prefix, ch.unit.name.upper())
         s += ",%e,%e\n" % (off, incr)
 
-        times = self.channels[0].times
-        for i in range(self.channels[0].points):
+        n_pts = min(ch.points for ch in data_channels)
+        times = data_channels[0].times
+        for i in range(n_pts):
             s += "%.6f" % (times[i] * h_scale)
-            for ch in self.channels:
+            for ch in data_channels:
                 s += ",%.2f" % (ch.volts[i] * v_scale)
             s += "\n"
         return s
 
     def sigrokcsv(self):
         """Return a string of comma separated values for sigrok."""
-        if len(self.channels) == 0:
+        data_channels = [ch for ch in self.channels if ch.enabled_and_selected]
+        if not data_channels:
             return ""
 
         s = "X"
-        for ch in self.channels:
+        for ch in data_channels:
             s += ",%s (%s)" % (ch.name, ch.unit.name.upper())
         s += "\n"
 
-        times = self.channels[0].times
-        for i in range(self.channels[0].points):
+        n_pts = min(ch.points for ch in data_channels)
+        times = data_channels[0].times
+        for i in range(n_pts):
             s += "%.8f" % (times[i])
-            for ch in self.channels:
+            for ch in data_channels:
                 s += ",%.2f" % (ch.volts[i])
             s += "\n"
         return s
 
     def wav(self, wav_filename, autoscale=False):
         """Save data as a WAV file for use with LTspice or Sigrok."""
-        n_channels = len(self.channels)
-        channel_length = self.channels[0].points
+        data_channels = [ch for ch in self.channels if ch.enabled_and_selected]
+        if not data_channels:
+            return
+        n_channels = len(data_channels)
+        channel_length = min(ch.points for ch in data_channels)
         total_len = channel_length * n_channels
 
         out = np.empty((total_len,), dtype=np.uint8, order="C")
 
         # channels are interleaved e.g., 123123123
-        for i, ch in enumerate(self.channels):
+        for i, ch in enumerate(data_channels):
+            raw = ch.raw[:channel_length]
             if autoscale:
-                amin = np.min(ch.raw)
-                amax = max(np.max(ch.raw), amin + 1)  # avoid division by zero
+                amin = np.min(raw)
+                amax = max(np.max(raw), amin + 1)  # avoid division by zero
                 scale = 250 / (amax - amin) * 0.95
-                out[i::n_channels] = np.int8((ch.raw - amin) * scale)
+                out[i::n_channels] = np.int8((raw - amin) * scale)
             else:
-                out[i::n_channels] = ch.raw
+                out[i::n_channels] = raw
 
-        sample_rate = 1.0 / self.channels[0].seconds_per_point
+        # The WAV format stores framerate and (n_channels * framerate * sampwidth)
+        # as 32-bit unsigned integers.  With sampwidth=1, cap so both fields fit.
+        _MAX_WAV_U32 = 2**32 - 1
+        sample_rate = min(1.0 / data_channels[0].seconds_per_point,
+                          _MAX_WAV_U32 // max(n_channels, 1))
 
         with wave.open(wav_filename, "wb") as wavef:
             wavef.setnchannels(n_channels)  # 1 = mono, 2 = stereo

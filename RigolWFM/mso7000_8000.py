@@ -9,104 +9,23 @@ timing fields, and calibrated sample arrays.
 This module performs that normalization for analog float32 records. Logic and
 other non-analog buffers are detected and rejected explicitly until we have
 checked-in fixtures that exercise those paths.
-"""
 
-from enum import IntEnum
+The 7000/8000 binary container is structurally identical to the MSO5000 one.
+Shared helper types (ChannelHeader, Header, _channel_slot, etc.) are imported
+from `RigolWFM.mso5000` rather than duplicated here.
+"""
 
 import numpy as np
 
 import RigolWFM.bin7000_8000
-
-
-class UnitEnum(IntEnum):
-    """Unit types used by UltraVision binary waveform exports."""
-
-    unknown = 0
-    v = 1
-    s = 2
-    constant = 3
-    a = 4
-    db = 5
-    hz = 6
-
-
-class ChannelHeader:
-    """Normalized per-channel metadata for 7000/8000 captures."""
-
-    def __init__(self, name, enabled, unit_code=0):
-        """Initialize channel metadata."""
-        self.name = name
-        self.enabled = enabled
-        self.unit = UnitEnum(unit_code) if 0 <= unit_code <= 6 else UnitEnum.unknown
-        self.inverted = False
-        self.probe_value = 1.0
-        self.volt_per_division = 1.0
-        self.volt_offset = 0.0
-        self.volt_scale = 1.0
-
-    @property
-    def y_scale(self):
-        """7000/8000 `.bin` voltage data is already calibrated."""
-        return 1.0
-
-    @property
-    def y_offset(self):
-        """7000/8000 `.bin` voltage data is already calibrated."""
-        return 0.0
-
-
-class Header:
-    """Normalized header used by `Wfm.from_file()` for 7000/8000 captures."""
-
-    def __init__(self):
-        """Initialize an empty 7000/8000 header."""
-        self.cookie = ""
-        self.version = ""
-        self.n_waveforms = 0
-        self.n_pts = 0
-        self.x_origin = 0.0
-        self.x_increment = 1e-6
-        self.x_display_range = 0.0
-        self.model = ""
-        self.ch = []
-        self.raw_data = [None] * 4
-        self.channel_data = [None] * 4
-
-    @property
-    def seconds_per_point(self):
-        """Time between samples in seconds."""
-        return self.x_increment
-
-    @property
-    def time_scale(self):
-        """Horizontal time base in seconds per division."""
-        if self.x_display_range > 0:
-            return self.x_display_range / 10.0
-        if self.n_pts > 0 and self.x_increment > 0:
-            return self.n_pts * self.x_increment / 10.0
-        return 1e-3
-
-    @property
-    def time_offset(self):
-        """Horizontal offset relative to the screen center."""
-        if self.n_pts > 0:
-            return self.n_pts * self.x_increment / 2.0 - self.x_origin
-        return -self.x_origin
-
-    @property
-    def points(self):
-        """Number of sample points."""
-        return self.n_pts
-
-    @property
-    def firmware_version(self):
-        """Return the file format version string."""
-        return self.version
-
-    @property
-    def model_number(self):
-        """Return the scope model string if present."""
-        return self.model
+from RigolWFM.mso5000 import (
+    ChannelHeader,
+    Header,
+    _channel_slot,
+    _estimate_volts_per_division,
+    _model_from_frame,
+    _proxy_raw,
+)
 
 
 class Mso7000_8000Waveform:
@@ -124,63 +43,6 @@ class Mso7000_8000Waveform:
     def __str__(self):
         """Return a parser tag compatible with the rest of `Wfm.from_file()`."""
         return f"x.{self.parser_name}"
-
-
-def _channel_slot(label, fallback):
-    """Map channel labels like `CH2` to zero-based channel slots."""
-    label_upper = label.upper()
-    if label_upper.startswith("LA"):
-        return None
-    if label_upper.startswith("CH"):
-        try:
-            index = int(label_upper[2:]) - 1
-            if 0 <= index < 4:
-                return index
-        except ValueError:
-            pass
-    return fallback
-
-
-def _estimate_volts_per_division(values):
-    """Estimate a readable volts/division from calibrated samples."""
-    if values.size == 0:
-        return 1.0
-
-    finite = values[np.isfinite(values)]
-    if finite.size == 0:
-        return 1.0
-
-    span = float(np.max(finite) - np.min(finite))
-    if span <= 0:
-        return max(abs(float(finite[0])) / 4.0, 1e-3)
-    return max(span / 8.0, 1e-3)
-
-
-def _proxy_raw(values):
-    """Create a stable uint8 proxy for calibrated volt samples."""
-    if values.size == 0:
-        return np.empty((0,), dtype=np.uint8)
-
-    finite = values[np.isfinite(values)]
-    if finite.size == 0:
-        return np.full(values.shape, 127, dtype=np.uint8)
-
-    low = float(np.min(finite))
-    high = float(np.max(finite))
-    if high <= low:
-        return np.full(values.shape, 127, dtype=np.uint8)
-
-    center = (high + low) / 2.0
-    half_span = max((high - low) / 2.0, 1e-12)
-    raw = 127.0 - 127.0 * (values.astype(np.float64) - center) / half_span
-    return np.clip(np.rint(raw), 0, 255).astype(np.uint8)
-
-
-def _model_from_frame(frame_string):
-    """Extract the model name from `MODEL:SERIAL` frame strings."""
-    if ":" in frame_string:
-        return frame_string.split(":", 1)[0]
-    return frame_string
 
 
 def from_file(file_name):

@@ -182,7 +182,7 @@ def main():
     parser.add_argument(
         "model",
         type=str,
-        choices=["B", "C", "D", "E", "Z", "2", "4", "5", "5074", "6", "DHO"],
+        choices=["B", "C", "D", "E", "Z", "2", "4", "5", "5074", "6", "7", "8", "DHO"],
         help="oscilloscope model.  See list below.",
     )
 
@@ -226,13 +226,6 @@ def main():
         print(
             "Channels are identified by number and must be a combination of 1, 2, 3, or 4"
         )
-        print(f'You used "--channel {args.channel}"')
-        sys.exit(1)
-
-    if len(selected) > 4:
-        print("\nwfmconvert error")
-        print("Only 1-2 channel (monophonic) or 3-4 channels (stereo) ", end="")
-        print("can be used when creating a .wav file")
         print(f'You used "--channel {args.channel}"')
         sys.exit(1)
 

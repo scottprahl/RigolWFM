@@ -22,6 +22,7 @@ calibration coefficients.
 """
 
 import struct
+import warnings
 
 import numpy as np
 
@@ -104,6 +105,12 @@ def from_file(file_name):
 
     if not raw_bytes.startswith(b"RG"):
         raise ValueError(f"Not a Rigol binary file: {file_name}")
+
+    warnings.warn(
+        "MSO5074 voltage values are approximate (1 V/div, no calibration data in file).",
+        UserWarning,
+        stacklevel=2,
+    )
 
     offsets = _find_block_offsets(raw_bytes)
     if not offsets:

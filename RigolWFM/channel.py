@@ -184,7 +184,7 @@ class Channel:
         )
         s += "           Points = %8d\n\n" % self.points
 
-        if self.enabled_and_selected:
+        if self.enabled_and_selected and self.points >= 5:
             format_str = "         Count    = [%9d,%9d,%9d  ... %9d,%9d]\n"
             s += format_str % (1, 2, 3, self.points - 1, self.points)
             format_str = "           Raw    = [%9d,%9d,%9d  ... %9d,%9d]\n"
@@ -206,6 +206,8 @@ class Channel:
     def calc_times_and_volts(self, sample_aligned=False, memory_depth_points=None):
         """Calculate the times and voltages for this channel."""
         if self.enabled_and_selected:
+            # 127.0 is the midpoint of the 8-bit unsigned ADC range (0–255).
+            # Subtracting raw from 127 maps 0 → +127 and 255 → -128 counts.
             self.volts = self.y_scale * (127.0 - self.raw) - self.y_offset
             if sample_aligned:
                 depth_points = self.points
@@ -339,6 +341,11 @@ class Channel:
         self.firmware = w.header.firmware_version
         self.unit = UnitEnum(w.header.ch[channel_number - 1].unit_actual)
         self.coupling = w.header.ch[channel_number - 1].coupling.name.upper()
+        # DS2000/4000/6000 ADC convention: higher count = higher voltage (normal polarity).
+        # The formula in calc_times_and_volts() is y_scale*(127-raw)-y_offset, so negating
+        # volt_scale flips the subtraction to (raw-127), giving the correct sign.
+        # Contrast with DS1000E/B/C/D which store inverted ADC data (higher count = lower
+        # voltage), where y_scale = +volt_scale is correct without a sign flip.
         self.y_scale = -self.volt_scale
         self.y_offset = self.volt_offset
 
@@ -380,6 +387,7 @@ class Channel:
         self.points = w.header.points
         self.firmware = w.header.firmware_version
         self.coupling = w.header.ch[channel_number - 1].coupling.name.upper()
+        # See ds2000() for the ADC polarity sign convention.
         self.y_scale = -self.volt_scale
         self.y_offset = self.volt_offset
 
@@ -412,6 +420,7 @@ class Channel:
         self.firmware = w.header.firmware_version
         self.coupling = w.header.ch[channel_number - 1].coupling.name.upper()
         self.unit = w.header.ch[channel_number - 1].unit
+        # See ds2000() for the ADC polarity sign convention.
         self.y_scale = -self.volt_scale
         self.y_offset = self.volt_offset
 
