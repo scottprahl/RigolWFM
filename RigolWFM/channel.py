@@ -396,27 +396,37 @@ class Channel:
 
     def ds6000(self, w, channel_number):
         """Interpret waveform for the Rigol DS6000 series."""
-        self.time_offset = w.header.time_offset
+        self.time_offset = (
+            w.header.time_offset
+            + w.header.z_pt_offset * w.header.seconds_per_point
+        )
         self.time_scale = w.header.time_scale
         self.points = w.header.points
         self.firmware = w.header.firmware_version
         self.coupling = w.header.ch[channel_number - 1].coupling.name.upper()
         self.unit = w.header.ch[channel_number - 1].unit
+        self.y_scale = -self.volt_scale
+        self.y_offset = self.volt_offset
 
         if self.enabled_and_selected:
             if channel_number == 1:
-                self.raw = np.array(w.header.raw_1, dtype=np.uint8)
+                self.raw = np.frombuffer(w.header.raw_1, dtype=np.uint8)
 
             if channel_number == 2:
-                self.raw = np.array(w.header.raw_2, dtype=np.uint8)
+                self.raw = np.frombuffer(w.header.raw_2, dtype=np.uint8)
 
             if channel_number == 3:
-                self.raw = np.array(w.header.raw_3, dtype=np.uint8)
+                self.raw = np.frombuffer(w.header.raw_3, dtype=np.uint8)
 
             if channel_number == 4:
-                self.raw = np.array(w.header.raw_4, dtype=np.uint8)
+                self.raw = np.frombuffer(w.header.raw_4, dtype=np.uint8)
 
-        self.calc_times_and_volts()
+            self.points = len(self.raw)
+
+        self.calc_times_and_volts(
+            sample_aligned=True,
+            memory_depth_points=w.header.storage_depth,
+        )
 
     def dho1000(self, w, channel_number):
         """Interpret normalized waveform data for the Rigol DHO800/DHO1000 series."""

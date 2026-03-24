@@ -7,9 +7,6 @@ instances:
   header:
     pos: 0
     type: header
-  data:
-    pos: 20916
-    type: raw_data
 
 types:
   header:
@@ -195,11 +192,35 @@ types:
       time_offset:
         value: 1.0e-12 * time_offset_ps
       points:
-        value: _root.header.mem_depth
+        value: wfm_len
+      len_raw_1:
+        value: "enabled.channel_1 ? wfm_len : 0"
+      len_raw_2:
+        value: "enabled.channel_2 ? wfm_len : 0"
+      len_raw_3:
+        value: "enabled.channel_3 ? wfm_len : 0"
+      len_raw_4:
+        value: "enabled.channel_4 ? wfm_len : 0"
+      raw_1:
+        pos: wfm_offset + channel_offset[0] + z_pt_offset
+        size: len_raw_1
+        if: enabled.channel_1
+      raw_2:
+        pos: wfm_offset + channel_offset[1] + z_pt_offset
+        size: len_raw_2
+        if: enabled.channel_2
+      raw_3:
+        pos: wfm_offset + channel_offset[2] + z_pt_offset
+        size: len_raw_3
+        if: enabled.channel_3
+      raw_4:
+        pos: wfm_offset + channel_offset[3] + z_pt_offset
+        size: len_raw_4
+        if: enabled.channel_4
 
   channel_header:
     seq:
-      - id: enabled
+      - id: enabled_val
         type: u1
 
       - id: coupling
@@ -231,7 +252,7 @@ types:
         type: f4
       - id: volt_offset
         type: f4
-      - id: invert
+      - id: invert_val
         type: u1
       - id: unit
         type: u1
@@ -246,6 +267,10 @@ types:
       - id: filter_low
         type: u4
     instances:
+      enabled:
+        value: "enabled_val != 0 ? true : false"
+      inverted:
+        value: "invert_val != 0 ? true : false"
       probe_value:
         value: "(probe_ratio == probe_ratio_enum::x0_01 ? 0.01 :
                  probe_ratio == probe_ratio_enum::x0_02 ? 0.02 :
@@ -262,6 +287,12 @@ types:
                  probe_ratio == probe_ratio_enum::x100 ? 100.0 :
                  probe_ratio == probe_ratio_enum::x200 ? 200.0 :
                  probe_ratio == probe_ratio_enum::x500 ? 500.0 : 1000.0)"
+      volt_signed:
+        value: "inverted ?
+                -1.0 * volt_per_division:
+                +1.0 * volt_per_division"
+      volt_scale:
+        value: volt_signed/25.0
 
   channel_mask:
     seq:
@@ -275,24 +306,6 @@ types:
         type: b1
       - id: channel_1
         type: b1
-
-  raw_data:
-    seq:
-      - id: channel_1
-        size: _root.header.mem_depth
-        if: _root.header.enabled.channel_1
-
-      - id: channel_2
-        size: _root.header.mem_depth
-        if: _root.header.enabled.channel_2
-
-      - id: channel_3
-        size: _root.header.mem_depth
-        if: _root.header.enabled.channel_3
-
-      - id: channel_4
-        size: _root.header.mem_depth
-        if: _root.header.enabled.channel_4
 
 enums:
   acquisition_enum:

@@ -87,11 +87,6 @@ class Wfm6000(KaitaiStruct):
 
     def _fetch_instances(self):
         pass
-        _ = self.data
-        if hasattr(self, '_m_data'):
-            pass
-            self._m_data._fetch_instances()
-
         _ = self.header
         if hasattr(self, '_m_header'):
             pass
@@ -106,7 +101,7 @@ class Wfm6000(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.enabled = self._io.read_u1()
+            self.enabled_val = self._io.read_u1()
             self.coupling = KaitaiStream.resolve_enum(Wfm6000.CouplingEnum, self._io.read_u1())
             self.bandwidth_limit = KaitaiStream.resolve_enum(Wfm6000.BandwidthEnum, self._io.read_u1())
             self.probe_type = KaitaiStream.resolve_enum(Wfm6000.ProbeTypeEnum, self._io.read_u1())
@@ -116,7 +111,7 @@ class Wfm6000(KaitaiStruct):
             self.probe_impedance = KaitaiStream.resolve_enum(Wfm6000.ImpedanceEnum, self._io.read_u1())
             self.volt_per_division = self._io.read_f4le()
             self.volt_offset = self._io.read_f4le()
-            self.invert = self._io.read_u1()
+            self.invert_val = self._io.read_u1()
             self.unit = KaitaiStream.resolve_enum(Wfm6000.UnitEnum, self._io.read_u1())
             self.filter_enabled = self._io.read_u1()
             self.filter_type = KaitaiStream.resolve_enum(Wfm6000.FilterEnum, self._io.read_u1())
@@ -128,12 +123,44 @@ class Wfm6000(KaitaiStruct):
             pass
 
         @property
+        def enabled(self):
+            if hasattr(self, '_m_enabled'):
+                return self._m_enabled
+
+            self._m_enabled = (True if self.enabled_val != 0 else False)
+            return getattr(self, '_m_enabled', None)
+
+        @property
+        def inverted(self):
+            if hasattr(self, '_m_inverted'):
+                return self._m_inverted
+
+            self._m_inverted = (True if self.invert_val != 0 else False)
+            return getattr(self, '_m_inverted', None)
+
+        @property
         def probe_value(self):
             if hasattr(self, '_m_probe_value'):
                 return self._m_probe_value
 
             self._m_probe_value = (0.01 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_01 else (0.02 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_02 else (0.05 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_05 else (0.1 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_1 else (0.2 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_2 else (0.5 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x0_5 else (1.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x1 else (2.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x2 else (5.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x5 else (10.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x10 else (20.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x20 else (50.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x50 else (100.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x100 else (200.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x200 else (500.0 if self.probe_ratio == Wfm6000.ProbeRatioEnum.x500 else 1000.0)))))))))))))))
             return getattr(self, '_m_probe_value', None)
+
+        @property
+        def volt_scale(self):
+            if hasattr(self, '_m_volt_scale'):
+                return self._m_volt_scale
+
+            self._m_volt_scale = self.volt_signed / 25.0
+            return getattr(self, '_m_volt_scale', None)
+
+        @property
+        def volt_signed(self):
+            if hasattr(self, '_m_volt_signed'):
+                return self._m_volt_signed
+
+            self._m_volt_signed = (-1.0 * self.volt_per_division if self.inverted else 1.0 * self.volt_per_division)
+            return getattr(self, '_m_volt_signed', None)
 
 
     class ChannelMask(KaitaiStruct):
@@ -281,14 +308,118 @@ class Wfm6000(KaitaiStruct):
             for i in range(len(self.bank_size)):
                 pass
 
+            _ = self.raw_1
+            if hasattr(self, '_m_raw_1'):
+                pass
+
+            _ = self.raw_2
+            if hasattr(self, '_m_raw_2'):
+                pass
+
+            _ = self.raw_3
+            if hasattr(self, '_m_raw_3'):
+                pass
+
+            _ = self.raw_4
+            if hasattr(self, '_m_raw_4'):
+                pass
+
+
+        @property
+        def len_raw_1(self):
+            if hasattr(self, '_m_len_raw_1'):
+                return self._m_len_raw_1
+
+            self._m_len_raw_1 = (self.wfm_len if self.enabled.channel_1 else 0)
+            return getattr(self, '_m_len_raw_1', None)
+
+        @property
+        def len_raw_2(self):
+            if hasattr(self, '_m_len_raw_2'):
+                return self._m_len_raw_2
+
+            self._m_len_raw_2 = (self.wfm_len if self.enabled.channel_2 else 0)
+            return getattr(self, '_m_len_raw_2', None)
+
+        @property
+        def len_raw_3(self):
+            if hasattr(self, '_m_len_raw_3'):
+                return self._m_len_raw_3
+
+            self._m_len_raw_3 = (self.wfm_len if self.enabled.channel_3 else 0)
+            return getattr(self, '_m_len_raw_3', None)
+
+        @property
+        def len_raw_4(self):
+            if hasattr(self, '_m_len_raw_4'):
+                return self._m_len_raw_4
+
+            self._m_len_raw_4 = (self.wfm_len if self.enabled.channel_4 else 0)
+            return getattr(self, '_m_len_raw_4', None)
 
         @property
         def points(self):
             if hasattr(self, '_m_points'):
                 return self._m_points
 
-            self._m_points = self._root.header.mem_depth
+            self._m_points = self.wfm_len
             return getattr(self, '_m_points', None)
+
+        @property
+        def raw_1(self):
+            if hasattr(self, '_m_raw_1'):
+                return self._m_raw_1
+
+            if self.enabled.channel_1:
+                pass
+                _pos = self._io.pos()
+                self._io.seek((self.wfm_offset + self.channel_offset[0]) + self.z_pt_offset)
+                self._m_raw_1 = self._io.read_bytes(self.len_raw_1)
+                self._io.seek(_pos)
+
+            return getattr(self, '_m_raw_1', None)
+
+        @property
+        def raw_2(self):
+            if hasattr(self, '_m_raw_2'):
+                return self._m_raw_2
+
+            if self.enabled.channel_2:
+                pass
+                _pos = self._io.pos()
+                self._io.seek((self.wfm_offset + self.channel_offset[1]) + self.z_pt_offset)
+                self._m_raw_2 = self._io.read_bytes(self.len_raw_2)
+                self._io.seek(_pos)
+
+            return getattr(self, '_m_raw_2', None)
+
+        @property
+        def raw_3(self):
+            if hasattr(self, '_m_raw_3'):
+                return self._m_raw_3
+
+            if self.enabled.channel_3:
+                pass
+                _pos = self._io.pos()
+                self._io.seek((self.wfm_offset + self.channel_offset[2]) + self.z_pt_offset)
+                self._m_raw_3 = self._io.read_bytes(self.len_raw_3)
+                self._io.seek(_pos)
+
+            return getattr(self, '_m_raw_3', None)
+
+        @property
+        def raw_4(self):
+            if hasattr(self, '_m_raw_4'):
+                return self._m_raw_4
+
+            if self.enabled.channel_4:
+                pass
+                _pos = self._io.pos()
+                self._io.seek((self.wfm_offset + self.channel_offset[3]) + self.z_pt_offset)
+                self._m_raw_4 = self._io.read_bytes(self.len_raw_4)
+                self._io.seek(_pos)
+
+            return getattr(self, '_m_raw_4', None)
 
         @property
         def seconds_per_point(self):
@@ -314,59 +445,6 @@ class Wfm6000(KaitaiStruct):
             self._m_time_scale = 1.0E-12 * self.time_scale_ps
             return getattr(self, '_m_time_scale', None)
 
-
-    class RawData(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            super(Wfm6000.RawData, self).__init__(_io)
-            self._parent = _parent
-            self._root = _root
-            self._read()
-
-        def _read(self):
-            if self._root.header.enabled.channel_1:
-                pass
-                self.channel_1 = self._io.read_bytes(self._root.header.mem_depth)
-
-            if self._root.header.enabled.channel_2:
-                pass
-                self.channel_2 = self._io.read_bytes(self._root.header.mem_depth)
-
-            if self._root.header.enabled.channel_3:
-                pass
-                self.channel_3 = self._io.read_bytes(self._root.header.mem_depth)
-
-            if self._root.header.enabled.channel_4:
-                pass
-                self.channel_4 = self._io.read_bytes(self._root.header.mem_depth)
-
-
-
-        def _fetch_instances(self):
-            pass
-            if self._root.header.enabled.channel_1:
-                pass
-
-            if self._root.header.enabled.channel_2:
-                pass
-
-            if self._root.header.enabled.channel_3:
-                pass
-
-            if self._root.header.enabled.channel_4:
-                pass
-
-
-
-    @property
-    def data(self):
-        if hasattr(self, '_m_data'):
-            return self._m_data
-
-        _pos = self._io.pos()
-        self._io.seek(20916)
-        self._m_data = Wfm6000.RawData(self._io, self, self._root)
-        self._io.seek(_pos)
-        return getattr(self, '_m_data', None)
 
     @property
     def header(self):
