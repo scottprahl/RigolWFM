@@ -1,5 +1,8 @@
 """Integration checks for core `wfmconvert` output modes."""
 
+import shutil
+from pathlib import Path
+
 from tests.cli_helpers import run_command
 
 
@@ -27,19 +30,29 @@ def test_wfmconvert_info():
         run_command(f"wfmconvert {scope} info {path}")
 
 
-def test_wfmconvert_csv():
+def test_wfmconvert_csv(tmp_path):
     """Verify CSV export succeeds for representative scopes."""
     for scope, path in _LEGACY_INFO + _BIN_INFO:
-        run_command(f"wfmconvert --force {scope} csv {path}")
+        src = shutil.copy(path, tmp_path / Path(path).name)
+        run_command(f"wfmconvert {scope} csv {src}")
 
 
-def test_wfmconvert_wav():
+def test_wfmconvert_wav(tmp_path):
     """Verify WAV export succeeds for representative scopes."""
     for scope, path in _LEGACY_INFO + _BIN_INFO:
-        run_command(f"wfmconvert --force {scope} wav {path}")
+        src = shutil.copy(path, tmp_path / Path(path).name)
+        run_command(f"wfmconvert {scope} wav {src}")
 
 
-def test_wfmconvert_vcsv():
+def test_wfmconvert_vcsv(tmp_path):
     """Verify VCSV export succeeds for representative scopes."""
     for scope, path in _LEGACY_INFO + _BIN_INFO:
-        run_command(f"wfmconvert --force {scope} vcsv {path}")
+        src = shutil.copy(path, tmp_path / Path(path).name)
+        run_command(f"wfmconvert {scope} vcsv {src}")
+
+
+def test_wfmconvert_sigrok(tmp_path):
+    """Verify sigrok export succeeds (or gracefully skips if sigrok-cli absent)."""
+    for scope, path in _LEGACY_INFO + _BIN_INFO:
+        src = shutil.copy(path, tmp_path / Path(path).name)
+        run_command(f"wfmconvert {scope} sigrok {src}")

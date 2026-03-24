@@ -55,18 +55,6 @@ PYDOC_TARGETS   := $(PACKAGE_DIR)/wfm.py $(PACKAGE_DIR)/channel.py $(PACKAGE_DIR
 YAML_TARGETS    := .github/workflows/citation.yaml .github/workflows/pypi.yaml .github/workflows/test.yaml .readthedocs.yaml
 RST_TARGETS     := README.rst CHANGELOG.rst $(DOCS_DIR)/index.rst $(DOCS_DIR)/changelog.rst
 
-CONVERT_CASES   := E:wfm/DS1102E-A.wfm Z:wfm/MSO1104.wfm 4:wfm/DS4022-A.wfm 2:wfm/DS2202.wfm C:wfm/DS1202CA-A.wfm B:wfm/DS1204B-A.wfm D:wfm/DS1102D-A.wfm
-
-CLEANTEST_FILES := \
-	wfm/DS1102E-A.csv wfm/DS1102E-A.wav wfm/DS1102E-A.vcsv wfm/DS1102E-A.sr \
-	wfm/MSO1104.csv wfm/MSO1104.wav wfm/MSO1104.vcsv wfm/MSO1104.sr \
-	wfm/DS4022-A.csv wfm/DS4022-A.wav wfm/DS4022-A.vcsv wfm/DS4022-A.sr \
-	wfm/DS2202.csv wfm/DS2202.wav wfm/DS2202.vcsv wfm/DS2202.sr \
-	wfm/DS1202CA-A.csv wfm/DS1202CA-A.wav wfm/DS1202CA-A.vcsv wfm/DS1202CA-A.sr \
-	wfm/DS1204B-A.csv wfm/DS1204B-A.wav wfm/DS1204B-A.vcsv wfm/DS1204B-A.sr \
-	wfm/DS1202Z-1.csv wfm/DS1202Z-1.png wfm/DS1202Z-1.txt wfm/DS1202Z-1.wfm \
-	wfm/DS1202Z-2.csv wfm/DS1202Z-2.png wfm/DS1202Z-2.txt wfm/DS1202Z-2.wfm \
-	wfm/DS1102D-A.sr wfm/DS1102D-A.vcsv wfm/DS1102D-A.wav
 
 .PHONY: help
 help:
@@ -160,45 +148,9 @@ manifest-check:
 pyroma-check:
 	@$(RUN) pyroma -d .
 
-.PHONY: csv
-csv:
-	@for item in $(CONVERT_CASES); do \
-		scope=$${item%%:*}; file=$${item#*:}; \
-		$(RUN) wfmconvert $$scope csv $$file; \
-	done
-
-.PHONY: wav
-wav:
-	@for item in $(CONVERT_CASES); do \
-		scope=$${item%%:*}; file=$${item#*:}; \
-		$(RUN) wfmconvert $$scope wav $$file; \
-	done
-
-.PHONY: vcsv
-vcsv:
-	@for item in $(CONVERT_CASES); do \
-		scope=$${item%%:*}; file=$${item#*:}; base=$${file%.wfm}; \
-		$(RUN) wfmconvert $$scope vcsv $$file; \
-		mv $$base.csv $$base.vcsv; \
-	done
-
-.PHONY: sigrok
-sigrok:
-	@echo "*********************************************************"
-	@echo "*** conversion works despite warning about /dev/stdin ***"
-	@echo "*********************************************************"
-	@for item in $(CONVERT_CASES); do \
-		scope=$${item%%:*}; file=$${item#*:}; \
-		$(RUN) wfmconvert $$scope sigrok $$file; \
-	done
-
 .PHONY: test
 test: $(PYTHON_PARSERS)
 	$(RUN) pytest $(PYTEST_OPTS) tests --ignore=tests/test_all_notebooks.py
-	@$(MAKE) vcsv
-	@$(MAKE) csv
-	@$(MAKE) wav
-	@$(MAKE) sigrok
 
 .PHONY: note-test
 note-test: $(PYTHON_PARSERS)
@@ -270,10 +222,6 @@ lite-deploy:
 .PHONY: run
 run: lite lite-serve
 
-.PHONY: cleantest
-cleantest:
-	@$(RMR) $(CLEANTEST_FILES)
-
 .PHONY: lite-clean
 lite-clean:
 	@$(RMR) "$(STAGE_DIR)"
@@ -283,13 +231,12 @@ lite-clean:
 
 .PHONY: clean
 clean: lite-clean
-	@$(MAKE) cleantest
 	@find . -name '__pycache__' -type d -exec $(RMR) {} +
 	@find . -name '.DS_Store' -type f -exec $(RM) {} +
 	@find . -name '.ipynb_checkpoints' -type d -prune -exec $(RMR) {} +
 	@find . -name '.pytest_cache' -type d -prune -exec $(RMR) {} +
 	@$(RMR) build docs/_build docs/api docs/.jupyter docs/github.com docs/raw.githubusercontent.com docs/media.githubusercontent.com
-	@$(RMR) .ruff_cache $(PACKAGE_DIR).egg-info tests/*.csv tests/*.wav tests/*.sr
+	@$(RMR) .ruff_cache $(PACKAGE_DIR).egg-info
 
 .PHONY: realclean
 realclean: clean
