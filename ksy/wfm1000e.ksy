@@ -68,13 +68,22 @@ types:
         type: f4
 
     instances:
+      ch1_memory_depth:
+        value: ch1_points_tmp
+        doc: Analog acquisition depth stored for channel 1.
+
+      ch2_memory_depth:
+        value: "ch[1].enabled and ch2_points_tmp == 0 ?
+                ch1_points_tmp : ch2_points_tmp"
+        doc: Channel 2 depth is omitted by some files and then matches channel 1.
+
       ch1_points:
-        value: "roll_stop == 0 ? ch1_points_tmp - 4: ch1_points_tmp-roll_stop-6"
-        doc: In rolling mode, change the number of valid samples
+        value: ch1_memory_depth - ch1_skip
+        doc: Valid channel 1 samples after trimming rolling-mode padding.
 
       ch1_skip:
         value: "roll_stop == 0 ? 0 : roll_stop + 2"
-        doc: In rolling mode, skip invalid points
+        doc: In rolling mode, firmware keeps invalid bytes after the valid samples.
 
       sample_rate_hz:
         value: time.sample_rate_hz
@@ -83,17 +92,15 @@ types:
         value: 1/sample_rate_hz
 
       ch2_points:
-        value: "ch[1].enabled and ch2_points_tmp==0 ?
-                ch1_points : ch2_points_tmp"
-        doc: Use ch1_points when ch2_points is not written
+        value: ch2_memory_depth - ch1_skip
+        doc: Valid channel 2 samples after trimming rolling-mode padding.
 
-      ch1_volt_length:
-        value: ch1_points - roll_stop
-        doc: In rolling mode, skip invalid samples
-
-      ch2_volt_length:
-        value: ch2_points - roll_stop
-        doc: In rolling mode, skip invalid samples
+      logic_words:
+        value: "logic.enabled ? ch1_memory_depth : 0"
+        doc: |
+          Logic samples are stored as `u2` values. The format note lists a
+          16K logic block for an 8K analog depth and a 1M block for a 512K
+          analog depth, so the logic section is `2 * ch1_memory_depth` bytes.
 
       ch1_time_scale:
         value: 1.0e-12 * time.scale_measured
@@ -239,10 +246,6 @@ types:
         size: _root.header.ch1_skip
         if: _root.header.ch[0].enabled
 
-      - id: sentinel_between_datasets
-        type: u4
-        if: _root.header.ch[0].enabled
-
       - id: ch2
         size: _root.header.ch2_points
         if: _root.header.ch[1].enabled
@@ -251,15 +254,11 @@ types:
         size: _root.header.ch1_skip
         if: _root.header.ch[1].enabled
 
-      - id: sentinel_between_datasets2
-        type: u4
-        if: _root.header.ch[1].enabled
-
       - id: logic
-        doc: Not clear where the LA length is stored assume same as ch1_points
+        doc: Logic analyzer samples follow the analog blocks as u2 values.
         type: u2
         repeat: expr
-        repeat-expr: "_root.header.logic.enabled ? _root.header.ch1_points: 0"
+        repeat-expr: _root.header.logic_words
 
 
 enums:
