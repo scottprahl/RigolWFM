@@ -127,6 +127,7 @@ dev = [
   "setuptools",
 
   # Notebooks (local JupyterLab workflows)
+  "ipykernel",
   "jupyterlab",
   "nbconvert",
   "nbformat",

@@ -1,6 +1,7 @@
 PACKAGE         := rigolwfm
 PACKAGE_DIR     := RigolWFM
 GITHUB_USER     := scottprahl
+REPO_NAME       := $(notdir $(CURDIR))
 
 PY_VERSION      ?= 3.14
 UV              ?= uv
@@ -29,6 +30,7 @@ REMOTE          := origin
 
 HOST            := 127.0.0.1
 PORT            := 8000
+LAB_DISPLAY     := $(REPO_NAME) (.venv)
 
 SPHINX_OPTS     := -T -E -b html -d $(DOCS_DIR)/_build/doctrees -D language=en
 PYTEST_OPTS     :=
@@ -71,6 +73,7 @@ help:
 	@echo "  dist           - Build sdist+wheel locally"
 	@echo "  html           - Build Sphinx HTML documentation"
 	@echo "  venv           - Install dependencies with uv"
+	@echo "  lab            - Launch JupyterLab with a repo-local kernel"
 	@echo ""
 	@echo "Quality Targets:"
 	@echo "  rcheck         - Run full release checks"
@@ -116,9 +119,14 @@ html: $(PYTHON_PARSERS)
 	@command -v open >/dev/null 2>&1 && open "$(HTML_DIR)/index.html" || true
 
 .PHONY: lab
-lab:
-	@echo "==> Launching JupyterLab with uv-managed environment"
-	$(RUN) python -m jupyter lab --ServerApp.root_dir="$(CURDIR)"
+lab: venv lab-kernel
+	@echo "==> Launching JupyterLab with repo-local kernel"
+	JUPYTER_PREFER_ENV_PATH=1 $(RUN) python -m jupyter lab --ServerApp.root_dir="$(CURDIR)"
+
+.PHONY: lab-kernel
+lab-kernel:
+	@echo "==> Registering Jupyter kernel $(LAB_DISPLAY)"
+	$(RUN) python -m ipykernel install --prefix "$(CURDIR)/.venv" --name python3 --display-name "$(LAB_DISPLAY)"
 
 .PHONY: yaml-check
 yaml-check:
