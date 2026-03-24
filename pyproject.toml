@@ -99,7 +99,7 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-    "kaitaistruct",
+    "kaitaistruct>=0.9",
     "numpy",
     "matplotlib",
     "requests",
@@ -169,7 +169,7 @@ exclude = [".venv", "__pycache__", "docs", "wfm", "RigolWFM/wfm[0-9]*.py", "Rigo
 
 [tool.ruff.lint]
 select = ["D", "E", "F", "W"]
-ignore = ["D200", "D212", "F403", "F403", "E501", "F401"]
+ignore = ["D200", "D212", "F403", "E501", "F401"]
 pydocstyle.convention = "google"
 
 [tool.check-manifest]
