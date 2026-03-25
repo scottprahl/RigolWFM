@@ -39,9 +39,7 @@ numpydoc_show_class_members = False
 exclude_patterns = [
     "_build",
     ".ipynb_checkpoints",
-    "first_version",
-    "sources",
-    "manuals",
+    "research",
 ]
 
 nbsphinx_execute = "never"

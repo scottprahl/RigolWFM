@@ -19,7 +19,6 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-import numpy.typing as npt
 
 import RigolWFM.bin7000_8000
 from RigolWFM.mso5000 import (

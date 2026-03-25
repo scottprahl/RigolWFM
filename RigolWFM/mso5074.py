@@ -24,10 +24,7 @@ from __future__ import annotations
 
 import struct
 import warnings
-from typing import Optional
-
 import numpy as np
-import numpy.typing as npt
 
 from RigolWFM.mso5000 import (
     ChannelHeader,

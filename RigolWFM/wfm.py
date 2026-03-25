@@ -16,7 +16,6 @@ from __future__ import annotations
 import os.path
 import sys
 import tempfile
-import typing
 import urllib.parse
 import wave
 
@@ -549,10 +548,13 @@ class Wfm:
         sample_rate = min(1.0 / data_channels[0].seconds_per_point,
                           _MAX_WAV_U32 // max(n_channels, 1))
 
-        with typing.cast(wave.Wave_write, wave.open(wav_filename, "wb")) as wavef:
+        wavef = wave.Wave_write(wav_filename)
+        try:
             wavef.setnchannels(n_channels)  # 1 = mono, 2 = stereo
             wavef.setsampwidth(1)
             wavef.setframerate(sample_rate)
             wavef.setcomptype("NONE", "")
             wavef.setnframes(channel_length)
             wavef.writeframes(out.tobytes())
+        finally:
+            wavef.close()

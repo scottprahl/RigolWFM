@@ -100,7 +100,7 @@ $(PACKAGE_DIR)/%.py: ksy/%.ksy
 
 .PHONY: dist
 dist: $(PYTHON_PARSERS)
-	$(RUN) python -m build
+	$(UV) build
 
 .PHONY: html
 html: $(PYTHON_PARSERS)
@@ -111,12 +111,12 @@ html: $(PYTHON_PARSERS)
 .PHONY: lab
 lab: venv lab-kernel
 	@echo "==> Launching JupyterLab with repo-local kernel"
-	JUPYTER_PREFER_ENV_PATH=1 $(RUN) python -m jupyter lab --ServerApp.root_dir="$(CURDIR)"
+	JUPYTER_PREFER_ENV_PATH=1 $(RUN) jupyter lab --ServerApp.root_dir="$(CURDIR)"
 
 .PHONY: lab-kernel
 lab-kernel:
 	@echo "==> Registering Jupyter kernel $(LAB_DISPLAY)"
-	$(RUN) python -m ipykernel install --prefix "$(CURDIR)/.venv" --name python3 --display-name "$(LAB_DISPLAY)"
+	$(RUN) ipykernel install --prefix "$(CURDIR)/.venv" --name python3 --display-name "$(LAB_DISPLAY)"
 
 .PHONY: yaml-check
 yaml-check:
@@ -142,7 +142,7 @@ ruff-check:
 
 .PHONY: manifest-check
 manifest-check:
-	@$(RUN) check-manifest
+	@$(RUN) --with pip check-manifest
 
 .PHONY: pyroma-check
 pyroma-check:
@@ -161,9 +161,8 @@ note-test: $(PYTHON_PARSERS)
 	$(RUN) pytest --verbose tests/test_all_notebooks.py
 
 .PHONY: rcheck
-rcheck:
+rcheck: realclean
 	@echo "Running all release checks..."
-	@$(MAKE) realclean
 	@$(MAKE) all
 	@$(MAKE) yaml-check
 	@$(MAKE) rst-check
@@ -183,7 +182,7 @@ lite: lite-clean $(LITE_CONFIG) dist
 	@echo "==> Staging notebooks from $(DOCS_DIR) -> $(STAGE_DIR)"
 	@mkdir -p "$(STAGE_DIR)"
 	cp "$(DOCS_DIR)"/*.ipynb "$(STAGE_DIR)"
-	$(RUN) python -m jupyter nbconvert --clear-output --inplace "$(STAGE_DIR)"/*.ipynb
+	$(RUN) jupyter nbconvert --clear-output --inplace "$(STAGE_DIR)"/*.ipynb
 	@echo "==> Building JupyterLite"
 	@$(RUN_LITE) jupyter lite build \
 		--config="$(LITE_CONFIG)" \
