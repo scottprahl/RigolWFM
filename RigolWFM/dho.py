@@ -27,16 +27,22 @@ adapter in `dho.py` lets the generated files stay generated, keeps the
 handwritten DHO interpretation in one place, and gives the rest of the project
 one stable DHO entry point.
 """
+from __future__ import annotations
 
 import struct
 import zlib
 from enum import IntEnum
+from typing import Any, Optional
 
 import numpy as np
+import numpy.typing as npt
 from kaitaistruct import BytesIO, KaitaiStream
 
 import RigolWFM.bindho1000
 import RigolWFM.wfmdho1000
+
+_Bindho1000: Any = RigolWFM.bindho1000.Bindho1000  # type: ignore[attr-defined]
+_Wfmdho1000: Any = RigolWFM.wfmdho1000.Wfmdho1000  # type: ignore[attr-defined]
 
 _DHO_FILE_HEADER_SIZE = 24
 _DHO_BLOCK_HEADER_SIZE = 12
@@ -68,7 +74,18 @@ class CouplingEnum(IntEnum):
 class ChannelHeader:
     """Normalized per-channel metadata for DHO captures."""
 
-    def __init__(self, name, enabled, unit_code=0):
+    name: str
+    enabled: bool
+    unit_code: int
+    coupling: CouplingEnum
+    inverted: bool
+    volt_per_division: float
+    volt_offset: float
+    volt_scale: float
+    probe_value: float
+    unit: UnitEnum
+
+    def __init__(self, name: str, enabled: bool, unit_code: int = 0) -> None:
         """Initialize channel metadata."""
         self.name = name
         self.enabled = enabled
@@ -82,12 +99,12 @@ class ChannelHeader:
         self.unit = UnitEnum(unit_code) if 0 <= unit_code <= 6 else UnitEnum.unknown
 
     @property
-    def y_scale(self):
+    def y_scale(self) -> float:
         """DHO voltage data is already calibrated."""
         return 1.0
 
     @property
-    def y_offset(self):
+    def y_offset(self) -> float:
         """DHO voltage data is already calibrated."""
         return 0.0
 
@@ -95,7 +112,21 @@ class ChannelHeader:
 class Header:
     """Normalized header used by `Wfm.from_file()` for DHO captures."""
 
-    def __init__(self):
+    cookie: str
+    n_waveforms: int
+    n_pts: int
+    x_origin: float
+    x_increment: float
+    model: str
+    firmware: str
+    volt_scale: float
+    volt_offset: float
+    volt_per_div: float
+    ch: list[ChannelHeader]
+    raw_data: list[Optional[npt.NDArray[np.uint16]]]
+    channel_data: list[Optional[npt.NDArray[np.float32]]]
+
+    def __init__(self) -> None:
         """Initialize an empty DHO header."""
         self.cookie = ""
         self.n_waveforms = 0
@@ -112,29 +143,29 @@ class Header:
         self.channel_data = [None] * 4
 
     @property
-    def seconds_per_point(self):
+    def seconds_per_point(self) -> float:
         """Time between samples in seconds."""
         return self.x_increment
 
     @property
-    def time_scale(self):
+    def time_scale(self) -> float:
         """Time per division (10 divisions per screen)."""
         if self.n_pts > 0 and self.x_increment > 0:
             return self.n_pts * self.x_increment / 10.0
         return 1e-3
 
     @property
-    def points(self):
+    def points(self) -> int:
         """Number of sample points."""
         return self.n_pts
 
     @property
-    def firmware_version(self):
+    def firmware_version(self) -> str:
         """Firmware version if known."""
         return self.firmware
 
     @property
-    def model_number(self):
+    def model_number(self) -> str:
         """Scope model string if known."""
         return self.model
 
@@ -142,21 +173,23 @@ class Header:
 class DhoWaveform:
     """Normalized DHO parser result consumed by `Channel`."""
 
-    def __init__(self):
+    header: Header
+
+    def __init__(self) -> None:
         """Initialize the normalized DHO wrapper."""
         self.header = Header()
 
     @property
-    def parser_name(self):
+    def parser_name(self) -> str:
         """Return the normalized parser name used by `Wfm.from_file()`."""
         return "dho1000"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return a parser tag compatible with the rest of `Wfm.from_file()`."""
         return f"x.{self.parser_name}"
 
 
-def _is_bin(file_name):
+def _is_bin(file_name: str) -> bool:
     """Return True if the file starts with the `RG` DHO `.bin` cookie."""
     try:
         with open(file_name, "rb") as f:
@@ -165,7 +198,7 @@ def _is_bin(file_name):
         return False
 
 
-def _channel_slot(ch_name, fallback):
+def _channel_slot(ch_name: str, fallback: int) -> int:
     """Map channel names like `CH2` to a zero-based channel slot."""
     name_upper = ch_name.upper()
     for prefix in ("CH", "C"):
@@ -180,7 +213,7 @@ def _channel_slot(ch_name, fallback):
     return fallback
 
 
-def _try_decompress(data):
+def _try_decompress(data: bytes) -> bytes:
     """Attempt zlib decompression and fall back to the original bytes."""
     try:
         return zlib.decompress(data)
@@ -188,10 +221,13 @@ def _try_decompress(data):
         return data
 
 
-def _parse_blocks(data, file_header_size=_DHO_FILE_HEADER_SIZE):
+def _parse_blocks(
+    data: bytes,
+    file_header_size: int = _DHO_FILE_HEADER_SIZE,
+) -> tuple[list[tuple[Any, bytes, int]], int]:
     """Return decompressed DHO metadata blocks and the start of the padding region."""
-    parsed = RigolWFM.wfmdho1000.Wfmdho1000.from_bytes(data)
-    blocks = []
+    parsed = _Wfmdho1000.from_bytes(data)
+    blocks: list[tuple[Any, bytes, int]] = []
     offset = file_header_size
 
     for block in parsed.blocks:
@@ -205,15 +241,17 @@ def _parse_blocks(data, file_header_size=_DHO_FILE_HEADER_SIZE):
     return blocks, offset
 
 
-def _extract_volt_calibration(blocks):
+def _extract_volt_calibration(
+    blocks: list[tuple[Any, bytes, int]],
+) -> tuple[bool, dict[int, tuple[float, float, float]]]:
     """Extract DHO channel calibration from parsed metadata blocks."""
-    parser = RigolWFM.wfmdho1000.Wfmdho1000
+    parser = _Wfmdho1000
     block_type_enum = parser.BlockTypeEnum
     dho1000_params_type = parser.Dho1000ChannelParams
     dho800_params_type = parser.Dho800ChannelParams
     settings_type = parser.SettingsBlock
 
-    def parse_payload(payload_type, content):
+    def parse_payload(payload_type: Any, content: bytes) -> Any:
         return payload_type(KaitaiStream(BytesIO(content)))
 
     is_dho800 = any(
@@ -222,7 +260,7 @@ def _extract_volt_calibration(blocks):
         for block, _, _ in blocks
     )
 
-    cal = {}
+    cal: dict[int, tuple[float, float, float]] = {}
     if is_dho800:
         for block, content, _ in blocks:
             block_type = getattr(block.block_type, "value", block.block_type)
@@ -253,26 +291,30 @@ def _extract_volt_calibration(blocks):
     return is_dho800, cal
 
 
-def _find_data_section(data, blocks_end_offset, is_dho800=False):
+def _find_data_section(
+    data: bytes,
+    blocks_end_offset: int,
+    is_dho800: bool = False,
+) -> Optional[tuple[int, int, float, float, int]]:
     """Locate the DHO sample data section after the metadata padding region."""
     offset = blocks_end_offset
     while offset < len(data) and data[offset] == 0:
         offset += 1
 
     if offset + 40 >= len(data):
-        return None, None, None, None, None
+        return None
 
     (n_pts_u64,) = struct.unpack_from("<Q", data, offset)
     if offset + 28 > len(data):
-        return None, None, None, None, None
+        return None
 
     if is_dho800:
         if n_pts_u64 == 0 or n_pts_u64 > 2_000_000_000:
-            return None, None, None, None, None
+            return None
         total_pts = n_pts_u64
     else:
         if n_pts_u64 <= 64 or n_pts_u64 > 2_000_000_000:
-            return None, None, None, None, None
+            return None
         total_pts = n_pts_u64 - 64
 
     (n_pts_hint,) = struct.unpack_from("<I", data, offset + 24)
@@ -284,7 +326,7 @@ def _find_data_section(data, blocks_end_offset, is_dho800=False):
         n_ch = 1
 
     if n_pts_per_ch == 0 or n_ch <= 0 or n_ch > 4:
-        return None, None, None, None, None
+        return None
 
     (x_increment_ns,) = struct.unpack_from("<I", data, offset + 16)
     if x_increment_ns == 0 or x_increment_ns > 1_000_000_000:
@@ -293,10 +335,10 @@ def _find_data_section(data, blocks_end_offset, is_dho800=False):
     scale = _DHO_X_INCREMENT_SCALE_DHO800 if is_dho800 else _DHO_X_INCREMENT_SCALE
     x_increment = x_increment_ns * scale
     x_origin = -(n_pts_per_ch / 2) * x_increment
-    return n_pts_per_ch, n_ch, x_origin, x_increment, offset + 40
+    return int(n_pts_per_ch), int(n_ch), x_origin, x_increment, offset + 40
 
 
-def _parse_model(blocks):
+def _parse_model(blocks: list[tuple[Any, bytes, int]]) -> str:
     """Return the first printable DHO/MSO model string found in metadata blocks."""
     for _, content, _ in blocks:
         try:
@@ -319,13 +361,13 @@ def _parse_model(blocks):
     return ""
 
 
-def _from_bin(file_name):
+def _from_bin(file_name: str) -> DhoWaveform:
     """Parse a DHO `.bin` file and normalize it for `Wfm.from_file()`."""
-    raw = RigolWFM.bindho1000.Bindho1000.from_file(file_name)
+    raw = _Bindho1000.from_file(file_name)
     supported_buffer_types = {
-        RigolWFM.bindho1000.Bindho1000.BufferTypeEnum.float32_normal,
-        RigolWFM.bindho1000.Bindho1000.BufferTypeEnum.float32_maximum,
-        RigolWFM.bindho1000.Bindho1000.BufferTypeEnum.float32_minimum,
+        _Bindho1000.BufferTypeEnum.float32_normal,
+        _Bindho1000.BufferTypeEnum.float32_maximum,
+        _Bindho1000.BufferTypeEnum.float32_minimum,
     }
 
     obj = DhoWaveform()
@@ -365,7 +407,7 @@ def _from_bin(file_name):
     return obj
 
 
-def _from_wfm(file_name):
+def _from_wfm(file_name: str) -> DhoWaveform:
     """Parse a DHO `.wfm` file and normalize it for `Wfm.from_file()`."""
     with open(file_name, "rb") as f:
         data = f.read()
@@ -384,11 +426,10 @@ def _from_wfm(file_name):
             "Ensure this is a DHO series .wfm file."
         )
 
-    n_pts, n_ch, x_origin, x_increment, data_start = _find_data_section(
-        data, blocks_end, is_dho800=is_dho800
-    )
-    if n_pts is None:
+    _data_section = _find_data_section(data, blocks_end, is_dho800=is_dho800)
+    if _data_section is None:
         raise ValueError(f"Could not locate data section in {file_name}")
+    n_pts, n_ch, x_origin, x_increment, data_start = _data_section
     if data_start + n_pts * n_ch * 2 > len(data):
         raise ValueError(
             f"Data section claims {n_pts * n_ch} samples but file is too small"
@@ -423,13 +464,13 @@ def _from_wfm(file_name):
     return obj
 
 
-def from_file(file_name):
+def from_file(file_name: str) -> DhoWaveform:
     """Parse and normalize either DHO `.bin` or `.wfm` input."""
     if _is_bin(file_name):
         return _from_bin(file_name)
     return _from_wfm(file_name)
 
 
-def dho_from_file(file_name):
+def dho_from_file(file_name: str) -> DhoWaveform:
     """Backward-compatible alias for older callers of the DHO adapter."""
     return from_file(file_name)

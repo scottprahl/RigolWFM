@@ -14,8 +14,12 @@ The 7000/8000 binary container is structurally identical to the MSO5000 one.
 Shared helper types (ChannelHeader, Header, _channel_slot, etc.) are imported
 from `RigolWFM.mso5000` rather than duplicated here.
 """
+from __future__ import annotations
+
+from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 
 import RigolWFM.bin7000_8000
 from RigolWFM.mso5000 import (
@@ -31,27 +35,30 @@ from RigolWFM.mso5000 import (
 class Mso7000_8000Waveform:
     """Normalized parser result consumed by `Channel`."""
 
-    def __init__(self):
+    header: Header
+
+    def __init__(self) -> None:
         """Initialize the normalized wrapper."""
         self.header = Header()
 
     @property
-    def parser_name(self):
+    def parser_name(self) -> str:
         """Return the normalized parser name used by `Wfm.from_file()`."""
         return "bin7000_8000"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return a parser tag compatible with the rest of `Wfm.from_file()`."""
         return f"x.{self.parser_name}"
 
 
-def from_file(file_name):
+def from_file(file_name: str) -> Mso7000_8000Waveform:
     """Parse a Rigol 7000/8000 `.bin` file and normalize it for `Wfm.from_file()`."""
-    raw = RigolWFM.bin7000_8000.Bin70008000.from_file(file_name)
+    Bin70008000: Any = RigolWFM.bin7000_8000.Bin70008000  # type: ignore[attr-defined]
+    raw = Bin70008000.from_file(file_name)
     supported_buffer_types = {
-        RigolWFM.bin7000_8000.Bin70008000.BufferTypeEnum.normal_float32,
-        RigolWFM.bin7000_8000.Bin70008000.BufferTypeEnum.maximum_float32,
-        RigolWFM.bin7000_8000.Bin70008000.BufferTypeEnum.minimum_float32,
+        Bin70008000.BufferTypeEnum.normal_float32,
+        Bin70008000.BufferTypeEnum.maximum_float32,
+        Bin70008000.BufferTypeEnum.minimum_float32,
     }
 
     obj = Mso7000_8000Waveform()
@@ -70,9 +77,9 @@ def from_file(file_name):
         buffer_type = data_header.buffer_type
 
         if (
-            waveform_type == RigolWFM.bin7000_8000.Bin70008000.WaveformTypeEnum.logic
+            waveform_type == Bin70008000.WaveformTypeEnum.logic
             or label.upper().startswith("LA")
-            or buffer_type == RigolWFM.bin7000_8000.Bin70008000.BufferTypeEnum.digital_u8
+            or buffer_type == Bin70008000.BufferTypeEnum.digital_u8
         ):
             raise ValueError(
                 "Unsupported 7000/8000 logic waveform record. "

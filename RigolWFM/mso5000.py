@@ -10,10 +10,13 @@ the shipped MSO5000 example files. Logic-analyzer records are detected and
 rejected explicitly for now because the current repo has no matching fixtures to
 validate their layout.
 """
+from __future__ import annotations
 
 from enum import IntEnum
+from typing import Any, Optional
 
 import numpy as np
+import numpy.typing as npt
 
 import RigolWFM.bin5000
 
@@ -33,7 +36,16 @@ class UnitEnum(IntEnum):
 class ChannelHeader:
     """Normalized per-channel metadata for MSO5000 captures."""
 
-    def __init__(self, name, enabled, unit_code=0):
+    name: str
+    enabled: bool
+    unit: UnitEnum
+    inverted: bool
+    probe_value: float
+    volt_per_division: float
+    volt_offset: float
+    volt_scale: float
+
+    def __init__(self, name: str, enabled: bool, unit_code: int = 0) -> None:
         """Initialize channel metadata."""
         self.name = name
         self.enabled = enabled
@@ -45,12 +57,12 @@ class ChannelHeader:
         self.volt_scale = 1.0
 
     @property
-    def y_scale(self):
+    def y_scale(self) -> float:
         """MSO5000 `.bin` voltage data is already calibrated."""
         return 1.0
 
     @property
-    def y_offset(self):
+    def y_offset(self) -> float:
         """MSO5000 `.bin` voltage data is already calibrated."""
         return 0.0
 
@@ -58,7 +70,19 @@ class ChannelHeader:
 class Header:
     """Normalized header used by `Wfm.from_file()` for MSO5000 captures."""
 
-    def __init__(self):
+    cookie: str
+    version: str
+    n_waveforms: int
+    n_pts: int
+    x_origin: float
+    x_increment: float
+    x_display_range: float
+    model: str
+    ch: list[ChannelHeader]
+    raw_data: list[Optional[npt.NDArray[np.uint8]]]
+    channel_data: list[Optional[npt.NDArray[np.float32]]]
+
+    def __init__(self) -> None:
         """Initialize an empty MSO5000 header."""
         self.cookie = ""
         self.version = ""
@@ -73,12 +97,12 @@ class Header:
         self.channel_data = [None] * 4
 
     @property
-    def seconds_per_point(self):
+    def seconds_per_point(self) -> float:
         """Time between samples in seconds."""
         return self.x_increment
 
     @property
-    def time_scale(self):
+    def time_scale(self) -> float:
         """Horizontal time base in seconds per division."""
         if self.x_display_range > 0:
             return self.x_display_range / 10.0
@@ -87,24 +111,24 @@ class Header:
         return 1e-3
 
     @property
-    def time_offset(self):
+    def time_offset(self) -> float:
         """Horizontal offset relative to the screen center."""
         if self.n_pts > 0:
             return self.n_pts * self.x_increment / 2.0 - self.x_origin
         return -self.x_origin
 
     @property
-    def points(self):
+    def points(self) -> int:
         """Number of sample points."""
         return self.n_pts
 
     @property
-    def firmware_version(self):
+    def firmware_version(self) -> str:
         """Return the file format version string."""
         return self.version
 
     @property
-    def model_number(self):
+    def model_number(self) -> str:
         """Return the scope model string if present."""
         return self.model
 
@@ -112,21 +136,23 @@ class Header:
 class Mso5000Waveform:
     """Normalized MSO5000 parser result consumed by `Channel`."""
 
-    def __init__(self):
+    header: Header
+
+    def __init__(self) -> None:
         """Initialize the normalized MSO5000 wrapper."""
         self.header = Header()
 
     @property
-    def parser_name(self):
+    def parser_name(self) -> str:
         """Return the normalized parser name used by `Wfm.from_file()`."""
         return "bin5000"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return a parser tag compatible with the rest of `Wfm.from_file()`."""
         return f"x.{self.parser_name}"
 
 
-def _channel_slot(label, fallback):
+def _channel_slot(label: str, fallback: int) -> Optional[int]:
     """Map channel labels like `CH2` to zero-based channel slots."""
     label_upper = label.upper()
     if label_upper.startswith("LA"):
@@ -141,7 +167,7 @@ def _channel_slot(label, fallback):
     return fallback
 
 
-def _estimate_volts_per_division(values):
+def _estimate_volts_per_division(values: npt.NDArray[np.float32]) -> float:
     """Estimate a readable volts/division from calibrated samples."""
     if values.size == 0:
         return 1.0
@@ -156,7 +182,7 @@ def _estimate_volts_per_division(values):
     return max(span / 8.0, 1e-3)
 
 
-def _proxy_raw(values):
+def _proxy_raw(values: npt.NDArray[np.float32]) -> npt.NDArray[np.uint8]:
     """Create a stable uint8 proxy for calibrated volt samples."""
     if values.size == 0:
         return np.empty((0,), dtype=np.uint8)
@@ -176,22 +202,23 @@ def _proxy_raw(values):
     return np.clip(np.rint(raw), 0, 255).astype(np.uint8)
 
 
-def _model_from_frame(frame_string):
+def _model_from_frame(frame_string: str) -> str:
     """Extract the model name from `MODEL:SERIAL` frame strings."""
     if ":" in frame_string:
         return frame_string.split(":", 1)[0]
     return frame_string
 
 
-def from_file(file_name):
+def from_file(file_name: str) -> Mso5000Waveform:
     """Parse a Rigol MSO5000 `.bin` file and normalize it for `Wfm.from_file()`."""
-    raw = RigolWFM.bin5000.Bin5000.from_file(file_name)
+    Bin5000: Any = RigolWFM.bin5000.Bin5000  # type: ignore[attr-defined]
+    raw = Bin5000.from_file(file_name)
     supported_buffer_types = {
-        RigolWFM.bin5000.Bin5000.BufferTypeEnum.normal_float32,
-        RigolWFM.bin5000.Bin5000.BufferTypeEnum.maximum_float32,
-        RigolWFM.bin5000.Bin5000.BufferTypeEnum.minimum_float32,
-        RigolWFM.bin5000.Bin5000.BufferTypeEnum.time_float32,
-        RigolWFM.bin5000.Bin5000.BufferTypeEnum.counts_float32,
+        Bin5000.BufferTypeEnum.normal_float32,
+        Bin5000.BufferTypeEnum.maximum_float32,
+        Bin5000.BufferTypeEnum.minimum_float32,
+        Bin5000.BufferTypeEnum.time_float32,
+        Bin5000.BufferTypeEnum.counts_float32,
     }
 
     obj = Mso5000Waveform()
@@ -210,9 +237,9 @@ def from_file(file_name):
         buffer_type = data_header.buffer_type
 
         if (
-            waveform_type == RigolWFM.bin5000.Bin5000.WaveformTypeEnum.logic
+            waveform_type == Bin5000.WaveformTypeEnum.logic
             or label.upper().startswith("LA")
-            or buffer_type == RigolWFM.bin5000.Bin5000.BufferTypeEnum.digital_u8
+            or buffer_type == Bin5000.BufferTypeEnum.digital_u8
         ):
             raise ValueError(
                 "Unsupported MSO5000 logic waveform record. "

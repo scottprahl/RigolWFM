@@ -14,7 +14,7 @@ RMR             ?= rm -rf
 KSC             ?= kaitai-struct-compiler
 KSY_OPTIONS     := --outdir $(PACKAGE_DIR)
 KSY_PY_OPTIONS  := -t python $(KSY_OPTIONS)
-YAML_LINT_OPTS  := -d "{extends: default, rules: {document-start: disable}}"
+YAML_LINT_OPTS  := -d "{extends: default, rules: {document-start: disable, line-length: {max: 120}}}"
 
 DOCS_DIR        := docs
 HTML_DIR        := $(DOCS_DIR)/_build/html
@@ -148,6 +148,10 @@ manifest-check:
 pyroma-check:
 	@$(RUN) pyroma -d .
 
+.PHONY: mypy-check
+mypy-check:
+	@$(RUN) mypy
+
 .PHONY: test
 test: $(PYTHON_PARSERS)
 	$(RUN) pytest $(PYTEST_OPTS) tests --ignore=tests/test_all_notebooks.py
@@ -164,6 +168,7 @@ rcheck:
 	@$(MAKE) yaml-check
 	@$(MAKE) rst-check
 	@$(MAKE) pylint-check
+	@$(MAKE) mypy-check
 	@$(MAKE) manifest-check
 	@$(MAKE) pyroma-check
 	@$(MAKE) html

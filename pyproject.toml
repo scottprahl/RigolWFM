@@ -120,6 +120,7 @@ dev = [
   "rstcheck[toml,sphinx]",
   "pylint",
   "ruff",
+  "mypy",
 
   "check-manifest",
   "pyroma",
@@ -184,3 +185,17 @@ ignore = [
     "wfm/*",
     "ksy/*",
 ]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["RigolWFM"]
+exclude = [
+    "RigolWFM/wfm[0-9].*\\.py",
+    "RigolWFM/bin[0-9].*\\.py",
+    "RigolWFM/wfmdho1000\\.py",
+    "RigolWFM/bindho.*\\.py",
+]
+
+[[tool.mypy.overrides]]
+module = ["kaitaistruct"]
+ignore_missing_imports = true

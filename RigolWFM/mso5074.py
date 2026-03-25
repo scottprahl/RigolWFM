@@ -20,11 +20,14 @@ This adapter corrects for all of the above.  Voltage values are expressed in
 approximate volts using a default 1 V/div scale because the file contains no
 calibration coefficients.
 """
+from __future__ import annotations
 
 import struct
 import warnings
+from typing import Optional
 
 import numpy as np
+import numpy.typing as npt
 
 from RigolWFM.mso5000 import (
     ChannelHeader,
@@ -52,9 +55,9 @@ _ADC_MIDPOINT = 127.0   # midpoint of the 8-bit unsigned ADC range
 _COUNTS_PER_VOLT = 25.0  # approximate ADC counts per volt (1 V/div, 25 cts/div)
 
 
-def _find_block_offsets(data):
+def _find_block_offsets(data: bytes) -> list[int]:
     """Return byte offsets of all RG01 magic markers in *data*."""
-    offsets = []
+    offsets: list[int] = []
     pos = 0
     while True:
         idx = data.find(_RG01_MAGIC, pos)
@@ -65,7 +68,7 @@ def _find_block_offsets(data):
     return offsets
 
 
-def _parse_waveform_header(data, block_offset):
+def _parse_waveform_header(data: bytes, block_offset: int) -> dict[str, object]:
     """Return a dict of waveform-header fields for the block at *block_offset*."""
     wh = block_offset + 12  # skip the 12-byte file header
     header_size = struct.unpack_from("<I", data, wh + _WH_HEADER_SIZE)[0]
@@ -92,7 +95,7 @@ def _parse_waveform_header(data, block_offset):
     }
 
 
-def from_file(file_name):
+def from_file(file_name: str) -> Mso5000Waveform:
     """Parse a Rigol MSO5074 `.bin` file and normalize it for `Wfm.from_file()`.
 
     The MSO5074 firmware stores nearly all metadata fields incorrectly.  This
@@ -135,7 +138,7 @@ def from_file(file_name):
             continue
 
         # Derive x_increment from x_display_range — the only reliable timing field.
-        x_display_range = float(wh_fields["x_display_range"])
+        x_display_range = float(wh_fields["x_display_range"])  # type: ignore[arg-type]
         if x_display_range > 0.0 and actual_n_pts > 1:
             x_increment = x_display_range / actual_n_pts
         else:
@@ -144,15 +147,15 @@ def from_file(file_name):
         if header.n_pts == 0:
             header.n_pts = actual_n_pts
             header.x_increment = x_increment
-            header.x_origin = float(wh_fields["x_origin"])
+            header.x_origin = float(wh_fields["x_origin"])  # type: ignore[arg-type]
             header.x_display_range = x_display_range
-            header.model = _model_from_frame(wh_fields["frame_string"])
+            header.model = _model_from_frame(str(wh_fields["frame_string"]))
 
         # Convert raw uint8 ADC counts to approximate volts.
         # No calibration coefficients are present in the file.
         volts = (samples.astype(np.float64) - _ADC_MIDPOINT) / _COUNTS_PER_VOLT
 
-        ch_name = wh_fields["waveform_label"] or f"CH{slot + 1}"
+        ch_name = str(wh_fields["waveform_label"]) or f"CH{slot + 1}"
         channel = ChannelHeader(ch_name, enabled=True, unit_code=1)  # 1 = V
         channel.volt_per_division = 1.0
 

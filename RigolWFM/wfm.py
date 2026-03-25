@@ -11,15 +11,19 @@ Example:
     >>> print(description)
 
 """
+from __future__ import annotations
+
 import os.path
 import sys
 import tempfile
+import typing
 import urllib.parse
 import wave
 
 import matplotlib.pyplot as plt
 import numpy as np
-import requests
+import numpy.typing as npt
+import requests  # type: ignore[import-untyped]
 
 import RigolWFM.dho
 import RigolWFM.mso5000
@@ -36,10 +40,10 @@ import RigolWFM.wfm6000
 import RigolWFM.channel
 
 # in progress
-DS1000B_scopes = ["B", "1000B", "DS1000B", "DS1074B", "DS1104B", "DS1204B"]
+DS1000B_scopes: list[str] = ["B", "1000B", "DS1000B", "DS1074B", "DS1104B", "DS1204B"]
 
 # tested
-DS1000C_scopes = [
+DS1000C_scopes: list[str] = [
     "C",
     "1000C",
     "DS1000C",
@@ -54,13 +58,13 @@ DS1000C_scopes = [
 ]
 
 # tested
-DS1000D_scopes = ["D", "1000D", "DS1000D", "DS1102D", "DS1052D"]
+DS1000D_scopes: list[str] = ["D", "1000D", "DS1000D", "DS1102D", "DS1052D"]
 
 # tested
-DS1000E_scopes = ["E", "1000E", "DS1000E", "DS1102E", "DS1052E"]
+DS1000E_scopes: list[str] = ["E", "1000E", "DS1000E", "DS1102E", "DS1052E"]
 
 # tested, wonky voltages
-DS1000Z_scopes = [
+DS1000Z_scopes: list[str] = [
     "Z",
     "1000Z",
     "DS1000Z",
@@ -76,7 +80,7 @@ DS1000Z_scopes = [
 ]
 
 # tested
-DS2000_scopes = [
+DS2000_scopes: list[str] = [
     "2",
     "2000",
     "DS2000",
@@ -93,7 +97,7 @@ DS2000_scopes = [
 ]
 
 # tested
-DS4000_scopes = [
+DS4000_scopes: list[str] = [
     "4",
     "4000",
     "DS4000",
@@ -116,29 +120,29 @@ DS4000_scopes = [
 ]
 
 # untested
-DS6000_scopes = ["6", "6000", "DS6000", "DS6062", "DS6064", "DS6102", "DS6104"]
+DS6000_scopes: list[str] = ["6", "6000", "DS6000", "DS6062", "DS6064", "DS6102", "DS6104"]
 
 # example-backed `.bin` support
-DS5000_scopes = ["5", "5000", "MSO5000"]
+DS5000_scopes: list[str] = ["5", "5000", "MSO5000"]
 
 # MSO5074 uses a different firmware format (uint8 ADC counts, wrong metadata)
-MSO5074_scopes = ["5074", "MSO5074"]
+MSO5074_scopes: list[str] = ["5074", "MSO5074"]
 
 # manual-backed `.bin` support
-DS7000_scopes = ["7", "7000", "DS7000", "MSO7000"]
+DS7000_scopes: list[str] = ["7", "7000", "DS7000", "MSO7000"]
 
 # manual-backed `.bin` support
-DS8000_scopes = ["8", "8000", "MSO8000"]
+DS8000_scopes: list[str] = ["8", "8000", "MSO8000"]
 
 # DHO800/DHO1000 series (.bin and .wfm - format detected by file extension)
-DHO1000_scopes = [
+DHO1000_scopes: list[str] = [
     "DHO", "DHO800", "DHO1000",
     "DHO804", "DHO812", "DHO814", "DHO824",
     "DHO1072", "DHO1074", "DHO1102", "DHO1202", "DHO1204",
 ]
 
 
-def valid_scope_list():
+def valid_scope_list() -> str:
     """List all the oscilloscope types."""
     s = "\nRigol oscilloscope models:\n    "
     s += ", ".join(DS1000B_scopes) + "\n    "
@@ -157,7 +161,7 @@ def valid_scope_list():
     return s
 
 
-def _scope_family(name):
+def _scope_family(name: str) -> str:
     """Return the alphabetic prefix of a scope name (e.g. 'MSO' from 'MSO5074').
 
     Used to detect obvious model mismatches between user-supplied model codes
@@ -169,7 +173,7 @@ def _scope_family(name):
     return "".join(c for c in name.upper() if c.isalpha())
 
 
-def dho_from_file(file_name):
+def dho_from_file(file_name: str) -> RigolWFM.dho.DhoWaveform:
     """Backward-compatible wrapper around `RigolWFM.dho.from_file()`."""
     return RigolWFM.dho.from_file(file_name)
 
@@ -201,7 +205,16 @@ class Channel_Not_In_WFM_Error(Exception):
 class Wfm:
     """Class with parsed data from a .wfm file."""
 
-    def __init__(self, file_name):
+    channels: list[RigolWFM.channel.Channel]
+    original_name: str
+    file_name: str
+    basename: str
+    firmware: str
+    user_name: str
+    parser_name: str
+    header_name: str
+
+    def __init__(self, file_name: str) -> None:
         """Initialize a Wfm object from a file."""
         self.channels = []
         self.original_name = file_name
@@ -218,7 +231,7 @@ class Wfm:
         self.header_name = "unknown"
 
     @classmethod
-    def from_file(cls, file_name, model, selected="1234"):
+    def from_file(cls, file_name: str, model: str, selected: str = "1234") -> Wfm:
         """
         Create Wfm object from a file.
 
@@ -245,31 +258,31 @@ class Wfm:
         umodel = model.upper()
 
         if umodel in DS1000B_scopes:
-            w = RigolWFM.wfm1000b.Wfm1000b.from_file(file_name)
+            w = RigolWFM.wfm1000b.Wfm1000b.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = "DS1000B"
 
         elif umodel in DS1000C_scopes:
-            w = RigolWFM.wfm1000c.Wfm1000c.from_file(file_name)
+            w = RigolWFM.wfm1000c.Wfm1000c.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = "DS1000C"
 
         elif umodel in DS1000D_scopes:
-            w = RigolWFM.wfm1000d.Wfm1000d.from_file(file_name)
+            w = RigolWFM.wfm1000d.Wfm1000d.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = "DS1000D"
 
         elif umodel in DS1000E_scopes:
-            w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)
+            w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = "DS1000E"
 
         elif umodel in DS1000Z_scopes:
-            w = RigolWFM.wfm1000z.Wfm1000z.from_file(file_name)
+            w = RigolWFM.wfm1000z.Wfm1000z.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = w.preheader.model_number
 
         elif umodel in DS2000_scopes:
-            w = RigolWFM.wfm2000.Wfm2000.from_file(file_name)
+            w = RigolWFM.wfm2000.Wfm2000.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = "DS2000"
 
         elif umodel in DS4000_scopes:
-            w = RigolWFM.wfm4000.Wfm4000.from_file(file_name)
+            w = RigolWFM.wfm4000.Wfm4000.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = w.header.model_number
 
         elif umodel in DS5000_scopes:
@@ -289,7 +302,7 @@ class Wfm:
             new_wfm.header_name = w.header.model_number or "MSO8000"
 
         elif umodel in DS6000_scopes:
-            w = RigolWFM.wfm6000.Wfm6000.from_file(file_name)
+            w = RigolWFM.wfm6000.Wfm6000.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = w.header.model_number
 
         elif umodel in DHO1000_scopes:
@@ -347,7 +360,7 @@ class Wfm:
         return new_wfm
 
     @classmethod
-    def from_url(cls, url, model, selected="1234"):
+    def from_url(cls, url: str, model: str, selected: str = "1234") -> Wfm:
         """
         Return a waveform object given a URL.
 
@@ -397,7 +410,7 @@ class Wfm:
         except requests.exceptions.RequestException as e:
             raise Read_WFM_Error(f"Failed to download '{url}': {e}") from e
 
-    def describe(self):
+    def describe(self) -> str:
         """Return a string describing the contents of a Rigol wfm file."""
         s = "    General:\n"
         s += "        File Model   = %s\n" % self.header_name
@@ -420,7 +433,7 @@ class Wfm:
             s += "\n"
         return s
 
-    def best_scaling(self):
+    def best_scaling(self) -> tuple[float, str, float, str]:
         """Return appropriate scaling for plot."""
         v_scale = 1e-12
         v_prefix = ""
@@ -437,14 +450,14 @@ class Wfm:
                 h_prefix = p
         return h_scale, h_prefix, v_scale, v_prefix
 
-    def plot(self):
+    def plot(self) -> None:
         """Plot the data."""
         h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()
         colors = ["red", "blue", "orange", "magenta"]
 
         for i, ch in enumerate(self.channels):
             plt.plot(
-                ch.times * h_scale, ch.volts * v_scale, label=ch.name, color=colors[i]
+                ch.times * h_scale, ch.volts * v_scale, label=ch.name, color=colors[i]  # type: ignore[operator]
             )
 
         plt.xlabel("Time (%ss)" % h_prefix)
@@ -452,7 +465,7 @@ class Wfm:
         plt.title(self.basename)
         plt.legend(loc="upper right")
 
-    def csv(self):
+    def csv(self) -> str:
         """Return a string of comma separated values."""
         data_channels = [ch for ch in self.channels if ch.enabled_and_selected]
         if not data_channels:
@@ -476,14 +489,16 @@ class Wfm:
 
         n_pts = min(ch.points for ch in data_channels)
         times = data_channels[0].times
+        assert times is not None
         for i in range(n_pts):
             s += "%.6f" % (times[i] * h_scale)
             for ch in data_channels:
+                assert ch.volts is not None
                 s += ",%.2f" % (ch.volts[i] * v_scale)
             s += "\n"
         return s
 
-    def sigrokcsv(self):
+    def sigrokcsv(self) -> str:
         """Return a string of comma separated values for sigrok."""
         data_channels = [ch for ch in self.channels if ch.enabled_and_selected]
         if not data_channels:
@@ -496,14 +511,16 @@ class Wfm:
 
         n_pts = min(ch.points for ch in data_channels)
         times = data_channels[0].times
+        assert times is not None
         for i in range(n_pts):
             s += "%.8f" % (times[i])
             for ch in data_channels:
+                assert ch.volts is not None
                 s += ",%.2f" % (ch.volts[i])
             s += "\n"
         return s
 
-    def wav(self, wav_filename, autoscale=False):
+    def wav(self, wav_filename: str, autoscale: bool = False) -> None:
         """Save data as a WAV file for use with LTspice or Sigrok."""
         data_channels = [ch for ch in self.channels if ch.enabled_and_selected]
         if not data_channels:
@@ -512,10 +529,11 @@ class Wfm:
         channel_length = min(ch.points for ch in data_channels)
         total_len = channel_length * n_channels
 
-        out = np.empty((total_len,), dtype=np.uint8, order="C")
+        out: npt.NDArray[np.uint8] = np.empty((total_len,), dtype=np.uint8, order="C")
 
         # channels are interleaved e.g., 123123123
         for i, ch in enumerate(data_channels):
+            assert ch.raw is not None
             raw = ch.raw[:channel_length]
             if autoscale:
                 amin = np.min(raw)
@@ -531,10 +549,10 @@ class Wfm:
         sample_rate = min(1.0 / data_channels[0].seconds_per_point,
                           _MAX_WAV_U32 // max(n_channels, 1))
 
-        with wave.open(wav_filename, "wb") as wavef:
+        with typing.cast(wave.Wave_write, wave.open(wav_filename, "wb")) as wavef:
             wavef.setnchannels(n_channels)  # 1 = mono, 2 = stereo
             wavef.setsampwidth(1)
             wavef.setframerate(sample_rate)
             wavef.setcomptype("NONE", "")
             wavef.setnframes(channel_length)
-            wavef.writeframes(out)
+            wavef.writeframes(out.tobytes())

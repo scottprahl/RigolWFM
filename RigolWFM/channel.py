@@ -15,8 +15,13 @@ or the stringification method to describe a channel::
     print(channel)
 
 """
+from __future__ import annotations
+
 from enum import Enum
+from typing import Any, Optional
+
 import numpy as np
+import numpy.typing as npt
 
 
 class UnitEnum(Enum):
@@ -28,7 +33,7 @@ class UnitEnum(Enum):
     u = 3
 
 
-def best_scale(number):
+def best_scale(number: float) -> tuple[float, str]:
     """Scale and units for a number with proper prefix."""
     absnr = abs(number)
     thresholds = [
@@ -51,7 +56,7 @@ def best_scale(number):
     return 1e-9, "G"
 
 
-def engineering_string(number, n_digits):
+def engineering_string(number: float, n_digits: int) -> str:
     """Format number with proper prefix."""
     scale, prefix = best_scale(number)
     fformat = "%%.%df %%s" % n_digits
@@ -59,7 +64,7 @@ def engineering_string(number, n_digits):
     return s
 
 
-def _channel_bytes(channel_number, w):
+def _channel_bytes(channel_number: int, w: Any) -> npt.NDArray[np.uint8]:
     """
     Return right series of bytes for a channel for 1000Z scopes.
 
@@ -91,7 +96,31 @@ def _channel_bytes(channel_number, w):
 class Channel:
     """Base class for a single channel."""
 
-    def __init__(self, w, channel_number, scope, selected="1234"):
+    channel_number: int
+    name: str
+    waveform: Any
+    seconds_per_point: float
+    firmware: str
+    unit: UnitEnum
+    points: int
+    raw: Optional[npt.NDArray[np.uint8]]
+    volts: Optional[npt.NDArray[np.float64]]
+    times: Optional[npt.NDArray[np.float64]]
+    coupling: str
+    roll_stop: int
+    time_offset: float
+    time_scale: float
+    enabled: bool
+    enabled_and_selected: bool
+    volt_scale: float
+    volt_offset: float
+    y_scale: float
+    y_offset: float
+    volt_per_division: float
+    probe_value: float
+    inverted: bool
+
+    def __init__(self, w: Any, channel_number: int, scope: str, selected: str = "1234") -> None:
         """
         Initialize a Channel Object.
 
@@ -167,7 +196,7 @@ class Channel:
         elif scope == "dho1000":
             self.dho1000(w, channel_number)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Describe this channel."""
         s = "     Channel %d:\n" % self.channel_number
         s += "         Coupling = %8s\n" % self.coupling.rjust(7, " ")
@@ -185,6 +214,9 @@ class Channel:
         s += "           Points = %8d\n\n" % self.points
 
         if self.enabled_and_selected and self.points >= 5:
+            assert self.raw is not None
+            assert self.times is not None
+            assert self.volts is not None
             format_str = "         Count    = [%9d,%9d,%9d  ... %9d,%9d]\n"
             s += format_str % (1, 2, 3, self.points - 1, self.points)
             format_str = "           Raw    = [%9d,%9d,%9d  ... %9d,%9d]\n"
@@ -203,23 +235,24 @@ class Channel:
             s += format_str % (v[0], v[1], v[2], v[-2], v[-1])
         return s
 
-    def calc_times_and_volts(self, sample_aligned=False, memory_depth_points=None):
+    def calc_times_and_volts(self, sample_aligned: bool = False, memory_depth_points: Optional[int] = None) -> None:
         """Calculate the times and voltages for this channel."""
         if self.enabled_and_selected:
             # 127.0 is the midpoint of the 8-bit unsigned ADC range (0–255).
             # Subtracting raw from 127 maps 0 → +127 and 255 → -128 counts.
-            self.volts = self.y_scale * (127.0 - self.raw) - self.y_offset
+            assert self.raw is not None
+            self.volts = (self.y_scale * (127.0 - self.raw) - self.y_offset).astype(np.float64)
             if sample_aligned:
                 depth_points = self.points
                 if memory_depth_points is not None:
                     depth_points = memory_depth_points
                 start = self.time_offset - depth_points * self.seconds_per_point / 2
-                self.times = start + np.arange(self.points) * self.seconds_per_point
+                self.times = (start + np.arange(self.points) * self.seconds_per_point).astype(np.float64)
             else:
                 h = self.points * self.seconds_per_point / 2
-                self.times = np.linspace(-h, h, self.points) + self.time_offset
+                self.times = (np.linspace(-h, h, self.points) + self.time_offset).astype(np.float64)
 
-    def ds1000b(self, w, channel_number):
+    def ds1000b(self, w: Any, channel_number: int) -> None:
         """Interpret waveform data for 1000B series scopes."""
         self.time_scale = 1.0e-12 * w.header.time_scale
         self.time_offset = 1.0e-12 * w.header.time_offset
@@ -254,7 +287,7 @@ class Channel:
 
         self.calc_times_and_volts()
 
-    def ds1000c(self, w, channel_number):
+    def ds1000c(self, w: Any, channel_number: int) -> None:
         """Interpret waveform data for 1000CD series scopes."""
         self.time_scale = 1.0e-12 * w.header.time_scale
         self.time_offset = 1.0e-12 * w.header.time_offset
@@ -270,7 +303,7 @@ class Channel:
 
         self.calc_times_and_volts()
 
-    def ds1000d(self, w, channel_number):
+    def ds1000d(self, w: Any, channel_number: int) -> None:
         """Interpret waveform data for 1000CD series scopes."""
         self.time_scale = 1.0e-12 * w.header.time_scale
         self.time_offset = 1.0e-12 * w.header.time_offset
@@ -286,7 +319,7 @@ class Channel:
 
         self.calc_times_and_volts()
 
-    def ds1000e(self, w, channel_number):
+    def ds1000e(self, w: Any, channel_number: int) -> None:
         """Interpret waveform data for 1000D and 1000E series scopes."""
         self.roll_stop = w.header.roll_stop
         memory_depth_points = None
@@ -312,7 +345,7 @@ class Channel:
             memory_depth_points=memory_depth_points,
         )
 
-    def ds1000z(self, w, channel_number):
+    def ds1000z(self, w: Any, channel_number: int) -> None:
         """Interpret waveform for the Rigol DS1000Z series."""
         self.time_scale = w.header.time_scale
         self.time_offset = w.header.time_offset
@@ -330,7 +363,7 @@ class Channel:
 
         self.calc_times_and_volts(sample_aligned=True)
 
-    def ds2000(self, w, channel_number):
+    def ds2000(self, w: Any, channel_number: int) -> None:
         """Interpret waveform for the Rigol DS2000 series."""
         self.time_offset = (
             w.header.time_offset
@@ -373,6 +406,7 @@ class Channel:
             self.raw[1::2] = raw_b
 
         if self.enabled_and_selected:
+            assert self.raw is not None
             self.points = len(self.raw)
 
         self.calc_times_and_volts(
@@ -380,7 +414,7 @@ class Channel:
             memory_depth_points=w.header.storage_depth,
         )
 
-    def ds4000(self, w, channel_number):
+    def ds4000(self, w: Any, channel_number: int) -> None:
         """Interpret waveform for the Rigol DS4000 series."""
         self.time_offset = w.header.time_offset
         self.time_scale = w.header.time_scale
@@ -409,7 +443,7 @@ class Channel:
             memory_depth_points=w.header.mem_depth,
         )
 
-    def ds6000(self, w, channel_number):
+    def ds6000(self, w: Any, channel_number: int) -> None:
         """Interpret waveform for the Rigol DS6000 series."""
         self.time_offset = (
             w.header.time_offset
@@ -437,6 +471,7 @@ class Channel:
             if channel_number == 4:
                 self.raw = np.frombuffer(w.header.raw_4, dtype=np.uint8)
 
+            assert self.raw is not None
             self.points = len(self.raw)
 
         self.calc_times_and_volts(
@@ -444,7 +479,7 @@ class Channel:
             memory_depth_points=w.header.storage_depth,
         )
 
-    def bin5000(self, w, channel_number):
+    def bin5000(self, w: Any, channel_number: int) -> None:
         """Interpret normalized waveform data for Rigol MSO5000 `.bin` files."""
         self.time_scale = w.header.time_scale
         self.time_offset = w.header.time_offset
@@ -468,11 +503,11 @@ class Channel:
             self.points = len(self.volts)
             self.times = -w.header.x_origin + np.arange(self.points) * w.header.x_increment
 
-    def bin7000_8000(self, w, channel_number):
+    def bin7000_8000(self, w: Any, channel_number: int) -> None:
         """Interpret normalized waveform data for Rigol 7000/8000 `.bin` files."""
         self.bin5000(w, channel_number)
 
-    def dho1000(self, w, channel_number):
+    def dho1000(self, w: Any, channel_number: int) -> None:
         """Interpret normalized waveform data for the Rigol DHO800/DHO1000 series."""
         self.time_scale = w.header.time_scale
         self.time_offset = 0.0

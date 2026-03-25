@@ -11,6 +11,7 @@ Command line utility to convert Rigol .wfm files.
 
         prompt> wfmconvert E wav DS1102E-A.wfm
 """
+from __future__ import annotations
 
 import re
 import os
@@ -19,18 +20,17 @@ import shutil
 import argparse
 import subprocess
 import textwrap
-
 import RigolWFM
 import RigolWFM.wfm
 
 
-def info(_args, scope_data, _infile):
+def info(_args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, _infile: str) -> None:
     """Create a string that describes content of .wfm file."""
     s = scope_data.describe()
     print(s)
 
 
-def csv(args, scope_data, infile):
+def csv(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
     """Create a file with comma separated values."""
     csv_name = os.path.splitext(infile)[0] + ".csv"
 
@@ -44,7 +44,7 @@ def csv(args, scope_data, infile):
         f.write(b)
 
 
-def vcsv(args, scope_data, infile):
+def vcsv(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
     """Create a file with comma separated values (full volts)."""
     csv_name = os.path.splitext(infile)[0] + ".csv"
 
@@ -58,7 +58,7 @@ def vcsv(args, scope_data, infile):
         f.write(b)
 
 
-def wav(args, scope_data, infile):
+def wav(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
     """Create an audible .wav file for use in LTspice."""
     wav_name = os.path.splitext(infile)[0] + ".wav"
     if os.path.isfile(wav_name) and not args.force:
@@ -68,7 +68,7 @@ def wav(args, scope_data, infile):
     scope_data.wav(wav_name, autoscale=args.autoscale)
 
 
-def sigrok(args, scope_data, infile):
+def sigrok(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> bool:
     """Create a Sigrok (.sr) file."""
     sigrok_name = os.path.splitext(infile)[0] + ".sr"
 
@@ -129,7 +129,7 @@ def sigrok(args, scope_data, infile):
     return True
 
 
-def main():
+def main() -> None:
     """Parse console command line arguments."""
     parser = argparse.ArgumentParser(
         prog="wfmconvert",
@@ -241,7 +241,8 @@ def main():
             sys.exit(1)
 
         except RigolWFM.wfm.Parse_WFM_Error as e:
-            print(f"File contents do not follow the format for the Rigol Oscilloscope Model {args.model}.", file=sys.stderr)
+            print(f"File contents do not follow the format for the Rigol Oscilloscope Model {args.model}.",
+                  file=sys.stderr)
             print("To help with development, please report this error", file=sys.stderr)
             print("as an issue to https://github.com/scottprahl/RigolWFM\n", file=sys.stderr)
             print(e, file=sys.stderr)
