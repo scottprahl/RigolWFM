@@ -49,15 +49,7 @@ ids = [str(n) for n in notebooks]
 
 # Notebooks with known pre-existing failures not related to RigolWFM itself.
 # These are marked xfail so CI reports them as expected failures rather than errors.
-KNOWN_FAILURES = {
-    # DS1052E.csv was stored in GitHub LFS; LFS was removed in commit 2ee9e39.
-    # The notebook still references the dead media.githubusercontent.com LFS URL.
-    # Fix: replace the URL with a local relative path once the CSV is committed.
-    "docs/1-DS1000E-Waveforms.ipynb": (
-        "DS1052E.csv referenced via dead GitHub LFS URL "
-        "(media.githubusercontent.com); LFS removed in commit 2ee9e39"
-    ),
-}
+KNOWN_FAILURES = {}
 
 
 @pytest.mark.parametrize("notebook", notebooks, ids=ids)

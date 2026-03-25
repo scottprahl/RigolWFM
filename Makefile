@@ -116,7 +116,7 @@ lab: venv lab-kernel
 .PHONY: lab-kernel
 lab-kernel:
 	@echo "==> Registering Jupyter kernel $(LAB_DISPLAY)"
-	$(RUN) ipykernel install --prefix "$(CURDIR)/.venv" --name python3 --display-name "$(LAB_DISPLAY)"
+	$(RUN) python -m ipykernel install --prefix "$(CURDIR)/.venv" --name python3 --display-name "$(LAB_DISPLAY)"
 
 .PHONY: yaml-check
 yaml-check:
@@ -142,7 +142,7 @@ ruff-check:
 
 .PHONY: manifest-check
 manifest-check:
-	@$(RUN) --with pip check-manifest
+	@$(RUN) check-manifest
 
 .PHONY: pyroma-check
 pyroma-check:

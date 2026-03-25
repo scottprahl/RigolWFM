@@ -35,8 +35,8 @@ def test_mso5074_adapter_channel_count(stem, n_channels, pts_per_channel):
     assert obj.header.n_pts == pts_per_channel
 
 
-@pytest.mark.parametrize("stem, n_channels, pts_per_channel", _5074_CASES)
-def test_mso5074_adapter_model_name(stem, n_channels, pts_per_channel):  # noqa: ARG001
+@pytest.mark.parametrize("stem, _n_channels, _pts_per_channel", _5074_CASES)
+def test_mso5074_adapter_model_name(stem, _n_channels, _pts_per_channel):
     """The MSO5074 adapter should extract the model name from the frame string."""
     obj = RigolWFM.mso5074.from_file(str(_example_path(stem)))
     assert obj.header.model.startswith("MSO5074")

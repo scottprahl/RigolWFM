@@ -122,6 +122,7 @@ dev = [
   "ruff",
   "mypy",
 
+  "pip",
   "check-manifest",
   "pyroma",
   "build",
@@ -148,6 +149,11 @@ Homepage = "https://github.com/scottprahl/RigolWFM"
 Documentation = "https://rigolwfm.readthedocs.io"
 Source = "https://github.com/scottprahl/RigolWFM"
 Tracker = "https://github.com/scottprahl/RigolWFM/issues"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:MSO5074 voltage values are approximate:UserWarning",
+]
 
 [tool.pylint]
 disable = [
