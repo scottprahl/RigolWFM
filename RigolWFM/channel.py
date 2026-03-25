@@ -316,20 +316,39 @@ class Channel:
         self.calc_times_and_volts(midpoint=125.0)
 
     def ds1000d(self, w: Any, channel_number: int) -> None:
-        """Interpret waveform data for 1000D series scopes."""
-        self.time_scale = 1.0e-12 * w.header.time_scale
-        self.time_offset = 1.0e-12 * w.header.time_offset
+        """Interpret waveform data for 1000D series scopes (uses wfm1000e parser).
+
+        DS1000D firmware stores scale_measured already probe-corrected, so the
+        probe_value factor that wfm1000e bakes into volt_scale must be divided out.
+        """
+        self.roll_stop = w.header.roll_stop
+        # Remove the probe factor that wfm1000e includes in volt_scale/volt_offset.
+        if self.probe_value != 0:
+            self.y_scale /= self.probe_value
+            self.y_offset /= self.probe_value
+        memory_depth_points = None
+
         if channel_number == 1:
+            self.time_offset = w.header.ch1_time_offset
+            self.time_scale = w.header.ch1_time_scale
             if self.enabled_and_selected:
                 self.points = len(w.data.ch1)
                 self.raw = np.frombuffer(w.data.ch1, dtype=np.uint8)
+                memory_depth_points = w.header.ch1_memory_depth
 
-        if channel_number == 2:
+        elif channel_number == 2:
+            self.time_offset = w.header.ch2_time_offset
+            self.time_scale = w.header.ch2_time_scale
             if self.enabled_and_selected:
                 self.points = len(w.data.ch2)
                 self.raw = np.frombuffer(w.data.ch2, dtype=np.uint8)
+                memory_depth_points = w.header.ch2_memory_depth
 
-        self.calc_times_and_volts(midpoint=125.0)
+        self.calc_times_and_volts(
+            sample_aligned=True,
+            memory_depth_points=memory_depth_points,
+            midpoint=125.0,
+        )
 
     def ds1000e(self, w: Any, channel_number: int) -> None:
         """Interpret waveform data for 1000D and 1000E series scopes."""
@@ -355,6 +374,7 @@ class Channel:
         self.calc_times_and_volts(
             sample_aligned=True,
             memory_depth_points=memory_depth_points,
+            midpoint=125.0,
         )
 
     def ds1000z(self, w: Any, channel_number: int) -> None:

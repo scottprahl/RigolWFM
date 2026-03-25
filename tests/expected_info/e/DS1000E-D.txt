@@ -12,7 +12,7 @@
         Level    = 200.00 mV
         Sweep    = AUTO
         Coupling = DC
-        Derived Level     = 640.00 mV
+        Derived Level     = 480.00 mV
 
      Channel 1:
          Coupling =  unknown
@@ -29,7 +29,7 @@
          Count    = [        1,        2,        3  ...      8191,     8192]
            Raw    = [      169,      169,      169  ...        89,       89]
            Times  = [-81.920 µs,-81.900 µs,-81.880 µs  ... 81.880 µs,81.900 µs]
-           Volts  = [ -3.36  V, -3.36  V, -3.36  V  ...   3.04  V,  3.04  V]
+           Volts  = [ -3.52  V, -3.52  V, -3.52  V  ...   2.88  V,  2.88  V]
 
      Channel 2:
          Coupling =  unknown
@@ -46,6 +46,6 @@
          Count    = [        1,        2,        3  ...      8191,     8192]
            Raw    = [      128,      128,      128  ...        51,       51]
            Times  = [-81.920 µs,-81.900 µs,-81.880 µs  ... 81.880 µs,81.900 µs]
-           Volts  = [-40.00 mV,-40.00 mV,-40.00 mV  ...   3.04  V,  3.04  V]
+           Volts  = [-120.00 mV,-120.00 mV,-120.00 mV  ...   2.96  V,  2.96  V]
 
 

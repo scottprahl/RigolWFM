@@ -13,7 +13,9 @@ Example:
 """
 from __future__ import annotations
 
+import os
 import os.path
+import struct
 import sys
 import tempfile
 import urllib.parse
@@ -146,6 +148,108 @@ _DS2000_SOURCE_NAMES: dict[int, str] = {
     0: "CH1", 1: "CH2", 2: "EXT", 3: "AC LINE",
     **{4 + i: "D%d" % i for i in range(16)},
 }
+
+
+def detect_model(filename: str) -> str:
+    """Detect the oscilloscope model from a waveform file's binary signature.
+
+    Reads a small prefix of the file and uses magic bytes, file size, and
+    embedded model strings to identify the scope family.
+
+    Returns a short model string (e.g. ``"E"``, ``"Z"``, ``"5074"``) suitable
+    for passing to :meth:`Wfm.from_file`.
+
+    Raises:
+        FileNotFoundError: if the file cannot be opened.
+        Parse_WFM_Error: if the signature is not recognised.
+    """
+    try:
+        fsize = os.path.getsize(filename)
+        with open(filename, "rb") as f:
+            hdr = f.read(300)
+    except OSError as exc:
+        raise FileNotFoundError(filename) from exc
+
+    if len(hdr) < 4:
+        raise Parse_WFM_Error(f"File too short to detect model: {filename}")
+
+    magic4 = hdr[:4]
+
+    # DS1000B: a5 a5 a4 01
+    if magic4 == bytes([0xA5, 0xA5, 0xA4, 0x01]):
+        return "B"
+
+    # DS1000C: first byte 0xA1, bytes 1-3 = a5 00 00
+    if magic4 == bytes([0xA1, 0xA5, 0x00, 0x00]):
+        return "C"
+
+    # DS1000Z (and MSO1000Z): 01 ff ff ff
+    if magic4 == bytes([0x01, 0xFF, 0xFF, 0xFF]):
+        return "Z"
+
+    # DHO proprietary .wfm: 02 00 00 00
+    if magic4 == bytes([0x02, 0x00, 0x00, 0x00]):
+        return "DHO"
+
+    # DHO .bin export: RG03
+    if hdr[:4] == b"RG03":
+        return "DHO"
+
+    # RG01: MSO5000, MSO5074, MSO7000, MSO8000
+    if hdr[:4] == b"RG01":
+        if len(hdr) >= 16:
+            wfm_hdr_size = struct.unpack("<I", hdr[12:16])[0]
+            if wfm_hdr_size == 144:
+                return "5074"
+            if wfm_hdr_size == 128:
+                # MSO7000 vs MSO8000: read frame_string at file offset 100
+                # (12-byte file header + 88 bytes into waveform header)
+                try:
+                    frame = hdr[100:124].split(b"\x00")[0].decode("ascii")
+                    if frame.upper().startswith("MSO8") or frame.upper().startswith("DS8"):
+                        return "8"
+                except Exception:
+                    pass
+                return "7"
+        return "5"
+
+    # DS2000/4000/6000: a5 a5 38 00, model string at offset 4
+    if magic4 == bytes([0xA5, 0xA5, 0x38, 0x00]):
+        try:
+            model_str = hdr[4:24].split(b"\x00")[0].decode("ascii")
+            if model_str.startswith("DS4") or model_str.startswith("MSO4"):
+                return "4"
+            if model_str.startswith("DS6") or model_str.startswith("MSO6"):
+                return "6"
+        except Exception:
+            pass
+        return "2"
+
+    # DS1000C/D/E: a5 a5 00 00
+    # Distinguish by comparing file size to expected data offsets:
+    #   DS1000C: data at 256, DS1000D: data at 272, DS1000E: data at 276
+    # Note: DS1000C files with first byte 0xA5 (rather than 0xA1) share this
+    # magic with DS1000D/E; they will be misidentified if their file size
+    # happens to match the D or E formula.  Specify the model explicitly for
+    # those rare files.
+    if magic4 == bytes([0xA5, 0xA5, 0x00, 0x00]):
+        try:
+            pts = struct.unpack("<I", hdr[28:32])[0]
+            ch1_en = bool(hdr[49])
+            ch2_en = bool(hdr[73])
+            n_ch = int(ch1_en) + int(ch2_en)
+            if pts > 0 and n_ch > 0:
+                if fsize == 256 + n_ch * pts:
+                    return "C"
+                if fsize == 272 + n_ch * pts:
+                    return "D"
+                if fsize == 276 + n_ch * pts:
+                    return "E"
+        except Exception:
+            pass
+        return "E"  # most common default for this magic
+
+    raise Parse_WFM_Error(f"Unrecognised file signature {magic4.hex()} in {filename}")
 
 
 def valid_scope_list() -> str:
@@ -323,7 +427,8 @@ class Wfm:
             }
 
         elif umodel in DS1000D_scopes:
-            w = RigolWFM.wfm1000d.Wfm1000d.from_file(file_name)  # type: ignore[attr-defined]
+            w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)  # type: ignore[attr-defined]
+            w.parser_name = "wfm1000d"
             new_wfm.header_name = "DS1000D"
             _mode = w.header.trigger_mode.name
             if _mode == "alt":

@@ -138,6 +138,7 @@ def main() -> None:
         epilog=textwrap.dedent(
             """\
         examples:
+            wfmconvert auto info DS1102E.wfm
             wfmconvert E info DS1102E.wfm
             wfmconvert --channel 2 E csv DS1102E.wfm
             wfmconvert --channel 124 E vcsv DS1102E.wfm
@@ -182,8 +183,8 @@ def main() -> None:
     parser.add_argument(
         "model",
         type=str,
-        choices=["B", "C", "D", "E", "Z", "2", "4", "5", "5074", "6", "7", "8", "DHO"],
-        help="oscilloscope model.  See list below.",
+        choices=["auto", "B", "C", "D", "E", "Z", "2", "4", "5", "5074", "6", "7", "8", "DHO"],
+        help="oscilloscope model, or 'auto' to detect from the file.  See list below.",
     )
 
     parser.add_argument(
@@ -233,7 +234,12 @@ def main() -> None:
 
     for filename in args.infile:
         try:
-            scope_data = RigolWFM.wfm.Wfm.from_file(filename, args.model, selected)
+            model = args.model
+            if model == "auto":
+                model = RigolWFM.wfm.detect_model(filename)
+                print(f"Detected model: {model}", file=sys.stderr)
+
+            scope_data = RigolWFM.wfm.Wfm.from_file(filename, model, selected)
             actionMap[args.action](args, scope_data, filename)
 
         except RigolWFM.wfm.Unknown_Scope_Error as e:
@@ -241,8 +247,12 @@ def main() -> None:
             sys.exit(1)
 
         except RigolWFM.wfm.Parse_WFM_Error as e:
-            print(f"File contents do not follow the format for the Rigol Oscilloscope Model {args.model}.",
-                  file=sys.stderr)
+            if args.model == "auto":
+                print(f"Could not detect or parse the scope model for '{filename}'.",
+                      file=sys.stderr)
+            else:
+                print(f"File contents do not follow the format for the Rigol Oscilloscope Model {args.model}.",
+                      file=sys.stderr)
             print("To help with development, please report this error", file=sys.stderr)
             print("as an issue to https://github.com/scottprahl/RigolWFM\n", file=sys.stderr)
             print(e, file=sys.stderr)
