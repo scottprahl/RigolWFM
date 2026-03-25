@@ -183,11 +183,6 @@ This has been a bit of an adventure.  In the process of nailing down the basic f
 * Rigol's documentation of the 1000E, 1000Z, 2000, and 6000 file formats.
 
 
-Source code repository
--------------------------------------------
-
-    <https://github.com/scottprahl/RigolWFM>
-
 License
 -------
     BSD 3-clause -- see the file ``LICENSE`` for details.
