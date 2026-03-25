@@ -309,7 +309,7 @@ class Channel:
         self.calc_times_and_volts()
 
     def ds1000d(self, w: Any, channel_number: int) -> None:
-        """Interpret waveform data for 1000CD series scopes."""
+        """Interpret waveform data for 1000D series scopes."""
         self.time_scale = 1.0e-12 * w.header.time_scale
         self.time_offset = 1.0e-12 * w.header.time_offset
         if channel_number == 1:
@@ -355,9 +355,8 @@ class Channel:
         self.time_scale = w.header.time_scale
         self.time_offset = w.header.time_offset
         self.points = w.header.points
-        self.stride = w.header.stride
         self.firmware = w.preheader.firmware_version
-        self.probe = w.header.ch[channel_number - 1].probe_value
+        self.probe_value = w.header.ch[channel_number - 1].probe_value
         self.coupling = w.header.ch[channel_number - 1].coupling.name.upper()
         self.y_scale = w.header.ch[channel_number - 1].y_scale
         self.y_offset = w.header.ch[channel_number - 1].y_offset

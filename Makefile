@@ -128,7 +128,7 @@ rst-check:
 	@$(RUN) rstcheck $(RST_TARGETS)
 	@$(RUN) rstcheck --ignore-directives automodapi $(DOCS_DIR)/$(PACKAGE_DIR).rst
 
-.PHONY: ksycheck
+.PHONY: ksy-check
 ksy-check:
 	@$(RUN) ksylint $(KSY_FILES)
 
