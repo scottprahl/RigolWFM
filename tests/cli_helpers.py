@@ -44,14 +44,14 @@ def assert_command_matches_file(command, expected_path):
 
 
 def assert_wfmconvert_info_snapshot(scope, stem, family):
-    """Assert that `wfmconvert <scope> info` matches a checked-in snapshot."""
+    """Assert that `wfmconvert --model <scope> info` matches a checked-in snapshot."""
     expected = Path(__file__).resolve().parent / "expected_info" / family / f"{stem}.txt"
-    command = f"wfmconvert {scope} info wfm/{stem}.wfm"
+    command = f"wfmconvert --model {scope} info wfm/{stem}.wfm"
     assert_command_matches_file(command, expected)
 
 
 def assert_wfmconvert_info_snapshot_file(scope, infile, family, stem):
-    """Assert that `wfmconvert <scope> info <infile>` matches a snapshot."""
+    """Assert that `wfmconvert --model <scope> info <infile>` matches a snapshot."""
     expected = Path(__file__).resolve().parent / "expected_info" / family / f"{stem}.txt"
-    command = f"wfmconvert {scope} info {infile}"
+    command = f"wfmconvert --model {scope} info {infile}"
     assert_command_matches_file(command, expected)

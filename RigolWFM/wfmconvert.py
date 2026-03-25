@@ -5,11 +5,11 @@ Command line utility to convert Rigol .wfm files.
 
     Examples::
 
-        prompt> wfmconvert E info DS1102E-A.wfm
+        prompt> wfmconvert info DS1102E-A.wfm
 
-        prompt> wfmconvert E csv DS1102E-A.wfm
+        prompt> wfmconvert csv DS1102E-A.wfm
 
-        prompt> wfmconvert E wav DS1102E-A.wfm
+        prompt> wfmconvert wav DS1102E-A.wfm
 """
 from __future__ import annotations
 
@@ -138,14 +138,23 @@ def main() -> None:
         epilog=textwrap.dedent(
             """\
         examples:
-            wfmconvert auto info DS1102E.wfm
-            wfmconvert E info DS1102E.wfm
-            wfmconvert --channel 2 E csv DS1102E.wfm
-            wfmconvert --channel 124 E vcsv DS1102E.wfm
-            wfmconvert --channel 34 --autoscale E wav DS1102E.wfm
+            wfmconvert info DS1102E.wfm
+            wfmconvert csv DS1102E.wfm
+            wfmconvert --channel 2 csv DS1102E.wfm
+            wfmconvert --channel 124 vcsv DS1102E.wfm
+            wfmconvert --channel 34 --autoscale wav DS1102E.wfm
+            wfmconvert --model C info DS1042C-A.wfm
         """
         )
         + RigolWFM.wfm.valid_scope_list(),
+    )
+
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="auto",
+        choices=["auto", "B", "C", "D", "E", "Z", "2", "4", "5", "5074", "6", "7", "8", "DHO"],
+        help="oscilloscope model (default: auto-detect from file).  See list below.",
     )
 
     parser.add_argument(
@@ -178,13 +187,6 @@ def main() -> None:
         The default is `--channel 1234`.
         """
         ),
-    )
-
-    parser.add_argument(
-        "model",
-        type=str,
-        choices=["auto", "B", "C", "D", "E", "Z", "2", "4", "5", "5074", "6", "7", "8", "DHO"],
-        help="oscilloscope model, or 'auto' to detect from the file.  See list below.",
     )
 
     parser.add_argument(
