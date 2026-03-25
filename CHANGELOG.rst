@@ -34,8 +34,16 @@ Unreleased (2026-03-24)
 *    improve docs configuration and project automation/help targets
 *    fix badges and default branch references
 *    improve testing structure
-
-*    fix the hardcoded absolute path in ``1-DS1000B-Waveforms.ipynb`` and mark ``1-DS1000E-Waveforms.ipynb`` as ``xfail`` after its external GitHub LFS URL stopped resolving
+*    fix the hardcoded absolute path in ``1-DS1000E-Waveforms.ipynb``
+*    rewrite ``test_wfmconvert.py`` to copy fixtures into pytest ``tmp_path`` so conversion output never pollutes
+*    remove ``CONVERT_CASES``, ``CLEANTEST_FILES``, ``cleantest``, ``csv``, ``wav``, ``vcsv``, and ``sigrok`` Makefile targets
+*    add ``pip`` to dev dependencies so ``check-manifest`` and ``pyroma`` work correctly inside uv venvs
+*    add ``[tool.pytest.ini_options]`` section to ``pyproject.toml``
+*    add ``mypy`` type checking: annotate all hand-written ``RigolWFM/`` modules
+*    fix ``wav()`` to use ``wave.Wave_write`` directly instead of ``wave.open(..., "wb")``
+*    add ``docs/github.com/`` to ``.gitignore`` and ``realclean``
+*    add ``research/`` to Sphinx ``exclude_patterns``
+*    add ``__all__`` to ``channel.py``
 
 1.0.0 (2023-10-06)
 ------------------------
