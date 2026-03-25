@@ -46,11 +46,10 @@ A utility to process Rigol oscilloscope ``.wfm`` files
 
 |license-badge| |test-badge| |docs-badge| |downloads-badge|
 
-This project is intended to be a comprehensive resource for interpreting waveform ``.wmf`` files created by any Rigol oscilloscope.  Open source (and Rigol's own applications) that parse/convert Rigol's binary ``.wfm`` files are sadly balkanized: each program tends to support a single oscilloscope group and the available efforts are spread across a range of languages.
+This project is a comprehensive resource for interpreting waveform the proprietary format ``.wmf`` files created by many Rigol oscilloscopes.  Open source (and Rigol's own applications) that can parse/convert Rigol's binary ``.wfm`` files are sadly balkanized: each program tends to support a single oscilloscope group.
 
-This project leverages a domain specific language (kaitai struct) to represent the binary files.  Once a binary file has been described in this text format, parsers can be generated for a wide range of languages (C++/STL, C#, Go, Java, JavaScript, Lua, Perl, PHP, Python, and Ruby).  
+This project leverages a domain specific language <https://doc.kaitai.io> to represent the binary files.  Once a binary file has been described in this text format, parsers can be generated for a wide range of languages (C++/STL, C#, Go, Java, JavaScript, Lua, Perl, PHP, Python, and Ruby).  
 
-Documentation can be found at <https://RigolWFM.readthedocs.io>
 
 Installation
 ---------------
@@ -62,12 +61,6 @@ You can install locally using pip::
 or ``conda``::
 
     conda install -c conda-forge RigolWFM
-
-or use immediately by clicking the Google Colaboratory button below
-
-.. image:: https://colab.research.google.com/assets/colab-badge.svg
-  :target: https://colab.research.google.com/github/scottprahl/RigolWFM/blob/main
-  :alt: Colab
 
 or `analyze your files using the kaitai struct IDE <https://ide.kaitai.io>`_ (you will need to manually upload the appropriate `.ksy` file and your `.wfm` to the IDE).  This allows one to interactively reverse engineer binary file formats directly in your browser.  This is super helpful for those Rigol ``.wfm`` formats that are undocumented or not parsing correctly.
 
@@ -135,8 +128,7 @@ There are binary file descriptions for waveform files created by the following s
 +-------------+------------------+----------+------------------------------------------+
 | MSO5000     | MSO5354, etc.    | ``.bin`` | tested                                   |
 +-------------+------------------+----------+------------------------------------------+
-| MSO5074     | MSO5074          | ``.bin`` | tested; voltage values approximate       |
-|             |                  |          | (no calibration data in file)            |
+| MSO5074     | MSO5074          | ``.bin`` | tested but incomplete, need more examples|
 +-------------+------------------+----------+------------------------------------------+
 | MSO7000/    | DS7000, MSO7000, | ``.bin`` | tested                                   |
 | MSO8000     | MSO8000, DS8000  |          |                                          |
@@ -145,42 +137,24 @@ There are binary file descriptions for waveform files created by the following s
 | DHO1000     |                  | ``.wfm`` | official format documented in User Guide |
 +-------------+------------------+----------+------------------------------------------+
 
-DHO Series Notes
-~~~~~~~~~~~~~~~~
-
-DHO800 and DHO1000 series oscilloscopes export waveforms in two formats:
-
-* ``.bin`` — official format documented in the User Guide (§19.2.4); stores calibrated
-  float32 voltage samples; works identically across all DHO variants.
-* ``.wfm`` — proprietary undocumented format; reverse-engineered for both DHO1000
-  and DHO800.  The DHO800 uses a different block type (5 vs 9), a 10× larger scale
-  divisor, and interleaves all enabled channels in a single data section.
-
-Both formats support up to 4 simultaneous channels.
-
-MSO5000/7000/8000 Series Notes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These scopes export waveforms as ``.bin`` files.  The MSO5074 uses a non-standard
-firmware layout (uint8 ADC counts, incorrect metadata fields); voltage values are
-approximated at 1 V/div since no calibration data is embedded in the file.
+The MSO5074 uses a non-standard firmware layout (uint8 ADC counts, incorrect metadata fields); voltage values are approximated at 1 V/div since no calibration data is embedded in the file.  
 
 Resources
 ---------
 
 This has been a bit of an adventure.  In the process of nailing down the basic formats, I have gleaned information from a wide range of projects started by others.
 
-
-* Shein's Pascal program <https://sourceforge.net/projects/wfmreader>
-* Wagenaars's Matlab script <https://www.mathworks.com/matlabcentral/fileexchange/18999-read-binary-rigol-waveforms>
-* Steele's C program <http://nsweb.tn.tudelft.nl/~gsteele/rigol2dat>
-* Blaicher's python code <https://github.com/mabl/pyRigolWFM>
-* Szkutnik's python code <https://github.com/michal-szkutnik/pyRigolWfm1000Z>
-* Cat-Ion's python code <https://github.com/Cat-Ion/rigol-ds4000-wfm>
-* Šolc's python code <https://www.tablix.org/~avian/blog/archives/2019/08/quick_and_ugly_wfm_data_export_for_rigol_ds2072a/>
+* Shein's <https://sourceforge.net/projects/wfmreader>
+* Wagenaars's <https://www.mathworks.com/matlabcentral/fileexchange/18999-read-binary-rigol-waveforms>
+* Steele's <http://nsweb.tn.tudelft.nl/~gsteele/rigol2dat>
+* Blaicher's <https://github.com/mabl/pyRigolWFM>
+* Szkutnik's <https://github.com/michal-szkutnik/pyRigolWfm1000Z>
+* Cat-Ion's <https://github.com/Cat-Ion/rigol-ds4000-wfm>
+* Šolc's <https://www.tablix.org/~avian/blog/archives/2019/08/quick_and_ugly_wfm_data_export_for_rigol_ds2072a/>
 * Contributions from <http://www.hakasoft.com.au/wfm_viewer>
-* A LabView program I got from Rigol support
 * Rigol's documentation of the 1000E, 1000Z, 2000, and 6000 file formats.
+* Rigol's documentation of the ``.bin'' formats for the 1000, 5000, and 8000
+* Lathe's <https://github.com/Lathe26/WFM_for_Rigol_DHO800_900>
 
 
 License
