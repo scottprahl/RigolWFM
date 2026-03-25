@@ -12,12 +12,11 @@ RM              ?= rm -f
 RMR             ?= rm -rf
 
 KSC             ?= kaitai-struct-compiler
-KSY_OPTIONS     := --outdir $(PACKAGE_DIR)
-KSY_PY_OPTIONS  := -t python $(KSY_OPTIONS)
 YAML_LINT_OPTS  := -d "{extends: default, rules: {document-start: disable, line-length: {max: 120}}}"
 
 DOCS_DIR        := docs
 HTML_DIR        := $(DOCS_DIR)/_build/html
+JS_DIR          := js
 OUT_ROOT        := _site
 OUT_DIR         := $(OUT_ROOT)/$(PACKAGE)
 STAGE_DIR       := .lite_src
@@ -35,24 +34,14 @@ LAB_DISPLAY     := $(REPO_NAME) (.venv)
 SPHINX_OPTS     := -T -E -b html -d $(DOCS_DIR)/_build/doctrees -D language=en
 PYTEST_OPTS     :=
 
-KSY_FILES       := \
-	ksy/wfm1000b.ksy \
-	ksy/wfm1000c.ksy \
-	ksy/wfm1000d.ksy \
-	ksy/wfm1000e.ksy \
-	ksy/wfm1000z.ksy \
-	ksy/wfm2000.ksy \
-	ksy/wfm4000.ksy \
-	ksy/bin5000.ksy \
-	ksy/bin7000_8000.ksy \
-	ksy/wfm6000.ksy \
-	ksy/bindho1000.ksy \
-	ksy/wfmdho1000.ksy
+KSY_FILES       := $(wildcard ksy/*.ksy)
+PYTHON_PARSERS  := $(patsubst ksy/%.ksy,$(PACKAGE_DIR)/%.py,$(KSY_FILES))
+JS_PARSERS      := $(patsubst ksy/%.ksy,$(JS_DIR)/%.js,$(KSY_FILES))
 
-PYTHON_PARSERS  := $(KSY_FILES:ksy/%.ksy=$(PACKAGE_DIR)/%.py)
+
 PYLINT_TARGETS  := $(PACKAGE_DIR)/*.py tests/*.py .github/scripts/update_citation.py
 PYDOC_TARGETS   := $(PACKAGE_DIR)/wfm.py $(PACKAGE_DIR)/channel.py $(PACKAGE_DIR)/wfmconvert.py
-YAML_TARGETS    := .github/workflows/citation.yaml .github/workflows/pypi.yaml .github/workflows/test.yaml .readthedocs.yaml
+YAML_TARGETS    := .github/workflows/*.yaml .readthedocs.yaml
 RST_TARGETS     := README.rst CHANGELOG.rst $(DOCS_DIR)/index.rst $(DOCS_DIR)/changelog.rst
 
 
@@ -96,11 +85,13 @@ venv:
 all: $(PYTHON_PARSERS)
 
 $(PACKAGE_DIR)/%.py: ksy/%.ksy
-	$(KSC) $(KSY_PY_OPTIONS) $<
+	$(KSC) -t python --outdir $(PACKAGE_DIR) $<
 
-.PHONY: dist
-dist: $(PYTHON_PARSERS)
-	$(UV) build
+.PHONY: js
+js: $(JS_PARSERS)
+
+$(JS_DIR)/%.js: ksy/%.ksy
+	$(KSC) -t javascript --outdir $(JS_DIR) $<
 
 .PHONY: html
 html: $(PYTHON_PARSERS)

@@ -9,7 +9,7 @@
     Trigger:
         Mode     = pulse
         Source   = CH1
-        Derived Level     = 20.00 mV
+        Derived Level     = -20.00 mV
 
      Channel 1:
          Coupling =  unknown
@@ -26,6 +26,6 @@
          Count    = [        1,        2,        3  ...    524287,   524288]
            Raw    = [      215,      215,      215  ...       217,      216]
            Times  = [-5.107 ms,-5.107 ms,-5.107 ms  ... 21.107 ms,21.107 ms]
-           Volts  = [ 60.00 mV, 60.00 mV, 60.00 mV  ...  20.00 mV, 40.00 mV]
+           Volts  = [ 20.00 mV, 20.00 mV, 20.00 mV  ... -20.00 mV,  0.00  V]
 
 

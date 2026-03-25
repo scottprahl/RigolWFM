@@ -240,13 +240,20 @@ class Channel:
             s += format_str % (v[0], v[1], v[2], v[-2], v[-1])
         return s
 
-    def calc_times_and_volts(self, sample_aligned: bool = False, memory_depth_points: Optional[int] = None) -> None:
+    def calc_times_and_volts(
+        self,
+        sample_aligned: bool = False,
+        memory_depth_points: Optional[int] = None,
+        midpoint: float = 127.0,
+    ) -> None:
         """Calculate the times and voltages for this channel."""
         if self.enabled_and_selected:
-            # 127.0 is the midpoint of the 8-bit unsigned ADC range (0–255).
-            # Subtracting raw from 127 maps 0 → +127 and 255 → -128 counts.
+            # The midpoint maps an ADC count to zero volts (before offset).
+            # Most Rigol families use 127 (midpoint of 0–255).
+            # DS1000C/D use 125, matching the Delphi reference parser and
+            # confirmed by comparing derived trigger levels to stored offsets.
             assert self.raw is not None
-            self.volts = (self.y_scale * (127.0 - self.raw) - self.y_offset).astype(np.float64)
+            self.volts = (self.y_scale * (midpoint - self.raw) - self.y_offset).astype(np.float64)
             if sample_aligned:
                 depth_points = self.points
                 if memory_depth_points is not None:
@@ -306,7 +313,7 @@ class Channel:
                 self.points = len(w.data.ch2)
                 self.raw = np.frombuffer(w.data.ch2, dtype=np.uint8)
 
-        self.calc_times_and_volts()
+        self.calc_times_and_volts(midpoint=125.0)
 
     def ds1000d(self, w: Any, channel_number: int) -> None:
         """Interpret waveform data for 1000D series scopes."""
@@ -322,7 +329,7 @@ class Channel:
                 self.points = len(w.data.ch2)
                 self.raw = np.frombuffer(w.data.ch2, dtype=np.uint8)
 
-        self.calc_times_and_volts()
+        self.calc_times_and_volts(midpoint=125.0)
 
     def ds1000e(self, w: Any, channel_number: int) -> None:
         """Interpret waveform data for 1000D and 1000E series scopes."""

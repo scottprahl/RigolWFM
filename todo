@@ -1,12 +1,22 @@
+does DS1000E apply to DS1000D?
+
+extract coupling for E and maybe D scopes
+
 update README
+    new examples
+    images
+
+autodetect correct scope version
+
 add notebooks for new scope formats
+
+javascript viewer?
+
 update sphinx docs
 
 Code development
-    - add trigger information to description
     - add --minimal option for problem .wfm files
     - locate coupling & bandwidth for 1000E formats
-    - locate trigger info in 1000z, 4000, & 6000 formats
 
 wfm_convert development
     - expand options for csv export

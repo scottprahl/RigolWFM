@@ -35,9 +35,23 @@ class Wfm1000e(KaitaiStruct):
         ch1 = 0
         ch2 = 1
         ext = 2
-        ext5 = 3
-        ac_line = 5
-        dig_ch = 7
+        ac_line = 3
+        d0 = 4
+        d1 = 5
+        d2 = 6
+        d3 = 7
+        d4 = 8
+        d5 = 9
+        d6 = 10
+        d7 = 11
+        d8 = 12
+        d9 = 13
+        d10 = 14
+        d11 = 15
+        d12 = 16
+        d13 = 17
+        d14 = 18
+        d15 = 19
 
     class TriggerModeEnum(IntEnum):
         edge = 0

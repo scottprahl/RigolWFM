@@ -325,10 +325,17 @@ class Wfm:
         elif umodel in DS1000D_scopes:
             w = RigolWFM.wfm1000d.Wfm1000d.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = "DS1000D"
-            new_wfm.trigger_info = {
-                "mode": w.header.trigger_mode.name,
-                "source": w.header.trigger_source.name.upper(),
-            }
+            _mode = w.header.trigger_mode.name
+            if _mode == "alt":
+                new_wfm.trigger_info = {
+                    "mode": "alt",
+                    "trigger1": _trig_header_dict(w.header.trigger1),
+                    "trigger2": _trig_header_dict(w.header.trigger2),
+                }
+            else:
+                _d = _trig_header_dict(w.header.trigger1)
+                _d["mode"] = _mode
+                new_wfm.trigger_info = _d
 
         elif umodel in DS1000E_scopes:
             w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)  # type: ignore[attr-defined]

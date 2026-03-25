@@ -284,9 +284,23 @@ enums:
     0: ch1
     1: ch2
     2: ext
-    3: ext5
-    5: ac_line
-    7: dig_ch
+    3: ac_line
+    4: d0
+    5: d1
+    6: d2
+    7: d3
+    8: d4
+    9: d5
+    10: d6
+    11: d7
+    12: d8
+    13: d9
+    14: d10
+    15: d11
+    16: d12
+    17: d13
+    18: d14
+    19: d15
 
   trigger_mode_enum:
     0: edge

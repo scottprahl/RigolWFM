@@ -9,7 +9,7 @@
     Trigger:
         Mode     = edge
         Source   = CH1
-        Derived Level     = 40.00 mV
+        Derived Level     = 24.00 mV
 
      Channel 1:
          Coupling =  unknown
@@ -26,7 +26,7 @@
          Count    = [        1,        2,        3  ...      5119,     5120]
            Raw    = [      198,      198,      198  ...       192,      192]
            Times  = [-257.600 ms,-257.500 ms,-257.400 ms  ... 254.300 ms,254.400 ms]
-           Volts  = [ 40.00 mV, 40.00 mV, 40.00 mV  ...  88.00 mV, 88.00 mV]
+           Volts  = [ 24.00 mV, 24.00 mV, 24.00 mV  ...  72.00 mV, 72.00 mV]
 
      Channel 2:
          Coupling =  unknown
@@ -43,6 +43,6 @@
          Count    = [        1,        2,        3  ...      5119,     5120]
            Raw    = [       92,       92,       92  ...        77,       77]
            Times  = [-257.600 ms,-257.500 ms,-257.400 ms  ... 254.300 ms,254.400 ms]
-           Volts  = [700.00 mV,700.00 mV,700.00 mV  ...   1.00  V,  1.00  V]
+           Volts  = [660.00 mV,660.00 mV,660.00 mV  ... 960.00 mV,960.00 mV]
 
 

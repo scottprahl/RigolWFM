@@ -27,6 +27,28 @@ class Wfm1000d(KaitaiStruct):
         ds4000 = 5
         ds6000 = 6
 
+    class SourceEnum(IntEnum):
+        ch1 = 0
+        ch2 = 1
+        ext = 2
+        ac_line = 3
+        d0 = 4
+        d1 = 5
+        d2 = 6
+        d3 = 7
+        d4 = 8
+        d5 = 9
+        d6 = 10
+        d7 = 11
+        d8 = 12
+        d9 = 13
+        d10 = 14
+        d11 = 15
+        d12 = 16
+        d13 = 17
+        d14 = 18
+        d15 = 19
+
     class TriggerModeEnum(IntEnum):
         edge = 0
         pulse = 1
@@ -35,14 +57,6 @@ class Wfm1000d(KaitaiStruct):
         alt = 4
         pattern = 5
         duration = 6
-
-    class TriggerSourceEnum(IntEnum):
-        ch1 = 0
-        ch2 = 1
-        ext = 2
-        ext5 = 3
-        ac_line = 5
-        dig_ch = 7
 
     class UnitEnum(IntEnum):
         w = 0
@@ -193,8 +207,8 @@ class Wfm1000d(KaitaiStruct):
 
             self.unknown_4 = self._io.read_u2le()
             self.trigger_mode = KaitaiStream.resolve_enum(Wfm1000d.TriggerModeEnum, self._io.read_u1())
-            self.unknown_6 = self._io.read_u1()
-            self.trigger_source = KaitaiStream.resolve_enum(Wfm1000d.TriggerSourceEnum, self._io.read_u1())
+            self.trigger1 = Wfm1000d.TriggerHeader(self._io, self, self._root)
+            self.trigger2 = Wfm1000d.TriggerHeader(self._io, self, self._root)
 
 
         def _fetch_instances(self):
@@ -209,6 +223,8 @@ class Wfm1000d(KaitaiStruct):
             for i in range(len(self.unknown_3)):
                 pass
 
+            self.trigger1._fetch_instances()
+            self.trigger2._fetch_instances()
 
         @property
         def seconds_per_point(self):
@@ -245,6 +261,45 @@ class Wfm1000d(KaitaiStruct):
             if self._root.header.ch[1].enabled:
                 pass
 
+
+
+    class TriggerHeader(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            super(Wfm1000d.TriggerHeader, self).__init__(_io)
+            self._parent = _parent
+            self._root = _root
+            self._read()
+
+        def _read(self):
+            self.mode = KaitaiStream.resolve_enum(Wfm1000d.TriggerModeEnum, self._io.read_u1())
+            self.source = KaitaiStream.resolve_enum(Wfm1000d.SourceEnum, self._io.read_u1())
+            self.coupling = self._io.read_u1()
+            self.sweep = self._io.read_u1()
+            self.padding_1 = self._io.read_bytes(1)
+            if not self.padding_1 == b"\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00", self.padding_1, self._io, u"/types/trigger_header/seq/4")
+            self.sens = self._io.read_f4le()
+            self.holdoff = self._io.read_f4le()
+            self.level = self._io.read_f4le()
+            self.direct = self._io.read_u1()
+            self.pulse_type = self._io.read_u1()
+            self.padding_2 = self._io.read_bytes(2)
+            if not self.padding_2 == b"\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00", self.padding_2, self._io, u"/types/trigger_header/seq/10")
+            self.pulse_width = self._io.read_f4le()
+            self.slope_type = self._io.read_u1()
+            self.padding_3 = self._io.read_bytes(3)
+            if not self.padding_3 == b"\x00\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00", self.padding_3, self._io, u"/types/trigger_header/seq/13")
+            self.lower = self._io.read_f4le()
+            self.slope_width = self._io.read_f4le()
+            self.video_pol = self._io.read_u1()
+            self.video_sync = self._io.read_u1()
+            self.video_std = self._io.read_u1()
+
+
+        def _fetch_instances(self):
+            pass
 
 
     @property

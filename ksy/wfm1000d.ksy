@@ -57,15 +57,57 @@ types:
       - id: trigger_mode     # 142
         type: u1
         enum: trigger_mode_enum
-      - id: unknown_6        # 143
-        type: u1
-      - id: trigger_source   # 144
-        type: u1
-        enum: trigger_source_enum
+      - id: trigger1         # 143  s8TrigModeA..s8TrigVideoStandardA
+        type: trigger_header
+      - id: trigger2         # 183  s8TrigModeB..s8TrigVideoStandardB
+        type: trigger_header
 
     instances:
       seconds_per_point:
         value: 1.0/sample_rate_hz
+
+  trigger_header:   # 40 bytes total
+    seq:
+      - id: mode
+        type: u1
+        enum: trigger_mode_enum
+      - id: source
+        type: u1
+        enum: source_enum
+      - id: coupling
+        type: u1
+      - id: sweep
+        type: u1
+      - id: padding_1
+        contents: [0x00]
+      - id: sens
+        type: f4
+      - id: holdoff
+        type: f4
+      - id: level
+        type: f4
+      - id: direct
+        type: u1
+      - id: pulse_type
+        type: u1
+      - id: padding_2
+        contents: [0x00, 0x00]
+      - id: pulse_width
+        type: f4
+      - id: slope_type
+        type: u1
+      - id: padding_3
+        contents: [0x00, 0x00, 0x00]
+      - id: lower
+        type: f4
+      - id: slope_width
+        type: f4
+      - id: video_pol
+        type: u1
+      - id: video_sync
+        type: u1
+      - id: video_std
+        type: u1
 
   channel_header:   # 24 bytes total
     seq:
@@ -124,13 +166,27 @@ types:
         if: _root.header.ch[1].enabled
 
 enums:
-  trigger_source_enum:
+  source_enum:
     0: ch1
     1: ch2
     2: ext
-    3: ext5
-    5: ac_line
-    7: dig_ch
+    3: ac_line
+    4: d0
+    5: d1
+    6: d2
+    7: d3
+    8: d4
+    9: d5
+    10: d6
+    11: d7
+    12: d8
+    13: d9
+    14: d10
+    15: d11
+    16: d12
+    17: d13
+    18: d14
+    19: d15
 
   trigger_mode_enum:
     0: edge
