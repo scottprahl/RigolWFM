@@ -1,25 +1,22 @@
+update README
+add notebooks for new scope formats
+update sphinx docs
+
 Code development
-    - add conda package
     - add trigger information to description
-    - simplify channel._channel_bytes() 
     - add --minimal option for problem .wfm files
     - locate coupling & bandwidth for 1000E formats
     - locate trigger info in 1000z, 4000, & 6000 formats
-    
+
 wfm_convert development
     - expand options for csv export
     - expand options for wav export
     - add svg, pdf, png graphing options
-    
+
 Code clean up
-    - try out dataviz stuff?
-    - rationalize variable names
     - use a consistent set of enums ?
-    - expand docs in each .ksy file
 
 Documentation
-    - continue working on readme
-    - figure out sphinx stuff
     - create notebook for kaitai struct
     - create notebook for LTspice
     - create notebook for CSV

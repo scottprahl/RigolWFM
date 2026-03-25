@@ -107,31 +107,63 @@ If you want to create a ``.wav`` file with channels one and four as signals (and
 Status
 ------
 
-There is a bit of work remaining (testing, validation, repackaging) but there are binary file descriptions for ``.wfm`` files created by the following scopes:
+There are binary file descriptions for waveform files created by the following scopes:
 
-* DS1000B tested
-* DS1000C tested (two files only)
-* DS1000D tested (one file only)
-* DS1000E tested
-* DS1000Z tested, but with wonky voltage offsets
-* DS2000 tested
-* DS4000 tested
-* DS6000 untested
-* DHO800 tested
-* DHO1000 tested
++-------------+------------------+----------+------------------------------------------+
+| Family      | Models           | Format   | Notes                                    |
++=============+==================+==========+==========================================+
+| DS1000B     | DS1074/1104/     | ``.wfm`` | tested                                   |
+|             | 1204B            |          |                                          |
++-------------+------------------+----------+------------------------------------------+
+| DS1000C     | DS1042/1102/     | ``.wfm`` | tested (limited files)                   |
+|             | 1202CA           |          |                                          |
++-------------+------------------+----------+------------------------------------------+
+| DS1000D     | DS1052/1102D     | ``.wfm`` | tested (limited files)                   |
++-------------+------------------+----------+------------------------------------------+
+| DS1000E     | DS1052/1102E     | ``.wfm`` | tested                                   |
++-------------+------------------+----------+------------------------------------------+
+| DS1000Z     | DS1054Z,         | ``.wfm`` | tested                                   |
+|             | MSO1054Z, etc.   |          |                                          |
++-------------+------------------+----------+------------------------------------------+
+| DS2000      | DS2072A,         | ``.wfm`` | tested                                   |
+|             | MSO2102A, etc.   |          |                                          |
++-------------+------------------+----------+------------------------------------------+
+| DS4000      | DS4012–DS4054,   | ``.wfm`` | tested                                   |
+|             | MSO4012–MSO4054  |          |                                          |
++-------------+------------------+----------+------------------------------------------+
+| DS6000      | DS6062–DS6104    | ``.wfm`` | untested                                 |
++-------------+------------------+----------+------------------------------------------+
+| MSO5000     | MSO5354, etc.    | ``.bin`` | tested                                   |
++-------------+------------------+----------+------------------------------------------+
+| MSO5074     | MSO5074          | ``.bin`` | tested; voltage values approximate       |
+|             |                  |          | (no calibration data in file)            |
++-------------+------------------+----------+------------------------------------------+
+| MSO7000/    | DS7000, MSO7000, | ``.bin`` | tested                                   |
+| MSO8000     | MSO8000, DS8000  |          |                                          |
++-------------+------------------+----------+------------------------------------------+
+| DHO800/     | DHO800, DHO1000  | ``.bin`` | tested; calibrated float32 samples,      |
+| DHO1000     |                  | ``.wfm`` | official format documented in User Guide |
++-------------+------------------+----------+------------------------------------------+
 
 DHO Series Notes
 ~~~~~~~~~~~~~~~~
 
 DHO800 and DHO1000 series oscilloscopes export waveforms in two formats:
 
-* ``.bin`` - official format documented in the User Guide (§19.2.4); stores calibrated
+* ``.bin`` — official format documented in the User Guide (§19.2.4); stores calibrated
   float32 voltage samples; works identically across all DHO variants.
-* ``.wfm`` - proprietary undocumented format; reverse-engineered for both DHO1000
+* ``.wfm`` — proprietary undocumented format; reverse-engineered for both DHO1000
   and DHO800.  The DHO800 uses a different block type (5 vs 9), a 10× larger scale
   divisor, and interleaves all enabled channels in a single data section.
 
 Both formats support up to 4 simultaneous channels.
+
+MSO5000/7000/8000 Series Notes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These scopes export waveforms as ``.bin`` files.  The MSO5074 uses a non-standard
+firmware layout (uint8 ADC counts, incorrect metadata fields); voltage values are
+approximated at 1 V/div since no calibration data is embedded in the file.
 
 Resources
 ---------
