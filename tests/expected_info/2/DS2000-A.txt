@@ -6,6 +6,10 @@
         Filename     = DS2000-A.wfm
         Channels     = [1, 2]
 
+    Trigger:
+        Derived Level (CH1) = 400.00 mV
+        Derived Level (CH2) = 476.84 nV
+
      Channel 1:
          Coupling =       DC
             Scale =     5.00  V/div

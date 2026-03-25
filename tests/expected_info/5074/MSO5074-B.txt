@@ -6,6 +6,12 @@
         Filename     = MSO5074-B.bin
         Channels     = [1, 2, 3, 4]
 
+    Trigger:
+        Derived Level (CH1) = -360.00 mV
+        Derived Level (CH2) = 0.00  V
+        Derived Level (CH3) = -40.00 mV
+        Derived Level (CH4) = 0.00  V
+
      Channel 1:
          Coupling =  unknown
             Scale =     1.00  V/div

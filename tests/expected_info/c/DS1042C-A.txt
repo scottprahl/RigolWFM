@@ -6,6 +6,11 @@
         Filename     = DS1042C-A.wfm
         Channels     = [1]
 
+    Trigger:
+        Mode     = pulse
+        Source   = CH1
+        Derived Level     = 20.00 mV
+
      Channel 1:
          Coupling =  unknown
             Scale =   500.00 mV/div

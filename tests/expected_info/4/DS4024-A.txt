@@ -6,6 +6,10 @@
         Filename     = DS4024-A.wfm
         Channels     = [1, 2]
 
+    Trigger:
+        Derived Level (CH1) = 13.50 mV
+        Derived Level (CH2) = -6.25 mV
+
      Channel 1:
          Coupling =       DC
             Scale =     1.00  V/div

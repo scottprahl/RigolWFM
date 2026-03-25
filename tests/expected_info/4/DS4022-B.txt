@@ -6,6 +6,9 @@
         Filename     = DS4022-B.wfm
         Channels     = [1]
 
+    Trigger:
+        Derived Level (CH1) = 4.38  V
+
      Channel 1:
          Coupling =       DC
             Scale =    10.00  V/div

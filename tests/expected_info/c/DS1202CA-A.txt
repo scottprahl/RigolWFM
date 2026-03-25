@@ -6,6 +6,11 @@
         Filename     = DS1202CA-A.wfm
         Channels     = [1, 2]
 
+    Trigger:
+        Mode     = edge
+        Source   = CH1
+        Derived Level     = 40.00 mV
+
      Channel 1:
          Coupling =  unknown
             Scale =   200.00 mV/div

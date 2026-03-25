@@ -140,6 +140,13 @@ DHO1000_scopes: list[str] = [
     "DHO1072", "DHO1074", "DHO1102", "DHO1202", "DHO1204",
 ]
 
+_SWEEP_NAMES: dict[int, str] = {0: "AUTO", 1: "NORMAL", 2: "SINGLE"}
+_COUPLING_NAMES: dict[int, str] = {0: "DC", 1: "LF", 2: "HF", 3: "AC"}
+_DS2000_SOURCE_NAMES: dict[int, str] = {
+    0: "CH1", 1: "CH2", 2: "EXT", 3: "AC LINE",
+    **{4 + i: "D%d" % i for i in range(16)},
+}
+
 
 def valid_scope_list() -> str:
     """List all the oscilloscope types."""
@@ -175,6 +182,48 @@ def _scope_family(name: str) -> str:
 def dho_from_file(file_name: str) -> RigolWFM.dho.DhoWaveform:
     """Backward-compatible wrapper around `RigolWFM.dho.from_file()`."""
     return RigolWFM.dho.from_file(file_name)
+
+
+def _trig_header_dict(th) -> dict:
+    """Extract a KaitaiStruct trigger_header into a plain dict."""
+    d: dict = {}
+    try:
+        d["mode"] = th.mode.name
+    except Exception:
+        pass
+    try:
+        d["source"] = th.source.name.upper()
+    except Exception:
+        pass
+    try:
+        d["level"] = float(th.level)
+    except Exception:
+        pass
+    try:
+        d["sweep"] = _SWEEP_NAMES.get(th.sweep, str(th.sweep))
+    except Exception:
+        pass
+    try:
+        d["coupling"] = _COUPLING_NAMES.get(th.coupling, str(th.coupling))
+    except Exception:
+        pass
+    return d
+
+
+def _describe_trigger_block(d: dict, indent: str = "        ") -> str:
+    """Format a trigger info dict as indented text."""
+    s = ""
+    if "mode" in d:
+        s += "%sMode     = %s\n" % (indent, d["mode"])
+    if "source" in d:
+        s += "%sSource   = %s\n" % (indent, d["source"])
+    if "level" in d:
+        s += "%sLevel    = %sV\n" % (indent, RigolWFM.channel.engineering_string(d["level"], 2))
+    if "sweep" in d:
+        s += "%sSweep    = %s\n" % (indent, d["sweep"])
+    if "coupling" in d:
+        s += "%sCoupling = %s\n" % (indent, d["coupling"])
+    return s
 
 
 class Read_WFM_Error(Exception):
@@ -228,6 +277,7 @@ class Wfm:
         self.user_name = "unknown"
         self.parser_name = "unknown"
         self.header_name = "unknown"
+        self.trigger_info: dict = {}
 
     @classmethod
     def from_file(cls, file_name: str, model: str, selected: str = "1234") -> Wfm:
@@ -259,18 +309,41 @@ class Wfm:
         if umodel in DS1000B_scopes:
             w = RigolWFM.wfm1000b.Wfm1000b.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = "DS1000B"
+            new_wfm.trigger_info = {
+                "mode": w.header.trigger_mode.name,
+                "source": w.header.trigger_source.name.upper(),
+            }
 
         elif umodel in DS1000C_scopes:
             w = RigolWFM.wfm1000c.Wfm1000c.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = "DS1000C"
+            new_wfm.trigger_info = {
+                "mode": w.header.trigger_mode.name,
+                "source": w.header.trigger_source.name.upper(),
+            }
 
         elif umodel in DS1000D_scopes:
             w = RigolWFM.wfm1000d.Wfm1000d.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = "DS1000D"
+            new_wfm.trigger_info = {
+                "mode": w.header.trigger_mode.name,
+                "source": w.header.trigger_source.name.upper(),
+            }
 
         elif umodel in DS1000E_scopes:
             w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = "DS1000E"
+            _mode = w.header.trigger_mode.name
+            if _mode == "alt":
+                new_wfm.trigger_info = {
+                    "mode": "alt",
+                    "trigger1": _trig_header_dict(w.header.trigger1),
+                    "trigger2": _trig_header_dict(w.header.trigger2),
+                }
+            else:
+                _d = _trig_header_dict(w.header.trigger1)
+                _d["mode"] = _mode
+                new_wfm.trigger_info = _d
 
         elif umodel in DS1000Z_scopes:
             w = RigolWFM.wfm1000z.Wfm1000z.from_file(file_name)  # type: ignore[attr-defined]
@@ -279,6 +352,10 @@ class Wfm:
         elif umodel in DS2000_scopes:
             w = RigolWFM.wfm2000.Wfm2000.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = "DS2000"
+            _ds2000_src = w.header.trigger_source
+            _ds2000_src_name = _DS2000_SOURCE_NAMES.get(_ds2000_src)
+            if _ds2000_src_name is not None:
+                new_wfm.trigger_info = {"source": _ds2000_src_name}
 
         elif umodel in DS4000_scopes:
             w = RigolWFM.wfm4000.Wfm4000.from_file(file_name)  # type: ignore[attr-defined]
@@ -426,6 +503,43 @@ class Wfm:
             s += "%s" % ch.channel_number
             first = False
         s += "]\n\n"
+
+        # Compute derived trigger levels: voltage at t=0 for relevant analog channels.
+        # If source is known and non-analog (EXT, AC LINE, digital), skip entirely.
+        # If source is known analog (CH1–CH4), restrict to that channel.
+        # If source is unknown, show all enabled analog channels.
+        _source = self.trigger_info.get("source", "")
+        _CH_SOURCE_MAP = {"CH1": 1, "CH2": 2, "CH3": 3, "CH4": 4}
+        _source_ch_num = _CH_SOURCE_MAP.get(_source)  # None if not a recognised analog source
+        _known_non_analog = bool(_source) and _source_ch_num is None
+
+        derived_levels: dict[int, float] = {}
+        if not _known_non_analog:
+            for ch in self.channels:
+                if _source_ch_num is not None and ch.channel_number != _source_ch_num:
+                    continue
+                if ch.enabled_and_selected and ch.times is not None and ch.volts is not None and len(ch.times) > 0:
+                    idx = int(np.argmin(np.abs(ch.times)))
+                    derived_levels[ch.channel_number] = float(ch.volts[idx])
+
+        if self.trigger_info or derived_levels:
+            s += "    Trigger:\n"
+            if self.trigger_info:
+                if self.trigger_info.get("mode") == "alt":
+                    s += "        Mode     = alt\n"
+                    if "trigger1" in self.trigger_info:
+                        s += "\n        Trigger 1:\n"
+                        s += _describe_trigger_block(self.trigger_info["trigger1"], indent="            ")
+                    if "trigger2" in self.trigger_info:
+                        s += "\n        Trigger 2:\n"
+                        s += _describe_trigger_block(self.trigger_info["trigger2"], indent="            ")
+                else:
+                    s += _describe_trigger_block(self.trigger_info)
+            show_ch_label = _source_ch_num is None
+            for ch_num, level in sorted(derived_levels.items()):
+                label = "Derived Level (CH%d)" % ch_num if show_ch_label else "Derived Level    "
+                s += "        %s = %sV\n" % (label, RigolWFM.channel.engineering_string(level, 2))
+            s += "\n"
 
         for ch in self.channels:
             s += str(ch)

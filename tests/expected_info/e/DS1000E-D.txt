@@ -6,6 +6,14 @@
         Filename     = DS1000E-D.wfm
         Channels     = [1, 2]
 
+    Trigger:
+        Mode     = edge
+        Source   = CH1
+        Level    = 200.00 mV
+        Sweep    = AUTO
+        Coupling = DC
+        Derived Level     = 640.00 mV
+
      Channel 1:
          Coupling =  unknown
             Scale =     2.00  V/div

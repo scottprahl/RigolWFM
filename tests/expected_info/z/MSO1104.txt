@@ -6,6 +6,9 @@
         Filename     = MSO1104.wfm
         Channels     = [1]
 
+    Trigger:
+        Derived Level (CH1) = 3.35  V
+
      Channel 1:
          Coupling =       AC
             Scale =     5.00  V/div

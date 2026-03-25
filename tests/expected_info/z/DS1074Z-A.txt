@@ -6,6 +6,11 @@
         Filename     = DS1074Z-A.wfm
         Channels     = [1, 2, 3]
 
+    Trigger:
+        Derived Level (CH1) = 15.00 mV
+        Derived Level (CH2) = -1.12  V
+        Derived Level (CH3) = 50.00 mV
+
      Channel 1:
          Coupling =       AC
             Scale =    50.00 mV/div

@@ -6,6 +6,10 @@
         Filename     = DS2072A-1.wfm
         Channels     = [1, 2]
 
+    Trigger:
+        Derived Level (CH1) = 8.00 mV
+        Derived Level (CH2) = 4.00 mV
+
      Channel 1:
          Coupling =       DC
             Scale =   200.00 mV/div

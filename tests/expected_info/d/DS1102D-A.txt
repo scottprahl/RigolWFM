@@ -6,6 +6,11 @@
         Filename     = DS1102D-A.wfm
         Channels     = [1, 2]
 
+    Trigger:
+        Mode     = edge
+        Source   = CH1
+        Derived Level     = 3.08  V
+
      Channel 1:
          Coupling =  unknown
             Scale =     1.00  V/div

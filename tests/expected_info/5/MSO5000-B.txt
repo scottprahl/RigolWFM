@@ -6,6 +6,12 @@
         Filename     = MSO5000-B.bin
         Channels     = [1, 2, 3, 4]
 
+    Trigger:
+        Derived Level (CH1) = 1.55  V
+        Derived Level (CH2) = 439.47 mV
+        Derived Level (CH3) = 479.22 mV
+        Derived Level (CH4) = 1.58  V
+
      Channel 1:
          Coupling =  unknown
             Scale =   426.28 mV/div

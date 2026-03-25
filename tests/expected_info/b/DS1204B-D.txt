@@ -6,6 +6,10 @@
         Filename     = DS1204B-D.wfm
         Channels     = [3]
 
+    Trigger:
+        Mode     = edge
+        Source   = CH1
+
      Channel 3:
          Coupling =       AC
             Scale =     5.00  V/div

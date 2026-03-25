@@ -6,6 +6,12 @@
         Filename     = DS1054Z-A.wfm
         Channels     = [1, 2, 3, 4]
 
+    Trigger:
+        Derived Level (CH1) = 4.00  V
+        Derived Level (CH2) = 880.00 mV
+        Derived Level (CH3) = 3.20  V
+        Derived Level (CH4) = -2.89  V
+
      Channel 1:
          Coupling =       DC
             Scale =     2.00  V/div

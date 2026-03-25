@@ -6,6 +6,11 @@
         Filename     = DS1204B-A.wfm
         Channels     = [1, 2, 3, 4]
 
+    Trigger:
+        Mode     = edge
+        Source   = CH1
+        Derived Level     = 3.00  V
+
      Channel 1:
          Coupling =       DC
             Scale =     1.00  V/div

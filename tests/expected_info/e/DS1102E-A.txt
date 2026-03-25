@@ -6,6 +6,13 @@
         Filename     = DS1102E-A.wfm
         Channels     = [1]
 
+    Trigger:
+        Mode     = edge
+        Source   = CH2
+        Level    = 480.00 mV
+        Sweep    = AUTO
+        Coupling = DC
+
      Channel 1:
          Coupling =  unknown
             Scale =     1.00  V/div

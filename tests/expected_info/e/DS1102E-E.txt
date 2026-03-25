@@ -6,6 +6,14 @@
         Filename     = DS1102E-E.wfm
         Channels     = [1]
 
+    Trigger:
+        Mode     = edge
+        Source   = CH1
+        Level    = 25.60  V
+        Sweep    = SINGLE
+        Coupling = DC
+        Derived Level     = 24.80  V
+
      Channel 1:
          Coupling =  unknown
             Scale =    10.00  V/div
