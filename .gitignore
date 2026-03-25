@@ -20,3 +20,4 @@ RigolWFM/__pycache__/
 uv.lock
 
 wfm/DS1054Z-C-original.csv
+wfm/*.sr

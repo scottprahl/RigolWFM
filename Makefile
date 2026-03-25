@@ -242,6 +242,7 @@ clean: lite-clean
 	@find . -name '.pytest_cache' -type d -prune -exec $(RMR) {} +
 	@$(RMR) build docs/_build docs/api docs/.jupyter docs/github.com docs/raw.githubusercontent.com docs/media.githubusercontent.com
 	@$(RMR) .ruff_cache $(PACKAGE_DIR).egg-info
+	@$(RM) wfm/*.sr
 
 .PHONY: realclean
 realclean: clean
