@@ -226,12 +226,11 @@ def detect_model(filename: str) -> str:
         return "2"
 
     # DS1000C/D/E: a5 a5 00 00
-    # Distinguish by comparing file size to expected data offsets:
-    #   DS1000C: data at 256, DS1000D: data at 272, DS1000E: data at 276
-    # Note: DS1000C files with first byte 0xA5 (rather than 0xA1) share this
-    # magic with DS1000D/E; they will be misidentified if their file size
-    # happens to match the D or E formula.  Specify the model explicitly for
-    # those rare files.
+    # Distinguish by comparing file size to expected data offsets.
+    # DS1000D uses the wfm1000e parser (data at 276), so genuine D files match
+    # the E formula.  The 272-byte formula arises only for DS1000C files whose
+    # first byte is 0xA5 instead of the usual 0xA1: those files include a
+    # 16-byte padding block before the samples (256 + 16 + n*pts = 272 + n*pts).
     if magic4 == bytes([0xA5, 0xA5, 0x00, 0x00]):
         try:
             pts = struct.unpack("<I", hdr[28:32])[0]
@@ -242,7 +241,7 @@ def detect_model(filename: str) -> str:
                 if fsize == 256 + n_ch * pts:
                     return "C"
                 if fsize == 272 + n_ch * pts:
-                    return "D"
+                    return "C"
                 if fsize == 276 + n_ch * pts:
                     return "E"
         except Exception:
