@@ -147,9 +147,22 @@ def sigrok(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) 
     return True
 
 
+class _WfmParser(argparse.ArgumentParser):
+    """ArgumentParser that gives a friendlier error when the action verb is omitted."""
+
+    def error(self, message: str) -> None:
+        if "argument action: invalid choice" in message:
+            self.exit(2, (
+                "wfmconvert error: missing action verb.\n"
+                "Example: wfmconvert info DS1102E.wfm\n"
+                "Run 'wfmconvert --help' for more information.\n"
+            ))
+        super().error(message)
+
+
 def main() -> None:
     """Parse console command line arguments."""
-    parser = argparse.ArgumentParser(
+    parser = _WfmParser(
         prog="wfmconvert",
         description="Convert Rigol WFM files to another format.",
         formatter_class=argparse.RawTextHelpFormatter,
