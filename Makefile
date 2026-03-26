@@ -16,7 +16,8 @@ YAML_LINT_OPTS  := -d "{extends: default, rules: {document-start: disable, line-
 
 DOCS_DIR        := docs
 HTML_DIR        := $(DOCS_DIR)/_build/html
-JS_DIR          := wfmview
+WEB_DIR         := wfmview
+JS_DIR          := $(WEB_DIR)
 OUT_ROOT        := _site
 OUT_DIR         := $(OUT_ROOT)/$(PACKAGE)
 STAGE_DIR       := .lite_src
@@ -26,6 +27,7 @@ LITE_CONFIG     := $(PACKAGE_DIR)/jupyter_lite_config.json
 PAGES_BRANCH    := gh-pages
 WORKTREE        := .gh-pages
 REMOTE          := origin
+PAGES_URL       := https://$(GITHUB_USER).github.io/$(REPO_NAME)/
 
 HOST            := 127.0.0.1
 PORT            := 8000
@@ -72,6 +74,9 @@ help:
 	@echo "  lite-serve     - Serve $(OUT_ROOT) at http://$(HOST):$(PORT)"
 	@echo "  lite-deploy    - Deploy $(OUT_DIR) to $(PAGES_BRANCH)"
 	@echo "  lite-clean     - Remove JupyterLite build artifacts"
+	@echo ""
+	@echo "Web Viewer Targets:"
+	@echo "  web-deploy     - Deploy $(WEB_DIR) to $(PAGES_BRANCH)"
 	@echo ""
 	@echo "Cleanup Targets:"
 	@echo "  clean          - Remove generated test/build/doc artifacts"
@@ -214,6 +219,33 @@ lite-deploy:
 			echo "Deployed to https://$(GITHUB_USER).github.io/$(PACKAGE)/"; \
 		fi
 
+.PHONY: web-deploy
+web-deploy:
+	@test -f "$(WEB_DIR)/index.html" || { echo "Missing $(WEB_DIR)/index.html"; exit 1; }
+	@if ! git show-ref --verify --quiet refs/heads/$(PAGES_BRANCH); then \
+		CURRENT=$$(git branch --show-current); \
+		git switch --orphan $(PAGES_BRANCH); \
+		git commit --allow-empty -m "Initialize $(PAGES_BRANCH)"; \
+		git switch $$CURRENT; \
+	fi
+	@git worktree remove "$(WORKTREE)" --force 2>/dev/null || true
+	@git worktree prune || true
+	@$(RMR) "$(WORKTREE)"
+	@git worktree add "$(WORKTREE)" "$(PAGES_BRANCH)"
+	@git -C "$(WORKTREE)" pull "$(REMOTE)" "$(PAGES_BRANCH)" 2>/dev/null || true
+	@rsync -a --delete --exclude ".git*" "$(WEB_DIR)/" "$(WORKTREE)/"
+	@touch "$(WORKTREE)/.nojekyll"
+	@date -u +"%Y-%m-%d %H:%M:%S UTC" > "$(WORKTREE)/.pages-ping"
+	@cd "$(WORKTREE)" && \
+		git add -A && \
+		if git diff --quiet --cached; then \
+			echo "No changes to deploy"; \
+		else \
+			git commit -m "Deploy web viewer $$(date -u +'%Y-%m-%d %H:%M:%S UTC')" && \
+			git push "$(REMOTE)" "$(PAGES_BRANCH)" && \
+			echo "Deployed to $(PAGES_URL)"; \
+		fi
+
 .PHONY: run
 run: lite lite-serve
 
@@ -243,4 +275,3 @@ realclean: clean
 	@$(RMR) docs/github.com
 	@$(RM) uv.lock
 	@$(RM) $(PYTHON_PARSERS)
-
