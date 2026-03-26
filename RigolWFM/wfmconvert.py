@@ -283,6 +283,10 @@ def main() -> None:
             scope_data = RigolWFM.wfm.Wfm.from_file(filename, model, selected)
             actionMap[args.action](args, scope_data, filename)
 
+        except FileNotFoundError:
+            print(f"wfmconvert error: file not found: '{filename}'", file=sys.stderr)
+            sys.exit(1)
+
         except RigolWFM.wfm.Unknown_Scope_Error as e:
             print(e, file=sys.stderr)
             sys.exit(1)
