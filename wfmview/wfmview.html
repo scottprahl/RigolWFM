@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rigol WFM Viewer</title>
+<style>
+/* ── Reset & base ─────────────────────────────────────────────────────────── */
+* { margin: 0; padding: 0; box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+html, body { height: 100%; overflow: hidden; }
+
+body {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    color: #fff;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 14px;
+}
+
+/* ── Outer shell ──────────────────────────────────────────────────────────── */
+.main-container {
+    flex: 1;
+    display: flex;
+    gap: 1px;
+    background: #1a1a1a;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    min-height: 0;
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+.sidebar {
+    width: 270px;
+    flex-shrink: 0;
+    background: #3c3c3c;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 16px;
+    gap: 14px;
+}
+
+.panel {
+    background: #383838;
+    border-radius: 6px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #4a4a4a;
+}
+
+.sidebar-btn {
+    width: 100%;
+    padding: 7px 14px;
+    background: #5e5e5e;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    transition: background 0.15s;
+    text-align: center;
+}
+.sidebar-btn:hover  { background: #6a6a6a; }
+.sidebar-btn:active { transform: translateY(1px); }
+
+#file-details {
+    display: none;
+    font-family: Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.85;
+}
+.detail-row { display: flex; justify-content: space-between; gap: 6px; }
+.detail-key { color: #666; }
+.detail-val { color: #ccc; text-align: right; word-break: break-all; }
+
+#channels-panel { display: none; }
+
+.channel-entry {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    background: #454545;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: opacity 0.15s;
+}
+.channel-entry:last-child { margin-bottom: 0; }
+.channel-entry.ch-off { opacity: 0.4; }
+
+.ch-toggle {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: #0078d7;
+}
+.ch-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+.ch-entry-name {
+    font-weight: 600;
+    font-family: Consolas, monospace;
+    min-width: 36px;
+}
+.ch-entry-info {
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    color: #888;
+    margin-left: auto;
+    text-align: right;
+    line-height: 1.7;
+}
+
+/* ── Content area ─────────────────────────────────────────────────────────── */
+.content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #252525;
+    min-width: 0;
+}
+
+/* file header bar (checkbox + filename, shown after file load) */
+.file-bar {
+    height: 36px;
+    background: #3c3c3c;
+    border-bottom: 1px solid #4a4a4a;
+    display: none;
+    align-items: center;
+    padding: 0 14px;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.file-bar.visible { display: flex; }
+
+.file-toggle {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: #0078d7;
+}
+
+#file-bar-name {
+    font-size: 13px;
+    color: #ccc;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+#file-bar-format {
+    font-size: 11px;
+    color: #555;
+    flex-shrink: 0;
+}
+
+/* waveform display area */
+.display-area {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+    background: #1e1e1e;
+}
+
+#drop-zone {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+#drop-zone.drag-over { background: rgba(0, 120, 215, 0.08); }
+#drop-zone.hidden    { display: none; }
+
+.dz-icon { font-size: 52px; color: #2e2e2e; line-height: 1; margin-bottom: 14px; }
+.dz-main { font-size: 17px; color: #4a4a4a; margin-bottom: 8px; }
+.dz-hint { font-size: 12px; color: #333; }
+
+#scope {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+}
+#scope.visible { display: block; }
+
+#error-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1e0000;
+    border: 1px solid #800;
+    border-top: 3px solid #c03030;
+    color: #f88;
+    padding: 22px 30px;
+    border-radius: 8px;
+    display: none;
+    text-align: center;
+    max-width: 80%;
+    white-space: pre-wrap;
+    font-size: 13px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+}
+#error-box.visible { display: block; }
+
+/* ── Status bar ───────────────────────────────────────────────────────────── */
+.status-bar {
+    height: 26px;
+    background: #0078d7;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+.status-item { color: rgba(255,255,255,0.9); }
+.status-sep  { color: rgba(255,255,255,0.35); margin: 0 10px; }
+
+/* ── Drag overlay ─────────────────────────────────────────────────────────── */
+#drag-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 120, 215, 0.72);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+#drag-overlay.active { display: flex; }
+.drag-content { text-align: center; color: #fff; }
+.drag-icon    { font-size: 72px; display: block; line-height: 1; }
+.drag-label   { display: block; font-size: 22px; margin-top: 16px; }
+
+/* ── Export modal ─────────────────────────────────────────────────────────── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal-box {
+    background: #3c3c3c;
+    border-top: 3px solid #0078d7;
+    border-radius: 8px;
+    padding: 24px 28px 20px;
+    width: 440px;
+    max-width: 90vw;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+    position: relative;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #4a4a4a;
+}
+.modal-header h2 { font-size: 16px; font-weight: 600; color: #ddd; }
+
+.modal-close {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+}
+.modal-close:hover { color: #fff; }
+
+.export-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid #404040;
+}
+.export-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+.exp-btn {
+    width: 130px;
+    flex-shrink: 0;
+    padding: 7px 0;
+    background: #5e5e5e;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    transition: background 0.15s;
+    text-align: center;
+}
+.exp-btn:hover  { background: #0078d7; }
+.exp-btn:active { transform: translateY(1px); }
+
+.exp-desc strong {
+    display: block;
+    font-size: 13px;
+    color: #bbb;
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+.exp-desc span {
+    font-size: 11px;
+    color: #777;
+    line-height: 1.4;
+}
+</style>
+</head>
+<body>
+
+<!-- ── Main shell ──────────────────────────────────────────────────────────── -->
+<div class="main-container">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="panel">
+      <button class="sidebar-btn" id="open-btn">&#9654;&ensp;Open File&hellip;</button>
+      <button class="sidebar-btn" id="export-btn" disabled>&#8595;&ensp;Export File&hellip;</button>
+      <div id="file-details"></div>
+    </div>
+    <div class="panel" id="channels-panel">
+      <div class="panel-title">Channels</div>
+      <div id="channel-list"></div>
+    </div>
+  </div>
+
+  <!-- Content area -->
+  <div class="content-area">
+
+    <!-- File header bar: checkbox + filename, hidden until file loaded -->
+    <div class="file-bar" id="file-bar">
+      <input type="checkbox" class="file-toggle" id="file-toggle" checked>
+      <span id="file-bar-name"></span>
+      <span id="file-bar-format"></span>
+    </div>
+
+    <div class="display-area">
+      <div id="drop-zone">
+        <div class="dz-icon">&#11123;</div>
+        <div class="dz-main">Drop a Rigol .wfm or .bin file here</div>
+        <div class="dz-hint">DS1000B/C/E/Z &nbsp;&middot;&nbsp; DS2000 &nbsp;&middot;&nbsp; DS4000 &nbsp;&middot;&nbsp; MSO5000/7000/8000 &nbsp;&middot;&nbsp; DHO</div>
+      </div>
+      <canvas id="scope"></canvas>
+      <div id="error-box"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Status bar -->
+<div class="status-bar">
+  <span id="status-content" class="status-item">Rigol WFM Viewer</span>
+</div>
+
+<!-- Drag overlay -->
+<div id="drag-overlay">
+  <div class="drag-content">
+    <span class="drag-icon">&#11123;</span>
+    <span class="drag-label">Drop to open</span>
+  </div>
+</div>
+
+<!-- Export modal -->
+<div class="modal-overlay" id="export-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Export Waveform</h2>
+      <button class="modal-close" id="export-modal-close">&times;</button>
+    </div>
+
+    <div class="export-row">
+      <button class="exp-btn" id="exp-csv">CSV</button>
+      <div class="exp-desc">
+        <strong>CSV</strong>
+        <span>Spreadsheet-compatible, SI-scaled units, Rigol format</span>
+      </div>
+    </div>
+
+    <div class="export-row">
+      <button class="exp-btn" id="exp-sigrok">Sigrok CSV</button>
+      <div class="exp-desc">
+        <strong>Sigrok CSV</strong>
+        <span>Raw seconds &amp; volts for PulseView / sigrok-cli</span>
+      </div>
+    </div>
+
+    <div class="export-row">
+      <button class="exp-btn" id="exp-wav">LTspice WAV</button>
+      <div class="exp-desc">
+        <strong>LTspice WAV</strong>
+        <span>8-bit PCM, autoscaled, channels interleaved</span>
+      </div>
+    </div>
+
+    <div class="export-row">
+      <button class="exp-btn" id="exp-png">PNG</button>
+      <div class="exp-desc">
+        <strong>PNG Image</strong>
+        <span>Raster screenshot of the current canvas view</span>
+      </div>
+    </div>
+
+    <div class="export-row">
+      <button class="exp-btn" id="exp-svg">SVG</button>
+      <div class="exp-desc">
+        <strong>SVG Vector</strong>
+        <span>Scalable vector image, 1200&times;700 px</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- KaitaiStream runtime -->
+<script src="https://cdn.jsdelivr.net/npm/kaitai-struct/KaitaiStream.js"></script>
+<!-- Compiled parsers -->
+<script src="../js/Wfm1000b.js"></script>
+<script src="../js/Wfm1000c.js"></script>
+<script src="../js/Wfm1000e.js"></script>
+<script src="../js/Wfm1000z.js"></script>
+<script src="../js/Wfm2000.js"></script>
+<script src="../js/Wfm4000.js"></script>
+<script src="../js/Bin5000.js"></script>
+<script src="../js/Bin70008000.js"></script>
+<script src="../js/Bindho1000.js"></script>
+
+<script>
+'use strict';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+var CH_COLORS = ['#FFFF00', '#00FFFF', '#FF00FF', '#00FF00'];
+var FONT_PX   = 20;
+var M         = { l: 115, r: 20, t: 20, b: 55 };
+
+// ── SI Formatting ─────────────────────────────────────────────────────────────
+function fmtSI(val, unit) {
+    var abs = Math.abs(val);
+    var pfx, div;
+    if (abs === 0)        { return '0 ' + unit; }
+    if (abs >= 1e9)       { pfx = 'G';           div = 1e9;   }
+    else if (abs >= 1e6)  { pfx = 'M';           div = 1e6;   }
+    else if (abs >= 1e3)  { pfx = 'k';           div = 1e3;   }
+    else if (abs >= 1)    { pfx = '';            div = 1;     }
+    else if (abs >= 1e-3) { pfx = 'm';           div = 1e-3;  }
+    else if (abs >= 1e-6) { pfx = '\u00b5';      div = 1e-6;  }
+    else if (abs >= 1e-9) { pfx = 'n';           div = 1e-9;  }
+    else                  { pfx = 'p';           div = 1e-12; }
+    return (val / div).toPrecision(3) + '\u202f' + pfx + unit;
+}
+
+// ── Uint8Array helper ─────────────────────────────────────────────────────────
+function toU8(buf) {
+    if (!buf) return null;
+    return (buf instanceof Uint8Array) ? buf : new Uint8Array(buf);
+}
+
+// ── Detection & Parsing ───────────────────────────────────────────────────────
+function detectAndParse(buffer) {
+    var b     = new Uint8Array(buffer);
+    var fsize = buffer.byteLength;
+
+    if (b.length < 4)
+        throw new Error('File too short to detect model.');
+
+    var b0 = b[0], b1 = b[1], b2 = b[2], b3 = b[3];
+
+    function u32le(off) {
+        return (b[off] | b[off+1]<<8 | b[off+2]<<16 | b[off+3]<<24) >>> 0;
+    }
+    function asciiStr(off, maxLen) {
+        var s = '';
+        for (var i = 0; i < maxLen && b[off + i]; i++)
+            s += String.fromCharCode(b[off + i]);
+        return s;
+    }
+
+    if (b0===0xA5 && b1===0xA5 && b2===0xA4 && b3===0x01) return parseB(buffer);
+    if (b0===0xA1 && b1===0xA5 && b2===0x00 && b3===0x00) return parseC(buffer);
+    if (b0===0x01 && b1===0xFF && b2===0xFF && b3===0xFF) return parseZ(buffer);
+
+    if (b0===0x02 && b1===0x00 && b2===0x00 && b3===0x00)
+        throw new Error('DHO series .wfm format is not yet supported by this viewer.');
+
+    var magic_str = String.fromCharCode(b0, b1, b2, b3);
+
+    if (magic_str === 'RG03') return parseDhoBin(buffer);
+
+    if (magic_str === 'RG01') {
+        return u32le(12) === 128 ? parseBin70008000(buffer) : parseBin5000(buffer);
+    }
+
+    if (b0===0xA5 && b1===0xA5 && b2===0x38 && b3===0x00) {
+        var modelStr = asciiStr(4, 20);
+        if (modelStr.indexOf('DS4') === 0 || modelStr.indexOf('MSO4') === 0) return parse4000(buffer);
+        if (modelStr.indexOf('DS6') === 0 || modelStr.indexOf('MSO6') === 0)
+            throw new Error('DS6000 format is not yet supported by this viewer.');
+        return parse2000(buffer);
+    }
+
+    if (b0===0xA5 && b1===0xA5 && b2===0x00 && b3===0x00) {
+        try {
+            var pts   = u32le(28);
+            var ch1en = b[49] !== 0;
+            var ch2en = b[73] !== 0;
+            var nch   = (ch1en ? 1 : 0) + (ch2en ? 1 : 0);
+            if (pts > 0 && nch > 0) {
+                if (fsize === 256 + nch * pts) return parseC(buffer);
+                if (fsize === 272 + nch * pts) return parseC(buffer);
+                if (fsize === 276 + nch * pts) return parseE(buffer);
+            }
+        } catch (_) {}
+        return parseE(buffer);
+    }
+
+    throw new Error(
+        'Unrecognised file format.\nMagic bytes: 0x' +
+        [b0,b1,b2,b3].map(function(x){ return x.toString(16).padStart(2,'0'); }).join(' 0x')
+    );
+}
+
+// ── DS1000B Parser ────────────────────────────────────────────────────────────
+function parseB(buffer) {
+    var w = new Wfm1000b.Wfm1000b(new KaitaiStream(buffer), null, null);
+    var h = w.header;
+    var channels = [];
+    var spp        = h.secondsPerPoint;
+    var timeScale  = 1e-12 * h.timeScale;
+    var timeOffset = 1e-12 * h.timeOffset;
+    var points     = h.points;
+    var start      = timeOffset - points * spp / 2;
+    var rawArrays  = [h.ch1, h.ch2, h.ch3, h.ch4];
+    for (var ci = 0; ci < 4; ci++) {
+        if (!h.ch[ci].enabled) continue;
+        var raw = toU8(rawArrays[ci]);
+        if (!raw || raw.length === 0) continue;
+        var n = raw.length;
+        var vScale = h.ch[ci].voltScale;
+        var vOff   = h.ch[ci].voltOffset + 1.12 * h.ch[ci].voltPerDivision;
+        var times  = new Float64Array(n);
+        var volts  = new Float64Array(n);
+        for (var i = 0; i < n; i++) {
+            times[i] = start + i * spp;
+            volts[i] = vScale * (127 - raw[i]) - vOff;
+        }
+        channels.push({ name: 'CH' + (ci + 1), color: CH_COLORS[ci],
+            times: times, volts: volts,
+            voltPerDiv: h.ch[ci].voltPerDivision, timeScale: timeScale });
+    }
+    return { format: 'DS1000B', channels: channels };
+}
+
+// ── DS1000E Parser ────────────────────────────────────────────────────────────
+function parseE(buffer) {
+    var w = new Wfm1000e.Wfm1000e(new KaitaiStream(buffer), null, null);
+    var h = w.header;
+    var channels = [];
+    for (var ci = 0; ci < 2; ci++) {
+        var chh = h.ch[ci];
+        if (!chh.enabled) continue;
+        var raw = toU8(ci === 0 ? w.data.ch1 : w.data.ch2);
+        if (!raw || raw.length === 0) continue;
+        var n = raw.length;
+        var memDepth   = ci === 0 ? h.ch1MemoryDepth : h.ch2MemoryDepth;
+        var timeOffset = ci === 0 ? h.ch1TimeOffset   : h.ch2TimeOffset;
+        var spp        = h.secondsPerPoint;
+        var start      = timeOffset - memDepth * spp / 2;
+        var times      = new Float64Array(n);
+        var volts      = new Float64Array(n);
+        for (var i = 0; i < n; i++) {
+            times[i] = start + i * spp;
+            volts[i] = chh.voltScale * (125 - raw[i]) - chh.voltOffset;
+        }
+        channels.push({ name: 'CH' + (ci + 1), color: CH_COLORS[ci],
+            times: times, volts: volts,
+            voltPerDiv: chh.voltPerDivision, timeScale: h.ch1TimeScale });
+    }
+    return { format: 'DS1000E', channels: channels };
+}
+
+// ── DS1000C Parser ────────────────────────────────────────────────────────────
+function parseC(buffer) {
+    var w = new Wfm1000c.Wfm1000c(new KaitaiStream(buffer), null, null);
+    var h = w.header;
+    var channels = [];
+    var spp        = h.secondsPerPoint;
+    var timeOffset = Number(h.timeOffset) * 1e-12;
+    var timeScale  = Number(h.timeScale)  * 1e-12;
+    var n          = h.points;
+    var halfWin    = n * spp / 2;
+    var step       = n > 1 ? 2 * halfWin / (n - 1) : 0;
+    for (var ci = 0; ci < 2; ci++) {
+        var chh = h.ch[ci];
+        if (!chh.enabled) continue;
+        var raw = toU8(ci === 0 ? w.data.ch1 : w.data.ch2);
+        if (!raw || raw.length === 0) continue;
+        var len   = raw.length;
+        var times = new Float64Array(len);
+        var volts = new Float64Array(len);
+        for (var i = 0; i < len; i++) {
+            times[i] = timeOffset - halfWin + i * step;
+            volts[i] = chh.voltScale * (125 - raw[i]) - chh.voltOffset;
+        }
+        channels.push({ name: 'CH' + (ci + 1), color: CH_COLORS[ci],
+            times: times, volts: volts,
+            voltPerDiv: chh.voltPerDivision, timeScale: timeScale });
+    }
+    return { format: 'DS1000C', channels: channels };
+}
+
+// ── DS1000Z Parser ────────────────────────────────────────────────────────────
+function parseZ(buffer) {
+    var w      = new Wfm1000z.Wfm1000z(new KaitaiStream(buffer), null, null);
+    var h      = w.header;
+    var all    = toU8(w.data.raw);
+    var spp    = h.secondsPerPoint;
+    var tOff   = h.timeOffset;
+    var stride = h.stride;
+    var points = h.points;
+    var start  = tOff - points * spp / 2;
+    var channels = [];
+    for (var ci = 0; ci < 4; ci++) {
+        var chh = h.ch[ci];
+        if (!chh.enabled) continue;
+        var offset;
+        if (stride === 1) {
+            offset = 0;
+        } else if (stride === 2) {
+            var anyLower = false;
+            for (var j = 0; j < ci; j++) { if (h.ch[j].enabled) { anyLower = true; break; } }
+            offset = anyLower ? 0 : 1;
+        } else {
+            offset = 3 - ci;
+        }
+        var raw   = new Uint8Array(points);
+        var times = new Float64Array(points);
+        var volts = new Float64Array(points);
+        for (var i = 0; i < points; i++) {
+            raw[i]   = all[offset + i * stride];
+            times[i] = start + i * spp;
+            volts[i] = chh.yScale * (127 - raw[i]) - chh.yOffset;
+        }
+        channels.push({ name: 'CH' + (ci + 1), color: CH_COLORS[ci],
+            times: times, volts: volts,
+            voltPerDiv: chh.voltPerDivision, timeScale: h.timeScale });
+    }
+    return { format: 'DS1000Z', channels: channels };
+}
+
+// ── DS2000 Parser ─────────────────────────────────────────────────────────────
+function parse2000(buffer) {
+    var w = new Wfm2000.Wfm2000(new KaitaiStream(buffer), null, null);
+    var h = w.header;
+    var channels  = [];
+    var spp       = h.secondsPerPoint;
+    var adjTOff   = h.timeOffset + h.zPtOffset * spp;
+    var start     = adjTOff - h.storageDepth * spp / 2;
+    var rawArrays = [h.raw1, h.raw2, h.raw3, h.raw4];
+    for (var ci = 0; ci < 4; ci++) {
+        var chh = h.ch[ci];
+        if (!chh.enabled) continue;
+        var raw = toU8(rawArrays[ci]);
+        if (!raw || raw.length === 0) continue;
+        var n     = raw.length;
+        var times = new Float64Array(n);
+        var volts = new Float64Array(n);
+        for (var i = 0; i < n; i++) {
+            times[i] = start + i * spp;
+            volts[i] = -chh.voltScale * (127 - raw[i]) - chh.voltOffset;
+        }
+        channels.push({ name: 'CH' + (ci + 1), color: CH_COLORS[ci],
+            times: times, volts: volts,
+            voltPerDiv: chh.voltPerDivision, timeScale: h.timeScale });
+    }
+    return { format: 'DS2000', channels: channels };
+}
+
+// ── DS4000 Parser ─────────────────────────────────────────────────────────────
+function parse4000(buffer) {
+    var w = new Wfm4000.Wfm4000(new KaitaiStream(buffer), null, null);
+    var h = w.header;
+    var channels  = [];
+    var spp       = h.secondsPerPoint;
+    var start     = h.timeOffset - h.memDepth * spp / 2;
+    var enFlags   = [h.enabled.channel1, h.enabled.channel2, h.enabled.channel3, h.enabled.channel4];
+    var rawArrays = [h.raw1, h.raw2, h.raw3, h.raw4];
+    for (var ci = 0; ci < 4; ci++) {
+        if (!enFlags[ci]) continue;
+        var raw = toU8(rawArrays[ci]);
+        if (!raw || raw.length === 0) continue;
+        var n     = raw.length;
+        var times = new Float64Array(n);
+        var volts = new Float64Array(n);
+        for (var i = 0; i < n; i++) {
+            times[i] = start + i * spp;
+            volts[i] = -h.ch[ci].voltScale * (127 - raw[i]) - h.ch[ci].voltOffset;
+        }
+        channels.push({ name: 'CH' + (ci + 1), color: CH_COLORS[ci],
+            times: times, volts: volts,
+            voltPerDiv: h.ch[ci].voltPerDivision, timeScale: h.timeScale });
+    }
+    return { format: 'DS4000', channels: channels };
+}
+
+// ── MSO5000 / MSO5074 / MSO7000 / MSO8000 .bin helper ────────────────────────
+function parseBinWaveforms(w, format) {
+    var channels = [];
+    for (var wi = 0; wi < w.waveforms.length; wi++) {
+        var wfm = w.waveforms[wi];
+        var dh  = wfm.dataHeader;
+        if (dh.bufferType < 1 || dh.bufferType > 3) continue;
+        var wh         = wfm.wfmHeader;
+        var dataRaw    = wfm.dataRaw;
+        var n          = wh.nPts;
+        var dv         = new DataView(dataRaw.buffer, dataRaw.byteOffset, dataRaw.byteLength);
+        var times      = new Float64Array(n);
+        var volts      = new Float64Array(n);
+        var vMin = Infinity, vMax = -Infinity;
+        for (var i = 0; i < n; i++) {
+            times[i] = -wh.xOrigin + i * wh.xIncrement;
+            var v    = dv.getFloat32(i * 4, true);
+            volts[i] = v;
+            if (v < vMin) vMin = v;
+            if (v > vMax) vMax = v;
+        }
+        channels.push({
+            name: wh.waveformLabel || ('CH' + (channels.length + 1)),
+            color: CH_COLORS[channels.length % CH_COLORS.length],
+            times: times, volts: volts,
+            voltPerDiv: (vMax > vMin) ? (vMax - vMin) / 8 : 1,
+            timeScale:  wh.xDisplayRange / 10,
+        });
+    }
+    return { format: format, channels: channels };
+}
+function parseBin5000(buffer) {
+    return parseBinWaveforms(new Bin5000.Bin5000(new KaitaiStream(buffer), null, null), 'MSO5000');
+}
+function parseBin70008000(buffer) {
+    return parseBinWaveforms(new Bin70008000.Bin70008000(new KaitaiStream(buffer), null, null), 'MSO7000/8000');
+}
+
+// ── DHO .bin Parser ───────────────────────────────────────────────────────────
+function parseDhoBin(buffer) {
+    var w = new Bindho1000.Bindho1000(new KaitaiStream(buffer), null, null);
+    var channels = [];
+    for (var wi = 0; wi < w.waveforms.length; wi++) {
+        var wfm = w.waveforms[wi];
+        if (wfm.dataHeader.bufferType !== 1) continue;
+        var wh   = wfm.wfmHeader;
+        var vals = wfm.samples.values;
+        var n    = vals.length;
+        var times = new Float64Array(n);
+        var volts = new Float64Array(n);
+        var vMin = Infinity, vMax = -Infinity;
+        for (var i = 0; i < n; i++) {
+            times[i] = wh.t0 + i * wh.xIncrement;
+            volts[i] = vals[i];
+            if (vals[i] < vMin) vMin = vals[i];
+            if (vals[i] > vMax) vMax = vals[i];
+        }
+        channels.push({
+            name: wh.channelName || ('CH' + (channels.length + 1)),
+            color: CH_COLORS[channels.length % CH_COLORS.length],
+            times: times, volts: volts,
+            voltPerDiv: (vMax > vMin) ? (vMax - vMin) / 8 : 1,
+            timeScale:  wh.xDisplayRange / 10,
+        });
+    }
+    return { format: 'DHO .bin', channels: channels };
+}
+
+// ── Nice-number tick helpers ───────────────────────────────────────────────────
+function niceStep(rawStep) {
+    if (rawStep <= 0) return 1;
+    var exp  = Math.floor(Math.log10(rawStep));
+    var frac = rawStep / Math.pow(10, exp);
+    return (frac < 1.5 ? 1 : frac < 3.5 ? 2 : frac < 7.5 ? 5 : 10) * Math.pow(10, exp);
+}
+function niceAxis(dataMin, dataMax, targetDivs) {
+    if (dataMin === dataMax) { dataMin -= 1; dataMax += 1; }
+    var step  = niceStep((dataMax - dataMin) / targetDivs);
+    var axMin = Math.floor(dataMin / step) * step;
+    var axMax = Math.ceil (dataMax / step) * step;
+    return { min: axMin, max: axMax, step: step, count: Math.round((axMax - axMin) / step) };
+}
+
+// ── Canvas Rendering ──────────────────────────────────────────────────────────
+function render(result) {
+    var canvas = document.getElementById('scope');
+    var W = canvas.offsetWidth  || 800;
+    var H = canvas.offsetHeight || 480;
+    canvas.width  = W;
+    canvas.height = H;
+
+    var ctx = canvas.getContext('2d');
+    var ml = M.l, mr = M.r, mt = M.t, mb = M.b;
+    var pw = W - ml - mr;
+    var ph = H - mt - mb;
+
+    var tMin = Infinity, tMax = -Infinity, vMin = Infinity, vMax = -Infinity;
+    result.channels.forEach(function(ch) {
+        for (var i = 0; i < ch.times.length; i++) {
+            if (ch.times[i] < tMin) tMin = ch.times[i];
+            if (ch.times[i] > tMax) tMax = ch.times[i];
+            if (ch.volts[i] < vMin) vMin = ch.volts[i];
+            if (ch.volts[i] > vMax) vMax = ch.volts[i];
+        }
+    });
+    if (!isFinite(tMin)) { tMin = -1; tMax = 1; }
+    if (!isFinite(vMin)) { vMin = -1; vMax = 1; }
+    var vSpan = vMax - vMin || 1;
+    vMin -= vSpan * 0.05;
+    vMax += vSpan * 0.05;
+
+    var tAx = niceAxis(tMin, tMax, 10);
+    var vAx = niceAxis(vMin, vMax, 8);
+
+    function xOf(t) { return ml + (t - tAx.min) / (tAx.max - tAx.min) * pw; }
+    function yOf(v) { return mt + (vAx.max - v) / (vAx.max - vAx.min) * ph; }
+
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, W, H);
+
+    function vline(x) { var cx = Math.round(x)+0.5; ctx.beginPath(); ctx.moveTo(cx,mt); ctx.lineTo(cx,mt+ph); ctx.stroke(); }
+    function hline(y) { var cy = Math.round(y)+0.5; ctx.beginPath(); ctx.moveTo(ml,cy); ctx.lineTo(ml+pw,cy); ctx.stroke(); }
+
+    ctx.lineWidth = 0.5; ctx.strokeStyle = '#1a1a1a';
+    for (var i = 0; i <= tAx.count * 5; i++) vline(xOf(tAx.min + i * tAx.step / 5));
+    for (var i = 0; i <= vAx.count * 5; i++) hline(yOf(vAx.min + i * vAx.step / 5));
+
+    ctx.lineWidth = 1; ctx.strokeStyle = '#2a2a2a';
+    for (var i = 0; i <= tAx.count; i++) vline(xOf(tAx.min + i * tAx.step));
+    for (var i = 0; i <= vAx.count; i++) hline(yOf(vAx.min + i * vAx.step));
+
+    ctx.lineWidth = 1; ctx.strokeStyle = '#444';
+    ctx.strokeRect(ml + 0.5, mt + 0.5, pw, ph);
+
+    ctx.fillStyle = '#666'; ctx.font = FONT_PX + 'px monospace';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (var i = 0; i <= vAx.count; i++) {
+        var v = vAx.min + i * vAx.step, y = yOf(v);
+        if (y >= mt - 2 && y <= mt + ph + 2) ctx.fillText(fmtSI(v, 'V'), ml - 6, y);
+    }
+
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    var tPixPerDiv = pw / tAx.count;
+    var tLabelSkip = Math.ceil((FONT_PX * 7) / tPixPerDiv);
+    for (var i = 0; i <= tAx.count; i++) {
+        if (i % tLabelSkip !== 0) continue;
+        ctx.fillText(fmtSI(tAx.min + i * tAx.step, 's'), xOf(tAx.min + i * tAx.step), mt + ph + 6);
+    }
+
+    var maxPts = pw * 2;
+    result.channels.forEach(function(ch) {
+        var n = ch.times.length;
+        if (!n) return;
+        ctx.strokeStyle = ch.color; ctx.lineWidth = 1.5; ctx.beginPath();
+        var skip = Math.max(1, Math.floor(n / maxPts)), first = true;
+        for (var i = 0; i < n; i += skip) {
+            var px = xOf(ch.times[i]), py = yOf(ch.volts[i]);
+            if (first) { ctx.moveTo(px, py); first = false; } else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+    });
+
+    var lx = ml + 8, ly = mt + 8;
+    result.channels.forEach(function(ch, idx) {
+        var y = ly + idx * (FONT_PX + 8);
+        ctx.fillStyle = ch.color; ctx.font = 'bold ' + FONT_PX + 'px monospace';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+        ctx.fillText(ch.name, lx, y);
+        ctx.fillStyle = '#666'; ctx.font = FONT_PX + 'px monospace';
+        ctx.fillText(fmtSI(ch.voltPerDiv, 'V') + '/div', lx + FONT_PX * 3, y);
+    });
+
+    ctx.fillStyle = '#444'; ctx.font = FONT_PX + 'px monospace';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText(result.format, ml + pw - 6, mt + 6);
+}
+
+// ── SVG Rendering ─────────────────────────────────────────────────────────────
+function renderToSVG(result) {
+    var W = 1200, H = 700;
+    var ml = M.l, mr = M.r, mt = M.t, mb = M.b;
+    var pw = W - ml - mr, ph = H - mt - mb;
+
+    var tMin = Infinity, tMax = -Infinity, vMin = Infinity, vMax = -Infinity;
+    result.channels.forEach(function(ch) {
+        for (var i = 0; i < ch.times.length; i++) {
+            if (ch.times[i] < tMin) tMin = ch.times[i];
+            if (ch.times[i] > tMax) tMax = ch.times[i];
+            if (ch.volts[i] < vMin) vMin = ch.volts[i];
+            if (ch.volts[i] > vMax) vMax = ch.volts[i];
+        }
+    });
+    if (!isFinite(tMin)) { tMin = -1; tMax = 1; }
+    if (!isFinite(vMin)) { vMin = -1; vMax = 1; }
+    var vSpan = vMax - vMin || 1;
+    vMin -= vSpan * 0.05; vMax += vSpan * 0.05;
+
+    var tAx = niceAxis(tMin, tMax, 10);
+    var vAx = niceAxis(vMin, vMax, 8);
+
+    function xOf(t) { return ml + (t - tAx.min) / (tAx.max - tAx.min) * pw; }
+    function yOf(v) { return mt + (vAx.max - v) / (vAx.max - vAx.min) * ph; }
+    function fx(n)  { return n.toFixed(2); }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    var o = [];
+    o.push('<?xml version="1.0" encoding="UTF-8"?>');
+    o.push('<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" font-family="monospace" font-size="' + FONT_PX + 'px">');
+    o.push('<rect width="100%" height="100%" fill="#000"/>');
+
+    // Minor grid
+    for (var i = 0; i <= tAx.count * 5; i++) {
+        var x = xOf(tAx.min + i * tAx.step / 5);
+        o.push('<line x1="'+fx(x)+'" y1="'+mt+'" x2="'+fx(x)+'" y2="'+(mt+ph)+'" stroke="#1a1a1a" stroke-width="0.5"/>');
+    }
+    for (var i = 0; i <= vAx.count * 5; i++) {
+        var y = yOf(vAx.min + i * vAx.step / 5);
+        o.push('<line x1="'+ml+'" y1="'+fx(y)+'" x2="'+(ml+pw)+'" y2="'+fx(y)+'" stroke="#1a1a1a" stroke-width="0.5"/>');
+    }
+    // Major grid
+    for (var i = 0; i <= tAx.count; i++) {
+        var x = xOf(tAx.min + i * tAx.step);
+        o.push('<line x1="'+fx(x)+'" y1="'+mt+'" x2="'+fx(x)+'" y2="'+(mt+ph)+'" stroke="#2a2a2a" stroke-width="1"/>');
+    }
+    for (var i = 0; i <= vAx.count; i++) {
+        var y = yOf(vAx.min + i * vAx.step);
+        o.push('<line x1="'+ml+'" y1="'+fx(y)+'" x2="'+(ml+pw)+'" y2="'+fx(y)+'" stroke="#2a2a2a" stroke-width="1"/>');
+    }
+    // Border
+    o.push('<rect x="'+(ml+0.5)+'" y="'+(mt+0.5)+'" width="'+pw+'" height="'+ph+'" fill="none" stroke="#444" stroke-width="1"/>');
+
+    // Voltage labels (textBaseline=middle → dominant-baseline=middle)
+    for (var i = 0; i <= vAx.count; i++) {
+        var v = vAx.min + i * vAx.step, y = yOf(v);
+        if (y >= mt - 2 && y <= mt + ph + 2)
+            o.push('<text x="'+(ml-6)+'" y="'+fx(y)+'" fill="#666" text-anchor="end" dominant-baseline="middle">'+esc(fmtSI(v,'V'))+'</text>');
+    }
+    // Time labels (textBaseline=top → y + FONT_PX * 0.85)
+    var tPixPerDiv = pw / tAx.count;
+    var tLabelSkip = Math.ceil((FONT_PX * 7) / tPixPerDiv);
+    for (var i = 0; i <= tAx.count; i++) {
+        if (i % tLabelSkip !== 0) continue;
+        var t = tAx.min + i * tAx.step;
+        o.push('<text x="'+fx(xOf(t))+'" y="'+(mt + ph + 6 + FONT_PX)+'" fill="#666" text-anchor="middle">'+esc(fmtSI(t,'s'))+'</text>');
+    }
+    // Waveforms
+    var maxPts = pw * 2;
+    result.channels.forEach(function(ch) {
+        var n = ch.times.length;
+        if (!n) return;
+        var skip = Math.max(1, Math.floor(n / maxPts));
+        var pts = [];
+        for (var i = 0; i < n; i += skip)
+            pts.push(fx(xOf(ch.times[i])) + ',' + fx(yOf(ch.volts[i])));
+        o.push('<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+ch.color+'" stroke-width="1.5"/>');
+    });
+    // Channel legend (textBaseline=top → baseline = y + FONT_PX)
+    var lx = ml + 8, ly = mt + 8;
+    result.channels.forEach(function(ch, idx) {
+        var y = ly + idx * (FONT_PX + 8) + FONT_PX;
+        o.push('<text x="'+lx+'" y="'+y+'" fill="'+ch.color+'" font-weight="bold">'+esc(ch.name)+'</text>');
+        o.push('<text x="'+(lx+FONT_PX*3)+'" y="'+y+'" fill="#666">'+esc(fmtSI(ch.voltPerDiv,'V')+'/div')+'</text>');
+    });
+    // Format badge
+    o.push('<text x="'+(ml+pw-6)+'" y="'+(mt+6+FONT_PX)+'" fill="#444" text-anchor="end">'+esc(result.format)+'</text>');
+    o.push('</svg>');
+    return o.join('\n');
+}
+
+// ── Export helpers ────────────────────────────────────────────────────────────
+// Scale a measurement value to a nice SI prefix (returns [scale, prefix]).
+// Mirrors channel.best_scale() in Python.
+function bestScaleJS(number) {
+    var abs = Math.abs(number);
+    if (abs === 0)             return [1,    ''];
+    if (abs < 9.9999999e-10)   return [1e12, 'p'];
+    if (abs < 9.9999999e-7)    return [1e9,  'n'];
+    if (abs < 9.9999999e-4)    return [1e6,  '\u00b5'];
+    if (abs < 9.9999999e-1)    return [1e3,  'm'];
+    if (abs < 9.9999999e2)     return [1,    ''];
+    if (abs < 9.9999999e5)     return [1e-3, 'k'];
+    return [1e-9, 'G'];
+}
+
+function triggerDownload(data, filename, mime) {
+    var blob = new Blob([data], { type: mime });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+}
+
+function doExportCSV() {
+    var chs = getVisibleChannels();
+    if (!chs.length) return;
+    // Best SI scale across all channels
+    var hScale = 1e-30, hPrefix = '';
+    var vScale = 1e-30, vPrefix = '';
+    chs.forEach(function(ch) {
+        var hs = bestScaleJS(ch.timeScale), vs = bestScaleJS(ch.voltPerDiv);
+        if (hs[0] > hScale) { hScale = hs[0]; hPrefix = hs[1]; }
+        if (vs[0] > vScale) { vScale = vs[0]; vPrefix = vs[1]; }
+    });
+    var ch0  = chs[0];
+    var npts = Math.min.apply(null, chs.map(function(c) { return c.times.length; }));
+    var incr = ch0.timeScale / 100;
+    var off  = -6 * ch0.timeScale;
+    var rows = [];
+    rows.push('X,' + chs.map(function(c) { return c.name; }).join(',') + ',Start,Increment');
+    rows.push(hPrefix + 's,' + chs.map(function() { return vPrefix + 'V'; }).join(',')
+        + ',' + off.toExponential() + ',' + incr.toExponential());
+    for (var i = 0; i < npts; i++) {
+        var row = (ch0.times[i] * hScale).toFixed(6);
+        chs.forEach(function(c) { row += ',' + (c.volts[i] * vScale).toFixed(2); });
+        rows.push(row);
+    }
+    triggerDownload(rows.join('\n'), currentFilename + '.csv', 'text/csv');
+}
+
+function doExportSigrok() {
+    var chs = getVisibleChannels();
+    if (!chs.length) return;
+    var npts = Math.min.apply(null, chs.map(function(c) { return c.times.length; }));
+    var rows = [];
+    rows.push('X,' + chs.map(function(c) { return c.name + ' (V)'; }).join(','));
+    for (var i = 0; i < npts; i++) {
+        var row = chs[0].times[i].toFixed(8);
+        chs.forEach(function(c) { row += ',' + c.volts[i].toFixed(2); });
+        rows.push(row);
+    }
+    triggerDownload(rows.join('\n'), currentFilename + '_sigrok.csv', 'text/csv');
+}
+
+function doExportWAV() {
+    var chs = getVisibleChannels();
+    if (!chs.length) return;
+    var nch  = chs.length;
+    var npts = Math.min.apply(null, chs.map(function(c) { return c.times.length; }));
+    if (!npts) return;
+    // Sample rate from time spacing between first two points
+    var ch0 = chs[0];
+    var spp = npts > 1 ? (ch0.times[npts-1] - ch0.times[0]) / (npts - 1) : 1e-6;
+    var MAX_U32    = 4294967295;
+    var sampleRate = Math.min(Math.round(1 / spp), Math.floor(MAX_U32 / Math.max(nch, 1)));
+    // Autoscale each channel's floats to 0-250 (mirrors Python autoscale=True)
+    var scaled = chs.map(function(ch) {
+        var vMin = Infinity, vMax = -Infinity;
+        for (var i = 0; i < npts; i++) {
+            if (ch.volts[i] < vMin) vMin = ch.volts[i];
+            if (ch.volts[i] > vMax) vMax = ch.volts[i];
+        }
+        var range = Math.max(vMax - vMin, 1e-30);
+        var sc = 250 * 0.95 / range;
+        var out = new Uint8Array(npts);
+        for (var i = 0; i < npts; i++)
+            out[i] = Math.max(0, Math.min(255, Math.round((ch.volts[i] - vMin) * sc)));
+        return out;
+    });
+    // Interleave: [ch0[0], ch1[0], ..., ch0[1], ch1[1], ...]
+    var pcm = new Uint8Array(npts * nch);
+    for (var ci = 0; ci < nch; ci++)
+        for (var i = 0; i < npts; i++)
+            pcm[i * nch + ci] = scaled[ci][i];
+    // RIFF WAV header
+    var buf = new ArrayBuffer(44 + pcm.length);
+    var dv  = new DataView(buf);
+    function wStr(off, s) { for (var i=0;i<s.length;i++) dv.setUint8(off+i, s.charCodeAt(i)); }
+    wStr(0,  'RIFF'); dv.setUint32(4,  36 + pcm.length,  true);
+    wStr(8,  'WAVE'); wStr(12, 'fmt '); dv.setUint32(16, 16,           true);
+    dv.setUint16(20, 1,           true);   // PCM
+    dv.setUint16(22, nch,         true);
+    dv.setUint32(24, sampleRate,  true);
+    dv.setUint32(28, sampleRate * nch, true);
+    dv.setUint16(32, nch,         true);   // block align
+    dv.setUint16(34, 8,           true);   // bits/sample
+    wStr(36, 'data'); dv.setUint32(40, pcm.length, true);
+    new Uint8Array(buf, 44).set(pcm);
+    triggerDownload(buf, currentFilename + '.wav', 'audio/wav');
+}
+
+function doExportPNG() {
+    var chs = getVisibleChannels();
+    if (!chs.length) return;
+    var cv  = document.getElementById('scope');
+    var url = cv.toDataURL('image/png');
+    var a   = document.createElement('a');
+    a.href     = url;
+    a.download = currentFilename + '.png';
+    a.click();
+}
+
+function doExportSVG() {
+    var chs = getVisibleChannels();
+    if (!chs.length) return;
+    var svgStr = renderToSVG({ format: fullResult.format, channels: chs });
+    triggerDownload(svgStr, currentFilename + '.svg', 'image/svg+xml');
+}
+
+// ── Visibility helpers ─────────────────────────────────────────────────────────
+var fullResult      = null;
+var fileVisible     = true;
+var currentFilename = 'waveform';
+
+function getVisibleChannels() {
+    if (!fullResult || !fileVisible) return [];
+    var checkboxes = channelList.querySelectorAll('.ch-toggle');
+    return fullResult.channels.filter(function(_, i) {
+        return checkboxes[i] ? checkboxes[i].checked : true;
+    });
+}
+
+function rerenderWithVisibility() {
+    if (!fullResult) return;
+    var visible = getVisibleChannels();
+    if (visible.length === 0) {
+        var cv  = document.getElementById('scope');
+        var ctx = cv.getContext('2d');
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, cv.width || cv.offsetWidth, cv.height || cv.offsetHeight);
+        return;
+    }
+    render({ format: fullResult.format, channels: visible });
+}
+
+// ── UI element references ─────────────────────────────────────────────────────
+var dropZone      = document.getElementById('drop-zone');
+var scopeCanvas   = document.getElementById('scope');
+var errorBox      = document.getElementById('error-box');
+var fileDetails   = document.getElementById('file-details');
+var channelList   = document.getElementById('channel-list');
+var channelsPanel = document.getElementById('channels-panel');
+var statusContent = document.getElementById('status-content');
+var dragOverlay   = document.getElementById('drag-overlay');
+var fileBar       = document.getElementById('file-bar');
+var fileToggle    = document.getElementById('file-toggle');
+var fileBarName   = document.getElementById('file-bar-name');
+var fileBarFmt    = document.getElementById('file-bar-format');
+var exportModal   = document.getElementById('export-modal');
+var exportBtn     = document.getElementById('export-btn');
+
+// ── File open ─────────────────────────────────────────────────────────────────
+function openFilePicker() {
+    var inp = document.createElement('input');
+    inp.type   = 'file';
+    inp.accept = '.wfm,.bin';
+    inp.onchange = function(e) { if (e.target.files[0]) loadFile(e.target.files[0]); };
+    inp.click();
+}
+
+document.getElementById('open-btn').addEventListener('click', openFilePicker);
+dropZone.addEventListener('click', openFilePicker);
+dropZone.addEventListener('dragover',  function(e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', function()  { dropZone.classList.remove('drag-over'); });
+dropZone.addEventListener('drop',      function(e) {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+
+var dragDepth = 0;
+document.addEventListener('dragenter', function(e) {
+    if (e.dataTransfer && e.dataTransfer.types &&
+        Array.from(e.dataTransfer.types).indexOf('Files') >= 0) {
+        dragDepth++;
+        dragOverlay.classList.add('active');
+    }
+});
+document.addEventListener('dragleave', function() {
+    if (--dragDepth <= 0) { dragDepth = 0; dragOverlay.classList.remove('active'); }
+});
+document.addEventListener('dragover', function(e) { e.preventDefault(); });
+document.addEventListener('drop', function(e) {
+    e.preventDefault(); dragDepth = 0; dragOverlay.classList.remove('active');
+    if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+
+// ── File toggle (master on/off for the whole file) ────────────────────────────
+fileToggle.addEventListener('change', function() {
+    fileVisible = this.checked;
+    rerenderWithVisibility();
+});
+
+// ── Export modal ──────────────────────────────────────────────────────────────
+exportBtn.addEventListener('click', function() { exportModal.classList.add('open'); });
+document.getElementById('export-modal-close').addEventListener('click', function() {
+    exportModal.classList.remove('open');
+});
+exportModal.addEventListener('click', function(e) {
+    if (e.target === exportModal) exportModal.classList.remove('open');
+});
+
+document.getElementById('exp-csv')   .addEventListener('click', function() { doExportCSV();    exportModal.classList.remove('open'); });
+document.getElementById('exp-sigrok').addEventListener('click', function() { doExportSigrok(); exportModal.classList.remove('open'); });
+document.getElementById('exp-wav')   .addEventListener('click', function() { doExportWAV();    exportModal.classList.remove('open'); });
+document.getElementById('exp-png')   .addEventListener('click', function() { doExportPNG();    exportModal.classList.remove('open'); });
+document.getElementById('exp-svg')   .addEventListener('click', function() { doExportSVG();    exportModal.classList.remove('open'); });
+
+// ── loadFile / showResult / showError ─────────────────────────────────────────
+function loadFile(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        try { showResult(detectAndParse(e.target.result), file.name); }
+        catch (err) { showError(String(err.message || err)); }
+    };
+    reader.onerror = function() { showError('Could not read file.'); };
+    reader.readAsArrayBuffer(file);
+}
+
+function detailRow(key, val) {
+    return '<div class="detail-row"><span class="detail-key">' + key
+         + '</span><span class="detail-val">' + val + '</span></div>';
+}
+
+function showResult(result, filename) {
+    // Reset state
+    fullResult      = result;
+    fileVisible     = true;
+    currentFilename = filename.replace(/\.[^.]+$/, '');
+
+    dropZone.classList.add('hidden');
+    errorBox.classList.remove('visible');
+    scopeCanvas.classList.add('visible');
+
+    // File bar
+    fileToggle.checked    = true;
+    fileBarName.textContent = filename;
+    fileBarFmt.textContent  = result.format;
+    fileBar.classList.add('visible');
+
+    // Sidebar file details
+    fileDetails.innerHTML = detailRow('File', filename)
+        + detailRow('Format', result.format)
+        + detailRow('Channels', result.channels.length);
+    fileDetails.style.display = 'block';
+
+    // Sidebar channel list
+    channelsPanel.style.display = 'block';
+    channelList.innerHTML = result.channels.map(function(ch, idx) {
+        return '<div class="channel-entry" data-ci="' + idx + '">'
+            + '<input type="checkbox" class="ch-toggle" data-ci="' + idx + '" checked>'
+            + '<div class="ch-swatch" style="background:' + ch.color + '"></div>'
+            + '<span class="ch-entry-name">' + ch.name + '</span>'
+            + '<span class="ch-entry-info">'
+            +   fmtSI(ch.voltPerDiv, 'V') + '/div<br>'
+            +   fmtSI(ch.timeScale,  's') + '/div<br>'
+            +   ch.times.length.toLocaleString() + '\u202fps'
+            + '</span></div>';
+    }).join('');
+
+    channelList.querySelectorAll('.ch-toggle').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            var entry = channelList.querySelector('.channel-entry[data-ci="' + cb.dataset.ci + '"]');
+            if (entry) entry.classList.toggle('ch-off', !cb.checked);
+            rerenderWithVisibility();
+        });
+    });
+
+    // Status bar
+    var parts = ['<span class="status-item">' + result.format + '</span>'];
+    result.channels.forEach(function(ch) {
+        parts.push('<span class="status-sep">|</span>'
+            + '<span class="status-item" style="color:' + ch.color + '">' + ch.name + '</span>'
+            + '<span class="status-item"> ' + fmtSI(ch.voltPerDiv, 'V') + '/div</span>');
+    });
+    statusContent.innerHTML = parts.join('');
+
+    exportBtn.disabled = false;
+
+    if (result.channels.length === 0) {
+        errorBox.textContent = 'No enabled channels found in this file.';
+        errorBox.classList.add('visible');
+        scopeCanvas.classList.remove('visible');
+        return;
+    }
+
+    requestAnimationFrame(function() {
+        requestAnimationFrame(function() { rerenderWithVisibility(); });
+    });
+}
+
+function showError(msg) {
+    dropZone.classList.add('hidden');
+    scopeCanvas.classList.remove('visible');
+    errorBox.textContent = 'Error: ' + msg;
+    errorBox.classList.add('visible');
+    statusContent.textContent = 'Error loading file';
+}
+
+window.addEventListener('resize', function() {
+    if (fullResult) rerenderWithVisibility();
+});
+</script>
+</body>
+</html>
