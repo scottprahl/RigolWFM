@@ -11,26 +11,26 @@
 <div class="main-container" id="main-container">
   <div class="sidebar">
     <div class="panel">
-      <button class="sidebar-btn" id="open-btn">&#9654;&ensp;Open File(s)&hellip;</button>
-      <button class="sidebar-btn" id="export-btn" disabled>&#8595;&ensp;Export File&hellip;</button>
-      <button class="sidebar-btn axis-reset-btn" id="axis-reset-btn" disabled>Reset View</button>
+      <button class="sidebar-btn" id="open-btn">&#9654;&ensp;Open &hellip;</button>
+      <button class="sidebar-btn" id="export-btn" disabled>&#8595;&ensp;Export &hellip;</button>
+      <button class="sidebar-btn axis-reset-btn" id="axis-reset-btn" disabled>Reset</button>
     </div>
     <div class="panel axis-panel" id="axis-panel">
       <div class="axis-grid">
         <label class="axis-field" for="axis-tmin">
-          <span>tmin</span>
+          <span>Min Time</span>
           <input id="axis-tmin" class="axis-input" type="text" inputmode="decimal" spellcheck="false" disabled>
         </label>
         <label class="axis-field" for="axis-tmax">
-          <span>tmax</span>
+          <span>Max Time</span>
           <input id="axis-tmax" class="axis-input" type="text" inputmode="decimal" spellcheck="false" disabled>
         </label>
         <label class="axis-field" for="axis-vmin">
-          <span>vmin</span>
+          <span>Min Volts</span>
           <input id="axis-vmin" class="axis-input" type="text" inputmode="decimal" spellcheck="false" disabled>
         </label>
         <label class="axis-field" for="axis-vmax">
-          <span>vmax</span>
+          <span>Max Volts</span>
           <input id="axis-vmax" class="axis-input" type="text" inputmode="decimal" spellcheck="false" disabled>
         </label>
       </div>
@@ -48,7 +48,10 @@
         <div class="dz-hint">DS1000B/C/E/Z &nbsp;&middot;&nbsp; DS2000 &nbsp;&middot;&nbsp; DS4000 &nbsp;&middot;&nbsp; MSO5000/7000/8000 &nbsp;&middot;&nbsp; DHO</div>
       </div>
       <canvas id="scope"></canvas>
-      <div id="error-box"></div>
+      <div id="error-box" role="alert" aria-live="assertive" aria-hidden="true">
+        <button type="button" id="error-box-close" class="error-box-close" aria-label="Close error">&times;</button>
+        <div id="error-box-message"></div>
+      </div>
     </div>
   </div>
 </div>

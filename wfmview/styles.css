@@ -194,12 +194,6 @@ body {
     transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
 }
 
-.file-card.active {
-    z-index: 2;
-    border-color: #0078d7;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 0 1px rgba(0, 120, 215, 0.22);
-}
-
 .file-card-body {
     cursor: pointer;
 }
@@ -226,6 +220,7 @@ body {
     line-height: 1.3;
     word-break: break-word;
     padding-right: 6px;
+    cursor: help;
 }
 
 .file-card-close {
@@ -346,7 +341,7 @@ body {
     position: fixed;
     z-index: 260;
     display: none;
-    width: min(264px, calc(100vw - 56px));
+    width: min(284px, calc(100vw - 56px));
     max-width: calc(100vw - 56px);
     padding: 11px 13px;
     border-radius: 8px;
@@ -358,6 +353,10 @@ body {
 
 .channel-tooltip.visible {
     display: block;
+}
+
+.channel-tooltip.file-tooltip {
+    width: min(320px, calc(100vw - 56px));
 }
 
 .channel-tooltip pre {
@@ -530,7 +529,7 @@ body {
     border: 1px solid #800;
     border-top: 3px solid #c03030;
     color: #f88;
-    padding: 22px 30px;
+    padding: 22px 30px 18px;
     border-radius: 8px;
     display: none;
     text-align: center;
@@ -538,10 +537,35 @@ body {
     white-space: pre-wrap;
     font-size: 13px;
     box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+    z-index: 40;
 }
 
 #error-box.visible {
     display: block;
+}
+
+#error-box-message {
+    padding-right: 16px;
+}
+
+.error-box-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    background: transparent;
+    color: #f88;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+
+.error-box-close:hover,
+.error-box-close:focus-visible {
+    color: #ffd0d0;
 }
 
 #drag-overlay {

@@ -209,6 +209,23 @@ def _is_bin(file_name: str) -> bool:
         return False
 
 
+def is_bin_file(file_name: str) -> bool:
+    """Public wrapper used by higher-level display code."""
+    return _is_bin(file_name)
+
+
+def family_label(model: str, *, is_bin: bool = False, fallback: str = "DHO1000") -> str:
+    """Return a user-facing DHO family label."""
+    text = (model or "").upper()
+    if text.startswith(("DHO8", "HDO8")):
+        family = "DHO800"
+    elif text.startswith(("DHO1", "HDO1")):
+        family = "DHO1000"
+    else:
+        family = fallback
+    return f"{family} (BIN)" if is_bin else family
+
+
 def _channel_slot(ch_name: str, fallback: int) -> int:
     """Map channel names like `CH2` to a zero-based channel slot."""
     name_upper = ch_name.upper()
@@ -470,7 +487,11 @@ def _from_wfm(file_name: str) -> DhoWaveform:
     h.volt_scale = scale1
     h.volt_offset = offset1
     h.volt_per_div = abs(scale1 * 65536 / 8)
-    h.model = _parse_model(blocks)
+    h.model = _parse_model(blocks) or family_label(
+        "",
+        is_bin=False,
+        fallback="DHO800" if is_dho800 else "DHO1000",
+    )
 
     raw_bytes = data[data_start:data_start + n_pts * n_ch * 2]
     raw_all = np.frombuffer(raw_bytes, dtype="<u2").copy()

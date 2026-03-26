@@ -7,7 +7,7 @@ var TRACE_PALETTE = [
 ];
 var CH_COLORS = TRACE_PALETTE.slice(0, 4);
 var FONT_PX = 20;
-var M = { l: 115, r: 20, t: 20, b: 55 };
+var M = { l: 115, r: 40, t: 20, b: 55 };
 var DHO_FILE_HEADER_SIZE = 24;
 var DHO_BLOCK_HEADER_SIZE = 12;
 var DHO_ADC_MIDPOINT = 32768;
@@ -130,6 +130,19 @@ function engineeringString(number, digits) {
     return (number * scaled[0]).toFixed(digits) + ' ' + scaled[1];
 }
 
+function compactEngineeringValue(number, unit) {
+    if (!Number.isFinite(number)) {
+        return '';
+    }
+    if (number === 0) {
+        return '0' + unit;
+    }
+    var scaled = bestScaleInfo(number);
+    var prefix = scaled[1].trim();
+    var value = Number((number * scaled[0]).toPrecision(3)).toString();
+    return value + prefix + unit;
+}
+
 function sweepName(value) {
     return { 0: 'AUTO', 1: 'NORMAL', 2: 'SINGLE' }[value] || String(value);
 }
@@ -164,6 +177,17 @@ function modelFromFrameString(frameString, fallback) {
     return frameString || fallback;
 }
 
+function dhoFamilyLabel(model, fallback) {
+    var text = String(model || '').toUpperCase();
+    if (/^(?:DHO|HDO)8/.test(text)) {
+        return 'DHO800';
+    }
+    if (/^(?:DHO|HDO)1/.test(text)) {
+        return 'DHO1000';
+    }
+    return fallback;
+}
+
 function channelNumberFromName(name, fallback) {
     var match = /^CH\s*([1-4])$/i.exec(name || '');
     return match ? parseInt(match[1], 10) : fallback;
@@ -175,19 +199,22 @@ function proxyRawFromCalibrated(values) {
         return out;
     }
 
-    var finite = [];
+    var low = Infinity;
+    var high = -Infinity;
     for (var i = 0; i < values.length; i++) {
         if (Number.isFinite(values[i])) {
-            finite.push(values[i]);
+            if (values[i] < low) {
+                low = values[i];
+            }
+            if (values[i] > high) {
+                high = values[i];
+            }
         }
     }
-    if (!finite.length) {
+    if (!Number.isFinite(low) || !Number.isFinite(high)) {
         out.fill(127);
         return out;
     }
-
-    var low = Math.min.apply(null, finite);
-    var high = Math.max.apply(null, finite);
     if (high <= low) {
         out.fill(127);
         return out;
@@ -266,7 +293,63 @@ function derivedLevels(result) {
     return levels;
 }
 
-function channelInfoText(ch) {
+function summarizeChannelVoltages(ch, bounds) {
+    var points = 0;
+    var vMin = Infinity;
+    var vMax = -Infinity;
+    var sum = 0;
+    var sumSquares = 0;
+    var useBounds = bounds && graphBoundsAreUsable(bounds);
+
+    for (var i = 0; i < ch.volts.length; i++) {
+        var t = ch.times[i];
+        var v = ch.volts[i];
+        if (!Number.isFinite(t) || !Number.isFinite(v)) {
+            continue;
+        }
+        if (useBounds && (t < bounds.tMin || t > bounds.tMax || v < bounds.vMin || v > bounds.vMax)) {
+            continue;
+        }
+
+        points++;
+        if (v < vMin) {
+            vMin = v;
+        }
+        if (v > vMax) {
+            vMax = v;
+        }
+        sum += v;
+        sumSquares += v * v;
+    }
+
+    if (!points) {
+        return {
+            points: 0,
+            vMin: NaN,
+            vMax: NaN,
+            vAve: NaN,
+            vRms: NaN,
+        };
+    }
+
+    return {
+        points: points,
+        vMin: vMin,
+        vMax: vMax,
+        vAve: sum / points,
+        vRms: Math.sqrt(sumSquares / points),
+    };
+}
+
+function formatChannelVoltageStat(value) {
+    if (!Number.isFinite(value)) {
+        return '       n/a';
+    }
+    return engineeringString(value, 2).padStart(10, ' ') + 'V';
+}
+
+function channelInfoText(ch, stats) {
+    var channelStats = stats || summarizeChannelVoltages(ch, null);
     var s = '     Channel ' + ch.channelNumber + ':\n';
     s += '         Coupling = ' + String(ch.coupling || 'unknown').padStart(8, ' ') + '\n';
     s += '            Scale = ' + engineeringString(ch.voltPerDiv, 2).padStart(10, ' ') + 'V/div\n';
@@ -276,32 +359,17 @@ function channelInfoText(ch) {
     s += '        Time Base = ' + engineeringString(ch.timeScale, 3).padStart(10, ' ') + 's/div\n';
     s += '           Offset = ' + engineeringString(ch.timeOffset, 3).padStart(10, ' ') + 's\n';
     s += '            Delta = ' + engineeringString(ch.secondsPerPoint, 3).padStart(10, ' ') + 's/point\n';
-    s += '           Points = ' + String(ch.points).padStart(8, ' ') + '\n';
-
-    var vMin = Infinity;
-    var vMax = -Infinity;
-    for (var i = 0; i < ch.volts.length; i++) {
-        if (!Number.isFinite(ch.volts[i])) {
-            continue;
-        }
-        if (ch.volts[i] < vMin) {
-            vMin = ch.volts[i];
-        }
-        if (ch.volts[i] > vMax) {
-            vMax = ch.volts[i];
-        }
-    }
-
-    if (isFinite(vMin) && isFinite(vMax)) {
-        s += '\n';
-        s += '             Vmin = ' + engineeringString(vMin, 2).padStart(10, ' ') + 'V\n';
-        s += '             Vmax = ' + engineeringString(vMax, 2).padStart(10, ' ') + 'V\n';
-    }
+    s += '           Points = ' + String(channelStats.points).padStart(8, ' ') + '\n';
+    s += '\n';
+    s += '             Vmin = ' + formatChannelVoltageStat(channelStats.vMin) + '\n';
+    s += '             Vmax = ' + formatChannelVoltageStat(channelStats.vMax) + '\n';
+    s += '             Vave = ' + formatChannelVoltageStat(channelStats.vAve) + '\n';
+    s += '             Vrms = ' + formatChannelVoltageStat(channelStats.vRms) + '\n';
 
     return s;
 }
 
-function buildInfoText(result, filename) {
+function buildInfoHeaderText(result, filename) {
     var s = '    General:\n';
     s += '        File Model   = ' + (result.fileModel || result.format) + '\n';
     s += '        User Model   = ' + (result.userModel || 'auto') + '\n';
@@ -339,6 +407,12 @@ function buildInfoText(result, filename) {
         });
         s += '\n';
     }
+
+    return s;
+}
+
+function buildInfoText(result, filename) {
+    var s = buildInfoHeaderText(result, filename);
 
     result.channels.forEach(function(ch) {
         s += channelInfoText(ch);
@@ -547,7 +621,7 @@ function parseDhoModel(blocks, fallback) {
     return fallback;
 }
 
-async function detectAndParse(buffer) {
+async function detectAndParse(buffer, filename) {
     var b = new Uint8Array(buffer);
     var fsize = buffer.byteLength;
 
@@ -630,12 +704,7 @@ async function detectAndParse(buffer) {
         return parseE(buffer);
     }
 
-    throw new Error(
-        'Unrecognised file format.\nMagic bytes: 0x' +
-        [b0, b1, b2, b3].map(function(x) {
-            return x.toString(16).padStart(2, '0');
-        }).join(' 0x')
-    );
+    throw new Error((filename || 'This file') + ' is not a supported file type.');
 }
 
 function parseB(buffer) {
@@ -1144,8 +1213,9 @@ async function parseDhoWfm(buffer) {
         });
     }
 
+    var family = dhoFamilyLabel(fileModel, extracted.isDho800 ? 'DHO800' : 'DHO1000');
     return {
-        format: 'DHO .wfm',
+        format: family,
         fileModel: fileModel,
         userModel: 'DHO',
         parserModel: 'wfmdho1000',
@@ -1200,8 +1270,9 @@ function parseDhoBin(buffer) {
             secondsPerPoint: wh.xIncrement,
         });
     }
+    var family = dhoFamilyLabel(fileModel, 'DHO1000');
     return {
-        format: 'DHO .bin',
+        format: family + ' (BIN)',
         fileModel: fileModel,
         userModel: 'DHO',
         parserModel: 'dho1000',
@@ -1404,22 +1475,111 @@ function axisRangesMatch(minA, maxA, minB, maxB) {
     return numbersAreClose(minA, minB) && numbersAreClose(maxA, maxB);
 }
 
-function formatAxisInputValue(value) {
+function countAxisLabelDecimals(step) {
+    var abs = Math.abs(step);
+    if (!Number.isFinite(abs) || abs === 0) {
+        return 0;
+    }
+    for (var decimals = 0; decimals < 9; decimals++) {
+        var scaled = abs * Math.pow(10, decimals);
+        if (numbersAreClose(scaled, Math.round(scaled))) {
+            return decimals;
+        }
+    }
+    return 9;
+}
+
+function trimFixedNumber(value, decimals) {
+    var text = value.toFixed(Math.max(0, decimals));
+    text = text.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+    if (text === '-0') {
+        return '0';
+    }
+    return text;
+}
+
+function createAxisLabelFormatter(axis, unit) {
+    var maxAbs = Math.max(Math.abs(axis.min), Math.abs(axis.max), Math.abs(axis.step));
+    var exponent = 0;
+    var prefixes = {
+        '-12': 'p',
+        '-9': 'n',
+        '-6': '\u00b5',
+        '-3': 'm',
+        '0': '',
+        '3': 'k',
+        '6': 'M',
+        '9': 'G',
+        '12': 'T',
+    };
+    if (Number.isFinite(maxAbs) && maxAbs > 0) {
+        exponent = Math.floor(Math.log10(maxAbs) / 3) * 3;
+        exponent = Math.max(-12, Math.min(12, exponent));
+    }
+    var divisor = Math.pow(10, exponent);
+    var prefix = prefixes[String(exponent)] || '';
+    var decimals = countAxisLabelDecimals(axis.step / divisor);
+
+    function formatNumber(value) {
+        var scaled = value / divisor;
+        if (Math.abs(scaled) < Math.pow(10, -decimals) / 2) {
+            scaled = 0;
+        }
+        return trimFixedNumber(scaled, decimals);
+    }
+
+    return {
+        prefix: prefix,
+        unit: unit,
+        formatNumber: formatNumber,
+        formatWithUnit: function(value) {
+            return formatNumber(value) + prefix + unit;
+        },
+    };
+}
+
+function buildDisplayedTimeTicks(ticks, skip) {
+    var displayed = [];
+    ticks.forEach(function(tick, index) {
+        if (index % skip === 0) {
+            displayed.push(tick);
+        }
+    });
+    if (ticks.length) {
+        var lastTick = ticks[ticks.length - 1];
+        if (!displayed.length || !numbersAreClose(displayed[displayed.length - 1], lastTick)) {
+            displayed.push(lastTick);
+        }
+    }
+    return displayed;
+}
+
+function clampCanvasLabelX(ctx, x, text, width) {
+    var halfWidth = ctx.measureText(text).width / 2;
+    return Math.min(Math.max(x, halfWidth + 4), width - halfWidth - 4);
+}
+
+function clampSvgLabelX(x, text, width) {
+    var halfWidth = text.length * FONT_PX * 0.3;
+    return Math.min(Math.max(x, halfWidth + 4), width - halfWidth - 4);
+}
+
+function formatAxisInputValue(value, unit) {
     if (!Number.isFinite(value)) {
         return '';
     }
     if (value === 0) {
-        return '0';
+        return '0' + unit;
     }
     var abs = Math.abs(value);
     var exponent = Math.floor(Math.log10(abs) / 3) * 3;
     if (exponent < -12 || exponent > 12) {
-        return value.toExponential(6);
+        return value.toExponential(6) + unit;
     }
     var suffixes = {
         '-12': 'p',
         '-9': 'n',
-        '-6': 'u',
+        '-6': '\u00b5',
         '-3': 'm',
         '0': '',
         '3': 'k',
@@ -1433,21 +1593,37 @@ function formatAxisInputValue(value) {
         exponent += 3;
         text /= 1000;
     }
-    return text.toString() + suffixes[String(exponent)];
+    return text.toString() + suffixes[String(exponent)] + unit;
 }
 
-function parseAxisInputValue(text) {
+function stripAxisInputUnit(text, unit) {
+    var value = String(text || '').trim();
+    if (!value) {
+        return value;
+    }
+
+    if (unit === 's') {
+        return value.replace(/\s*(?:s|sec|second|seconds)\s*$/i, '');
+    }
+    if (unit === 'V') {
+        return value.replace(/\s*(?:v|volt|volts)\s*$/i, '');
+    }
+    return value;
+}
+
+function parseAxisInputValue(text, unit) {
     var value = String(text || '').trim();
     if (!value) {
         return NaN;
     }
+    value = stripAxisInputUnit(value, unit);
 
     var direct = Number(value);
     if (Number.isFinite(direct)) {
         return direct;
     }
 
-    var match = value.match(/^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*([pnumkKMGT]|[u\u00b5\u03bc])(?:[sSvV])?$/);
+    var match = value.match(/^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*([pnumkKMGT]|[u\u00b5\u03bc])?$/);
     if (!match) {
         return NaN;
     }
@@ -1508,10 +1684,10 @@ function syncAxisInputs(bounds, enabled) {
         return;
     }
 
-    axisTminInput.value = formatAxisInputValue(bounds.tMin);
-    axisTmaxInput.value = formatAxisInputValue(bounds.tMax);
-    axisVminInput.value = formatAxisInputValue(bounds.vMin);
-    axisVmaxInput.value = formatAxisInputValue(bounds.vMax);
+    axisTminInput.value = formatAxisInputValue(bounds.tMin, 's');
+    axisTmaxInput.value = formatAxisInputValue(bounds.tMax, 's');
+    axisVminInput.value = formatAxisInputValue(bounds.vMin, 'V');
+    axisVmaxInput.value = formatAxisInputValue(bounds.vMax, 'V');
 }
 
 function render(result) {
@@ -1535,6 +1711,8 @@ function render(result) {
     var vMinorTicks = buildAxisTickValues(vAx, 5);
     var tMajorTicks = buildAxisTickValues(tAx, 1);
     var vMajorTicks = buildAxisTickValues(vAx, 1);
+    var tLabelFormatter = createAxisLabelFormatter(tAx, 's');
+    var vLabelFormatter = createAxisLabelFormatter(vAx, 'V');
 
     function xOf(t) {
         return ml + (t - tAx.min) / (tAx.max - tAx.min) * pw;
@@ -1589,10 +1767,13 @@ function render(result) {
     ctx.font = FONT_PX + 'px monospace';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    vMajorTicks.forEach(function(v) {
+    vMajorTicks.forEach(function(v, index) {
         var y = yOf(v);
         if (y >= mt - 2 && y <= mt + ph + 2) {
-            ctx.fillText(fmtSI(v, 'V'), ml - 6, y);
+            var yLabel = index === vMajorTicks.length - 1 ?
+                vLabelFormatter.formatWithUnit(v) :
+                vLabelFormatter.formatNumber(v);
+            ctx.fillText(yLabel, ml - 6, y);
         }
     });
 
@@ -1600,11 +1781,13 @@ function render(result) {
     ctx.textBaseline = 'top';
     var tPixPerDiv = pw * tAx.step / (tAx.max - tAx.min);
     var tLabelSkip = Math.max(1, Math.ceil(FONT_PX * 7 / Math.max(tPixPerDiv, 1)));
-    tMajorTicks.forEach(function(tick, index) {
-        if (index % tLabelSkip !== 0) {
-            return;
-        }
-        ctx.fillText(fmtSI(tick, 's'), xOf(tick), mt + ph + 6);
+    var tDisplayedTicks = buildDisplayedTimeTicks(tMajorTicks, tLabelSkip);
+    tDisplayedTicks.forEach(function(tick, index) {
+        var tLabel = index === tDisplayedTicks.length - 1 ?
+            tLabelFormatter.formatWithUnit(tick) :
+            tLabelFormatter.formatNumber(tick);
+        var labelX = clampCanvasLabelX(ctx, xOf(tick), tLabel, W);
+        ctx.fillText(tLabel, labelX, mt + ph + 6);
     });
 
     var maxPts = pw * 2;
@@ -1654,6 +1837,8 @@ function renderToSVG(result) {
     var vMinorTicks = buildAxisTickValues(vAx, 5);
     var tMajorTicks = buildAxisTickValues(tAx, 1);
     var vMajorTicks = buildAxisTickValues(vAx, 1);
+    var tLabelFormatter = createAxisLabelFormatter(tAx, 's');
+    var vLabelFormatter = createAxisLabelFormatter(vAx, 'V');
 
     function xOf(t) {
         return ml + (t - tAx.min) / (tAx.max - tAx.min) * pw;
@@ -1699,20 +1884,25 @@ function renderToSVG(result) {
     });
     o.push('<rect x="' + (ml + 0.5) + '" y="' + (mt + 0.5) + '" width="' + pw + '" height="' + ph + '" fill="none" stroke="#444" stroke-width="1"/>');
 
-    vMajorTicks.forEach(function(v) {
+    vMajorTicks.forEach(function(v, index) {
         var labelY = yOf(v);
         if (labelY >= mt - 2 && labelY <= mt + ph + 2) {
-            o.push('<text x="' + (ml - 6) + '" y="' + fx(labelY) + '" fill="#666" text-anchor="end" dominant-baseline="middle">' + esc(fmtSI(v, 'V')) + '</text>');
+            var yLabel = index === vMajorTicks.length - 1 ?
+                vLabelFormatter.formatWithUnit(v) :
+                vLabelFormatter.formatNumber(v);
+            o.push('<text x="' + (ml - 6) + '" y="' + fx(labelY) + '" fill="#666" text-anchor="end" dominant-baseline="middle">' + esc(yLabel) + '</text>');
         }
     });
 
     var tPixPerDiv = pw * tAx.step / (tAx.max - tAx.min);
     var tLabelSkip = Math.max(1, Math.ceil(FONT_PX * 7 / Math.max(tPixPerDiv, 1)));
-    tMajorTicks.forEach(function(tick, index) {
-        if (index % tLabelSkip !== 0) {
-            return;
-        }
-        o.push('<text x="' + fx(xOf(tick)) + '" y="' + (mt + ph + 6 + FONT_PX) + '" fill="#666" text-anchor="middle">' + esc(fmtSI(tick, 's')) + '</text>');
+    var tDisplayedTicks = buildDisplayedTimeTicks(tMajorTicks, tLabelSkip);
+    tDisplayedTicks.forEach(function(tick, index) {
+        var tLabel = index === tDisplayedTicks.length - 1 ?
+            tLabelFormatter.formatWithUnit(tick) :
+            tLabelFormatter.formatNumber(tick);
+        var labelX = clampSvgLabelX(xOf(tick), tLabel, W);
+        o.push('<text x="' + fx(labelX) + '" y="' + (mt + ph + 6 + FONT_PX) + '" fill="#666" text-anchor="middle">' + esc(tLabel) + '</text>');
     });
 
     var maxPts = pw * 2;
@@ -2004,45 +2194,37 @@ function plural(word, count) {
     return count === 1 ? word : word + 's';
 }
 
-function triggerSummaryParts(triggerInfo) {
-    var parts = [];
+function triggerSummaryText(triggerInfo) {
     if (!triggerInfo) {
-        return parts;
+        return '';
     }
-    if (triggerInfo.mode) {
-        parts.push(String(triggerInfo.mode).toUpperCase());
-    }
+    var parts = [];
     if (triggerInfo.source) {
         parts.push(triggerInfo.source);
     }
     if (typeof triggerInfo.level === 'number') {
-        parts.push(engineeringString(triggerInfo.level, 2) + 'V');
+        parts.push(compactEngineeringValue(triggerInfo.level, 'V'));
     }
-    if (triggerInfo.sweep) {
-        parts.push(triggerInfo.sweep);
-    }
-    if (triggerInfo.coupling) {
-        parts.push(triggerInfo.coupling);
-    }
-    return parts;
+    return parts.join(' ');
 }
 
-function triggerSummary(result) {
-    var info = result.triggerInfo;
+function triggerSummary(entry) {
+    var info = entry.result.triggerInfo;
+    var unknownLabel = /\.wfm$/i.test(entry.filename) ? 'Unknown' : 'Not available';
     if (!info) {
-        return 'Not available';
+        return unknownLabel;
     }
     if (info.mode === 'alt') {
-        var altParts = ['ALT'];
+        var altParts = [];
         if (info.trigger1) {
-            altParts.push('T1: ' + (triggerSummaryParts(info.trigger1).join(' · ') || 'unknown'));
+            altParts.push(triggerSummaryText(info.trigger1) || 'Unknown');
         }
         if (info.trigger2) {
-            altParts.push('T2: ' + (triggerSummaryParts(info.trigger2).join(' · ') || 'unknown'));
+            altParts.push(triggerSummaryText(info.trigger2) || 'Unknown');
         }
-        return altParts.join(' | ');
+        return altParts.join(' | ') || unknownLabel;
     }
-    return triggerSummaryParts(info).join(' · ') || 'Not available';
+    return triggerSummaryText(info) || unknownLabel;
 }
 
 function findLoadedFile(fileId) {
@@ -2141,14 +2323,14 @@ function renderFileList() {
     }
 
     fileList.innerHTML = loadedFiles.map(function(entry) {
-        return '<div class="file-card' + (entry.id === activeFileId ? ' active' : '') + '" data-file-id="' + entry.id + '">' +
+        return '<div class="file-card" data-file-id="' + entry.id + '">' +
             '<div class="file-card-header">' +
-            '<div class="file-card-name" title="' + escapeHtml(entry.filename) + '">' + escapeHtml(entry.filename) + '</div>' +
+            '<div class="file-card-name" data-file-id="' + entry.id + '">' + escapeHtml(entry.filename) + '</div>' +
             '<button type="button" class="file-card-close" data-file-id="' + entry.id + '" aria-label="Remove ' + escapeHtml(entry.filename) + '">&times;</button>' +
             '</div>' +
             '<div class="file-card-body" data-file-id="' + entry.id + '">' +
             '<div class="file-card-line"><span class="file-card-label">Format</span><span class="file-card-value">' + escapeHtml(entry.result.format) + '</span></div>' +
-            '<div class="file-card-line"><span class="file-card-label">Trigger</span><span class="file-card-value">' + escapeHtml(triggerSummary(entry.result)) + '</span></div>' +
+            '<div class="file-card-line"><span class="file-card-label">Trigger</span><span class="file-card-value">' + escapeHtml(triggerSummary(entry)) + '</span></div>' +
             '<div class="file-card-channels">' +
             entry.result.channels.map(function(ch, idx) {
                 var toggleId = 'file-channel-' + entry.id + '-' + idx;
@@ -2178,7 +2360,7 @@ function refreshView(extraMessage) {
         currentGraphBounds = null;
         dropZone.classList.remove('hidden');
         scopeCanvas.classList.remove('visible');
-        errorBox.classList.remove('visible');
+        hideError();
         syncAxisInputs(null, false);
         clearCanvas();
         return;
@@ -2190,13 +2372,13 @@ function refreshView(extraMessage) {
     var visible = getVisibleChannels();
     if (!visible.length) {
         currentGraphBounds = null;
-        errorBox.classList.remove('visible');
+        hideError();
         syncAxisInputs(null, false);
         clearCanvas();
         return;
     }
 
-    errorBox.classList.remove('visible');
+    hideError();
     currentGraphBounds = resolveGraphBounds(visible);
     syncAxisInputs(currentGraphBounds, true);
     render({
@@ -2212,7 +2394,7 @@ function setActiveFile(fileId) {
         return;
     }
     activeFileId = fileId;
-    refreshView();
+    syncCurrentFileContext();
 }
 
 function removeLoadedFile(fileId) {
@@ -2246,6 +2428,8 @@ function removeLoadedFile(fileId) {
 var dropZone = document.getElementById('drop-zone');
 var scopeCanvas = document.getElementById('scope');
 var errorBox = document.getElementById('error-box');
+var errorBoxClose = document.getElementById('error-box-close');
+var errorBoxMessage = document.getElementById('error-box-message');
 var mainContainer = document.getElementById('main-container');
 var displayArea = document.getElementById('display-area');
 var axisTminInput = document.getElementById('axis-tmin');
@@ -2264,19 +2448,20 @@ var dragDepth = 0;
 
 function hideChannelTooltip() {
     channelTooltip.classList.remove('visible');
+    channelTooltip.classList.remove('file-tooltip');
     channelTooltip.style.left = '';
     channelTooltip.style.top = '';
     channelTooltip.style.visibility = '';
 }
 
-function showChannelTooltip(fileId, channelIndex, anchorEl) {
-    var entry = findLoadedFile(fileId);
-    if (!entry || !entry.result.channels[channelIndex] || !anchorEl) {
+function showSidebarTooltip(text, anchorEl, isFileTooltip) {
+    if (!text || !anchorEl) {
         hideChannelTooltip();
         return;
     }
 
-    channelTooltipText.textContent = channelInfoText(entry.result.channels[channelIndex]);
+    channelTooltipText.textContent = text;
+    channelTooltip.classList.toggle('file-tooltip', Boolean(isFileTooltip));
     channelTooltip.classList.add('visible');
     channelTooltip.style.visibility = 'hidden';
 
@@ -2288,12 +2473,38 @@ function showChannelTooltip(fileId, channelIndex, anchorEl) {
     var maxLeft = Math.max(minLeft, containerRect.right - tooltipRect.width - 12);
     var minTop = Math.max(containerRect.top + 12, 12);
     var maxTop = Math.max(minTop, Math.min(containerRect.bottom - tooltipRect.height - 12, window.innerHeight - tooltipRect.height - 12));
-    var left = Math.max(minLeft, Math.min(graphRect.left + 18, maxLeft));
+    var preferredLeft = graphRect.left + (isFileTooltip ? 18 : -2);
+    var left = Math.max(minLeft, Math.min(preferredLeft, maxLeft));
     var top = Math.min(Math.max(anchorRect.top - 8, minTop), maxTop);
 
     channelTooltip.style.left = Math.round(left) + 'px';
     channelTooltip.style.top = Math.round(top) + 'px';
     channelTooltip.style.visibility = 'visible';
+}
+
+function showChannelTooltip(fileId, channelIndex, anchorEl) {
+    var entry = findLoadedFile(fileId);
+    if (!entry || !entry.result.channels[channelIndex]) {
+        hideChannelTooltip();
+        return;
+    }
+
+    var channelBounds = entry.channelEnabled[channelIndex] ? currentGraphBounds : null;
+    showSidebarTooltip(
+        channelInfoText(entry.result.channels[channelIndex], summarizeChannelVoltages(entry.result.channels[channelIndex], channelBounds)),
+        anchorEl,
+        false
+    );
+}
+
+function showFileInfoTooltip(fileId, anchorEl) {
+    var entry = findLoadedFile(fileId);
+    if (!entry) {
+        hideChannelTooltip();
+        return;
+    }
+
+    showSidebarTooltip(buildInfoHeaderText(entry.result, entry.filename).replace(/\s+$/, ''), anchorEl, true);
 }
 
 function clearDragState() {
@@ -2302,16 +2513,21 @@ function clearDragState() {
     dropZone.classList.remove('drag-over');
 }
 
+function hideError() {
+    errorBox.classList.remove('visible');
+    errorBox.setAttribute('aria-hidden', 'true');
+}
+
 function applyAxisInputs() {
     if (!currentGraphBounds) {
         return;
     }
 
     var bounds = {
-        tMin: parseAxisInputValue(axisTminInput.value),
-        tMax: parseAxisInputValue(axisTmaxInput.value),
-        vMin: parseAxisInputValue(axisVminInput.value),
-        vMax: parseAxisInputValue(axisVmaxInput.value),
+        tMin: parseAxisInputValue(axisTminInput.value, 's'),
+        tMax: parseAxisInputValue(axisTmaxInput.value, 's'),
+        vMin: parseAxisInputValue(axisVminInput.value, 'V'),
+        vMax: parseAxisInputValue(axisVmaxInput.value, 'V'),
     };
 
     if (!graphBoundsAreUsable(bounds)) {
@@ -2386,10 +2602,16 @@ document.addEventListener('drop', function(e) {
     loadFiles(e.dataTransfer.files);
 });
 document.addEventListener('scroll', hideChannelTooltip, true);
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideError();
+    }
+});
 
 exportBtn.addEventListener('click', function() {
     exportModal.classList.add('open');
 });
+errorBoxClose.addEventListener('click', hideError);
 document.getElementById('export-modal-close').addEventListener('click', function() {
     exportModal.classList.remove('open');
 });
@@ -2442,8 +2664,8 @@ fileList.addEventListener('click', function(e) {
         return;
     }
 
-    if (e.target.classList.contains('file-color-input')) {
-        e.stopPropagation();
+    var channelControl = e.target.closest('.file-channel');
+    if (channelControl) {
         return;
     }
 
@@ -2454,6 +2676,12 @@ fileList.addEventListener('click', function(e) {
 });
 
 fileList.addEventListener('mouseover', function(e) {
+    var nameEl = e.target.closest('.file-card-name');
+    if (nameEl) {
+        showFileInfoTooltip(Number(nameEl.dataset.fileId), nameEl);
+        return;
+    }
+
     var chip = e.target.closest('.file-channel-chip');
     if (chip) {
         showChannelTooltip(Number(chip.dataset.fileId), Number(chip.dataset.channelIndex), chip);
@@ -2461,7 +2689,7 @@ fileList.addEventListener('mouseover', function(e) {
 });
 
 fileList.addEventListener('mouseout', function(e) {
-    if (e.target.closest('.file-channel-chip')) {
+    if (e.target.closest('.file-card-name') || e.target.closest('.file-channel-chip')) {
         hideChannelTooltip();
     }
 });
@@ -2472,6 +2700,7 @@ fileList.addEventListener('change', function(e) {
     if (e.target.classList.contains('file-channel-toggle')) {
         var fileId = Number(e.target.dataset.fileId);
         var channelIndex = Number(e.target.dataset.channelIndex);
+        setActiveFile(fileId);
         for (var i = 0; i < loadedFiles.length; i++) {
             if (loadedFiles[i].id === fileId) {
                 loadedFiles[i].channelEnabled[channelIndex] = e.target.checked;
@@ -2483,12 +2712,14 @@ fileList.addEventListener('change', function(e) {
     }
 
     if (e.target.classList.contains('file-color-input')) {
+        setActiveFile(Number(e.target.dataset.fileId));
         updateChannelColor(Number(e.target.dataset.fileId), Number(e.target.dataset.channelIndex), e.target.value);
     }
 });
 
 fileList.addEventListener('input', function(e) {
     if (e.target.classList.contains('file-color-input')) {
+        setActiveFile(Number(e.target.dataset.fileId));
         updateChannelColor(Number(e.target.dataset.fileId), Number(e.target.dataset.channelIndex), e.target.value);
     }
 });
@@ -2515,7 +2746,7 @@ function loadFile(file, done) {
     var reader = new FileReader();
     reader.onload = async function(e) {
         try {
-            addLoadedFile(await detectAndParse(e.target.result), file.name);
+            addLoadedFile(await detectAndParse(e.target.result, file.name), file.name);
         } catch (err) {
             showError(String(err.message || err));
         }
@@ -2552,7 +2783,7 @@ function addLoadedFile(result, filename) {
         }),
     });
     activeFileId = loadedFiles[loadedFiles.length - 1].id;
-    errorBox.classList.remove('visible');
+    hideError();
     refreshView();
 }
 
@@ -2572,8 +2803,9 @@ function updateChannelColor(fileId, channelIndex, color) {
 }
 
 function showError(msg) {
-    errorBox.textContent = 'Error: ' + msg;
+    errorBoxMessage.textContent = 'Error: ' + msg;
     errorBox.classList.add('visible');
+    errorBox.setAttribute('aria-hidden', 'false');
     if (!loadedFiles.length) {
         dropZone.classList.remove('hidden');
         scopeCanvas.classList.remove('visible');

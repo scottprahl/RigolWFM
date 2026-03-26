@@ -276,3 +276,10 @@ def test_wfm_from_file_wfm_format():
     for ch in wfm.channels[1:]:
         assert ch.volts is None
         assert ch.times is None
+
+
+@_skip_no_pair
+def test_wfm_from_file_dho1000_header_name():
+    """DHO1074 .wfm/.bin should expose the DHO1000 family label."""
+    assert RigolWFM.wfm.Wfm.from_file(str(_DHO1074_WFM), "DHO", "1").header_name == "DHO1000"
+    assert RigolWFM.wfm.Wfm.from_file(str(_DHO1074_BIN), "DHO", "1").header_name == "DHO1000 (BIN)"

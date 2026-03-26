@@ -279,7 +279,9 @@ def _scope_family(name: str) -> str:
     can never be compared reliably, so callers should skip the warning when
     len(_scope_family(umodel)) <= 1.
     """
-    return "".join(c for c in name.upper() if c.isalpha())
+    head = name.upper().split("(", 1)[0].strip()
+    head = head.split(None, 1)[0] if head else ""
+    return "".join(c for c in head if c.isalpha())
 
 
 def dho_from_file(file_name: str) -> RigolWFM.dho.DhoWaveform:
@@ -494,7 +496,15 @@ class Wfm:
 
         elif umodel in DHO1000_scopes:
             w = RigolWFM.dho.from_file(file_name)
-            new_wfm.header_name = w.header.model_number or "DHO1000"
+            fallback = "DHO1000"
+            model_hint = w.header.model_number or ""
+            if model_hint.upper().startswith(("DHO8", "HDO8")):
+                fallback = "DHO800"
+            new_wfm.header_name = RigolWFM.dho.family_label(
+                model_hint,
+                is_bin=RigolWFM.dho.is_bin_file(file_name),
+                fallback=fallback,
+            )
 
         else:
             raise Unknown_Scope_Error(f"Unknown Rigol oscilloscope type: '{umodel}'\n{valid_scope_list()}")

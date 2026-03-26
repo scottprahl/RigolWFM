@@ -288,6 +288,13 @@ def test_wfm_ch1_times_and_volts():
     assert len(ch.volts) > 0
 
 
+@_skip_no_ch1
+def test_wfm_from_file_dho800_header_name():
+    """DHO824 .wfm/.bin should expose the DHO800 family label."""
+    assert RigolWFM.wfm.Wfm.from_file(str(_CH1_WFM), "DHO", "1").header_name == "DHO800"
+    assert RigolWFM.wfm.Wfm.from_file(str(_CH1_BIN), "DHO", "1").header_name == "DHO800 (BIN)"
+
+
 @_skip_no_ch12
 def test_wfm_ch12_two_channels():
     """Wfm.from_file() on DHO824-ch12.wfm with '12' returns 2 channels."""
