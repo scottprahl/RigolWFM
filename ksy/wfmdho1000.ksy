@@ -42,19 +42,35 @@ doc: |
   sequential scan for the first non-zero byte is required.
 
   Data section header (40 bytes):
-    offset+ 0:  u64 LE  - n_pts_total + 64  (DHO1000) or n_pts_total (DHO800)
+    offset+ 0:  u64 LE  - raw total sample count across all enabled channels.
+                           DHO1000 firmware stores a value slightly larger than
+                           the true total (~+64 samples); n_ch is recovered via
+                           round(n_pts_u64 / n_pts_per_channel) rather than
+                           exact division.
     offset+ 8:  8 bytes - capture marker (opaque)
-    offset+16:  u32 LE  - x_increment in 10 ns units (DHO1000), ns (DHO800)
-    offset+20:  u32 LE  - unknown (79 in observed files)
+    offset+16:  u32 LE  - x_increment in ADC ticks (see below)
+    offset+20:  u32 LE  - unknown (observed: 77)
     offset+24:  u32 LE  - n_pts per enabled channel
     offset+28:  u32 LE  - n_pts per enabled channel (repeated)
     offset+32:  u32 LE  - timestamp / unknown
-    offset+36:  u32 LE  - unknown (120 in observed files)
-    offset+40:  uint16 LE samples begin (n_pts_total × 2 bytes)
+    offset+36:  u32 LE  - unknown (observed: 120 for single-channel, 0 for multi)
+    offset+40:  uint16 LE samples begin (n_pts_per_channel × n_channels × 2 bytes)
 
-  x_origin is not stored; it is derived as:
+  ---- Time axis ----
+  The x_increment field stores the sampling interval as an integer count of
+  ADC clock ticks.  The tick duration is a fixed hardware property:
+
+    DHO800  (e.g. DHO824):  0.8 ns / tick  — one cycle of the 1.25 GSa/s ADC
+    DHO1000 (e.g. DHO1074): 10 ns / tick   — one cycle of a 100 MHz reference clock
+
+  x_origin is not stored explicitly.  For the common case of a centered
+  trigger (trigger at 50% of the capture window, which is the scope default):
     x_origin = -(n_pts_per_channel / 2) * x_increment
     t[i]     =  x_origin + i * x_increment
+
+  Trigger position as a percentage of the capture window is likely encoded
+  in the metadata block with id=282, u32 at byte offset 12 (observed: 50 for
+  center trigger in all available DHO800 and DHO1000 test captures).
 
   LIMITATION: This KSY describes the block region only.  The zero-padding
   region and the data section require sequential runtime scanning and cannot

@@ -65,6 +65,16 @@ def _check_wfm_bin_correlation(wfm_path, bin_path, n_ch):
             f"CH{i + 1}: RMS {rms_mv:.4f} mV exceeds {_RMS_THRESHOLD_MV} mV"
 
 
+def _check_wfm_bin_time_axis(wfm_path, bin_path):
+    """Assert that matching WFM and BIN files reconstruct the same time axis."""
+    wfm_header = RigolWFM.dho.dho_from_file(str(wfm_path)).header
+    bin_header = RigolWFM.dho.dho_from_file(str(bin_path)).header
+
+    assert wfm_header.n_pts == bin_header.n_pts
+    assert wfm_header.x_increment == pytest.approx(bin_header.x_increment, rel=1e-6, abs=1e-15)
+    assert wfm_header.x_origin == pytest.approx(bin_header.x_origin, rel=1e-6, abs=1e-15)
+
+
 # ---------------------------------------------------------------------------
 # DHO800 .bin parser tests
 # ---------------------------------------------------------------------------
@@ -207,16 +217,34 @@ def test_ch1_wfm_bin_correlation():
     _check_wfm_bin_correlation(_CH1_WFM, _CH1_BIN, 1)
 
 
+@_skip_no_ch1
+def test_ch1_wfm_bin_time_axis_matches():
+    """CH1 WFM vs BIN should reconstruct the same sample times."""
+    _check_wfm_bin_time_axis(_CH1_WFM, _CH1_BIN)
+
+
 @_skip_no_ch12
 def test_ch12_wfm_bin_correlation():
     """CH1+CH2 WFM vs BIN: correlation > 0.99, RMS < 0.1 mV each."""
     _check_wfm_bin_correlation(_CH12_WFM, _CH12_BIN, 2)
 
 
+@_skip_no_ch12
+def test_ch12_wfm_bin_time_axis_matches():
+    """CH1+CH2 WFM vs BIN should reconstruct the same sample times."""
+    _check_wfm_bin_time_axis(_CH12_WFM, _CH12_BIN)
+
+
 @_skip_no_ch1234
 def test_ch1234_wfm_bin_correlation():
     """CH1-CH4 WFM vs BIN: correlation > 0.99, RMS < 0.1 mV each."""
     _check_wfm_bin_correlation(_CH1234_WFM, _CH1234_BIN, 4)
+
+
+@_skip_no_ch1234
+def test_ch1234_wfm_bin_time_axis_matches():
+    """CH1-CH4 WFM vs BIN should reconstruct the same sample times."""
+    _check_wfm_bin_time_axis(_CH1234_WFM, _CH1234_BIN)
 
 
 # ---------------------------------------------------------------------------

@@ -47,8 +47,19 @@ _Wfmdho1000: Any = RigolWFM.wfmdho1000.Wfmdho1000  # type: ignore[attr-defined]
 _DHO_FILE_HEADER_SIZE = 24
 _DHO_BLOCK_HEADER_SIZE = 12
 _DHO_ADC_MIDPOINT = 32768
-_DHO_X_INCREMENT_SCALE = 1e-8
-_DHO_X_INCREMENT_SCALE_DHO800 = 1e-9
+
+# Time-increment tick sizes for each scope family.
+#
+# The data-section header at offset+16 stores x_increment as a u32 integer
+# count of ADC clock ticks.  The tick duration is a hardware property:
+#
+#   DHO1000 (e.g. DHO1074): 10 ns per tick  (100 MHz reference clock)
+#   DHO800  (e.g. DHO824):  0.8 ns per tick (1.25 GSa/s max ADC rate → 1 tick = 1/1.25 GHz)
+#
+# Example: DHO824-ch1 stores x_increment_raw = 500.
+#   x_increment = 500 × 8e-10 = 4×10⁻⁷ s  — confirmed by matching .bin export.
+_DHO1000_TICK_S = 1e-8   # 10 ns per tick (DHO1000 series)
+_DHO800_TICK_S  = 8e-10  # 0.8 ns per tick = 1 / 1.25 GHz (DHO800 series)
 
 
 class UnitEnum(IntEnum):
@@ -296,7 +307,24 @@ def _find_data_section(
     blocks_end_offset: int,
     is_dho800: bool = False,
 ) -> Optional[tuple[int, int, float, float, int]]:
-    """Locate the DHO sample data section after the metadata padding region."""
+    """Locate the DHO sample data section after the metadata padding region.
+
+    Data section header layout (40 bytes):
+      offset+ 0: u64 LE  — raw total sample count across all enabled channels.
+                            DHO1000 firmware adds a small constant (~64) to this
+                            field; we recover n_ch by rounding the ratio
+                            n_pts_u64 / n_pts_per_ch instead of exact division.
+      offset+ 8: 8 bytes — capture marker (opaque, skip)
+      offset+16: u32 LE  — x_increment in ADC ticks:
+                            DHO800:  1 tick = 0.8 ns  (1 / 1.25 GHz ADC clock)
+                            DHO1000: 1 tick = 10 ns   (100 MHz reference clock)
+      offset+20: u32 LE  — unknown (observed value: 77)
+      offset+24: u32 LE  — n_pts per enabled channel
+      offset+28: u32 LE  — n_pts per enabled channel (repeated)
+      offset+32: u32 LE  — timestamp / unknown
+      offset+36: u32 LE  — unknown (observed value: 120 for ch1; 0 for multi-ch)
+      offset+40: uint16 LE samples begin
+    """
     offset = blocks_end_offset
     while offset < len(data) and data[offset] == 0:
         offset += 1
@@ -308,32 +336,30 @@ def _find_data_section(
     if offset + 28 > len(data):
         return None
 
-    if is_dho800:
-        if n_pts_u64 == 0 or n_pts_u64 > 2_000_000_000:
-            return None
-        total_pts = n_pts_u64
-    else:
-        if n_pts_u64 <= 64 or n_pts_u64 > 2_000_000_000:
-            return None
-        total_pts = n_pts_u64 - 64
+    if n_pts_u64 == 0 or n_pts_u64 > 2_000_000_000:
+        return None
 
     (n_pts_hint,) = struct.unpack_from("<I", data, offset + 24)
-    if n_pts_hint > 0 and total_pts % n_pts_hint == 0:
+    if n_pts_hint > 0:
+        # DHO1000 firmware stores n_pts_u64 slightly larger than the true
+        # total (by a small constant, ~64).  Round instead of exact-divide so
+        # both DHO800 and DHO1000 are handled uniformly without a model-
+        # specific correction.
+        n_ch = int(round(n_pts_u64 / n_pts_hint))
         n_pts_per_ch = n_pts_hint
-        n_ch = int(total_pts // n_pts_hint)
     else:
-        n_pts_per_ch = total_pts
+        n_pts_per_ch = n_pts_u64
         n_ch = 1
 
     if n_pts_per_ch == 0 or n_ch <= 0 or n_ch > 4:
         return None
 
-    (x_increment_ns,) = struct.unpack_from("<I", data, offset + 16)
-    if x_increment_ns == 0 or x_increment_ns > 1_000_000_000:
-        x_increment_ns = 1
+    (x_increment_raw,) = struct.unpack_from("<I", data, offset + 16)
+    if x_increment_raw == 0 or x_increment_raw > 1_000_000_000:
+        x_increment_raw = 1
 
-    scale = _DHO_X_INCREMENT_SCALE_DHO800 if is_dho800 else _DHO_X_INCREMENT_SCALE
-    x_increment = x_increment_ns * scale
+    tick_s = _DHO800_TICK_S if is_dho800 else _DHO1000_TICK_S
+    x_increment = x_increment_raw * tick_s
     x_origin = -(n_pts_per_ch / 2) * x_increment
     return int(n_pts_per_ch), int(n_ch), x_origin, x_increment, offset + 40
 
