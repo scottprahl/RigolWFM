@@ -177,6 +177,20 @@ class Channel:
             self.unit = channel.unit
             self.inverted = channel.inverted
 
+        if scope == "wfm1000z":
+            # DS1000Z files have per-channel slots for all four analog channels,
+            # but two-channel models can leave non-zero junk in the unused CH3/CH4
+            # slot flags.  Trust the header bitmask instead of each slot's
+            # enabled_val when deciding which channels are really present.
+            enabled_flags = (
+                bool(getattr(w.header, "ch1_enabled", False)),
+                bool(getattr(w.header, "ch2_enabled", False)),
+                bool(getattr(w.header, "ch3_enabled", False)),
+                bool(getattr(w.header, "ch4_enabled", False)),
+            )
+            self.enabled = enabled_flags[channel_number - 1]
+            self.enabled_and_selected = self.enabled and chosen
+
         if scope == "wfm1000b":
             self.y_offset += 1.12 * channel.volt_per_division
             self.ds1000b(w, channel_number)

@@ -11,6 +11,7 @@ import RigolWFM.wfm1000z
 from tests.cli_helpers import assert_wfmconvert_info_snapshot
 
 _Z_INFO_CASES = [
+    "DS1202Z-E",
     "DS1074Z-C",
     "DS1054Z-A",
     "MSO1104",
@@ -35,7 +36,13 @@ _Z_SP4_CSV_CASES = [
     ("DS1054Z-C", 3),
 ]
 
-_Z_WAVEFORM_CASES = _Z_INFO_CASES + [stem for stem, _channels in _Z_SP3_CSV_CASES]
+_Z_WAVEFORM_CASES = [
+    "DS1074Z-C",
+    "DS1054Z-A",
+    "MSO1104",
+    "DS1074Z-A",
+    "DS1074Z-B",
+] + [stem for stem, _channels in _Z_SP3_CSV_CASES]
 
 
 def _read_csv_channels(stem):
@@ -78,6 +85,18 @@ def _sorted_voltage_error(actual, expected):
 def test_wfmconvert_z_info_matches_snapshot(stem):
     """`wfmconvert Z info` should match the checked-in snapshot output."""
     assert_wfmconvert_info_snapshot("Z", stem, "z")
+
+
+def test_ds1202ze_uses_header_enable_mask():
+    """Two-channel DS1202Z-E files should ignore junk in unused channel slots."""
+    waveform = RigolWFM.wfm.Wfm.from_file("wfm/DS1202Z-E.wfm", "Z")
+    raw = RigolWFM.wfm1000z.Wfm1000z.from_file("wfm/DS1202Z-E.wfm")
+
+    assert [channel.channel_number for channel in waveform.channels] == [1]
+    assert raw.header.ch3_enabled is False
+    assert raw.header.ch4_enabled is False
+    assert raw.header.ch[2].enabled is True
+    assert raw.header.ch[3].enabled is True
 
 
 @pytest.mark.parametrize("stem", _Z_WAVEFORM_CASES)

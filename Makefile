@@ -16,7 +16,7 @@ YAML_LINT_OPTS  := -d "{extends: default, rules: {document-start: disable, line-
 
 DOCS_DIR        := docs
 HTML_DIR        := $(DOCS_DIR)/_build/html
-JS_DIR          := js
+JS_DIR          := wfmview
 OUT_ROOT        := _site
 OUT_DIR         := $(OUT_ROOT)/$(PACKAGE)
 STAGE_DIR       := .lite_src
