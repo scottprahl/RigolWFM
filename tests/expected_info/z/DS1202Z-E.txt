@@ -1,0 +1,27 @@
+    General:
+        File Model   = DS1202Z-E
+        User Model   = Z
+        Parser Model = wfm1000z
+        Firmware     = 00.06.02
+        Filename     = DS1202Z-E.wfm
+        Channels     = [1]
+
+    Trigger:
+        Derived Level (CH1) = 6.65  V
+
+     Channel 1:
+         Coupling =       DC
+            Scale =     1.00  V/div
+           Offset =    -3.80  V
+            Probe =       1X
+         Inverted =    False
+
+        Time Base =    1.000  s/div
+           Offset =    5.020  s
+            Delta = 1000.000 ns/point
+           Points = 12000512
+
+         Count    = [        1,        2,        3  ...  12000511, 12000512]
+           Raw    = [      170,      170,      170  ...       170,      170]
+           Times  = [-980.256 ms,-980.255 ms,-980.254 ms  ... 11.020  s,11.020  s]
+           Volts  = [  6.95  V,  6.95  V,  6.95  V  ...   6.95  V,  6.95  V]
