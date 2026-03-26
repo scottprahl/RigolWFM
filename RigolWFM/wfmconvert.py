@@ -22,6 +22,13 @@ import subprocess
 import textwrap
 import RigolWFM
 import RigolWFM.wfm
+import matplotlib.pyplot as plt
+
+
+def _output_path(infile: str, ext: str, output_dir: str) -> str:
+    """Return output path: basename of infile with ext replaced, in output_dir."""
+    stem = os.path.splitext(os.path.basename(infile))[0]
+    return os.path.join(output_dir, stem + ext)
 
 
 def info(_args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, _infile: str) -> None:
@@ -32,7 +39,7 @@ def info(_args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, _infile: str) 
 
 def csv(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
     """Create a file with comma separated values."""
-    csv_name = os.path.splitext(infile)[0] + ".csv"
+    csv_name = _output_path(infile, ".csv", args.output_dir)
 
     if os.path.isfile(csv_name) and not args.force:
         print(f"'{csv_name}' exists, use --force to overwrite")
@@ -46,7 +53,7 @@ def csv(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> 
 
 def vcsv(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
     """Create a file with comma separated values (full volts)."""
-    csv_name = os.path.splitext(infile)[0] + ".csv"
+    csv_name = _output_path(infile, ".csv", args.output_dir)
 
     if os.path.isfile(csv_name) and not args.force:
         print(f"'{csv_name}' exists, use --force to overwrite")
@@ -60,7 +67,7 @@ def vcsv(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) ->
 
 def wav(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
     """Create an audible .wav file for use in LTspice."""
-    wav_name = os.path.splitext(infile)[0] + ".wav"
+    wav_name = _output_path(infile, ".wav", args.output_dir)
     if os.path.isfile(wav_name) and not args.force:
         print(f"'{wav_name}' exists, use --force to overwrite")
         return
@@ -68,9 +75,20 @@ def wav(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> 
     scope_data.wav(wav_name, autoscale=args.autoscale)
 
 
+def png(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
+    """Save a PNG plot of the waveform."""
+    png_name = _output_path(infile, ".png", args.output_dir)
+    if os.path.isfile(png_name) and not args.force:
+        print(f"'{png_name}' exists, use --force to overwrite")
+        return
+    fig = scope_data.plot()
+    fig.savefig(png_name, dpi=args.dpi, bbox_inches="tight", facecolor="black")
+    plt.close(fig)
+
+
 def sigrok(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> bool:
     """Create a Sigrok (.sr) file."""
-    sigrok_name = os.path.splitext(infile)[0] + ".sr"
+    sigrok_name = _output_path(infile, ".sr", args.output_dir)
 
     if os.path.isfile(sigrok_name) and not args.force:
         print(f"'{sigrok_name}' exists, use --force to overwrite", file=sys.stderr)
@@ -140,6 +158,8 @@ def main() -> None:
         examples:
             wfmconvert info DS1102E.wfm
             wfmconvert csv DS1102E.wfm
+            wfmconvert png DS1102E.wfm
+            wfmconvert --output-dir /tmp csv *.wfm
             wfmconvert --channel 2 csv DS1102E.wfm
             wfmconvert --channel 124 vcsv DS1102E.wfm
             wfmconvert --channel 34 --autoscale wav DS1102E.wfm
@@ -158,10 +178,24 @@ def main() -> None:
     )
 
     parser.add_argument(
+        "--output-dir",
+        metavar="DIR",
+        default=".",
+        help="directory for output files (default: current working directory)",
+    )
+
+    parser.add_argument(
         "--force",
         action="store_true",
         default=False,
         help="overwrite existing output files",
+    )
+
+    parser.add_argument(
+        "--dpi",
+        type=int,
+        default=300,
+        help="resolution in dots per inch for PNG output (default: 300)",
     )
 
     parser.add_argument(
@@ -197,11 +231,12 @@ def main() -> None:
 
     parser.add_argument(
         dest="action",
-        choices=["csv", "info", "wav", "vcsv", "sigrok"],
+        choices=["csv", "info", "png", "wav", "vcsv", "sigrok"],
         help=textwrap.dedent(
             """\
         csv:    convert to a file with comma separated values
         info:   show the various scope settings for a .wfm file
+        png:    save a waveform plot as a PNG image (use --dpi to set resolution)
         wav:    convert to a WAV sound format file for use with Audacity
                 or Sigrok Pulseview. If a single channel is specified then
                 the .wav file can be used with LTspice.
@@ -216,6 +251,10 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    if not os.path.isdir(args.output_dir):
+        print(f"wfmconvert error: output directory '{args.output_dir}' does not exist", file=sys.stderr)
+        sys.exit(1)
 
     # strip anything that is not a possible channel number
     good = re.sub(r"[^1234]", "", args.channel)
@@ -232,7 +271,7 @@ def main() -> None:
         print(f'You used "--channel {args.channel}"')
         sys.exit(1)
 
-    actionMap = {"info": info, "csv": csv, "wav": wav, "vcsv": vcsv, "sigrok": sigrok}
+    actionMap = {"info": info, "csv": csv, "png": png, "wav": wav, "vcsv": vcsv, "sigrok": sigrok}
 
     for filename in args.infile:
         try:

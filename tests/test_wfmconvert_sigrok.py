@@ -3,20 +3,20 @@
 from tests.cli_helpers import run_command
 
 
-def test_wfmconvert_sigrok():
+def test_wfmconvert_sigrok(tmp_path):
     """Verify sigrok export succeeds for representative scopes."""
-    commands = [
-        "wfmconvert --force --model B sigrok wfm/DS1204B-A.wfm",
-        "wfmconvert --force --model C sigrok wfm/DS1202CA-A.wfm",
-        "wfmconvert --force --model D sigrok wfm/DS1102D-A.wfm",
-        "wfmconvert --force --model E sigrok wfm/DS1102E-A.wfm",
-        "wfmconvert --force --model Z sigrok wfm/MSO1104.wfm",
-        "wfmconvert --force --model 2 sigrok wfm/DS2202.wfm",
-        "wfmconvert --force --model 4 sigrok wfm/DS4022-A.wfm",
+    cases = [
+        ("B", "wfm/DS1204B-A.wfm"),
+        ("C", "wfm/DS1202CA-A.wfm"),
+        ("D", "wfm/DS1102D-A.wfm"),
+        ("E", "wfm/DS1102E-A.wfm"),
+        ("Z", "wfm/MSO1104.wfm"),
+        ("2", "wfm/DS2202.wfm"),
+        ("4", "wfm/DS4022-A.wfm"),
     ]
 
-    for command in commands:
-        run_command(command)
+    for scope, path in cases:
+        run_command(f"wfmconvert --model {scope} --output-dir {tmp_path} sigrok {path}")
 
 
 # Run the tests

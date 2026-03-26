@@ -674,20 +674,41 @@ class Wfm:
                 h_prefix = p
         return h_scale, h_prefix, v_scale, v_prefix
 
-    def plot(self) -> None:
-        """Plot the data."""
+    def plot(self) -> plt.Figure:
+        """Plot the data in oscilloscope style and return the Figure."""
+        # Classic Rigol channel colours: CH1=yellow, CH2=cyan, CH3=magenta, CH4=green
+        _CH_COLORS = ["#FFFF00", "#00FFFF", "#FF00FF", "#00FF00"]
+
         h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()
-        colors = ["red", "blue", "orange", "magenta"]
+
+        fig, ax = plt.subplots(figsize=(10, 6), facecolor="black")
+        ax.set_facecolor("black")
 
         for i, ch in enumerate(self.channels):
-            plt.plot(
-                ch.times * h_scale, ch.volts * v_scale, label=ch.name, color=colors[i]  # type: ignore[operator]
+            ax.plot(
+                ch.times * h_scale,  # type: ignore[operator]
+                ch.volts * v_scale,  # type: ignore[operator]
+                label=ch.name,
+                color=_CH_COLORS[i % 4],
+                linewidth=0.8,
             )
 
-        plt.xlabel("Time (%ss)" % h_prefix)
-        plt.ylabel("Voltage (%sV)" % v_prefix)
-        plt.title(self.basename)
-        plt.legend(loc="upper right")
+        ax.set_xlabel("Time (%ss)" % h_prefix, color="white")
+        ax.set_ylabel("Voltage (%sV)" % v_prefix, color="white")
+        ax.set_title(self.basename, color="white")
+        ax.legend(loc="upper right", facecolor="black", edgecolor="#555555", labelcolor="white")
+
+        # Oscilloscope-style grid: visible but not distracting
+        ax.grid(True, which="major", color="#2a2a2a", linewidth=0.8, linestyle="-")
+        ax.minorticks_on()
+        ax.grid(True, which="minor", color="#1a1a1a", linewidth=0.4, linestyle=":")
+
+        ax.tick_params(colors="white", which="both")
+        for spine in ax.spines.values():
+            spine.set_edgecolor("#444444")
+
+        fig.tight_layout()
+        return fig
 
     def csv(self) -> str:
         """Return a string of comma separated values."""
