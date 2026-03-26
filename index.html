@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rigol WFM Viewer</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<div class="main-container" id="main-container">
+  <div class="sidebar">
+    <div class="panel">
+      <button class="sidebar-btn" id="open-btn">&#9654;&ensp;Open &hellip;</button>
+      <button class="sidebar-btn" id="export-btn" disabled>&#8595;&ensp;Export &hellip;</button>
+      <button class="sidebar-btn axis-reset-btn" id="axis-reset-btn" disabled>Reset</button>
+    </div>
+    <div class="panel axis-panel" id="axis-panel">
+      <div class="axis-grid">
+        <label class="axis-field" for="axis-vmin">
+          <span>Min Volts</span>
+          <input id="axis-vmin" class="axis-input" type="text" inputmode="decimal" spellcheck="false" disabled>
+        </label>
+        <label class="axis-field" for="axis-vmax">
+          <span>Max Volts</span>
+          <input id="axis-vmax" class="axis-input" type="text" inputmode="decimal" spellcheck="false" disabled>
+        </label>
+        <label class="axis-field" for="axis-tmin">
+          <span>Min Time</span>
+          <input id="axis-tmin" class="axis-input" type="text" inputmode="decimal" spellcheck="false" disabled>
+        </label>
+        <label class="axis-field" for="axis-tmax">
+          <span>Max Time</span>
+          <input id="axis-tmax" class="axis-input" type="text" inputmode="decimal" spellcheck="false" disabled>
+        </label>
+      </div>
+    </div>
+    <div class="panel panel-files" id="files-panel">
+      <div id="file-list" class="file-list"></div>
+    </div>
+  </div>
+
+  <div class="content-area">
+    <div class="display-area" id="display-area">
+      <div id="drop-zone">
+        <div class="dz-icon">&#11123;</div>
+        <div class="dz-main">Drop one or more Rigol .wfm or .bin files here</div>
+        <div class="dz-hint">DS1000B/C/E/Z &nbsp;&middot;&nbsp; DS2000 &nbsp;&middot;&nbsp; DS4000 &nbsp;&middot;&nbsp; MSO5000/7000/8000 &nbsp;&middot;&nbsp; DHO</div>
+      </div>
+      <canvas id="scope"></canvas>
+      <div id="error-box" role="alert" aria-live="assertive" aria-hidden="true">
+        <button type="button" id="error-box-close" class="error-box-close" aria-label="Close error">&times;</button>
+        <div id="error-box-message"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="channel-tooltip" class="channel-tooltip">
+  <pre id="channel-tooltip-text"></pre>
+</div>
+
+<div id="drag-overlay">
+  <div class="drag-content">
+    <span class="drag-icon">&#11123;</span>
+    <span class="drag-label">Drop to open</span>
+  </div>
+</div>
+
+<div class="modal-overlay" id="export-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Export Waveform</h2>
+      <button class="modal-close" id="export-modal-close">&times;</button>
+    </div>
+
+    <div class="export-row">
+      <button class="exp-btn" id="exp-info">INFO</button>
+      <div class="exp-desc">Text summary of file</div>
+    </div>
+
+    <div class="export-row">
+      <button class="exp-btn" id="exp-csv">CSV</button>
+      <div class="exp-desc">Spreadsheet-compatible, SI-scaled units</div>
+    </div>
+
+    <div class="export-row">
+      <button class="exp-btn" id="exp-sigrok">SR</button>
+      <div class="exp-desc">Raw seconds &amp; volts for PulseView / sigrok-cli</div>
+    </div>
+
+    <div class="export-row">
+      <button class="exp-btn" id="exp-wav">WAV</button>
+      <div class="exp-desc">LTspice 8-bit PCM, autoscaled, channels interleaved</div>
+    </div>
+
+    <div class="export-row">
+      <button class="exp-btn" id="exp-png">PNG</button>
+      <div class="exp-desc">Raster screenshot of the current view</div>
+    </div>
+
+    <div class="export-row">
+      <button class="exp-btn" id="exp-svg">SVG</button>
+      <div class="exp-desc">Scalable vector image of the current view</div>
+    </div>
+  </div>
+</div>
+
+<script defer src="https://cdn.jsdelivr.net/npm/kaitai-struct/KaitaiStream.js"></script>
+<script defer src="./Wfm1000b.js"></script>
+<script defer src="./Wfm1000c.js"></script>
+<script defer src="./Wfm1000e.js"></script>
+<script defer src="./Wfm1000z.js"></script>
+<script defer src="./Wfm2000.js"></script>
+<script defer src="./Wfm4000.js"></script>
+<script defer src="./Wfmdho1000.js"></script>
+<script defer src="./Bin5000.js"></script>
+<script defer src="./Bin70008000.js"></script>
+<script defer src="./Bindho1000.js"></script>
+<script defer src="./app.js"></script>
+</body>
+</html>
