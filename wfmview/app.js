@@ -1760,10 +1760,10 @@ function render(result) {
     });
 
     ctx.lineWidth = 1;
-    ctx.strokeStyle = '#444';
+    ctx.strokeStyle = '#666';
     ctx.strokeRect(ml + 0.5, mt + 0.5, pw, ph);
 
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = '#8a8a8a';
     ctx.font = FONT_PX + 'px monospace';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
@@ -1882,7 +1882,7 @@ function renderToSVG(result) {
         var majorY = yOf(tick);
         o.push('<line x1="' + ml + '" y1="' + fx(majorY) + '" x2="' + (ml + pw) + '" y2="' + fx(majorY) + '" stroke="#2a2a2a" stroke-width="1"/>');
     });
-    o.push('<rect x="' + (ml + 0.5) + '" y="' + (mt + 0.5) + '" width="' + pw + '" height="' + ph + '" fill="none" stroke="#444" stroke-width="1"/>');
+    o.push('<rect x="' + (ml + 0.5) + '" y="' + (mt + 0.5) + '" width="' + pw + '" height="' + ph + '" fill="none" stroke="#666" stroke-width="1"/>');
 
     vMajorTicks.forEach(function(v, index) {
         var labelY = yOf(v);
@@ -1890,7 +1890,7 @@ function renderToSVG(result) {
             var yLabel = index === vMajorTicks.length - 1 ?
                 vLabelFormatter.formatWithUnit(v) :
                 vLabelFormatter.formatNumber(v);
-            o.push('<text x="' + (ml - 6) + '" y="' + fx(labelY) + '" fill="#666" text-anchor="end" dominant-baseline="middle">' + esc(yLabel) + '</text>');
+            o.push('<text x="' + (ml - 6) + '" y="' + fx(labelY) + '" fill="#8a8a8a" text-anchor="end" dominant-baseline="middle">' + esc(yLabel) + '</text>');
         }
     });
 
@@ -1902,7 +1902,7 @@ function renderToSVG(result) {
             tLabelFormatter.formatWithUnit(tick) :
             tLabelFormatter.formatNumber(tick);
         var labelX = clampSvgLabelX(xOf(tick), tLabel, W);
-        o.push('<text x="' + fx(labelX) + '" y="' + (mt + ph + 6 + FONT_PX) + '" fill="#666" text-anchor="middle">' + esc(tLabel) + '</text>');
+        o.push('<text x="' + fx(labelX) + '" y="' + (mt + ph + 6 + FONT_PX) + '" fill="#8a8a8a" text-anchor="middle">' + esc(tLabel) + '</text>');
     });
 
     var maxPts = pw * 2;
@@ -2330,7 +2330,6 @@ function renderFileList() {
             '</div>' +
             '<div class="file-card-body" data-file-id="' + entry.id + '">' +
             '<div class="file-card-line"><span class="file-card-label">Format</span><span class="file-card-value">' + escapeHtml(entry.result.format) + '</span></div>' +
-            '<div class="file-card-line"><span class="file-card-label">Trigger</span><span class="file-card-value">' + escapeHtml(triggerSummary(entry)) + '</span></div>' +
             '<div class="file-card-channels">' +
             entry.result.channels.map(function(ch, idx) {
                 var toggleId = 'file-channel-' + entry.id + '-' + idx;
