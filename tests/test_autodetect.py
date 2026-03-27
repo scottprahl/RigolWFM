@@ -1,7 +1,8 @@
 """Tests for `detect_model()` automatic scope-family detection."""
 
 import pytest
-import RigolWFM.wfm as wfm
+
+from RigolWFM import wfm
 
 
 # (filename, expected_model)

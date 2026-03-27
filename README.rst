@@ -147,7 +147,7 @@ This has been a bit of an adventure.  In the process of nailing down the basic f
 * Šolc's <https://www.tablix.org/~avian/blog/archives/2019/08/quick_and_ugly_wfm_data_export_for_rigol_ds2072a/>
 * Contributions from <http://www.hakasoft.com.au/wfm_viewer>
 * Rigol's documentation of the 1000E, 1000Z, 2000, and 6000 file formats.
-* Rigol's documentation of the ``.bin'' formats for the 1000, 5000, and 8000
+* Rigol's documentation of the ``.bin`` formats for the 1000, 5000, and 8000
 * Lathe's <https://github.com/Lathe26/WFM_for_Rigol_DHO800_900>
 * Nezarati's <https://nezarati.github.io/waveform-viewer/index.html>
 

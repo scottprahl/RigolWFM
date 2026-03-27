@@ -104,6 +104,10 @@ html: $(PYTHON_PARSERS)
 	$(RUN_DOCS) sphinx-build $(SPHINX_OPTS) "$(DOCS_DIR)" "$(HTML_DIR)"
 	@command -v open >/dev/null 2>&1 && open "$(HTML_DIR)/index.html" || true
 
+.PHONY: dist
+dist:
+	$(UV) build
+
 .PHONY: lab
 lab: venv lab-kernel
 	@echo "==> Launching JupyterLab with repo-local kernel"

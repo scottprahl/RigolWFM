@@ -1,5 +1,8 @@
 """Integration checks for `wfmconvert` sigrok export."""
 
+from pathlib import Path
+import tempfile
+
 from tests.cli_helpers import run_command
 
 
@@ -21,5 +24,6 @@ def test_wfmconvert_sigrok(tmp_path):
 
 # Run the tests
 if __name__ == "__main__":
-    test_wfmconvert_sigrok()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        test_wfmconvert_sigrok(Path(tmpdir))
     print("All tests passed!")

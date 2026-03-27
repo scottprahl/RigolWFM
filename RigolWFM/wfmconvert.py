@@ -20,9 +20,12 @@ import shutil
 import argparse
 import subprocess
 import textwrap
+from typing import NoReturn
+
+import matplotlib.pyplot as plt
+
 import RigolWFM
 import RigolWFM.wfm
-import matplotlib.pyplot as plt
 
 
 def _output_path(infile: str, ext: str, output_dir: str) -> str:
@@ -150,7 +153,7 @@ def sigrok(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) 
 class _WfmParser(argparse.ArgumentParser):
     """ArgumentParser that gives a friendlier error when the action verb is omitted."""
 
-    def error(self, message: str) -> None:
+    def error(self, message: str) -> NoReturn:
         if "argument action: invalid choice" in message:
             self.exit(2, (
                 "wfmconvert error: missing action verb.\n"
