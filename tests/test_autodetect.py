@@ -46,3 +46,26 @@ def test_detect_model_missing_file():
     """detect_model() raises FileNotFoundError for a non-existent path."""
     with pytest.raises(FileNotFoundError):
         wfm.detect_model("wfm/does_not_exist.wfm")
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "wfm/DS1102E-A.wfm",
+        "wfm/DS1202Z-E.wfm",
+        "wfm/MSO5000-A.bin",
+        "wfm/DHO824-ch1.bin",
+    ],
+)
+def test_from_file_auto_matches_detected_model(path):
+    """Wfm.from_file() defaults to autodetect and matches explicit parsing."""
+    detected = wfm.detect_model(path)
+    auto_wave = wfm.Wfm.from_file(path)
+    explicit_wave = wfm.Wfm.from_file(path, detected)
+
+    assert auto_wave.user_name == "auto"
+    assert auto_wave.parser_name == explicit_wave.parser_name
+    assert auto_wave.header_name == explicit_wave.header_name
+    assert [ch.channel_number for ch in auto_wave.channels] == [
+        ch.channel_number for ch in explicit_wave.channels
+    ]
