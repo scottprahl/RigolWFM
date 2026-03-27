@@ -2,27 +2,13 @@ update README
     new examples
     images
 
-autodetect correct scope version
-
-add notebooks for new scope formats
-
-javascript viewer?
-
-update sphinx docs
-
-Code development
-    - add --minimal option for problem .wfm files
-    - locate coupling & bandwidth for 1000E formats
-
 wfm_convert development
     - expand options for csv export
     - expand options for wav export
     - add svg, pdf, png graphing options
 
-Code clean up
-    - use a consistent set of enums ?
-
 Documentation
+    - add notebooks for new scope formats
     - create notebook for kaitai struct
     - create notebook for LTspice
     - create notebook for CSV
