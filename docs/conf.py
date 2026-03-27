@@ -1,24 +1,15 @@
 """
-Sphinx configuration for RigolWFM documentation.
+Sphinx configuration for miepython documentation.
 
 Uses:
 - sphinx.ext.napoleon for Google-style docstrings
 - nbsphinx for rendering Jupyter notebooks (pre-executed; no execution on RTD)
 """
 
-import re
-from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as pkg_version
-from pathlib import Path
 
 project = "RigolWFM"
-try:
-    release = pkg_version(project)
-except PackageNotFoundError:
-    init_path = Path(__file__).resolve().parents[1] / project / "__init__.py"
-    init_text = init_path.read_text(encoding="utf-8")
-    match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', init_text)
-    release = match.group(1) if match else "0.0.0"
+release = pkg_version(project)
 version = release
 
 root_doc = "index"
@@ -39,12 +30,18 @@ numpydoc_show_class_members = False
 exclude_patterns = [
     "_build",
     ".ipynb_checkpoints",
-    "research",
+    "Untitled*.ipynb",
+    "x_MnNn_calc.ipynb",
+    "x_14_fields.ipynb",
+    "x_one_d_efield.ipynb",
 ]
 
 nbsphinx_execute = "never"
-nbsphinx_allow_errors = True
+nbsphinx_allow_errors = False
 
 html_theme = "sphinx_rtd_theme"
 html_scaled_image_link = False
 html_sourcelink_suffix = ""
+
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]
