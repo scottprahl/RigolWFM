@@ -1,13 +1,18 @@
 'use strict';
 
-var TRACE_PALETTE = [
-    '#ffd166', '#06d6a0', '#00d1ff', '#ef476f',
-    '#f78c6b', '#7bd389', '#a29bfe', '#ff9f1c',
-    '#2ec4b6', '#ff6b6b', '#9ef01a', '#6bcbef',
+var TRACE_BASE_PALETTE = [
+    '#4477aa', '#ee6677', '#228833', '#ccbb44',
+    '#66ccee', '#aa3377', '#bbbbbb',
 ];
-var CH_COLORS = TRACE_PALETTE.slice(0, 4);
+var TRACE_STYLE_CYCLE = [
+    { id: 'solid', dash: [], cap: 'round' },
+    { id: 'dashed', dash: [10, 6], cap: 'butt' },
+    { id: 'dotted', dash: [1.5, 5], cap: 'round' },
+];
+var CH_COLORS = TRACE_BASE_PALETTE.slice(0, 4);
 var FONT_PX = 20;
 var M = { l: 115, r: 40, t: 20, b: 55 };
+var GRAPH_BRAND = 'RigolWFM';
 var DHO_FILE_HEADER_SIZE = 24;
 var DHO_BLOCK_HEADER_SIZE = 12;
 var DHO_ADC_MIDPOINT = 32768;
@@ -307,7 +312,7 @@ function summarizeChannelVoltages(ch, bounds) {
         if (!Number.isFinite(t) || !Number.isFinite(v)) {
             continue;
         }
-        if (useBounds && (t < bounds.tMin || t > bounds.tMax || v < bounds.vMin || v > bounds.vMax)) {
+        if (useBounds && (t < bounds.tMin || t > bounds.tMax)) {
             continue;
         }
 
@@ -1538,6 +1543,142 @@ function createAxisLabelFormatter(axis, unit) {
     };
 }
 
+function axisTitleText(label, formatter) {
+    return label + ' [' + formatter.prefix + formatter.unit + ']';
+}
+
+function currentPlotTheme() {
+    if (lightMode) {
+        return {
+            background: '#ffffff',
+            minorGrid: '#8f8f8f',
+            majorGrid: '#4f4f4f',
+            frame: '#202020',
+            labels: '#000000',
+            brand: '#202020',
+            legendFill: '#f4f4f4',
+            legendFillOpacity: 0.92,
+            legendStroke: '#5f5f5f',
+            legendStrokeOpacity: 0.8,
+            legendText: '#111111',
+        };
+    }
+    return {
+        background: '#000000',
+        minorGrid: '#1a1a1a',
+        majorGrid: '#2a2a2a',
+        frame: '#666666',
+        labels: '#8a8a8a',
+        brand: '#7c7c7c',
+        legendFill: '#0c0c0c',
+        legendFillOpacity: 0.78,
+        legendStroke: '#a0a0a0',
+        legendStrokeOpacity: 0.4,
+        legendText: '#dcdcdc',
+    };
+}
+
+function legendEntries(channels) {
+    return channels.map(function(ch) {
+        return {
+            color: ch.color,
+            lineDash: traceDashArray(ch),
+            lineCap: traceLineCap(ch),
+            label: ch.legendLabel || ch.displayName || ch.name,
+        };
+    });
+}
+
+function drawLegendCanvas(ctx, channels, plotX, plotY) {
+    if (!showLegend || !channels.length) {
+        return;
+    }
+
+    var entries = legendEntries(channels);
+    var theme = currentPlotTheme();
+    var fontPx = 14;
+    var lineHeight = 18;
+    var swatchWidth = 22;
+    var padX = 10;
+    var padY = 8;
+    var gap = 8;
+    var maxLabelWidth = 0;
+
+    ctx.save();
+    ctx.font = fontPx + 'px monospace';
+    entries.forEach(function(entry) {
+        maxLabelWidth = Math.max(maxLabelWidth, ctx.measureText(entry.label).width);
+    });
+
+    var boxWidth = padX * 2 + swatchWidth + gap + maxLabelWidth;
+    var boxHeight = padY * 2 + entries.length * lineHeight;
+    var boxX = plotX + 10;
+    var boxY = plotY + 10;
+
+    ctx.fillStyle = theme.legendFill;
+    ctx.globalAlpha = theme.legendFillOpacity;
+    ctx.strokeStyle = theme.legendStroke;
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 1;
+    ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+    ctx.globalAlpha = theme.legendStrokeOpacity;
+    ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxWidth - 1, boxHeight - 1);
+    ctx.globalAlpha = 1;
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    entries.forEach(function(entry, index) {
+        var y = boxY + padY + index * lineHeight + lineHeight / 2;
+        ctx.strokeStyle = entry.color;
+        ctx.lineWidth = 2;
+        ctx.lineCap = entry.lineCap;
+        ctx.setLineDash(entry.lineDash);
+        ctx.beginPath();
+        ctx.moveTo(boxX + padX, y);
+        ctx.lineTo(boxX + padX + swatchWidth, y);
+        ctx.stroke();
+        ctx.fillStyle = theme.legendText;
+        ctx.fillText(entry.label, boxX + padX + swatchWidth + gap, y);
+    });
+    ctx.restore();
+}
+
+function drawLegendSvg(channels, plotX, plotY, fx, esc) {
+    if (!showLegend || !channels.length) {
+        return [];
+    }
+
+    var entries = legendEntries(channels);
+    var theme = currentPlotTheme();
+    var fontPx = 14;
+    var lineHeight = 18;
+    var swatchWidth = 22;
+    var padX = 10;
+    var padY = 8;
+    var maxLabelChars = 0;
+    var out = [];
+
+    entries.forEach(function(entry) {
+        maxLabelChars = Math.max(maxLabelChars, entry.label.length);
+    });
+
+    var approxCharWidth = fontPx * 0.62;
+    var boxWidth = padX * 2 + swatchWidth + 8 + maxLabelChars * approxCharWidth;
+    var boxHeight = padY * 2 + entries.length * lineHeight;
+    var boxX = plotX + 10;
+    var boxY = plotY + 10;
+
+    out.push('<g class="legend">');
+    out.push('<rect x="' + fx(boxX) + '" y="' + fx(boxY) + '" width="' + fx(boxWidth) + '" height="' + fx(boxHeight) + '" fill="' + theme.legendFill + '" fill-opacity="' + theme.legendFillOpacity + '" stroke="' + theme.legendStroke + '" stroke-opacity="' + theme.legendStrokeOpacity + '" stroke-width="1"/>');
+    entries.forEach(function(entry, index) {
+        var y = boxY + padY + index * lineHeight + lineHeight / 2;
+        out.push('<line x1="' + fx(boxX + padX) + '" y1="' + fx(y) + '" x2="' + fx(boxX + padX + swatchWidth) + '" y2="' + fx(y) + '" stroke="' + esc(entry.color) + '" stroke-width="2" stroke-linecap="' + entry.lineCap + '"' + (traceSvgDash(entry) ? ' stroke-dasharray="' + traceSvgDash(entry) + '"' : '') + '/>');
+        out.push('<text x="' + fx(boxX + padX + swatchWidth + 8) + '" y="' + fx(y) + '" fill="' + theme.legendText + '" text-anchor="start" dominant-baseline="middle" font-size="' + fontPx + 'px">' + esc(entry.label) + '</text>');
+    });
+    out.push('</g>');
+    return out;
+}
+
 function buildDisplayedTimeTicks(ticks, skip) {
     var displayed = [];
     ticks.forEach(function(tick, index) {
@@ -1713,6 +1854,9 @@ function render(result) {
     var vMajorTicks = buildAxisTickValues(vAx, 1);
     var tLabelFormatter = createAxisLabelFormatter(tAx, 's');
     var vLabelFormatter = createAxisLabelFormatter(vAx, 'V');
+    var tAxisTitle = axisTitleText('Time', tLabelFormatter);
+    var vAxisTitle = axisTitleText('Voltage', vLabelFormatter);
+    var theme = currentPlotTheme();
 
     function xOf(t) {
         return ml + (t - tAx.min) / (tAx.max - tAx.min) * pw;
@@ -1722,7 +1866,7 @@ function render(result) {
         return mt + (vAx.max - v) / (vAx.max - vAx.min) * ph;
     }
 
-    ctx.fillStyle = '#000';
+    ctx.fillStyle = theme.background;
     ctx.fillRect(0, 0, W, H);
 
     function vline(x) {
@@ -1741,17 +1885,19 @@ function render(result) {
         ctx.stroke();
     }
 
-    ctx.lineWidth = 0.5;
-    ctx.strokeStyle = '#1a1a1a';
-    tMinorTicks.forEach(function(tick) {
-        vline(xOf(tick));
-    });
-    vMinorTicks.forEach(function(tick) {
-        hline(yOf(tick));
-    });
+    if (showFineGrid) {
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = theme.minorGrid;
+        tMinorTicks.forEach(function(tick) {
+            vline(xOf(tick));
+        });
+        vMinorTicks.forEach(function(tick) {
+            hline(yOf(tick));
+        });
+    }
 
     ctx.lineWidth = 1;
-    ctx.strokeStyle = '#2a2a2a';
+    ctx.strokeStyle = theme.majorGrid;
     tMajorTicks.forEach(function(tick) {
         vline(xOf(tick));
     });
@@ -1760,19 +1906,17 @@ function render(result) {
     });
 
     ctx.lineWidth = 1;
-    ctx.strokeStyle = '#666';
+    ctx.strokeStyle = theme.frame;
     ctx.strokeRect(ml + 0.5, mt + 0.5, pw, ph);
 
-    ctx.fillStyle = '#8a8a8a';
+    ctx.fillStyle = theme.labels;
     ctx.font = FONT_PX + 'px monospace';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    vMajorTicks.forEach(function(v, index) {
+    vMajorTicks.forEach(function(v) {
         var y = yOf(v);
         if (y >= mt - 2 && y <= mt + ph + 2) {
-            var yLabel = index === vMajorTicks.length - 1 ?
-                vLabelFormatter.formatWithUnit(v) :
-                vLabelFormatter.formatNumber(v);
+            var yLabel = vLabelFormatter.formatNumber(v);
             ctx.fillText(yLabel, ml - 6, y);
         }
     });
@@ -1782,13 +1926,25 @@ function render(result) {
     var tPixPerDiv = pw * tAx.step / (tAx.max - tAx.min);
     var tLabelSkip = Math.max(1, Math.ceil(FONT_PX * 7 / Math.max(tPixPerDiv, 1)));
     var tDisplayedTicks = buildDisplayedTimeTicks(tMajorTicks, tLabelSkip);
-    tDisplayedTicks.forEach(function(tick, index) {
-        var tLabel = index === tDisplayedTicks.length - 1 ?
-            tLabelFormatter.formatWithUnit(tick) :
-            tLabelFormatter.formatNumber(tick);
+    tDisplayedTicks.forEach(function(tick) {
+        var tLabel = tLabelFormatter.formatNumber(tick);
         var labelX = clampCanvasLabelX(ctx, xOf(tick), tLabel, W);
         ctx.fillText(tLabel, labelX, mt + ph + 6);
     });
+
+    ctx.fillStyle = theme.labels;
+    ctx.font = FONT_PX + 'px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(tAxisTitle, ml + pw / 2, H - 24);
+
+    ctx.save();
+    ctx.translate(28, mt + ph / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(vAxisTitle, 0, 0);
+    ctx.restore();
 
     var maxPts = pw * 2;
     ctx.save();
@@ -1802,6 +1958,9 @@ function render(result) {
         }
         ctx.strokeStyle = ch.color;
         ctx.lineWidth = 1.5;
+        ctx.lineCap = traceLineCap(ch);
+        ctx.lineJoin = 'round';
+        ctx.setLineDash(traceDashArray(ch));
         ctx.beginPath();
         var skip = Math.max(1, Math.floor(count / maxPts));
         var first = true;
@@ -1818,6 +1977,14 @@ function render(result) {
         ctx.stroke();
     });
     ctx.restore();
+
+    drawLegendCanvas(ctx, result.channels, ml, mt);
+
+    ctx.fillStyle = theme.brand;
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText(GRAPH_BRAND, ml + pw - 8, mt + 6);
 
 }
 
@@ -1839,6 +2006,9 @@ function renderToSVG(result) {
     var vMajorTicks = buildAxisTickValues(vAx, 1);
     var tLabelFormatter = createAxisLabelFormatter(tAx, 's');
     var vLabelFormatter = createAxisLabelFormatter(vAx, 'V');
+    var tAxisTitle = axisTitleText('Time', tLabelFormatter);
+    var vAxisTitle = axisTitleText('Voltage', vLabelFormatter);
+    var theme = currentPlotTheme();
 
     function xOf(t) {
         return ml + (t - tAx.min) / (tAx.max - tAx.min) * pw;
@@ -1863,47 +2033,48 @@ function renderToSVG(result) {
     var o = [];
     o.push('<?xml version="1.0" encoding="UTF-8"?>');
     o.push('<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" font-family="monospace" font-size="' + FONT_PX + 'px">');
-    o.push('<rect width="100%" height="100%" fill="#000"/>');
+    o.push('<rect width="100%" height="100%" fill="' + theme.background + '"/>');
     o.push('<defs><clipPath id="plot-clip"><rect x="' + ml + '" y="' + mt + '" width="' + pw + '" height="' + ph + '"/></clipPath></defs>');
 
-    tMinorTicks.forEach(function(tick) {
-        var x = xOf(tick);
-        o.push('<line x1="' + fx(x) + '" y1="' + mt + '" x2="' + fx(x) + '" y2="' + (mt + ph) + '" stroke="#1a1a1a" stroke-width="0.5"/>');
-    });
-    vMinorTicks.forEach(function(tick) {
-        var y = yOf(tick);
-        o.push('<line x1="' + ml + '" y1="' + fx(y) + '" x2="' + (ml + pw) + '" y2="' + fx(y) + '" stroke="#1a1a1a" stroke-width="0.5"/>');
-    });
+    if (showFineGrid) {
+        tMinorTicks.forEach(function(tick) {
+            var x = xOf(tick);
+            o.push('<line x1="' + fx(x) + '" y1="' + mt + '" x2="' + fx(x) + '" y2="' + (mt + ph) + '" stroke="' + theme.minorGrid + '" stroke-width="0.5"/>');
+        });
+        vMinorTicks.forEach(function(tick) {
+            var y = yOf(tick);
+            o.push('<line x1="' + ml + '" y1="' + fx(y) + '" x2="' + (ml + pw) + '" y2="' + fx(y) + '" stroke="' + theme.minorGrid + '" stroke-width="0.5"/>');
+        });
+    }
     tMajorTicks.forEach(function(tick) {
         var majorX = xOf(tick);
-        o.push('<line x1="' + fx(majorX) + '" y1="' + mt + '" x2="' + fx(majorX) + '" y2="' + (mt + ph) + '" stroke="#2a2a2a" stroke-width="1"/>');
+        o.push('<line x1="' + fx(majorX) + '" y1="' + mt + '" x2="' + fx(majorX) + '" y2="' + (mt + ph) + '" stroke="' + theme.majorGrid + '" stroke-width="1"/>');
     });
     vMajorTicks.forEach(function(tick) {
         var majorY = yOf(tick);
-        o.push('<line x1="' + ml + '" y1="' + fx(majorY) + '" x2="' + (ml + pw) + '" y2="' + fx(majorY) + '" stroke="#2a2a2a" stroke-width="1"/>');
+        o.push('<line x1="' + ml + '" y1="' + fx(majorY) + '" x2="' + (ml + pw) + '" y2="' + fx(majorY) + '" stroke="' + theme.majorGrid + '" stroke-width="1"/>');
     });
-    o.push('<rect x="' + (ml + 0.5) + '" y="' + (mt + 0.5) + '" width="' + pw + '" height="' + ph + '" fill="none" stroke="#666" stroke-width="1"/>');
+    o.push('<rect x="' + (ml + 0.5) + '" y="' + (mt + 0.5) + '" width="' + pw + '" height="' + ph + '" fill="none" stroke="' + theme.frame + '" stroke-width="1"/>');
 
-    vMajorTicks.forEach(function(v, index) {
+    vMajorTicks.forEach(function(v) {
         var labelY = yOf(v);
         if (labelY >= mt - 2 && labelY <= mt + ph + 2) {
-            var yLabel = index === vMajorTicks.length - 1 ?
-                vLabelFormatter.formatWithUnit(v) :
-                vLabelFormatter.formatNumber(v);
-            o.push('<text x="' + (ml - 6) + '" y="' + fx(labelY) + '" fill="#8a8a8a" text-anchor="end" dominant-baseline="middle">' + esc(yLabel) + '</text>');
+            var yLabel = vLabelFormatter.formatNumber(v);
+            o.push('<text x="' + (ml - 6) + '" y="' + fx(labelY) + '" fill="' + theme.labels + '" text-anchor="end" dominant-baseline="middle">' + esc(yLabel) + '</text>');
         }
     });
 
     var tPixPerDiv = pw * tAx.step / (tAx.max - tAx.min);
     var tLabelSkip = Math.max(1, Math.ceil(FONT_PX * 7 / Math.max(tPixPerDiv, 1)));
     var tDisplayedTicks = buildDisplayedTimeTicks(tMajorTicks, tLabelSkip);
-    tDisplayedTicks.forEach(function(tick, index) {
-        var tLabel = index === tDisplayedTicks.length - 1 ?
-            tLabelFormatter.formatWithUnit(tick) :
-            tLabelFormatter.formatNumber(tick);
+    tDisplayedTicks.forEach(function(tick) {
+        var tLabel = tLabelFormatter.formatNumber(tick);
         var labelX = clampSvgLabelX(xOf(tick), tLabel, W);
-        o.push('<text x="' + fx(labelX) + '" y="' + (mt + ph + 6 + FONT_PX) + '" fill="#8a8a8a" text-anchor="middle">' + esc(tLabel) + '</text>');
+        o.push('<text x="' + fx(labelX) + '" y="' + (mt + ph + 6 + FONT_PX) + '" fill="' + theme.labels + '" text-anchor="middle">' + esc(tLabel) + '</text>');
     });
+
+    o.push('<text x="' + fx(ml + pw / 2) + '" y="' + fx(H - 24 + FONT_PX) + '" fill="' + theme.labels + '" text-anchor="middle" font-size="' + FONT_PX + 'px">' + esc(tAxisTitle) + '</text>');
+    o.push('<text x="28" y="' + fx(mt + ph / 2) + '" fill="' + theme.labels + '" text-anchor="middle" dominant-baseline="hanging" font-size="' + FONT_PX + 'px" transform="rotate(-90 28 ' + fx(mt + ph / 2) + ')">' + esc(vAxisTitle) + '</text>');
 
     var maxPts = pw * 2;
     o.push('<g clip-path="url(#plot-clip)">');
@@ -1917,9 +2088,13 @@ function renderToSVG(result) {
         for (var i = 0; i < count; i += skip) {
             pts.push(fx(xOf(ch.times[i])) + ',' + fx(yOf(ch.volts[i])));
         }
-        o.push('<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + ch.color + '" stroke-width="1.5"/>');
+        o.push('<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + ch.color + '" stroke-width="1.5" stroke-linecap="' + traceLineCap(ch) + '" stroke-linejoin="round"' + (traceSvgDash(ch) ? ' stroke-dasharray="' + traceSvgDash(ch) + '"' : '') + '/>');
     });
     o.push('</g>');
+    drawLegendSvg(result.channels, ml, mt, fx, esc).forEach(function(item) {
+        o.push(item);
+    });
+    o.push('<text x="' + fx(ml + pw - 8) + '" y="' + fx(mt + 20) + '" fill="' + theme.brand + '" text-anchor="end" font-size="14px">' + esc(GRAPH_BRAND) + '</text>');
 
     o.push('</svg>');
     return o.join('\n');
@@ -2156,6 +2331,10 @@ var graphManualBounds = {
 var currentGraphBounds = null;
 var currentFilename = 'waveform';
 var currentSourceFilename = 'waveform.wfm';
+var zoomSelection = null;
+var showLegend = false;
+var showFineGrid = true;
+var lightMode = false;
 
 function resetGraphAxisState() {
     graphAxisModes.t = 'auto';
@@ -2178,12 +2357,41 @@ function stemForFilename(filename) {
     return filename.replace(/\.[^.]+$/, '') || filename;
 }
 
-function allocateTraceColor() {
-    var index = nextTraceColorIndex++;
-    if (index < TRACE_PALETTE.length) {
-        return TRACE_PALETTE[index];
+function traceAppearanceForIndex(index) {
+    var paletteLength = TRACE_BASE_PALETTE.length;
+    var styleIndex = Math.floor(index / paletteLength);
+    var colorIndex = index % paletteLength;
+    var style = TRACE_STYLE_CYCLE[styleIndex % TRACE_STYLE_CYCLE.length];
+    var color = styleIndex < TRACE_STYLE_CYCLE.length ?
+        TRACE_BASE_PALETTE[colorIndex] :
+        hslToHex((index - paletteLength * TRACE_STYLE_CYCLE.length) * 137.508, 82, 60);
+
+    return {
+        color: color,
+        lineStyle: style.id,
+        lineDash: style.dash.slice(),
+        lineCap: style.cap,
+    };
+}
+
+function allocateTraceAppearance() {
+    return traceAppearanceForIndex(nextTraceColorIndex++);
+}
+
+function traceDashArray(channel) {
+    if (Array.isArray(channel && channel.lineDash)) {
+        return channel.lineDash;
     }
-    return hslToHex(index * 137.508, 82, 60);
+    return [];
+}
+
+function traceLineCap(channel) {
+    return channel && channel.lineCap ? channel.lineCap : 'round';
+}
+
+function traceSvgDash(channel) {
+    var dash = traceDashArray(channel);
+    return dash.length ? dash.join(' ') : '';
 }
 
 function normalizeColor(color, fallback) {
@@ -2282,9 +2490,11 @@ function getVisibleChannels() {
     var visible = [];
     loadedFiles.forEach(function(entry) {
         getVisibleChannelsForEntry(entry).forEach(function(ch) {
+            var legendLabel = entry.stem + ' ' + ch.name;
             var seriesName = channelSeriesName(entry, ch);
             ch.name = seriesName;
             ch.displayName = seriesName;
+            ch.legendLabel = legendLabel;
             visible.push(ch);
         });
     });
@@ -2309,7 +2519,7 @@ function clearCanvas() {
     cv.width = width;
     cv.height = height;
     var ctx = cv.getContext('2d');
-    ctx.fillStyle = '#000';
+    ctx.fillStyle = currentPlotTheme().background;
     ctx.fillRect(0, 0, width, height);
 }
 
@@ -2348,6 +2558,7 @@ function renderFileList() {
 
 function refreshView(extraMessage) {
     hideChannelTooltip();
+    cancelZoomSelection();
     syncCurrentFileContext();
     renderFileList();
     filesPanel.classList.toggle('visible', loadedFiles.length > 0);
@@ -2426,6 +2637,7 @@ function removeLoadedFile(fileId) {
 
 var dropZone = document.getElementById('drop-zone');
 var scopeCanvas = document.getElementById('scope');
+var zoomRect = document.getElementById('zoom-rect');
 var errorBox = document.getElementById('error-box');
 var errorBoxClose = document.getElementById('error-box-close');
 var errorBoxMessage = document.getElementById('error-box-message');
@@ -2435,6 +2647,9 @@ var axisTminInput = document.getElementById('axis-tmin');
 var axisTmaxInput = document.getElementById('axis-tmax');
 var axisVminInput = document.getElementById('axis-vmin');
 var axisVmaxInput = document.getElementById('axis-vmax');
+var showLegendToggle = document.getElementById('show-legend-toggle');
+var showFineGridToggle = document.getElementById('show-fine-grid-toggle');
+var lightModeToggle = document.getElementById('light-mode-toggle');
 var axisResetBtn = document.getElementById('axis-reset-btn');
 var filesPanel = document.getElementById('files-panel');
 var fileList = document.getElementById('file-list');
@@ -2444,6 +2659,10 @@ var channelTooltipText = document.getElementById('channel-tooltip-text');
 var exportModal = document.getElementById('export-modal');
 var exportBtn = document.getElementById('export-btn');
 var dragDepth = 0;
+showLegend = showLegendToggle.checked;
+showFineGrid = showFineGridToggle.checked;
+lightMode = lightModeToggle.checked;
+document.body.classList.toggle('light-mode', lightMode);
 
 function hideChannelTooltip() {
     channelTooltip.classList.remove('visible');
@@ -2510,6 +2729,160 @@ function clearDragState() {
     dragDepth = 0;
     dragOverlay.classList.remove('active');
     dropZone.classList.remove('drag-over');
+}
+
+function getPlotPixelRect() {
+    var canvasRect = scopeCanvas.getBoundingClientRect();
+    var width = canvasRect.width || scopeCanvas.clientWidth || scopeCanvas.width || 0;
+    var height = canvasRect.height || scopeCanvas.clientHeight || scopeCanvas.height || 0;
+    return {
+        left: M.l,
+        top: M.t,
+        right: Math.max(M.l, width - M.r),
+        bottom: Math.max(M.t, height - M.b),
+    };
+}
+
+function canvasPointFromEvent(e) {
+    var canvasRect = scopeCanvas.getBoundingClientRect();
+    return {
+        x: e.clientX - canvasRect.left,
+        y: e.clientY - canvasRect.top,
+    };
+}
+
+function pointInPlot(point, plotRect) {
+    return point.x >= plotRect.left &&
+        point.x <= plotRect.right &&
+        point.y >= plotRect.top &&
+        point.y <= plotRect.bottom;
+}
+
+function clampPointToPlot(point, plotRect) {
+    return {
+        x: Math.min(Math.max(point.x, plotRect.left), plotRect.right),
+        y: Math.min(Math.max(point.y, plotRect.top), plotRect.bottom),
+    };
+}
+
+function hideZoomRect() {
+    zoomRect.classList.remove('visible');
+    zoomRect.style.left = '';
+    zoomRect.style.top = '';
+    zoomRect.style.width = '';
+    zoomRect.style.height = '';
+}
+
+function cancelZoomSelection() {
+    zoomSelection = null;
+    hideZoomRect();
+}
+
+function updateZoomRect() {
+    if (!zoomSelection) {
+        hideZoomRect();
+        return;
+    }
+
+    var left = Math.min(zoomSelection.start.x, zoomSelection.current.x);
+    var right = Math.max(zoomSelection.start.x, zoomSelection.current.x);
+    var top = Math.min(zoomSelection.start.y, zoomSelection.current.y);
+    var bottom = Math.max(zoomSelection.start.y, zoomSelection.current.y);
+
+    zoomRect.style.left = Math.round(left) + 'px';
+    zoomRect.style.top = Math.round(top) + 'px';
+    zoomRect.style.width = Math.max(1, Math.round(right - left)) + 'px';
+    zoomRect.style.height = Math.max(1, Math.round(bottom - top)) + 'px';
+    zoomRect.classList.add('visible');
+}
+
+function selectionBoundsFromZoom(selection) {
+    var plotWidth = selection.plotRect.right - selection.plotRect.left;
+    var plotHeight = selection.plotRect.bottom - selection.plotRect.top;
+    var x1 = Math.min(selection.start.x, selection.current.x);
+    var x2 = Math.max(selection.start.x, selection.current.x);
+    var y1 = Math.min(selection.start.y, selection.current.y);
+    var y2 = Math.max(selection.start.y, selection.current.y);
+    var bounds = selection.bounds;
+
+    function tOf(x) {
+        return bounds.tMin + (x - selection.plotRect.left) / plotWidth * (bounds.tMax - bounds.tMin);
+    }
+
+    function vOf(y) {
+        return bounds.vMax - (y - selection.plotRect.top) / plotHeight * (bounds.vMax - bounds.vMin);
+    }
+
+    return {
+        tMin: tOf(x1),
+        tMax: tOf(x2),
+        vMin: vOf(y2),
+        vMax: vOf(y1),
+    };
+}
+
+function beginZoomSelection(e) {
+    if (e.button !== 0 || !currentGraphBounds || !scopeCanvas.classList.contains('visible')) {
+        return;
+    }
+
+    var plotRect = getPlotPixelRect();
+    var point = canvasPointFromEvent(e);
+    if (!pointInPlot(point, plotRect)) {
+        return;
+    }
+
+    hideChannelTooltip();
+    zoomSelection = {
+        bounds: currentGraphBounds,
+        plotRect: plotRect,
+        start: clampPointToPlot(point, plotRect),
+        current: clampPointToPlot(point, plotRect),
+    };
+    updateZoomRect();
+    e.preventDefault();
+}
+
+function updateZoomSelection(e) {
+    if (!zoomSelection) {
+        return;
+    }
+
+    zoomSelection.current = clampPointToPlot(canvasPointFromEvent(e), zoomSelection.plotRect);
+    updateZoomRect();
+    e.preventDefault();
+}
+
+function finishZoomSelection(e) {
+    if (!zoomSelection) {
+        return;
+    }
+
+    if (e) {
+        zoomSelection.current = clampPointToPlot(canvasPointFromEvent(e), zoomSelection.plotRect);
+    }
+
+    var selection = zoomSelection;
+    var width = Math.abs(selection.current.x - selection.start.x);
+    var height = Math.abs(selection.current.y - selection.start.y);
+    cancelZoomSelection();
+
+    if (width < 6 || height < 6) {
+        return;
+    }
+
+    var zoomBounds = selectionBoundsFromZoom(selection);
+    if (!graphBoundsAreUsable(zoomBounds)) {
+        return;
+    }
+
+    graphAxisModes.t = 'manual';
+    graphAxisModes.v = 'manual';
+    graphManualBounds.tMin = zoomBounds.tMin;
+    graphManualBounds.tMax = zoomBounds.tMax;
+    graphManualBounds.vMin = zoomBounds.vMin;
+    graphManualBounds.vMax = zoomBounds.vMax;
+    refreshView();
 }
 
 function hideError() {
@@ -2603,9 +2976,14 @@ document.addEventListener('drop', function(e) {
 document.addEventListener('scroll', hideChannelTooltip, true);
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
+        cancelZoomSelection();
         hideError();
     }
 });
+window.addEventListener('blur', cancelZoomSelection);
+scopeCanvas.addEventListener('mousedown', beginZoomSelection);
+window.addEventListener('mousemove', updateZoomSelection);
+window.addEventListener('mouseup', finishZoomSelection);
 
 exportBtn.addEventListener('click', function() {
     exportModal.classList.add('open');
@@ -2655,6 +3033,23 @@ document.getElementById('exp-svg').addEventListener('click', function() {
     });
 });
 axisResetBtn.addEventListener('click', resetAxisView);
+showLegendToggle.addEventListener('change', function() {
+    showLegend = showLegendToggle.checked;
+    if (loadedFiles.length) {
+        refreshView();
+    }
+});
+showFineGridToggle.addEventListener('change', function() {
+    showFineGrid = showFineGridToggle.checked;
+    if (loadedFiles.length) {
+        refreshView();
+    }
+});
+lightModeToggle.addEventListener('change', function() {
+    lightMode = lightModeToggle.checked;
+    document.body.classList.toggle('light-mode', lightMode);
+    refreshView();
+});
 
 fileList.addEventListener('click', function(e) {
     var closeBtn = e.target.closest('.file-card-close');
@@ -2769,7 +3164,11 @@ function addLoadedFile(result, filename) {
     }
 
     result.channels.forEach(function(ch) {
-        ch.color = allocateTraceColor();
+        var appearance = allocateTraceAppearance();
+        ch.color = appearance.color;
+        ch.lineStyle = appearance.lineStyle;
+        ch.lineDash = appearance.lineDash;
+        ch.lineCap = appearance.lineCap;
     });
 
     loadedFiles.push({

@@ -34,6 +34,18 @@
           <input id="axis-tmax" class="axis-input" type="text" inputmode="decimal" spellcheck="false" disabled>
         </label>
       </div>
+      <label class="axis-toggle" for="show-legend-toggle">
+        <input id="show-legend-toggle" type="checkbox">
+        <span>Show Legend</span>
+      </label>
+      <label class="axis-toggle" for="show-fine-grid-toggle">
+        <input id="show-fine-grid-toggle" type="checkbox" checked>
+        <span>Show Fine Grid</span>
+      </label>
+      <label class="axis-toggle" for="light-mode-toggle">
+        <input id="light-mode-toggle" type="checkbox">
+        <span>Light Mode</span>
+      </label>
     </div>
     <div class="panel panel-files" id="files-panel">
       <div id="file-list" class="file-list"></div>
@@ -48,6 +60,7 @@
         <div class="dz-hint">DS1000B/C/E/Z &nbsp;&middot;&nbsp; DS2000 &nbsp;&middot;&nbsp; DS4000 &nbsp;&middot;&nbsp; MSO5000/7000/8000 &nbsp;&middot;&nbsp; DHO</div>
       </div>
       <canvas id="scope"></canvas>
+      <div id="zoom-rect"></div>
       <div id="error-box" role="alert" aria-live="assertive" aria-hidden="true">
         <button type="button" id="error-box-close" class="error-box-close" aria-label="Close error">&times;</button>
         <div id="error-box-message"></div>
