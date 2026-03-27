@@ -6,7 +6,7 @@ MSO7000/8000, and DHO800/DHO1000 scope families via `Wfm.from_file()`.
 
 Example:
     >>> import RigolWFM.wfm as rigol
-    >>> waveform = rigol.Wfm.from_file("file_name.wfm", 'E')
+    >>> waveform = rigol.Wfm.from_file("file_name.wfm")
     >>> description = waveform.describe()
     >>> print(description)
 
@@ -385,13 +385,13 @@ class Wfm:
         self.trigger_info: dict = {}
 
     @classmethod
-    def from_file(cls, file_name: str, model: str, selected: str = "1234") -> Wfm:
+    def from_file(cls, file_name: str, model: str = "auto", selected: str = "1234") -> Wfm:
         """
         Create Wfm object from a file.
 
         Args:
             file_name: name of file
-            model: Rigol Oscilloscope used, e.g., 'E' or 'Z'
+            model: Rigol Oscilloscope used, e.g., 'E' or 'Z'; defaults to auto-detect
             selected: string of channels to process e.g., '12'
         Returns:
             a wfm object for the file
@@ -409,7 +409,8 @@ class Wfm:
         new_wfm.basename = os.path.basename(file_name)
 
         # parse the waveform
-        umodel = model.upper()
+        auto_model = model.upper() == "AUTO"
+        umodel = detect_model(file_name).upper() if auto_model else model.upper()
 
         if umodel in DS1000B_scopes:
             w = RigolWFM.wfm1000b.Wfm1000b.from_file(file_name)  # type: ignore[attr-defined]
@@ -509,7 +510,7 @@ class Wfm:
         else:
             raise Unknown_Scope_Error(f"Unknown Rigol oscilloscope type: '{umodel}'\n{valid_scope_list()}")
 
-        new_wfm.user_name = model
+        new_wfm.user_name = "auto" if auto_model else model
         pname = getattr(w, "parser_name", type(w).__module__.rsplit(".", 1)[-1])
         new_wfm.parser_name = pname
 
@@ -518,7 +519,7 @@ class Wfm:
         # purely-numeric codes ('2', '5074') are intentionally short and cannot
         # be compared reliably, so skip the check for them.
         file_family = _scope_family(new_wfm.header_name)
-        user_family = _scope_family(umodel)
+        user_family = "" if auto_model else _scope_family(umodel)
         if (
             file_family
             and len(user_family) > 1
