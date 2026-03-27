@@ -1,12 +1,14 @@
 Changelog
 =========
 
-Unreleased (2026-03-24)
+Unreleased (2026-03-26)
 ------------------------
-*    add Rigol MSO5000/MSO5074 binary waveform support (``RigolWFM.mso5000``, ``RigolWFM.mso5074``)
+*    add web based viewer of .wfm files
+*    fix timing issue for DHO800.wfm files
+*    added autodetect to eliminate need to give file type
+*    add Rigol MSO5000 binary waveform support
 *    add Rigol MSO7000/MSO8000 binary waveform support via shared ``RigolWFM.mso7000_8000`` adapter
 *    add MSO5074-specific adapter to work around firmware bugs (wrong metadata, uint8 ADC counts, concatenated per-channel blocks)
-*    fix DHO time-per-division calculation: use 10 horizontal divisions instead of 12
 *    fix ``IndexError`` in ``Channel.__str__`` when a channel has fewer than 5 points
 *    fix ``wav()`` crash when no channels are enabled
 *    fix ``csv()`` and ``sigrokcsv()`` to use the shortest channel when channels have mismatched point counts
@@ -41,8 +43,6 @@ Unreleased (2026-03-24)
 *    add ``[tool.pytest.ini_options]`` section to ``pyproject.toml``
 *    add ``mypy`` type checking: annotate all hand-written ``RigolWFM/`` modules
 *    fix ``wav()`` to use ``wave.Wave_write`` directly instead of ``wave.open(..., "wb")``
-*    add ``docs/github.com/`` to ``.gitignore`` and ``realclean``
-*    add ``research/`` to Sphinx ``exclude_patterns``
 *    add ``__all__`` to ``channel.py``
 
 1.0.0 (2023-10-06)
