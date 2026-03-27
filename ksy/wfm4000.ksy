@@ -127,9 +127,20 @@ types:
       time_scale:
         value: 1.0e-12 * time.time_per_div_ps
       time_offset:
-        value: 1.0e-12 * time.offset_per_div_ps
+        value: 1.0e-12 * time.actual_offset_ps
       points:
         value: mem_depth
+      serial_number:
+        value: model_number
+      data_start:
+        value: "(position.channel_1 != 0 ? position.channel_1 :
+                (position.channel_2 != 0 ? position.channel_2 :
+                (position.channel_3 != 0 ? position.channel_3 :
+                 position.channel_4)))"
+      setup:
+        pos: 597
+        size: data_start - 597
+        type: setup_block
 
       raw_1:
         io: _root._io
@@ -177,8 +188,10 @@ types:
         size: 4
       - id: offset_per_div_ps
         type: u8
-      - id: unknown_4
-        size: 16
+      - id: unknown_4_head
+        size: 8
+      - id: actual_offset_ps
+        type: s8
       - id: offset_ps
         type: u8
       - id: unknown_5
@@ -187,6 +200,40 @@ types:
         type: u2
       - id: unknown_7
         type: u1
+
+  setup_block:
+    instances:
+      legacy_trigger_levels:
+        pos: 538
+        type: trigger_level_block
+        if: _io.size >= 558
+      modern_trigger_levels:
+        pos: 586
+        type: trigger_level_block
+        if: _io.size >= 606
+      modern_trigger_mode:
+        pos: 610
+        type: u1
+        enum: trigger_mode_enum
+        if: _io.size >= 611
+      modern_trigger_source:
+        pos: 623
+        type: u1
+        enum: trigger_source_enum
+        if: _io.size >= 624
+
+  trigger_level_block:
+    seq:
+      - id: ch1_level_uv
+        type: s4
+      - id: ch2_level_uv
+        type: s4
+      - id: ch3_level_uv
+        type: s4
+      - id: ch4_level_uv
+        type: s4
+      - id: ext_level_uv
+        type: s4
 
   channel_mask:
     seq:
@@ -350,6 +397,17 @@ enums:
   probe_type_enum:
     0: normal_type
     1: differential
+
+  trigger_mode_enum:
+    3: edge
+    4: video
+
+  trigger_source_enum:
+    1: ch1
+    2: ch2
+    3: ch3
+    4: ch4
+    5: ext
 
   time_enum:
     0: yt

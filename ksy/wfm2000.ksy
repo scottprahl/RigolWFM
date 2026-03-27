@@ -120,13 +120,9 @@ types:
 
       - id: equ_coarse
         type: u2
-        repeat: expr
-        repeat-expr: 2
 
       - id: equ_fine
         type: u2
-        repeat: expr
-        repeat-expr: 2
 
       - id: mem_start_addr
         type: u4
@@ -162,6 +158,10 @@ types:
 
       - id: spu_load_data_status_boolean
         type: u1
+
+      - id: reserved_243
+        size: 1
+        doc: padding byte present before the delay fields in shipped captures
 
       - id: trig_delay_mem_offset
         type: s8
@@ -217,6 +217,11 @@ types:
       - id: frame_cur
         type: u4
 
+      - id: private
+        type: u4
+        repeat: expr
+        repeat-expr: 4
+
     instances:
       seconds_per_point:
         value: 1/sample_rate_hz
@@ -226,6 +231,12 @@ types:
         value: 1.0e-12 * time_offset_ps
       points:
         value: wfm_len
+      serial_number:
+        value: model_number
+      setup:
+        pos: setup_offset - 56
+        size: setup_size
+        type: setup_block
 
       raw_depth:
         value: 'enabled.interwoven ? wfm_len/2 : wfm_len'
@@ -258,6 +269,40 @@ types:
         pos: channel_offset[3] + z_pt_offset
         size: len_raw_4
         if: channel_offset[3] > 0
+
+  setup_block:
+    instances:
+      trigger_source_primary:
+        pos: 519
+        type: u1
+        enum: setup_trigger_source_enum
+        if: _io.size >= 520
+      trigger_source_shadow:
+        pos: 523
+        type: u1
+        enum: setup_trigger_source_enum
+        if: _io.size >= 524
+      trigger_mode_code:
+        pos: 535
+        type: u4
+        if: _io.size >= 539
+      trigger_holdoff_ns:
+        pos: 539
+        type: u4
+        if: _io.size >= 543
+      trigger_levels:
+        pos: 547
+        type: trigger_level_block
+        if: _io.size >= 559
+
+  trigger_level_block:
+    seq:
+      - id: ch1_level_uv
+        type: s4
+      - id: ch2_level_uv
+        type: s4
+      - id: ext_level_uv
+        type: s4
 
 
   channel_header:
@@ -459,6 +504,12 @@ enums:
   probe_type_enum:
     0: normal_type
     1: differential
+
+  setup_trigger_source_enum:
+    0: ch1
+    1: ch2
+    2: ext
+    3: ac_line
 
   time_enum:
     0: yt

@@ -33,11 +33,29 @@ types:
       - id: file_version
         type: u2
 
-      - id: unused_1
-        size: 18
+      - id: file_crc
+        type: u4
+
+      - id: reserved_52
+        type: u2
+
+      - id: reserved_54
+        type: u2
+
+      - id: wfm_crc
+        type: u4
+
+      - id: structure_size
+        type: u2
+
+      - id: structure_version
+        type: u2
 
       - id: enabled
         type: channel_mask
+
+      - id: reserved_66
+        size: 2
 
       - id: channel_offset
         type: u4
@@ -45,7 +63,7 @@ types:
         repeat-expr: 4
 
       - id: acquisition_mode
-        type: u1
+        type: u2
         enum: acquisition_enum
 
       - id: average_time
@@ -55,6 +73,9 @@ types:
       - id: sample_mode
         type: u2
         doc: equ or real
+
+      - id: reserved_90
+        size: 2
 
       - id: mem_depth
         type: u4
@@ -66,6 +87,9 @@ types:
       - id: time_mode
         type: u2
         enum: time_enum
+
+      - id: reserved_102
+        size: 2
 
       - id: time_scale_ps
         type: u8
@@ -143,6 +167,8 @@ types:
         type: u1
       - id: get_spu_dig_data_status
         type: u1
+      - id: reserved_307
+        size: 1
       - id: main_mem_offset
         type: s8
       - id: mem_view_offset
@@ -170,9 +196,9 @@ types:
       - id: spu_mem_bank_size
         type: u4
       - id: s16_adc1_clock_delay
-        type: u2
+        type: s2
       - id: s16_adc2_clock_delay
-        type: u2
+        type: s2
       - id: max_main_scrn_chnl_delay
         type: u2
       - id: max_zoom_scrn_chnl_delay
@@ -183,6 +209,12 @@ types:
         type: u2
       - id: record_frame_index
         type: u4
+      - id: frame_cur
+        type: u4
+      - id: private
+        type: u4
+        repeat: expr
+        repeat-expr: 4
 
     instances:
       seconds_per_point:
@@ -194,29 +226,29 @@ types:
       points:
         value: wfm_len
       len_raw_1:
-        value: "enabled.channel_1 ? wfm_len : 0"
+        value: "channel_offset[0] != 0 ? wfm_len : 0"
       len_raw_2:
-        value: "enabled.channel_2 ? wfm_len : 0"
+        value: "channel_offset[1] != 0 ? wfm_len : 0"
       len_raw_3:
-        value: "enabled.channel_3 ? wfm_len : 0"
+        value: "channel_offset[2] != 0 ? wfm_len : 0"
       len_raw_4:
-        value: "enabled.channel_4 ? wfm_len : 0"
+        value: "channel_offset[3] != 0 ? wfm_len : 0"
       raw_1:
-        pos: wfm_offset + channel_offset[0] + z_pt_offset
+        pos: channel_offset[0] + z_pt_offset
         size: len_raw_1
-        if: enabled.channel_1
+        if: channel_offset[0] != 0
       raw_2:
-        pos: wfm_offset + channel_offset[1] + z_pt_offset
+        pos: channel_offset[1] + z_pt_offset
         size: len_raw_2
-        if: enabled.channel_2
+        if: channel_offset[1] != 0
       raw_3:
-        pos: wfm_offset + channel_offset[2] + z_pt_offset
+        pos: channel_offset[2] + z_pt_offset
         size: len_raw_3
-        if: enabled.channel_3
+        if: channel_offset[2] != 0
       raw_4:
-        pos: wfm_offset + channel_offset[3] + z_pt_offset
+        pos: channel_offset[3] + z_pt_offset
         size: len_raw_4
-        if: enabled.channel_4
+        if: channel_offset[3] != 0
 
   channel_header:
     seq:
@@ -296,16 +328,17 @@ types:
 
   channel_mask:
     seq:
-      - id: unused
-        type: b4
-      - id: channel_4
-        type: b1
-      - id: channel_3
-        type: b1
-      - id: channel_2
-        type: b1
-      - id: channel_1
-        type: b1
+      - id: raw_mask
+        type: u2
+    instances:
+      channel_1:
+        value: "(raw_mask & 0x0001) != 0"
+      channel_2:
+        value: "(raw_mask & 0x0002) != 0"
+      channel_3:
+        value: "(raw_mask & 0x0004) != 0"
+      channel_4:
+        value: "(raw_mask & 0x0008) != 0"
 
 enums:
   acquisition_enum:
