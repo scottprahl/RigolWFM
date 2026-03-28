@@ -16,7 +16,8 @@ docs/.ipynb_checkpoints
 docs/.jupyter/
 docs/api
 docs/github.com/
-docs/research/
+docs/old/
+docs/vendors/
 RigolWFM.egg-info/
 RigolWFM/__pycache__/
 uv.lock
