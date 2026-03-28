@@ -171,15 +171,43 @@ class Wfm6000(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.unused = self._io.read_bits_int_be(4)
-            self.channel_4 = self._io.read_bits_int_be(1) != 0
-            self.channel_3 = self._io.read_bits_int_be(1) != 0
-            self.channel_2 = self._io.read_bits_int_be(1) != 0
-            self.channel_1 = self._io.read_bits_int_be(1) != 0
+            self.raw_mask = self._io.read_u2le()
 
 
         def _fetch_instances(self):
             pass
+
+        @property
+        def channel_1(self):
+            if hasattr(self, '_m_channel_1'):
+                return self._m_channel_1
+
+            self._m_channel_1 = self.raw_mask & 1 != 0
+            return getattr(self, '_m_channel_1', None)
+
+        @property
+        def channel_2(self):
+            if hasattr(self, '_m_channel_2'):
+                return self._m_channel_2
+
+            self._m_channel_2 = self.raw_mask & 2 != 0
+            return getattr(self, '_m_channel_2', None)
+
+        @property
+        def channel_3(self):
+            if hasattr(self, '_m_channel_3'):
+                return self._m_channel_3
+
+            self._m_channel_3 = self.raw_mask & 4 != 0
+            return getattr(self, '_m_channel_3', None)
+
+        @property
+        def channel_4(self):
+            if hasattr(self, '_m_channel_4'):
+                return self._m_channel_4
+
+            self._m_channel_4 = self.raw_mask & 8 != 0
+            return getattr(self, '_m_channel_4', None)
 
 
     class Header(KaitaiStruct):
@@ -197,18 +225,26 @@ class Wfm6000(KaitaiStruct):
             self.firmware_version = (KaitaiStream.bytes_terminate(self._io.read_bytes(20), 0, False)).decode(u"ASCII")
             self.block_num = self._io.read_u2le()
             self.file_version = self._io.read_u2le()
-            self.unused_1 = self._io.read_bytes(18)
+            self.file_crc = self._io.read_u4le()
+            self.reserved_52 = self._io.read_u2le()
+            self.reserved_54 = self._io.read_u2le()
+            self.wfm_crc = self._io.read_u4le()
+            self.structure_size = self._io.read_u2le()
+            self.structure_version = self._io.read_u2le()
             self.enabled = Wfm6000.ChannelMask(self._io, self, self._root)
+            self.reserved_66 = self._io.read_bytes(2)
             self.channel_offset = []
             for i in range(4):
                 self.channel_offset.append(self._io.read_u4le())
 
-            self.acquisition_mode = KaitaiStream.resolve_enum(Wfm6000.AcquisitionEnum, self._io.read_u1())
+            self.acquisition_mode = KaitaiStream.resolve_enum(Wfm6000.AcquisitionEnum, self._io.read_u2le())
             self.average_time = self._io.read_u2le()
             self.sample_mode = self._io.read_u2le()
+            self.reserved_90 = self._io.read_bytes(2)
             self.mem_depth = self._io.read_u4le()
             self.sample_rate_hz = self._io.read_f4le()
             self.time_mode = KaitaiStream.resolve_enum(Wfm6000.TimeEnum, self._io.read_u2le())
+            self.reserved_102 = self._io.read_bytes(2)
             self.time_scale_ps = self._io.read_u8le()
             self.time_offset_ps = self._io.read_s8le()
             self.ch = []
@@ -255,6 +291,7 @@ class Wfm6000(KaitaiStruct):
             self.zoom_force_analog_trig = self._io.read_u1()
             self.horiz_slow_force_stop_frame = self._io.read_u1()
             self.get_spu_dig_data_status = self._io.read_u1()
+            self.reserved_307 = self._io.read_bytes(1)
             self.main_mem_offset = self._io.read_s8le()
             self.mem_view_offset = self._io.read_s8le()
             self.slow_deta_wave_length = self._io.read_s8le()
@@ -268,13 +305,18 @@ class Wfm6000(KaitaiStruct):
             self.spu_mem_depth_rema = self._io.read_u4le()
             self.mem_offset_base = self._io.read_u4le()
             self.spu_mem_bank_size = self._io.read_u4le()
-            self.s16_adc1_clock_delay = self._io.read_u2le()
-            self.s16_adc2_clock_delay = self._io.read_u2le()
+            self.s16_adc1_clock_delay = self._io.read_s2le()
+            self.s16_adc2_clock_delay = self._io.read_s2le()
             self.max_main_scrn_chnl_delay = self._io.read_u2le()
             self.max_zoom_scrn_chnl_delay = self._io.read_u2le()
             self.main_dgtl_trig_data_offset = self._io.read_u2le()
             self.zoom_dgtl_trig_data_offset = self._io.read_u2le()
             self.record_frame_index = self._io.read_u4le()
+            self.frame_cur = self._io.read_u4le()
+            self.private = []
+            for i in range(4):
+                self.private.append(self._io.read_u4le())
+
 
 
         def _fetch_instances(self):
@@ -308,6 +350,9 @@ class Wfm6000(KaitaiStruct):
             for i in range(len(self.bank_size)):
                 pass
 
+            for i in range(len(self.private)):
+                pass
+
             _ = self.raw_1
             if hasattr(self, '_m_raw_1'):
                 pass
@@ -330,7 +375,7 @@ class Wfm6000(KaitaiStruct):
             if hasattr(self, '_m_len_raw_1'):
                 return self._m_len_raw_1
 
-            self._m_len_raw_1 = (self.wfm_len if self.enabled.channel_1 else 0)
+            self._m_len_raw_1 = (self.wfm_len if self.channel_offset[0] != 0 else 0)
             return getattr(self, '_m_len_raw_1', None)
 
         @property
@@ -338,7 +383,7 @@ class Wfm6000(KaitaiStruct):
             if hasattr(self, '_m_len_raw_2'):
                 return self._m_len_raw_2
 
-            self._m_len_raw_2 = (self.wfm_len if self.enabled.channel_2 else 0)
+            self._m_len_raw_2 = (self.wfm_len if self.channel_offset[1] != 0 else 0)
             return getattr(self, '_m_len_raw_2', None)
 
         @property
@@ -346,7 +391,7 @@ class Wfm6000(KaitaiStruct):
             if hasattr(self, '_m_len_raw_3'):
                 return self._m_len_raw_3
 
-            self._m_len_raw_3 = (self.wfm_len if self.enabled.channel_3 else 0)
+            self._m_len_raw_3 = (self.wfm_len if self.channel_offset[2] != 0 else 0)
             return getattr(self, '_m_len_raw_3', None)
 
         @property
@@ -354,7 +399,7 @@ class Wfm6000(KaitaiStruct):
             if hasattr(self, '_m_len_raw_4'):
                 return self._m_len_raw_4
 
-            self._m_len_raw_4 = (self.wfm_len if self.enabled.channel_4 else 0)
+            self._m_len_raw_4 = (self.wfm_len if self.channel_offset[3] != 0 else 0)
             return getattr(self, '_m_len_raw_4', None)
 
         @property
@@ -370,10 +415,10 @@ class Wfm6000(KaitaiStruct):
             if hasattr(self, '_m_raw_1'):
                 return self._m_raw_1
 
-            if self.enabled.channel_1:
+            if self.channel_offset[0] != 0:
                 pass
                 _pos = self._io.pos()
-                self._io.seek((self.wfm_offset + self.channel_offset[0]) + self.z_pt_offset)
+                self._io.seek(self.channel_offset[0] + self.z_pt_offset)
                 self._m_raw_1 = self._io.read_bytes(self.len_raw_1)
                 self._io.seek(_pos)
 
@@ -384,10 +429,10 @@ class Wfm6000(KaitaiStruct):
             if hasattr(self, '_m_raw_2'):
                 return self._m_raw_2
 
-            if self.enabled.channel_2:
+            if self.channel_offset[1] != 0:
                 pass
                 _pos = self._io.pos()
-                self._io.seek((self.wfm_offset + self.channel_offset[1]) + self.z_pt_offset)
+                self._io.seek(self.channel_offset[1] + self.z_pt_offset)
                 self._m_raw_2 = self._io.read_bytes(self.len_raw_2)
                 self._io.seek(_pos)
 
@@ -398,10 +443,10 @@ class Wfm6000(KaitaiStruct):
             if hasattr(self, '_m_raw_3'):
                 return self._m_raw_3
 
-            if self.enabled.channel_3:
+            if self.channel_offset[2] != 0:
                 pass
                 _pos = self._io.pos()
-                self._io.seek((self.wfm_offset + self.channel_offset[2]) + self.z_pt_offset)
+                self._io.seek(self.channel_offset[2] + self.z_pt_offset)
                 self._m_raw_3 = self._io.read_bytes(self.len_raw_3)
                 self._io.seek(_pos)
 
@@ -412,10 +457,10 @@ class Wfm6000(KaitaiStruct):
             if hasattr(self, '_m_raw_4'):
                 return self._m_raw_4
 
-            if self.enabled.channel_4:
+            if self.channel_offset[3] != 0:
                 pass
                 _pos = self._io.pos()
-                self._io.seek((self.wfm_offset + self.channel_offset[3]) + self.z_pt_offset)
+                self._io.seek(self.channel_offset[3] + self.z_pt_offset)
                 self._m_raw_4 = self._io.read_bytes(self.len_raw_4)
                 self._io.seek(_pos)
 

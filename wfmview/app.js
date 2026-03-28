@@ -172,7 +172,101 @@ function ds2000SourceName(value) {
     if (value >= 4 && value < 20) {
         return 'D' + (value - 4);
     }
-    return String(value);
+    return '';
+}
+
+function ds2000TriggerModeName(value) {
+    if (value === 30) {
+        return 'Edge';
+    }
+    return '';
+}
+
+function decode2000Trigger(h) {
+    var setup = h.setup;
+    if (!setup || !setup.triggerLevels) {
+        return null;
+    }
+
+    var inputLevels = {
+        CH1: setup.triggerLevels.ch1LevelUv * 1e-6,
+        CH2: setup.triggerLevels.ch2LevelUv * 1e-6,
+        EXT: setup.triggerLevels.extLevelUv * 1e-6,
+    };
+    var hasMeaningfulSetup = setup.triggerHoldoffNs !== 0 ||
+        inputLevels.CH1 !== 0 || inputLevels.CH2 !== 0 || inputLevels.EXT !== 0;
+    if (!hasMeaningfulSetup) {
+        return null;
+    }
+
+    var info = {
+        inputLevels: inputLevels,
+    };
+
+    if (setup.triggerSourcePrimary === setup.triggerSourceShadow) {
+        var source = ds2000SourceName(setup.triggerSourcePrimary);
+        if (source) {
+            info.source = source;
+            if (Object.prototype.hasOwnProperty.call(inputLevels, source)) {
+                info.level = inputLevels[source];
+            }
+        }
+    }
+
+    var mode = ds2000TriggerModeName(setup.triggerModeCode);
+    if (mode) {
+        info.mode = mode;
+    }
+
+    return info;
+}
+
+function scaled4000TriggerLevels(levelBlock, probeValues) {
+    return {
+        CH1: levelBlock.ch1LevelUv * 1e-6 * probeValues[0],
+        CH2: levelBlock.ch2LevelUv * 1e-6 * probeValues[1],
+        CH3: levelBlock.ch3LevelUv * 1e-6 * probeValues[2],
+        CH4: levelBlock.ch4LevelUv * 1e-6 * probeValues[3],
+        EXT: levelBlock.extLevelUv * 1e-6,
+    };
+}
+
+function decode4000Trigger(h) {
+    var setup = h.setup;
+    if (!setup) {
+        return null;
+    }
+
+    var probeValues = h.ch.map(function(ch) {
+        return ch.probeValue || 1;
+    });
+
+    if (
+        setup.modernTriggerLevels &&
+        Object.prototype.hasOwnProperty.call(Wfm4000.Wfm4000.TriggerModeEnum, setup.modernTriggerMode) &&
+        Object.prototype.hasOwnProperty.call(Wfm4000.Wfm4000.TriggerSourceEnum, setup.modernTriggerSource)
+    ) {
+        var inputLevels = scaled4000TriggerLevels(setup.modernTriggerLevels, probeValues);
+        var source = enumName(Wfm4000.Wfm4000.TriggerSourceEnum, setup.modernTriggerSource).toUpperCase();
+        var info = {
+            mode: enumName(Wfm4000.Wfm4000.TriggerModeEnum, setup.modernTriggerMode).toLowerCase(),
+            source: source,
+            inputLevels: inputLevels,
+        };
+        if (Object.prototype.hasOwnProperty.call(inputLevels, source)) {
+            info.level = inputLevels[source];
+        }
+        info.mode = info.mode.charAt(0).toUpperCase() + info.mode.slice(1);
+        return info;
+    }
+
+    if (setup.legacyTriggerLevels) {
+        return {
+            inputLevels: scaled4000TriggerLevels(setup.legacyTriggerLevels, probeValues),
+        };
+    }
+
+    return null;
 }
 
 function modelFromFrameString(frameString, fallback) {
@@ -377,6 +471,9 @@ function channelInfoText(ch, stats) {
 function buildInfoHeaderText(result, filename) {
     var s = '    General:\n';
     s += '        File Model   = ' + (result.fileModel || result.format) + '\n';
+    if (result.serialNumber) {
+        s += '        Serial Number = ' + result.serialNumber + '\n';
+    }
     s += '        User Model   = ' + (result.userModel || 'auto') + '\n';
     s += '        Parser Model = ' + (result.parserModel || 'browser') + '\n';
     s += '        Firmware     = ' + (result.firmware || 'unknown') + '\n';
@@ -709,7 +806,142 @@ async function detectAndParse(buffer, filename) {
         return parseE(buffer);
     }
 
+    // LeCroy .trc: "WAVEDESC" ASCII somewhere in the first 64 bytes
+    // (SCPI-prefixed files have a #N<digits> header before WAVEDESC)
+    var wavDesc = [0x57, 0x41, 0x56, 0x45, 0x44, 0x45, 0x53, 0x43]; // "WAVEDESC"
+    var wdOffset = -1;
+    for (var wi = 0; wi <= Math.min(56, b.length - 8); wi++) {
+        var match = true;
+        for (var wj = 0; wj < 8; wj++) {
+            if (b[wi + wj] !== wavDesc[wj]) { match = false; break; }
+        }
+        if (match) { wdOffset = wi; break; }
+    }
+    if (wdOffset >= 0) {
+        return parseLeCroy(buffer, wdOffset);
+    }
+
     throw new Error((filename || 'This file') + ' is not a supported file type.');
+}
+
+function parseLeCroy(buffer, wavedescOffset) {
+    // Slice to WAVEDESC so the parser sees offset 0 = start of WAVEDESC
+    var offset = wavedescOffset || 0;
+    var payload = buffer.slice(offset);
+    var b = new Uint8Array(payload);
+
+    // Byte 34 of WAVEDESC is the low byte of COMM_ORDER: 1 = LOFIRST (LE), 0 = HIFIRST (BE)
+    var isLe = b[34] === 1;
+
+    // Bytes 16–31 of WAVEDESC contain the null-terminated template name
+    var templateStr = '';
+    for (var ti = 0; ti < 16 && b[16 + ti]; ti++) {
+        templateStr += String.fromCharCode(b[16 + ti]);
+    }
+    var isV1 = templateStr.trim() === 'LECROY_1_0';
+
+    var w = isV1
+        ? (isLe
+            ? new Lecroy10Le.Lecroy10Le(new KaitaiStream(payload), null, null)
+            : new Lecroy10Be.Lecroy10Be(new KaitaiStream(payload), null, null))
+        : (isLe
+            ? new Lecroy23Le.Lecroy23Le(new KaitaiStream(payload), null, null)
+            : new Lecroy23Be.Lecroy23Be(new KaitaiStream(payload), null, null));
+
+    var wd = w.wavedesc;
+    var n = wd.waveArrayCount;
+    var vertGain = wd.verticalGain;
+    // LECROY_1_0 uses acqVertOffset; LECROY_2_3 uses verticalOffset
+    var vertOffset = isV1 ? wd.acqVertOffset : wd.verticalOffset;
+    var horizInterval = wd.horizInterval;
+    var horizOffset = wd.horizOffset;
+    var maxVal = wd.maxValue;
+    var minVal = wd.minValue;
+    var is16bit = wd.is16bit;
+
+    // Decode instrument name (null-terminated bytes)
+    var instBytes = wd.instrumentName;
+    var instName = '';
+    for (var i = 0; i < instBytes.length && instBytes[i]; i++) {
+        instName += String.fromCharCode(instBytes[i]);
+    }
+    instName = instName.trim() || 'LeCroy';
+
+    // WAVE_SOURCE: LECROY_1_0 is 1-indexed s2; LECROY_2_3 is 0-indexed IntEnum
+    var waveSource = typeof wd.waveSource === 'object' ? wd.waveSource.value : wd.waveSource;
+    var slot;
+    if (isV1) {
+        slot = Math.max(0, Math.min(3, waveSource - 1)); // 1-indexed → 0-based
+    } else {
+        slot = (waveSource >= 0 && waveSource <= 3) ? waveSource : 0;
+    }
+    var chName = 'CH' + (slot + 1);
+
+    // Coupling
+    var couplingVal = typeof wd.vertCoupling === 'object' ? wd.vertCoupling.value : wd.vertCoupling;
+    var couplingMap = { 0: 'DC', 1: 'GND', 2: 'DC', 3: 'GND', 4: 'AC' };
+    var coupling = couplingMap[couplingVal] || 'DC';
+
+    var probeAtt = wd.probeAtt || 1.0;
+
+    // Decode ADC samples
+    var rawBytes = w.waveArray1;
+    var adc = new Float64Array(n);
+    if (is16bit) {
+        var view = new DataView(rawBytes.buffer, rawBytes.byteOffset, rawBytes.byteLength);
+        for (var j = 0; j < n && j * 2 + 1 < rawBytes.length; j++) {
+            adc[j] = view.getInt16(j * 2, isLe);
+        }
+    } else {
+        var adcLen = Math.min(n, rawBytes.length);
+        for (var k = 0; k < adcLen; k++) {
+            // int8 from uint8
+            adc[k] = rawBytes[k] < 128 ? rawBytes[k] : rawBytes[k] - 256;
+        }
+    }
+    if (adc.length > n) {
+        adc = adc.subarray(0, n);
+    }
+
+    // Calibrate voltage and build time axis
+    var times = new Float64Array(n);
+    var volts = new Float64Array(n);
+    for (var m = 0; m < n; m++) {
+        times[m] = horizOffset + m * horizInterval;
+        volts[m] = vertGain * adc[m] - vertOffset;
+    }
+
+    // max/min_value are ADC counts; convert to volts-per-div
+    var voltPerDiv = (maxVal !== minVal) ? (maxVal - minVal) * Math.abs(vertGain) / 8.0 : 1.0;
+
+    // Build proxy raw (uint8) from calibrated volts
+    var raw = proxyRawFromCalibrated(volts);
+
+    return {
+        format: 'LeCroy TRC',
+        fileModel: instName,
+        userModel: 'LeCroy',
+        parserModel: isV1 ? 'lecroy_1_0' : 'lecroy_2_3',
+        firmware: 'unknown',
+        triggerInfo: null,
+        channels: [{
+            name: chName,
+            color: CH_COLORS[slot % CH_COLORS.length],
+            times: times,
+            volts: volts,
+            raw: raw,
+            channelNumber: slot + 1,
+            points: n,
+            coupling: coupling,
+            voltPerDiv: voltPerDiv,
+            voltOffset: vertOffset,
+            probeValue: probeAtt,
+            inverted: false,
+            timeScale: n > 0 ? n * horizInterval / 10.0 : 1e-3,
+            timeOffset: horizOffset,
+            secondsPerPoint: horizInterval,
+        }],
+    };
 }
 
 function parseB(buffer) {
@@ -976,12 +1208,25 @@ function parseZ(buffer) {
     };
 }
 
+function effective2000TimeOffset(h) {
+    var modelNumber = h.modelNumber || '';
+    var firmwareVersion = h.firmwareVersion || '';
+
+    // Older DS2A captures store a nonzero time offset even though the
+    // saved screenshot shows the trigger marker centered.
+    if (modelNumber.indexOf('DS2A') === 0 && firmwareVersion === '00.03.00.01.03') {
+        return 0;
+    }
+
+    return h.timeOffset;
+}
+
 function parse2000(buffer) {
     var w = new Wfm2000.Wfm2000(new KaitaiStream(buffer), null, null);
     var h = w.header;
     var channels = [];
     var spp = h.secondsPerPoint;
-    var adjTOff = h.timeOffset + h.zPtOffset * spp;
+    var adjTOff = effective2000TimeOffset(h) + h.zPtOffset * spp;
     var start = adjTOff - h.storageDepth * spp / 2;
     var rawArrays = [h.raw1, h.raw2, h.raw3, h.raw4];
     for (var ci = 0; ci < 4; ci++) {
@@ -1021,10 +1266,11 @@ function parse2000(buffer) {
     return {
         format: 'DS2000',
         fileModel: 'DS2000',
+        serialNumber: h.serialNumber || h.modelNumber || '',
         userModel: '2',
         parserModel: 'wfm2000',
         firmware: h.firmwareVersion || 'unknown',
-        triggerInfo: { source: ds2000SourceName(h.triggerSource) },
+        triggerInfo: decode2000Trigger(h),
         channels: channels,
     };
 }
@@ -1072,11 +1318,12 @@ function parse4000(buffer) {
     }
     return {
         format: 'DS4000',
-        fileModel: h.modelNumber || 'DS4000',
+        fileModel: 'DS4000',
+        serialNumber: h.serialNumber || h.modelNumber || '',
         userModel: '4',
         parserModel: 'wfm4000',
         firmware: h.firmwareVersion || 'unknown',
-        triggerInfo: null,
+        triggerInfo: decode4000Trigger(h),
         channels: channels,
     };
 }

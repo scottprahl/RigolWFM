@@ -47,7 +47,7 @@ _Z_WAVEFORM_CASES = [
 
 def _read_csv_channels(stem):
     """Return channel-numbered CSV traces for a checked-in Z-family fixture."""
-    path = Path("wfm") / f"{stem}.csv"
+    path = Path("tests/files/wfm") / f"{stem}.csv"
     with path.open(newline="") as handle:
         rows = list(csv.reader(handle))
 
@@ -89,8 +89,8 @@ def test_wfmconvert_z_info_matches_snapshot(stem):
 
 def test_ds1202ze_uses_header_enable_mask():
     """Two-channel DS1202Z-E files should ignore junk in unused channel slots."""
-    waveform = RigolWFM.wfm.Wfm.from_file("wfm/DS1202Z-E.wfm", "Z")
-    raw = RigolWFM.wfm1000z.Wfm1000z.from_file("wfm/DS1202Z-E.wfm")
+    waveform = RigolWFM.wfm.Wfm.from_file("tests/files/wfm/DS1202Z-E.wfm", "Z")
+    raw = RigolWFM.wfm1000z.Wfm1000z.from_file("tests/files/wfm/DS1202Z-E.wfm")
 
     assert [channel.channel_number for channel in waveform.channels] == [1]
     assert raw.header.ch3_enabled is False
@@ -102,7 +102,7 @@ def test_ds1202ze_uses_header_enable_mask():
 @pytest.mark.parametrize("stem", _Z_WAVEFORM_CASES)
 def test_ds1000z_time_grid_matches_sample_period(stem):
     """Adjacent DS1000Z timestamps should match the reported sample period."""
-    waveform = RigolWFM.wfm.Wfm.from_file(f"wfm/{stem}.wfm", "Z")
+    waveform = RigolWFM.wfm.Wfm.from_file(f"tests/files/wfm/{stem}.wfm", "Z")
     for channel in waveform.channels:
         if channel.enabled:
             assert channel.times[1] - channel.times[0] == pytest.approx(
@@ -113,7 +113,7 @@ def test_ds1000z_time_grid_matches_sample_period(stem):
 @pytest.mark.parametrize("stem", _Z_WAVEFORM_CASES)
 def test_ds1000z_parser_tracks_documented_display_fields(stem):
     """The low-level Z parser should expose the display address fields."""
-    path = Path("wfm") / f"{stem}.wfm"
+    path = Path("tests/files/wfm") / f"{stem}.wfm"
     waveform = RigolWFM.wfm1000z.Wfm1000z.from_file(str(path))
     data_pos = waveform.header.horizontal_offset + waveform.header.horizontal_size
 
@@ -127,7 +127,7 @@ def test_ds1000z_parser_tracks_documented_display_fields(stem):
 @pytest.mark.parametrize("stem", _Z_WAVEFORM_CASES)
 def test_ds1000z_horizontal_normalized_table_matches_header(stem):
     """The duplicated horizontal table should mirror header scale/shift values."""
-    path = Path("wfm") / f"{stem}.wfm"
+    path = Path("tests/files/wfm") / f"{stem}.wfm"
     waveform = RigolWFM.wfm1000z.Wfm1000z.from_file(str(path))
     normalized_a = waveform.horizontal.normalized_a
     normalized_b = waveform.horizontal.normalized_b
@@ -149,7 +149,7 @@ def test_ds1000z_horizontal_normalized_table_matches_header(stem):
 @pytest.mark.parametrize("stem, channels", _Z_SP3_CSV_CASES)
 def test_ds1000z_sp3_two_channel_levels_match_csv(stem, channels):
     """SP3 two-channel DS1000Z captures should match CSV DC levels."""
-    waveform = RigolWFM.wfm.Wfm.from_file(f"wfm/{stem}.wfm", "Z")
+    waveform = RigolWFM.wfm.Wfm.from_file(f"tests/files/wfm/{stem}.wfm", "Z")
     actual_channels = {
         channel.channel_number: channel
         for channel in waveform.channels
@@ -170,7 +170,7 @@ def test_ds1000z_sp3_two_channel_levels_match_csv(stem, channels):
 @pytest.mark.parametrize("stem, channel_number", _Z_SP4_CSV_CASES)
 def test_ds1000z_sp4_voltage_distribution_matches_csv(stem, channel_number):
     """Selected SP4 Rigol CSV fixtures should agree with the parsed voltages."""
-    waveform = RigolWFM.wfm.Wfm.from_file(f"wfm/{stem}.wfm", "Z")
+    waveform = RigolWFM.wfm.Wfm.from_file(f"tests/files/wfm/{stem}.wfm", "Z")
     actual_channels = {
         channel.channel_number: channel
         for channel in waveform.channels

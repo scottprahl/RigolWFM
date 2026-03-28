@@ -19,19 +19,19 @@ import pytest
 import RigolWFM.dho
 import RigolWFM.wfm
 
-_WFM_DIR = Path(__file__).resolve().parent.parent / "wfm"
-_DHO1074_BIN = _WFM_DIR / "DHO1074.bin"
-_DHO1074_WFM = _WFM_DIR / "DHO1074.wfm"
+_FILES_DIR = Path(__file__).resolve().parent / "files"
+_DHO1074_BIN = _FILES_DIR / "bin" / "DHO1074.bin"
+_DHO1074_WFM = _FILES_DIR / "wfm" / "DHO1074.wfm"
 
 _skip_no_bin = pytest.mark.skipif(
-    not _DHO1074_BIN.exists(), reason="DHO1074.bin not found in wfm/"
+    not _DHO1074_BIN.exists(), reason="DHO1074.bin not found in tests/files/bin/"
 )
 _skip_no_wfm = pytest.mark.skipif(
-    not _DHO1074_WFM.exists(), reason="DHO1074.wfm not found in wfm/"
+    not _DHO1074_WFM.exists(), reason="DHO1074.wfm not found in tests/files/wfm/"
 )
 _skip_no_pair = pytest.mark.skipif(
     not (_DHO1074_BIN.exists() and _DHO1074_WFM.exists()),
-    reason="DHO1074.bin/.wfm pair not found in wfm/",
+    reason="DHO1074.bin/.wfm pair not found in tests/files/",
 )
 
 

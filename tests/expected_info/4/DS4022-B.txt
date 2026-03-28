@@ -1,5 +1,6 @@
     General:
-        File Model   = DS4B141000055
+        File Model   = DS4000
+        Serial Number = DS4B141000055
         User Model   = 4
         Parser Model = wfm4000
         Firmware     = 00.02.02.01.01
@@ -17,13 +18,11 @@
          Inverted =    False
 
         Time Base =   20.000 µs/div
-           Offset =   10.000 µs
+           Offset =    0.000  s
             Delta =  250.000 ps/point
            Points =  1120000
 
          Count    = [        1,        2,        3  ...   1119999,  1120000]
            Raw    = [      139,      141,      140  ...       141,      141]
-           Times  = [-130.000 µs,-130.000 µs,-130.000 µs  ... 150.000 µs,150.000 µs]
+           Times  = [-140.000 µs,-140.000 µs,-140.000 µs  ... 140.000 µs,140.000 µs]
            Volts  = [  3.75  V,  4.38  V,  4.06  V  ...   4.38  V,  4.38  V]
-
-

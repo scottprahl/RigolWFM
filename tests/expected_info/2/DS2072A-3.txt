@@ -1,5 +1,6 @@
     General:
         File Model   = DS2000
+        Serial Number = DS2D162450999
         User Model   = 2
         Parser Model = wfm2000
         Firmware     = 00.03.05.03.03
@@ -7,8 +8,10 @@
         Channels     = [1, 2]
 
     Trigger:
-        Derived Level (CH1) = 2.24 nV
-        Derived Level (CH2) = -2.00 mV
+        Mode     = Edge
+        Source   = CH1
+        Level    = 120.00 mV
+        Derived Level     = 2.24 nV
 
      Channel 1:
          Coupling =       DC
@@ -43,5 +46,3 @@
            Raw    = [      127,      126,      128  ...       127,      127]
            Times  = [-3.500 ms,-3.500 ms,-3.500 ms  ...  3.500 ms, 3.500 ms]
            Volts  = [302.00 mV,298.00 mV,306.00 mV  ... 302.00 mV,302.00 mV]
-
-

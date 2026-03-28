@@ -17,7 +17,7 @@ _5074_CASES = [
 
 def _example_path(stem):
     """Return the path to a checked-in MSO5074 example file."""
-    return Path("wfm") / f"{stem}.bin"
+    return Path("tests/files/bin") / f"{stem}.bin"
 
 
 @pytest.mark.parametrize("stem, _n_ch, _pts", _5074_CASES)

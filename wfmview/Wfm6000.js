@@ -229,12 +229,40 @@ var Wfm6000 = (function() {
       this._read();
     }
     ChannelMask.prototype._read = function() {
-      this.unused = this._io.readBitsIntBe(4);
-      this.channel4 = this._io.readBitsIntBe(1) != 0;
-      this.channel3 = this._io.readBitsIntBe(1) != 0;
-      this.channel2 = this._io.readBitsIntBe(1) != 0;
-      this.channel1 = this._io.readBitsIntBe(1) != 0;
+      this.rawMask = this._io.readU2le();
     }
+    Object.defineProperty(ChannelMask.prototype, 'channel1', {
+      get: function() {
+        if (this._m_channel1 !== undefined)
+          return this._m_channel1;
+        this._m_channel1 = (this.rawMask & 1) != 0;
+        return this._m_channel1;
+      }
+    });
+    Object.defineProperty(ChannelMask.prototype, 'channel2', {
+      get: function() {
+        if (this._m_channel2 !== undefined)
+          return this._m_channel2;
+        this._m_channel2 = (this.rawMask & 2) != 0;
+        return this._m_channel2;
+      }
+    });
+    Object.defineProperty(ChannelMask.prototype, 'channel3', {
+      get: function() {
+        if (this._m_channel3 !== undefined)
+          return this._m_channel3;
+        this._m_channel3 = (this.rawMask & 4) != 0;
+        return this._m_channel3;
+      }
+    });
+    Object.defineProperty(ChannelMask.prototype, 'channel4', {
+      get: function() {
+        if (this._m_channel4 !== undefined)
+          return this._m_channel4;
+        this._m_channel4 = (this.rawMask & 8) != 0;
+        return this._m_channel4;
+      }
+    });
 
     return ChannelMask;
   })();
@@ -256,18 +284,26 @@ var Wfm6000 = (function() {
       this.firmwareVersion = KaitaiStream.bytesToStr(KaitaiStream.bytesTerminate(this._io.readBytes(20), 0, false), "ASCII");
       this.blockNum = this._io.readU2le();
       this.fileVersion = this._io.readU2le();
-      this.unused1 = this._io.readBytes(18);
+      this.fileCrc = this._io.readU4le();
+      this.reserved52 = this._io.readU2le();
+      this.reserved54 = this._io.readU2le();
+      this.wfmCrc = this._io.readU4le();
+      this.structureSize = this._io.readU2le();
+      this.structureVersion = this._io.readU2le();
       this.enabled = new ChannelMask(this._io, this, this._root);
+      this.reserved66 = this._io.readBytes(2);
       this.channelOffset = [];
       for (var i = 0; i < 4; i++) {
         this.channelOffset.push(this._io.readU4le());
       }
-      this.acquisitionMode = this._io.readU1();
+      this.acquisitionMode = this._io.readU2le();
       this.averageTime = this._io.readU2le();
       this.sampleMode = this._io.readU2le();
+      this.reserved90 = this._io.readBytes(2);
       this.memDepth = this._io.readU4le();
       this.sampleRateHz = this._io.readF4le();
       this.timeMode = this._io.readU2le();
+      this.reserved102 = this._io.readBytes(2);
       this.timeScalePs = this._io.readU8le();
       this.timeOffsetPs = this._io.readS8le();
       this.ch = [];
@@ -314,6 +350,7 @@ var Wfm6000 = (function() {
       this.zoomForceAnalogTrig = this._io.readU1();
       this.horizSlowForceStopFrame = this._io.readU1();
       this.getSpuDigDataStatus = this._io.readU1();
+      this.reserved307 = this._io.readBytes(1);
       this.mainMemOffset = this._io.readS8le();
       this.memViewOffset = this._io.readS8le();
       this.slowDetaWaveLength = this._io.readS8le();
@@ -327,19 +364,24 @@ var Wfm6000 = (function() {
       this.spuMemDepthRema = this._io.readU4le();
       this.memOffsetBase = this._io.readU4le();
       this.spuMemBankSize = this._io.readU4le();
-      this.s16Adc1ClockDelay = this._io.readU2le();
-      this.s16Adc2ClockDelay = this._io.readU2le();
+      this.s16Adc1ClockDelay = this._io.readS2le();
+      this.s16Adc2ClockDelay = this._io.readS2le();
       this.maxMainScrnChnlDelay = this._io.readU2le();
       this.maxZoomScrnChnlDelay = this._io.readU2le();
       this.mainDgtlTrigDataOffset = this._io.readU2le();
       this.zoomDgtlTrigDataOffset = this._io.readU2le();
       this.recordFrameIndex = this._io.readU4le();
+      this.frameCur = this._io.readU4le();
+      this.private = [];
+      for (var i = 0; i < 4; i++) {
+        this.private.push(this._io.readU4le());
+      }
     }
     Object.defineProperty(Header.prototype, 'lenRaw1', {
       get: function() {
         if (this._m_lenRaw1 !== undefined)
           return this._m_lenRaw1;
-        this._m_lenRaw1 = (this.enabled.channel1 ? this.wfmLen : 0);
+        this._m_lenRaw1 = (this.channelOffset[0] != 0 ? this.wfmLen : 0);
         return this._m_lenRaw1;
       }
     });
@@ -347,7 +389,7 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_lenRaw2 !== undefined)
           return this._m_lenRaw2;
-        this._m_lenRaw2 = (this.enabled.channel2 ? this.wfmLen : 0);
+        this._m_lenRaw2 = (this.channelOffset[1] != 0 ? this.wfmLen : 0);
         return this._m_lenRaw2;
       }
     });
@@ -355,7 +397,7 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_lenRaw3 !== undefined)
           return this._m_lenRaw3;
-        this._m_lenRaw3 = (this.enabled.channel3 ? this.wfmLen : 0);
+        this._m_lenRaw3 = (this.channelOffset[2] != 0 ? this.wfmLen : 0);
         return this._m_lenRaw3;
       }
     });
@@ -363,7 +405,7 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_lenRaw4 !== undefined)
           return this._m_lenRaw4;
-        this._m_lenRaw4 = (this.enabled.channel4 ? this.wfmLen : 0);
+        this._m_lenRaw4 = (this.channelOffset[3] != 0 ? this.wfmLen : 0);
         return this._m_lenRaw4;
       }
     });
@@ -379,9 +421,9 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_raw1 !== undefined)
           return this._m_raw1;
-        if (this.enabled.channel1) {
+        if (this.channelOffset[0] != 0) {
           var _pos = this._io.pos;
-          this._io.seek((this.wfmOffset + this.channelOffset[0]) + this.zPtOffset);
+          this._io.seek(this.channelOffset[0] + this.zPtOffset);
           this._m_raw1 = this._io.readBytes(this.lenRaw1);
           this._io.seek(_pos);
         }
@@ -392,9 +434,9 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_raw2 !== undefined)
           return this._m_raw2;
-        if (this.enabled.channel2) {
+        if (this.channelOffset[1] != 0) {
           var _pos = this._io.pos;
-          this._io.seek((this.wfmOffset + this.channelOffset[1]) + this.zPtOffset);
+          this._io.seek(this.channelOffset[1] + this.zPtOffset);
           this._m_raw2 = this._io.readBytes(this.lenRaw2);
           this._io.seek(_pos);
         }
@@ -405,9 +447,9 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_raw3 !== undefined)
           return this._m_raw3;
-        if (this.enabled.channel3) {
+        if (this.channelOffset[2] != 0) {
           var _pos = this._io.pos;
-          this._io.seek((this.wfmOffset + this.channelOffset[2]) + this.zPtOffset);
+          this._io.seek(this.channelOffset[2] + this.zPtOffset);
           this._m_raw3 = this._io.readBytes(this.lenRaw3);
           this._io.seek(_pos);
         }
@@ -418,9 +460,9 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_raw4 !== undefined)
           return this._m_raw4;
-        if (this.enabled.channel4) {
+        if (this.channelOffset[3] != 0) {
           var _pos = this._io.pos;
-          this._io.seek((this.wfmOffset + this.channelOffset[3]) + this.zPtOffset);
+          this._io.seek(this.channelOffset[3] + this.zPtOffset);
           this._m_raw4 = this._io.readBytes(this.lenRaw4);
           this._io.seek(_pos);
         }

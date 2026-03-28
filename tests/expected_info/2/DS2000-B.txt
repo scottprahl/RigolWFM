@@ -1,5 +1,6 @@
     General:
         File Model   = DS2000
+        Serial Number = DS2A152801714
         User Model   = 2
         Parser Model = wfm2000
         Firmware     = 00.03.00.01.03
@@ -7,8 +8,8 @@
         Channels     = [1, 2]
 
     Trigger:
-        Derived Level (CH1) = 200.00 mV
-        Derived Level (CH2) = -720.00 mV
+        Derived Level (CH1) = 4.80  V
+        Derived Level (CH2) = -680.00 mV
 
      Channel 1:
          Coupling =       DC
@@ -18,13 +19,13 @@
          Inverted =    False
 
         Time Base =   50.000 µs/div
-           Offset = -199.200 µs
+           Offset =    0.000  s
             Delta =    1.000 ns/point
            Points =   700000
 
          Count    = [        1,        2,        3  ...    699999,   700000]
            Raw    = [      103,      102,      103  ...       103,      103]
-           Times  = [-549.200 µs,-549.199 µs,-549.198 µs  ... 150.798 µs,150.799 µs]
+           Times  = [-350.000 µs,-349.999 µs,-349.998 µs  ... 349.998 µs,349.999 µs]
            Volts  = [200.00 mV,  0.00  V,200.00 mV  ... 200.00 mV,200.00 mV]
 
      Channel 2:
@@ -35,13 +36,11 @@
          Inverted =    False
 
         Time Base =   50.000 µs/div
-           Offset = -199.200 µs
+           Offset =    0.000  s
             Delta =    1.000 ns/point
            Points =   700000
 
          Count    = [        1,        2,        3  ...    699999,   700000]
            Raw    = [       71,       72,       71  ...        71,       72]
-           Times  = [-549.200 µs,-549.199 µs,-549.198 µs  ... 150.798 µs,150.799 µs]
+           Times  = [-350.000 µs,-349.999 µs,-349.998 µs  ... 349.998 µs,349.999 µs]
            Volts  = [760.00 mV,800.00 mV,760.00 mV  ... 760.00 mV,800.00 mV]
-
-

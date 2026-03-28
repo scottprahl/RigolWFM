@@ -118,6 +118,18 @@ var Wfm2000 = (function() {
     1: "DIFFERENTIAL",
   });
 
+  Wfm2000.SetupTriggerSourceEnum = Object.freeze({
+    CH1: 0,
+    CH2: 1,
+    EXT: 2,
+    AC_LINE: 3,
+
+    0: "CH1",
+    1: "CH2",
+    2: "EXT",
+    3: "AC_LINE",
+  });
+
   Wfm2000.TimeEnum = Object.freeze({
     YT: 0,
     XY: 1,
@@ -365,14 +377,8 @@ var Wfm2000 = (function() {
       this.storageDepth = this._io.readU4le();
       this.zPtOffset = this._io.readU4le();
       this.wfmLen = this._io.readU4le();
-      this.equCoarse = [];
-      for (var i = 0; i < 2; i++) {
-        this.equCoarse.push(this._io.readU2le());
-      }
-      this.equFine = [];
-      for (var i = 0; i < 2; i++) {
-        this.equFine.push(this._io.readU2le());
-      }
+      this.equCoarse = this._io.readU2le();
+      this.equFine = this._io.readU2le();
       this.memStartAddr = [];
       for (var i = 0; i < 2; i++) {
         this.memStartAddr.push(this._io.readU4le());
@@ -387,6 +393,7 @@ var Wfm2000 = (function() {
       this.horizSlowForceStopFrameBoolean = this._io.readU1();
       this.getSpuDigDataStatusBoolean = this._io.readU1();
       this.spuLoadDataStatusBoolean = this._io.readU1();
+      this.reserved243 = this._io.readBytes(1);
       this.trigDelayMemOffset = this._io.readS8le();
       this.trigDelayViewOffset = this._io.readS8le();
       this.memOffsetCompensate = this._io.readS8le();
@@ -405,6 +412,10 @@ var Wfm2000 = (function() {
       this.calIndex = this._io.readU1();
       this.recordFrameIndex = this._io.readU4le();
       this.frameCur = this._io.readU4le();
+      this.private = [];
+      for (var i = 0; i < 4; i++) {
+        this.private.push(this._io.readU4le());
+      }
     }
     Object.defineProperty(Header.prototype, 'lenRaw1', {
       get: function() {
@@ -514,6 +525,27 @@ var Wfm2000 = (function() {
         return this._m_secondsPerPoint;
       }
     });
+    Object.defineProperty(Header.prototype, 'serialNumber', {
+      get: function() {
+        if (this._m_serialNumber !== undefined)
+          return this._m_serialNumber;
+        this._m_serialNumber = this.modelNumber;
+        return this._m_serialNumber;
+      }
+    });
+    Object.defineProperty(Header.prototype, 'setup', {
+      get: function() {
+        if (this._m_setup !== undefined)
+          return this._m_setup;
+        var _pos = this._io.pos;
+        this._io.seek(this.setupOffset - 56);
+        this._raw__m_setup = this._io.readBytes(this.setupSize);
+        var _io__raw__m_setup = new KaitaiStream(this._raw__m_setup);
+        this._m_setup = new SetupBlock(_io__raw__m_setup, this, this._root);
+        this._io.seek(_pos);
+        return this._m_setup;
+      }
+    });
     Object.defineProperty(Header.prototype, 'timeOffset', {
       get: function() {
         if (this._m_timeOffset !== undefined)
@@ -575,7 +607,107 @@ var Wfm2000 = (function() {
      * real waveform storage depth
      */
 
+    /**
+     * padding byte present before the delay fields in shipped captures
+     */
+
     return Header;
+  })();
+
+  var SetupBlock = Wfm2000.SetupBlock = (function() {
+    function SetupBlock(_io, _parent, _root) {
+      this._io = _io;
+      this._parent = _parent;
+      this._root = _root;
+
+      this._read();
+    }
+    SetupBlock.prototype._read = function() {
+    }
+    Object.defineProperty(SetupBlock.prototype, 'triggerHoldoffNs', {
+      get: function() {
+        if (this._m_triggerHoldoffNs !== undefined)
+          return this._m_triggerHoldoffNs;
+        if (this._io.size >= 543) {
+          var _pos = this._io.pos;
+          this._io.seek(539);
+          this._m_triggerHoldoffNs = this._io.readU4le();
+          this._io.seek(_pos);
+        }
+        return this._m_triggerHoldoffNs;
+      }
+    });
+    Object.defineProperty(SetupBlock.prototype, 'triggerLevels', {
+      get: function() {
+        if (this._m_triggerLevels !== undefined)
+          return this._m_triggerLevels;
+        if (this._io.size >= 559) {
+          var _pos = this._io.pos;
+          this._io.seek(547);
+          this._m_triggerLevels = new TriggerLevelBlock(this._io, this, this._root);
+          this._io.seek(_pos);
+        }
+        return this._m_triggerLevels;
+      }
+    });
+    Object.defineProperty(SetupBlock.prototype, 'triggerModeCode', {
+      get: function() {
+        if (this._m_triggerModeCode !== undefined)
+          return this._m_triggerModeCode;
+        if (this._io.size >= 539) {
+          var _pos = this._io.pos;
+          this._io.seek(535);
+          this._m_triggerModeCode = this._io.readU4le();
+          this._io.seek(_pos);
+        }
+        return this._m_triggerModeCode;
+      }
+    });
+    Object.defineProperty(SetupBlock.prototype, 'triggerSourcePrimary', {
+      get: function() {
+        if (this._m_triggerSourcePrimary !== undefined)
+          return this._m_triggerSourcePrimary;
+        if (this._io.size >= 520) {
+          var _pos = this._io.pos;
+          this._io.seek(519);
+          this._m_triggerSourcePrimary = this._io.readU1();
+          this._io.seek(_pos);
+        }
+        return this._m_triggerSourcePrimary;
+      }
+    });
+    Object.defineProperty(SetupBlock.prototype, 'triggerSourceShadow', {
+      get: function() {
+        if (this._m_triggerSourceShadow !== undefined)
+          return this._m_triggerSourceShadow;
+        if (this._io.size >= 524) {
+          var _pos = this._io.pos;
+          this._io.seek(523);
+          this._m_triggerSourceShadow = this._io.readU1();
+          this._io.seek(_pos);
+        }
+        return this._m_triggerSourceShadow;
+      }
+    });
+
+    return SetupBlock;
+  })();
+
+  var TriggerLevelBlock = Wfm2000.TriggerLevelBlock = (function() {
+    function TriggerLevelBlock(_io, _parent, _root) {
+      this._io = _io;
+      this._parent = _parent;
+      this._root = _root;
+
+      this._read();
+    }
+    TriggerLevelBlock.prototype._read = function() {
+      this.ch1LevelUv = this._io.readS4le();
+      this.ch2LevelUv = this._io.readS4le();
+      this.extLevelUv = this._io.readS4le();
+    }
+
+    return TriggerLevelBlock;
   })();
   Object.defineProperty(Wfm2000.prototype, 'header', {
     get: function() {

@@ -154,6 +154,28 @@ var Wfm4000 = (function() {
     2: "ROLL",
   });
 
+  Wfm4000.TriggerModeEnum = Object.freeze({
+    EDGE: 3,
+    VIDEO: 4,
+
+    3: "EDGE",
+    4: "VIDEO",
+  });
+
+  Wfm4000.TriggerSourceEnum = Object.freeze({
+    CH1: 1,
+    CH2: 2,
+    CH3: 3,
+    CH4: 4,
+    EXT: 5,
+
+    1: "CH1",
+    2: "CH2",
+    3: "CH3",
+    4: "CH4",
+    5: "EXT",
+  });
+
   Wfm4000.UnitEnum = Object.freeze({
     W: 0,
     A: 1,
@@ -328,6 +350,14 @@ var Wfm4000 = (function() {
       this.unknown60 = this._io.readBytes(27);
       this.time = new TimeHeader(this._io, this, this._root);
     }
+    Object.defineProperty(Header.prototype, 'dataStart', {
+      get: function() {
+        if (this._m_dataStart !== undefined)
+          return this._m_dataStart;
+        this._m_dataStart = (this.position.channel1 != 0 ? this.position.channel1 : (this.position.channel2 != 0 ? this.position.channel2 : (this.position.channel3 != 0 ? this.position.channel3 : this.position.channel4)));
+        return this._m_dataStart;
+      }
+    });
     Object.defineProperty(Header.prototype, 'lenRaw1', {
       get: function() {
         if (this._m_lenRaw1 !== undefined)
@@ -432,11 +462,32 @@ var Wfm4000 = (function() {
         return this._m_secondsPerPoint;
       }
     });
+    Object.defineProperty(Header.prototype, 'serialNumber', {
+      get: function() {
+        if (this._m_serialNumber !== undefined)
+          return this._m_serialNumber;
+        this._m_serialNumber = this.modelNumber;
+        return this._m_serialNumber;
+      }
+    });
+    Object.defineProperty(Header.prototype, 'setup', {
+      get: function() {
+        if (this._m_setup !== undefined)
+          return this._m_setup;
+        var _pos = this._io.pos;
+        this._io.seek(597);
+        this._raw__m_setup = this._io.readBytes(this.dataStart - 597);
+        var _io__raw__m_setup = new KaitaiStream(this._raw__m_setup);
+        this._m_setup = new SetupBlock(_io__raw__m_setup, this, this._root);
+        this._io.seek(_pos);
+        return this._m_setup;
+      }
+    });
     Object.defineProperty(Header.prototype, 'timeOffset', {
       get: function() {
         if (this._m_timeOffset !== undefined)
           return this._m_timeOffset;
-        this._m_timeOffset = 1.0E-12 * this.time.offsetPerDivPs;
+        this._m_timeOffset = 1.0E-12 * this.time.actualOffsetPs;
         return this._m_timeOffset;
       }
     });
@@ -486,6 +537,72 @@ var Wfm4000 = (function() {
     return PositionType;
   })();
 
+  var SetupBlock = Wfm4000.SetupBlock = (function() {
+    function SetupBlock(_io, _parent, _root) {
+      this._io = _io;
+      this._parent = _parent;
+      this._root = _root;
+
+      this._read();
+    }
+    SetupBlock.prototype._read = function() {
+    }
+    Object.defineProperty(SetupBlock.prototype, 'legacyTriggerLevels', {
+      get: function() {
+        if (this._m_legacyTriggerLevels !== undefined)
+          return this._m_legacyTriggerLevels;
+        if (this._io.size >= 558) {
+          var _pos = this._io.pos;
+          this._io.seek(538);
+          this._m_legacyTriggerLevels = new TriggerLevelBlock(this._io, this, this._root);
+          this._io.seek(_pos);
+        }
+        return this._m_legacyTriggerLevels;
+      }
+    });
+    Object.defineProperty(SetupBlock.prototype, 'modernTriggerLevels', {
+      get: function() {
+        if (this._m_modernTriggerLevels !== undefined)
+          return this._m_modernTriggerLevels;
+        if (this._io.size >= 606) {
+          var _pos = this._io.pos;
+          this._io.seek(586);
+          this._m_modernTriggerLevels = new TriggerLevelBlock(this._io, this, this._root);
+          this._io.seek(_pos);
+        }
+        return this._m_modernTriggerLevels;
+      }
+    });
+    Object.defineProperty(SetupBlock.prototype, 'modernTriggerMode', {
+      get: function() {
+        if (this._m_modernTriggerMode !== undefined)
+          return this._m_modernTriggerMode;
+        if (this._io.size >= 611) {
+          var _pos = this._io.pos;
+          this._io.seek(610);
+          this._m_modernTriggerMode = this._io.readU1();
+          this._io.seek(_pos);
+        }
+        return this._m_modernTriggerMode;
+      }
+    });
+    Object.defineProperty(SetupBlock.prototype, 'modernTriggerSource', {
+      get: function() {
+        if (this._m_modernTriggerSource !== undefined)
+          return this._m_modernTriggerSource;
+        if (this._io.size >= 624) {
+          var _pos = this._io.pos;
+          this._io.seek(623);
+          this._m_modernTriggerSource = this._io.readU1();
+          this._io.seek(_pos);
+        }
+        return this._m_modernTriggerSource;
+      }
+    });
+
+    return SetupBlock;
+  })();
+
   var TimeHeader = Wfm4000.TimeHeader = (function() {
     function TimeHeader(_io, _parent, _root) {
       this._io = _io;
@@ -501,7 +618,8 @@ var Wfm4000 = (function() {
       this.timePerDivPs = this._io.readU4le();
       this.unknown3a = this._io.readBytes(4);
       this.offsetPerDivPs = this._io.readU8le();
-      this.unknown4 = this._io.readBytes(16);
+      this.unknown4Head = this._io.readBytes(8);
+      this.actualOffsetPs = this._io.readS8le();
       this.offsetPs = this._io.readU8le();
       this.unknown5 = this._io.readBytes(16);
       this.unknown6 = this._io.readU2le();
@@ -509,6 +627,25 @@ var Wfm4000 = (function() {
     }
 
     return TimeHeader;
+  })();
+
+  var TriggerLevelBlock = Wfm4000.TriggerLevelBlock = (function() {
+    function TriggerLevelBlock(_io, _parent, _root) {
+      this._io = _io;
+      this._parent = _parent;
+      this._root = _root;
+
+      this._read();
+    }
+    TriggerLevelBlock.prototype._read = function() {
+      this.ch1LevelUv = this._io.readS4le();
+      this.ch2LevelUv = this._io.readS4le();
+      this.ch3LevelUv = this._io.readS4le();
+      this.ch4LevelUv = this._io.readS4le();
+      this.extLevelUv = this._io.readS4le();
+    }
+
+    return TriggerLevelBlock;
   })();
   Object.defineProperty(Wfm4000.prototype, 'header', {
     get: function() {

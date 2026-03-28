@@ -75,7 +75,20 @@ def wav(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> 
         print(f"'{wav_name}' exists, use --force to overwrite")
         return
 
-    scope_data.wav(wav_name, autoscale=args.autoscale)
+    channel_digits = [int(c) for c in args.channel]
+    if len(channel_digits) > 2:
+        print(
+            f"wfmconvert error: wav supports at most 2 channels; got --channel {args.channel}.\n"
+            "Use --channel 1 for mono or --channel 12 for stereo.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    channel: int | list[int] = channel_digits[0] if len(channel_digits) == 1 else channel_digits
+    try:
+        scope_data.wav(wav_name, channel=channel, scale=args.scale)
+    except ValueError as e:
+        print(f"wfmconvert error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def png(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
@@ -178,7 +191,8 @@ def main() -> None:
             wfmconvert --output-dir /tmp csv *.wfm
             wfmconvert --channel 2 csv DS1102E.wfm
             wfmconvert --channel 124 vcsv DS1102E.wfm
-            wfmconvert --channel 34 --autoscale wav DS1102E.wfm
+            wfmconvert --channel 3 --scale scope wav DS1102E.wfm
+            wfmconvert --channel 12 wav DS1102E.wfm
             wfmconvert --model C info DS1042C-A.wfm
         """
         )
@@ -189,7 +203,7 @@ def main() -> None:
         "--model",
         type=str,
         default="auto",
-        choices=["auto", "B", "C", "D", "E", "Z", "2", "4", "5", "5074", "6", "7", "8", "DHO"],
+        choices=["auto", "B", "C", "D", "E", "Z", "2", "4", "5", "5074", "6", "7", "8", "DHO", "LeCroy"],
         help="oscilloscope model (default: auto-detect from file).  See list below.",
     )
 
@@ -215,13 +229,16 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "--autoscale",
-        action="store_true",
-        default=False,
+        "--scale",
+        choices=["auto", "scope"],
+        default="auto",
         help=textwrap.dedent(
             """\
-        autoscale each channel to full range.  Used when creating
-        .wav files so signal goes from 0-255.
+        voltage scaling for WAV output (default: auto).
+          auto:  signal min/max → ±32767.  Waveform shape is preserved;
+                 set Vpeak on the LTspice WAV source to the actual peak voltage.
+          scope: scope ±(4×V/div) range → ±32767.  Zero volts stays at zero;
+                 set Vpeak = 4×V/div in LTspice.
         """
         ),
     )

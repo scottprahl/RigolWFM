@@ -40,7 +40,7 @@ def test_wfmconvert_e_info_matches_snapshot(stem):
 @pytest.mark.parametrize("stem, expected_points", _DS1102E_POINT_CASES)
 def test_ds1102e_channel_counts_follow_memory_depth(stem, expected_points):
     """DS1102E captures should preserve the full stored analog memory depth."""
-    waveform = RigolWFM.wfm.Wfm.from_file(f"wfm/{stem}.wfm", "E")
+    waveform = RigolWFM.wfm.Wfm.from_file(f"tests/files/wfm/{stem}.wfm", "E")
     actual_points = tuple(channel.points for channel in waveform.channels if channel.enabled)
     assert actual_points == expected_points
 
@@ -48,7 +48,7 @@ def test_ds1102e_channel_counts_follow_memory_depth(stem, expected_points):
 @pytest.mark.parametrize("stem, _expected_points", _DS1102E_POINT_CASES)
 def test_ds1102e_time_grid_matches_sample_period(stem, _expected_points):
     """Adjacent timestamps should be spaced by the reported sample period."""
-    waveform = RigolWFM.wfm.Wfm.from_file(f"wfm/{stem}.wfm", "E")
+    waveform = RigolWFM.wfm.Wfm.from_file(f"tests/files/wfm/{stem}.wfm", "E")
     for channel in waveform.channels:
         if channel.enabled:
             assert channel.times[1] - channel.times[0] == pytest.approx(

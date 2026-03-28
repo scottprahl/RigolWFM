@@ -20,6 +20,7 @@ import sys
 import tempfile
 import urllib.parse
 import wave
+from typing import IO, Any, Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,6 +28,7 @@ import numpy.typing as npt
 import requests  # type: ignore[import-untyped]
 
 import RigolWFM.dho
+import RigolWFM.lecroy
 import RigolWFM.mso5000
 import RigolWFM.mso5074
 import RigolWFM.mso7000_8000
@@ -142,11 +144,19 @@ DHO1000_scopes: list[str] = [
     "DHO1072", "DHO1074", "DHO1102", "DHO1202", "DHO1204",
 ]
 
+# Teledyne LeCroy .trc files (LECROY_2_3 format)
+LeCroy_scopes: list[str] = ["LeCroy", "LECROY", "lecroy", "trc"]
+
+_LECROY_MAGIC = b"WAVEDESC"
+
 _SWEEP_NAMES: dict[int, str] = {0: "AUTO", 1: "NORMAL", 2: "SINGLE"}
 _COUPLING_NAMES: dict[int, str] = {0: "DC", 1: "LF", 2: "HF", 3: "AC"}
 _DS2000_SOURCE_NAMES: dict[int, str] = {
     0: "CH1", 1: "CH2", 2: "EXT", 3: "AC LINE",
     **{4 + i: "D%d" % i for i in range(16)},
+}
+_DS2000_TRIGGER_MODE_NAMES: dict[int, str] = {
+    30: "Edge",
 }
 
 
@@ -248,6 +258,10 @@ def detect_model(filename: str) -> str:
             pass
         return "E"  # most common default for this magic
 
+    # LeCroy .trc: "WAVEDESC" marker at byte 0, or after a short SCPI prefix
+    if _LECROY_MAGIC in hdr[:64]:
+        return "LeCroy"
+
     raise Parse_WFM_Error(f"Unrecognised file signature {magic4.hex()} in {filename}")
 
 
@@ -266,7 +280,8 @@ def valid_scope_list() -> str:
     s += ", ".join(DS7000_scopes) + "\n    "
     s += ", ".join(DS8000_scopes) + "\n    "
     s += ", ".join(DS6000_scopes) + "\n    "
-    s += ", ".join(DHO1000_scopes) + "\n"
+    s += ", ".join(DHO1000_scopes) + "\n    "
+    s += ", ".join(LeCroy_scopes) + "\n"
     return s
 
 
@@ -331,6 +346,98 @@ def _describe_trigger_block(d: dict, indent: str = "        ") -> str:
     return s
 
 
+def _scaled_ds4000_trigger_levels(level_block: Any, probe_values: list[float]) -> dict[str, float]:
+    """Scale a parsed DS4000 trigger-level block into volts."""
+    raw_levels = [
+        ("CH1", level_block.ch1_level_uv, probe_values[0]),
+        ("CH2", level_block.ch2_level_uv, probe_values[1]),
+        ("CH3", level_block.ch3_level_uv, probe_values[2]),
+        ("CH4", level_block.ch4_level_uv, probe_values[3]),
+        ("EXT", level_block.ext_level_uv, 1.0),
+    ]
+    return {name: raw_uv * 1.0e-6 * scale for name, raw_uv, scale in raw_levels}
+
+
+def _decode_ds4000_trigger(waveform: Any) -> dict:
+    """Best-effort decode of DS4000 trigger metadata from parsed setup fields."""
+    setup = getattr(waveform.header, "setup", None)
+    if setup is None:
+        return {}
+
+    probe_values = [float(channel.probe_value) for channel in waveform.header.ch]
+
+    modern_levels = getattr(setup, "modern_trigger_levels", None)
+    modern_mode = getattr(setup, "modern_trigger_mode", None)
+    modern_source = getattr(setup, "modern_trigger_source", None)
+    if (
+        modern_levels is not None
+        and hasattr(modern_mode, "name")
+        and hasattr(modern_source, "name")
+    ):
+        input_levels = _scaled_ds4000_trigger_levels(modern_levels, probe_values)
+        source = modern_source.name.upper()
+        info: dict[str, Any] = {
+            "mode": modern_mode.name.capitalize(),
+            "source": source,
+            "input_levels": input_levels,
+        }
+        if source in input_levels:
+            info["level"] = input_levels[source]
+        return info
+
+    legacy_levels = getattr(setup, "legacy_trigger_levels", None)
+    if legacy_levels is not None:
+        return {"input_levels": _scaled_ds4000_trigger_levels(legacy_levels, probe_values)}
+
+    return {}
+
+
+def _decode_ds2000_trigger(waveform: Any) -> dict:
+    """Best-effort decode of DS2000 trigger metadata from parsed setup fields."""
+    setup = getattr(waveform.header, "setup", None)
+    if setup is None:
+        return {}
+
+    source_primary = getattr(setup, "trigger_source_primary", None)
+    source_shadow = getattr(setup, "trigger_source_shadow", None)
+    holdoff_ns = int(getattr(setup, "trigger_holdoff_ns", 0) or 0)
+    level_block = getattr(setup, "trigger_levels", None)
+    if level_block is None:
+        return {}
+
+    input_levels = {
+        "CH1": level_block.ch1_level_uv * 1.0e-6,
+        "CH2": level_block.ch2_level_uv * 1.0e-6,
+        "EXT": level_block.ext_level_uv * 1.0e-6,
+    }
+    has_meaningful_setup = holdoff_ns != 0 or any(level != 0.0 for level in input_levels.values())
+    if not has_meaningful_setup:
+        return {}
+
+    info: dict[str, Any] = {"input_levels": input_levels}
+
+    try:
+        source_code = int(source_primary)
+        if source_shadow is not None and source_code == int(source_shadow):
+            source_name = _DS2000_SOURCE_NAMES.get(source_code)
+            if source_name is not None:
+                info["source"] = source_name
+                if source_name in input_levels:
+                    info["level"] = input_levels[source_name]
+    except (TypeError, ValueError):
+        pass
+
+    mode_code = getattr(setup, "trigger_mode_code", None)
+    try:
+        mode_name = _DS2000_TRIGGER_MODE_NAMES.get(int(mode_code))
+        if mode_name is not None:
+            info["mode"] = mode_name
+    except (TypeError, ValueError):
+        pass
+
+    return info
+
+
 class Read_WFM_Error(Exception):
     """Generic Read Error."""
 
@@ -366,6 +473,7 @@ class Wfm:
     user_name: str
     parser_name: str
     header_name: str
+    serial_number: str
 
     def __init__(self, file_name: str) -> None:
         """Initialize a Wfm object from a file."""
@@ -382,6 +490,7 @@ class Wfm:
         self.user_name = "unknown"
         self.parser_name = "unknown"
         self.header_name = "unknown"
+        self.serial_number = ""
         self.trigger_info: dict = {}
 
     @classmethod
@@ -466,14 +575,14 @@ class Wfm:
         elif umodel in DS2000_scopes:
             w = RigolWFM.wfm2000.Wfm2000.from_file(file_name)  # type: ignore[attr-defined]
             new_wfm.header_name = "DS2000"
-            _ds2000_src = w.header.trigger_source
-            _ds2000_src_name = _DS2000_SOURCE_NAMES.get(_ds2000_src)
-            if _ds2000_src_name is not None:
-                new_wfm.trigger_info = {"source": _ds2000_src_name}
+            new_wfm.serial_number = getattr(w.header, "serial_number", w.header.model_number)
+            new_wfm.trigger_info = _decode_ds2000_trigger(w)
 
         elif umodel in DS4000_scopes:
             w = RigolWFM.wfm4000.Wfm4000.from_file(file_name)  # type: ignore[attr-defined]
-            new_wfm.header_name = w.header.model_number
+            new_wfm.header_name = "DS4000"
+            new_wfm.serial_number = getattr(w.header, "serial_number", w.header.model_number)
+            new_wfm.trigger_info = _decode_ds4000_trigger(w)
 
         elif umodel in DS5000_scopes:
             w = RigolWFM.mso5000.from_file(file_name)
@@ -506,6 +615,10 @@ class Wfm:
                 is_bin=RigolWFM.dho.is_bin_file(file_name),
                 fallback=fallback,
             )
+
+        elif umodel in LeCroy_scopes:
+            w = RigolWFM.lecroy.from_file(file_name)
+            new_wfm.header_name = w.header.model_number or "LeCroy"
 
         else:
             raise Unknown_Scope_Error(f"Unknown Rigol oscilloscope type: '{umodel}'\n{valid_scope_list()}")
@@ -558,7 +671,7 @@ class Wfm:
         return new_wfm
 
     @classmethod
-    def from_url(cls, url: str, model: str, selected: str = "1234") -> Wfm:
+    def from_url(cls, url: str, model: str = "auto", selected: str = "1234") -> Wfm:
         """
         Return a waveform object given a URL.
 
@@ -569,7 +682,7 @@ class Wfm:
 
         Args:
             url: location of the file
-            model: Rigol Oscilloscope used, e.g., 'E' or 'Z'
+            model: Rigol Oscilloscope used, e.g., 'E' or 'Z'; defaults to auto-detect
             selected: string of channels to process e.g., '12'
         Returns:
             a wfm object for the file
@@ -612,6 +725,8 @@ class Wfm:
         """Return a string describing the contents of a Rigol wfm file."""
         s = "    General:\n"
         s += "        File Model   = %s\n" % self.header_name
+        if self.serial_number:
+            s += "        Serial Number = %s\n" % self.serial_number
         s += "        User Model   = %s\n" % self.user_name
         s += "        Parser Model = %s\n" % self.parser_name
         s += "        Firmware     = %s\n" % self.firmware
@@ -776,42 +891,86 @@ class Wfm:
             s += "\n"
         return s
 
-    def wav(self, wav_filename: str, autoscale: bool = False) -> None:
-        """Save data as a WAV file for use with LTspice or Sigrok."""
-        data_channels = [ch for ch in self.channels if ch.enabled_and_selected]
-        if not data_channels:
-            return
-        n_channels = len(data_channels)
-        channel_length = min(ch.points for ch in data_channels)
-        total_len = channel_length * n_channels
+    def wav(
+        self,
+        filename: str | os.PathLike[str] | IO[bytes],
+        *,
+        channel: int | list[int] = 1,
+        scale: Literal["auto", "scope"] = "auto",
+    ) -> None:
+        """Save one or two channels as a signed 16-bit WAV file.
 
-        out: npt.NDArray[np.uint8] = np.empty((total_len,), dtype=np.uint8, order="C")
+        Args:
+            filename: Destination path (str or PathLike) or a writable binary file-like object.
+            channel: Channel number(s) to export.  Pass a single int for mono output,
+                or a list of two ints for stereo output.  Each channel must be enabled
+                and selected.  In LTspice, the first channel is addressed as ``chan=0``
+                and the second as ``chan=1``.
+            scale: How to map voltages to the ±32767 integer range.
+                ``"auto"``  — each channel's own min/max volts are mapped to ±32767.
+                    Preserves waveform shape; absolute voltage information is lost.
+                    In LTspice, set Vpeak on the WAV source to the actual peak voltage.
+                ``"scope"`` — each channel's ±(4 × V/div) full-scale range is mapped
+                    to ±32767.  Zero volts remains at zero.
+                    In LTspice, set Vpeak = 4 × V/div.
 
-        # channels are interleaved e.g., 123123123
-        for i, ch in enumerate(data_channels):
-            assert ch.raw is not None
-            raw = ch.raw[:channel_length]
-            if autoscale:
-                amin = np.min(raw)
-                amax = max(np.max(raw), amin + 1)  # avoid division by zero
-                scale = 250 / (amax - amin) * 0.95
-                out[i::n_channels] = np.int8((raw - amin) * scale)
-            else:
-                out[i::n_channels] = raw
+        Raises:
+            ValueError: If more than two channels are requested, or if any requested
+                channel is not found, not enabled, or not selected.
+        """
+        channel_list = [channel] if isinstance(channel, int) else list(channel)
+        if len(channel_list) > 2:
+            raise ValueError(f"WAV files support at most 2 channels; {len(channel_list)} requested.")
 
-        # The WAV format stores framerate and (n_channels * framerate * sampwidth)
-        # as 32-bit unsigned integers.  With sampwidth=1, cap so both fields fit.
+        channels = []
+        for num in channel_list:
+            ch = next(
+                (c for c in self.channels if c.channel_number == num and c.enabled_and_selected),
+                None,
+            )
+            if ch is None:
+                raise ValueError(
+                    f"Channel {num} is not available or not enabled/selected in this waveform."
+                )
+            channels.append(ch)
+
+        def _scale_channel(ch: Any) -> npt.NDArray[np.int16]:
+            assert ch.volts is not None
+            v = ch.volts.astype(np.float64)
+            if scale == "auto":
+                v_min = float(np.min(v))
+                v_max = float(np.max(v))
+                v_range = v_max - v_min if v_max != v_min else 1.0
+                return ((v - v_min) / v_range * 65534 - 32767).astype(np.int16)
+            else:  # "scope"
+                full_scale = 4.0 * ch.volt_per_division if ch.volt_per_division != 0 else 1.0
+                return np.clip(v / full_scale * 32767, -32767, 32767).astype(np.int16)
+
+        scaled = [_scale_channel(ch) for ch in channels]
+        n_channels = len(scaled)
+        n_pts = min(len(s) for s in scaled)
+
+        if n_channels == 1:
+            frames = scaled[0][:n_pts]
+        else:
+            # Interleave: L R L R ...
+            frames = np.empty(n_pts * 2, dtype=np.int16)
+            frames[0::2] = scaled[0][:n_pts]
+            frames[1::2] = scaled[1][:n_pts]
+
+        # The WAV header stores framerate and byte_rate (framerate × n_channels × sampwidth)
+        # as u32 fields.  Cap so both always fit.
         _MAX_WAV_U32 = 2**32 - 1
-        sample_rate = min(1.0 / data_channels[0].seconds_per_point,
-                          _MAX_WAV_U32 // max(n_channels, 1))
+        sample_rate = int(min(round(1.0 / channels[0].seconds_per_point),
+                              _MAX_WAV_U32 // (n_channels * 2)))
 
-        wavef = wave.Wave_write(wav_filename)
+        wavef = wave.Wave_write(filename)  # type: ignore[arg-type]
         try:
-            wavef.setnchannels(n_channels)  # 1 = mono, 2 = stereo
-            wavef.setsampwidth(1)
+            wavef.setnchannels(n_channels)
+            wavef.setsampwidth(2)
             wavef.setframerate(sample_rate)
             wavef.setcomptype("NONE", "")
-            wavef.setnframes(channel_length)
-            wavef.writeframes(out.tobytes())
+            wavef.setnframes(n_pts)
+            wavef.writeframes(frames.tobytes())
         finally:
             wavef.close()

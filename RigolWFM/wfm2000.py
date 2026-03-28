@@ -65,6 +65,12 @@ class Wfm2000(KaitaiStruct):
         normal_type = 0
         differential = 1
 
+    class SetupTriggerSourceEnum(IntEnum):
+        ch1 = 0
+        ch2 = 1
+        ext = 2
+        ac_line = 3
+
     class TimeEnum(IntEnum):
         yt = 0
         xy = 1
@@ -292,14 +298,8 @@ class Wfm2000(KaitaiStruct):
             self.storage_depth = self._io.read_u4le()
             self.z_pt_offset = self._io.read_u4le()
             self.wfm_len = self._io.read_u4le()
-            self.equ_coarse = []
-            for i in range(2):
-                self.equ_coarse.append(self._io.read_u2le())
-
-            self.equ_fine = []
-            for i in range(2):
-                self.equ_fine.append(self._io.read_u2le())
-
+            self.equ_coarse = self._io.read_u2le()
+            self.equ_fine = self._io.read_u2le()
             self.mem_start_addr = []
             for i in range(2):
                 self.mem_start_addr.append(self._io.read_u4le())
@@ -314,6 +314,7 @@ class Wfm2000(KaitaiStruct):
             self.horiz_slow_force_stop_frame_boolean = self._io.read_u1()
             self.get_spu_dig_data_status_boolean = self._io.read_u1()
             self.spu_load_data_status_boolean = self._io.read_u1()
+            self.reserved_243 = self._io.read_bytes(1)
             self.trig_delay_mem_offset = self._io.read_s8le()
             self.trig_delay_view_offset = self._io.read_s8le()
             self.mem_offset_compensate = self._io.read_s8le()
@@ -332,6 +333,10 @@ class Wfm2000(KaitaiStruct):
             self.cal_index = self._io.read_u1()
             self.record_frame_index = self._io.read_u4le()
             self.frame_cur = self._io.read_u4le()
+            self.private = []
+            for i in range(4):
+                self.private.append(self._io.read_u4le())
+
 
 
         def _fetch_instances(self):
@@ -344,13 +349,10 @@ class Wfm2000(KaitaiStruct):
                 pass
                 self.ch[i]._fetch_instances()
 
-            for i in range(len(self.equ_coarse)):
-                pass
-
-            for i in range(len(self.equ_fine)):
-                pass
-
             for i in range(len(self.mem_start_addr)):
+                pass
+
+            for i in range(len(self.private)):
                 pass
 
             _ = self.raw_1
@@ -368,6 +370,11 @@ class Wfm2000(KaitaiStruct):
             _ = self.raw_4
             if hasattr(self, '_m_raw_4'):
                 pass
+
+            _ = self.setup
+            if hasattr(self, '_m_setup'):
+                pass
+                self._m_setup._fetch_instances()
 
 
         @property
@@ -483,6 +490,27 @@ class Wfm2000(KaitaiStruct):
             return getattr(self, '_m_seconds_per_point', None)
 
         @property
+        def serial_number(self):
+            if hasattr(self, '_m_serial_number'):
+                return self._m_serial_number
+
+            self._m_serial_number = self.model_number
+            return getattr(self, '_m_serial_number', None)
+
+        @property
+        def setup(self):
+            if hasattr(self, '_m_setup'):
+                return self._m_setup
+
+            _pos = self._io.pos()
+            self._io.seek(self.setup_offset - 56)
+            self._raw__m_setup = self._io.read_bytes(self.setup_size)
+            _io__raw__m_setup = KaitaiStream(BytesIO(self._raw__m_setup))
+            self._m_setup = Wfm2000.SetupBlock(_io__raw__m_setup, self, self._root)
+            self._io.seek(_pos)
+            return getattr(self, '_m_setup', None)
+
+        @property
         def time_offset(self):
             if hasattr(self, '_m_time_offset'):
                 return self._m_time_offset
@@ -497,6 +525,129 @@ class Wfm2000(KaitaiStruct):
 
             self._m_time_scale = 1.0E-12 * self.time_scale_ps
             return getattr(self, '_m_time_scale', None)
+
+
+    class SetupBlock(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            super(Wfm2000.SetupBlock, self).__init__(_io)
+            self._parent = _parent
+            self._root = _root
+            self._read()
+
+        def _read(self):
+            pass
+
+
+        def _fetch_instances(self):
+            pass
+            _ = self.trigger_holdoff_ns
+            if hasattr(self, '_m_trigger_holdoff_ns'):
+                pass
+
+            _ = self.trigger_levels
+            if hasattr(self, '_m_trigger_levels'):
+                pass
+                self._m_trigger_levels._fetch_instances()
+
+            _ = self.trigger_mode_code
+            if hasattr(self, '_m_trigger_mode_code'):
+                pass
+
+            _ = self.trigger_source_primary
+            if hasattr(self, '_m_trigger_source_primary'):
+                pass
+
+            _ = self.trigger_source_shadow
+            if hasattr(self, '_m_trigger_source_shadow'):
+                pass
+
+
+        @property
+        def trigger_holdoff_ns(self):
+            if hasattr(self, '_m_trigger_holdoff_ns'):
+                return self._m_trigger_holdoff_ns
+
+            if self._io.size() >= 543:
+                pass
+                _pos = self._io.pos()
+                self._io.seek(539)
+                self._m_trigger_holdoff_ns = self._io.read_u4le()
+                self._io.seek(_pos)
+
+            return getattr(self, '_m_trigger_holdoff_ns', None)
+
+        @property
+        def trigger_levels(self):
+            if hasattr(self, '_m_trigger_levels'):
+                return self._m_trigger_levels
+
+            if self._io.size() >= 559:
+                pass
+                _pos = self._io.pos()
+                self._io.seek(547)
+                self._m_trigger_levels = Wfm2000.TriggerLevelBlock(self._io, self, self._root)
+                self._io.seek(_pos)
+
+            return getattr(self, '_m_trigger_levels', None)
+
+        @property
+        def trigger_mode_code(self):
+            if hasattr(self, '_m_trigger_mode_code'):
+                return self._m_trigger_mode_code
+
+            if self._io.size() >= 539:
+                pass
+                _pos = self._io.pos()
+                self._io.seek(535)
+                self._m_trigger_mode_code = self._io.read_u4le()
+                self._io.seek(_pos)
+
+            return getattr(self, '_m_trigger_mode_code', None)
+
+        @property
+        def trigger_source_primary(self):
+            if hasattr(self, '_m_trigger_source_primary'):
+                return self._m_trigger_source_primary
+
+            if self._io.size() >= 520:
+                pass
+                _pos = self._io.pos()
+                self._io.seek(519)
+                self._m_trigger_source_primary = KaitaiStream.resolve_enum(Wfm2000.SetupTriggerSourceEnum, self._io.read_u1())
+                self._io.seek(_pos)
+
+            return getattr(self, '_m_trigger_source_primary', None)
+
+        @property
+        def trigger_source_shadow(self):
+            if hasattr(self, '_m_trigger_source_shadow'):
+                return self._m_trigger_source_shadow
+
+            if self._io.size() >= 524:
+                pass
+                _pos = self._io.pos()
+                self._io.seek(523)
+                self._m_trigger_source_shadow = KaitaiStream.resolve_enum(Wfm2000.SetupTriggerSourceEnum, self._io.read_u1())
+                self._io.seek(_pos)
+
+            return getattr(self, '_m_trigger_source_shadow', None)
+
+
+    class TriggerLevelBlock(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            super(Wfm2000.TriggerLevelBlock, self).__init__(_io)
+            self._parent = _parent
+            self._root = _root
+            self._read()
+
+        def _read(self):
+            self.ch1_level_uv = self._io.read_s4le()
+            self.ch2_level_uv = self._io.read_s4le()
+            self.ext_level_uv = self._io.read_s4le()
+
+
+        def _fetch_instances(self):
+            pass
 
 
     @property

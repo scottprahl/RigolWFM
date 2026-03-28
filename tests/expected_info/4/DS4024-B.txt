@@ -1,5 +1,6 @@
     General:
-        File Model   = DS4A200500078
+        File Model   = DS4000
+        Serial Number = DS4A200500078
         User Model   = 4
         Parser Model = wfm4000
         Firmware     = 00.02.03.02.00
@@ -7,8 +8,10 @@
         Channels     = [1, 2]
 
     Trigger:
-        Derived Level (CH1) = -112.50 mV
-        Derived Level (CH2) = 50.00 µV
+        Mode     = Video
+        Source   = CH1
+        Level    = 5.98  V
+        Derived Level     = 1.45  V
 
      Channel 1:
          Coupling =       AC
@@ -18,13 +21,13 @@
          Inverted =    False
 
         Time Base =    1.000 ms/div
-           Offset =  500.000 µs
+           Offset = -268.000 µs
             Delta =   20.000 ns/point
            Points =   700000
 
          Count    = [        1,        2,        3  ...    699999,   700000]
            Raw    = [      174,      173,      174  ...       173,      173]
-           Times  = [-6.500 ms,-6.500 ms,-6.500 ms  ...  7.500 ms, 7.500 ms]
+           Times  = [-7.268 ms,-7.268 ms,-7.268 ms  ...  6.732 ms, 6.732 ms]
            Volts  = [-112.50 mV,-425.00 mV,-112.50 mV  ... -425.00 mV,-425.00 mV]
 
      Channel 2:
@@ -35,13 +38,11 @@
          Inverted =    False
 
         Time Base =    1.000 ms/div
-           Offset =  500.000 µs
+           Offset = -268.000 µs
             Delta =   20.000 ns/point
            Points =   700000
 
          Count    = [        1,        2,        3  ...    699999,   700000]
            Raw    = [      100,       99,      100  ...       101,      100]
-           Times  = [-6.500 ms,-6.500 ms,-6.500 ms  ...  7.500 ms, 7.500 ms]
+           Times  = [-7.268 ms,-7.268 ms,-7.268 ms  ...  6.732 ms, 6.732 ms]
            Volts  = [362.50 µV, 50.00 µV,362.50 µV  ... 675.00 µV,362.50 µV]
-
-

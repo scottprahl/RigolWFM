@@ -1,5 +1,6 @@
     General:
-        File Model   = DS4A143500731
+        File Model   = DS4000
+        Serial Number = DS4A143500731
         User Model   = 4
         Parser Model = wfm4000
         Firmware     = 00.02.03.00.03
@@ -7,10 +8,10 @@
         Channels     = [1, 2, 3, 4]
 
     Trigger:
-        Derived Level (CH1) = 168.75  V
+        Derived Level (CH1) = 165.62  V
         Derived Level (CH2) = 6.25  V
-        Derived Level (CH3) = -168.75  V
-        Derived Level (CH4) = -0.00  V
+        Derived Level (CH3) = -167.19  V
+        Derived Level (CH4) = 6.25  V
 
      Channel 1:
          Coupling =       DC
@@ -20,13 +21,13 @@
          Inverted =    False
 
         Time Base =    1.000 µs/div
-           Offset =  500.000 ns
+           Offset =    0.000  s
             Delta =    2.000 ns/point
            Points =     7000
 
          Count    = [        1,        2,        3  ...      6999,     7000]
            Raw    = [      215,      222,      227  ...        20,       20]
-           Times  = [-6.500 µs,-6.498 µs,-6.496 µs  ...  7.496 µs, 7.498 µs]
+           Times  = [-7.000 µs,-6.998 µs,-6.996 µs  ...  6.996 µs, 6.998 µs]
            Volts  = [137.50  V,148.44  V,156.25  V  ... -167.19  V,-167.19  V]
 
      Channel 2:
@@ -37,13 +38,13 @@
          Inverted =    False
 
         Time Base =    1.000 µs/div
-           Offset =  500.000 ns
+           Offset =    0.000  s
             Delta =    2.000 ns/point
            Points =     7000
 
          Count    = [        1,        2,        3  ...      6999,     7000]
            Raw    = [      127,      127,      127  ...       127,      127]
-           Times  = [-6.500 µs,-6.498 µs,-6.496 µs  ...  7.496 µs, 7.498 µs]
+           Times  = [-7.000 µs,-6.998 µs,-6.996 µs  ...  6.996 µs, 6.998 µs]
            Volts  = [ -0.00  V, -0.00  V, -0.00  V  ...  -0.00  V, -0.00  V]
 
      Channel 3:
@@ -54,13 +55,13 @@
          Inverted =    False
 
         Time Base =    1.000 µs/div
-           Offset =  500.000 ns
+           Offset =    0.000  s
             Delta =    2.000 ns/point
            Points =     7000
 
          Count    = [        1,        2,        3  ...      6999,     7000]
            Raw    = [       65,       57,       49  ...       236,      236]
-           Times  = [-6.500 µs,-6.498 µs,-6.496 µs  ...  7.496 µs, 7.498 µs]
+           Times  = [-7.000 µs,-6.998 µs,-6.996 µs  ...  6.996 µs, 6.998 µs]
            Volts  = [-96.88  V,-109.38  V,-121.88  V  ... 170.31  V,170.31  V]
 
      Channel 4:
@@ -71,13 +72,11 @@
          Inverted =    False
 
         Time Base =    1.000 µs/div
-           Offset =  500.000 ns
+           Offset =    0.000  s
             Delta =    2.000 ns/point
            Points =     7000
 
          Count    = [        1,        2,        3  ...      6999,     7000]
            Raw    = [      127,      127,      127  ...       128,      127]
-           Times  = [-6.500 µs,-6.498 µs,-6.496 µs  ...  7.496 µs, 7.498 µs]
+           Times  = [-7.000 µs,-6.998 µs,-6.996 µs  ...  6.996 µs, 6.998 µs]
            Volts  = [ -0.00  V, -0.00  V, -0.00  V  ...   6.25  V, -0.00  V]
-
-

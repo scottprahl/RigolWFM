@@ -98,6 +98,20 @@ def _channel_bytes(channel_number: int, w: Any) -> npt.NDArray[np.uint8]:
     return raw_bytes
 
 
+def _ds2000_effective_time_offset(w: Any) -> float:
+    """Return the trigger-referenced time offset for DS2000 captures."""
+    model_number = getattr(w.header, "model_number", "") or ""
+    firmware_version = getattr(w.header, "firmware_version", "") or ""
+
+    # The older DS2A captures checked into this repo store a nonzero
+    # time_offset even though the saved screenshot shows the trigger
+    # marker centered. Newer DS2072A captures use time_offset normally.
+    if model_number.startswith("DS2A") and firmware_version == "00.03.00.01.03":
+        return 0.0
+
+    return w.header.time_offset
+
+
 class Channel:
     """Base class for a single channel."""
 
@@ -191,6 +205,20 @@ class Channel:
             self.enabled = enabled_flags[channel_number - 1]
             self.enabled_and_selected = self.enabled and chosen
 
+        if scope == "wfm6000":
+            # DS6000 files carry a dedicated channel marker in WfmInfoStru and
+            # document a zero waveform offset as "no saved data".  Use that
+            # pair instead of the per-channel vertical settings when deciding
+            # whether a trace is actually present in the file.
+            enabled_flags = (
+                bool(getattr(w.header.enabled, "channel_1", False)) and w.header.channel_offset[0] != 0,
+                bool(getattr(w.header.enabled, "channel_2", False)) and w.header.channel_offset[1] != 0,
+                bool(getattr(w.header.enabled, "channel_3", False)) and w.header.channel_offset[2] != 0,
+                bool(getattr(w.header.enabled, "channel_4", False)) and w.header.channel_offset[3] != 0,
+            )
+            self.enabled = enabled_flags[channel_number - 1]
+            self.enabled_and_selected = self.enabled and chosen
+
         if scope == "wfm1000b":
             self.y_offset += 1.12 * channel.volt_per_division
             self.ds1000b(w, channel_number)
@@ -214,6 +242,8 @@ class Channel:
             self.bin7000_8000(w, channel_number)
         elif scope == "dho1000":
             self.dho1000(w, channel_number)
+        elif scope == "lecroy_trc":
+            self.lecroy(w, channel_number)
 
     def __str__(self) -> str:
         """Describe this channel."""
@@ -411,7 +441,7 @@ class Channel:
     def ds2000(self, w: Any, channel_number: int) -> None:
         """Interpret waveform for the Rigol DS2000 series."""
         self.time_offset = (
-            w.header.time_offset
+            _ds2000_effective_time_offset(w)
             + w.header.z_pt_offset * w.header.seconds_per_point
         )
         self.time_scale = w.header.time_scale
@@ -574,6 +604,28 @@ class Channel:
                     (self.volts * 1000 + 32768).astype(np.int32), 0, 65535
                 ).astype(np.uint16)
             self.raw = (raw16 >> 8).astype(np.uint8)
+            self.points = len(self.volts)
+            t0 = w.header.x_origin
+            self.times = t0 + np.arange(self.points) * w.header.x_increment
+
+    def lecroy(self, w: Any, channel_number: int) -> None:
+        """Interpret normalized waveform data for a LeCroy .trc file."""
+        self.time_scale = w.header.time_scale
+        self.time_offset = 0.0
+        self.points = w.header.points
+        self.firmware = w.header.firmware_version
+
+        idx = channel_number - 1
+        ch_data = w.header.channel_data[idx] if idx < len(w.header.channel_data) else None
+        if ch_data is not None and self.enabled_and_selected:
+            self.volts = ch_data.astype(np.float64)
+
+            raw_data = getattr(w.header, "raw_data", None)
+            raw8 = raw_data[idx] if isinstance(raw_data, list) and idx < len(raw_data) else None
+            if raw8 is None:
+                raw8 = np.full(self.volts.shape, 127, dtype=np.uint8)
+
+            self.raw = raw8
             self.points = len(self.volts)
             t0 = w.header.x_origin
             self.times = t0 + np.arange(self.points) * w.header.x_increment

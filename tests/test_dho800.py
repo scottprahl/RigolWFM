@@ -25,21 +25,21 @@ import pytest
 import RigolWFM.dho
 import RigolWFM.wfm
 
-_WFM_DIR = Path(__file__).resolve().parent.parent / "wfm"
+_FILES_DIR = Path(__file__).resolve().parent / "files"
 
-_CH1_BIN    = _WFM_DIR / "DHO824-ch1.bin"
-_CH1_WFM    = _WFM_DIR / "DHO824-ch1.wfm"
-_CH12_BIN   = _WFM_DIR / "DHO824-ch12.bin"
-_CH12_WFM   = _WFM_DIR / "DHO824-ch12.wfm"
-_CH1234_BIN = _WFM_DIR / "DHO824-ch1234.bin"
-_CH1234_WFM = _WFM_DIR / "DHO824-ch1234.wfm"
+_CH1_BIN    = _FILES_DIR / "bin" / "DHO824-ch1.bin"
+_CH1_WFM    = _FILES_DIR / "wfm" / "DHO824-ch1.wfm"
+_CH12_BIN   = _FILES_DIR / "bin" / "DHO824-ch12.bin"
+_CH12_WFM   = _FILES_DIR / "wfm" / "DHO824-ch12.wfm"
+_CH1234_BIN = _FILES_DIR / "bin" / "DHO824-ch1234.bin"
+_CH1234_WFM = _FILES_DIR / "wfm" / "DHO824-ch1234.wfm"
 
 _skip_no_ch1    = pytest.mark.skipif(not (_CH1_BIN.exists() and _CH1_WFM.exists()),
-                                     reason="DHO824-ch1 files not found in wfm/")
+                                     reason="DHO824-ch1 files not found in tests/files/")
 _skip_no_ch12   = pytest.mark.skipif(not (_CH12_BIN.exists() and _CH12_WFM.exists()),
-                                     reason="DHO824-ch12 files not found in wfm/")
+                                     reason="DHO824-ch12 files not found in tests/files/")
 _skip_no_ch1234 = pytest.mark.skipif(not (_CH1234_BIN.exists() and _CH1234_WFM.exists()),
-                                     reason="DHO824-ch1234 files not found in wfm/")
+                                     reason="DHO824-ch1234 files not found in tests/files/")
 
 _CORRELATION_THRESHOLD = 0.99
 _RMS_THRESHOLD_MV = 0.1
