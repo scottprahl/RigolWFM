@@ -806,6 +806,13 @@ async function detectAndParse(buffer, filename) {
         return parseE(buffer);
     }
 
+    // Tektronix .wfm: byte_order word at 0 (0x0F0F LE or 0xF0F0 BE), "WFM#" at offset 2
+    if ((b[0] === 0x0F && b[1] === 0x0F) || (b[0] === 0xF0 && b[1] === 0xF0)) {
+        if (b.length > 5 && b[2] === 0x57 && b[3] === 0x46 && b[4] === 0x4D && b[5] === 0x23) {
+            return parseTek(buffer);
+        }
+    }
+
     // LeCroy .trc: "WAVEDESC" ASCII somewhere in the first 64 bytes
     // (SCPI-prefixed files have a #N<digits> header before WAVEDESC)
     var wavDesc = [0x57, 0x41, 0x56, 0x45, 0x44, 0x45, 0x53, 0x43]; // "WAVEDESC"
@@ -940,6 +947,127 @@ function parseLeCroy(buffer, wavedescOffset) {
             timeScale: n > 0 ? n * horizInterval / 10.0 : 1e-3,
             timeOffset: horizOffset,
             secondsPerPoint: horizInterval,
+        }],
+    };
+}
+
+function parseTek(buffer) {
+    var b = new Uint8Array(buffer);
+
+    // Endianness: bytes 0-1 are 0x0F,0x0F (LE) or 0xF0,0xF0 (BE)
+    var isLe = (b[0] === 0x0F && b[1] === 0x0F);
+
+    // Version: bytes 2-8 contain "WFM#001" or "WFM#002"/"WFM#003"
+    var versionStr = '';
+    for (var vi = 0; vi < 7 && b[2 + vi]; vi++) {
+        versionStr += String.fromCharCode(b[2 + vi]);
+    }
+    var isV1 = versionStr.trim() === 'WFM#001';
+
+    var stream = new KaitaiStream(buffer);
+    var w = isV1
+        ? (isLe ? new TekWfm001Le.TekWfm001Le(stream, null, null)
+                : new TekWfm001Be.TekWfm001Be(stream, null, null))
+        : (isLe ? new TekWfm002Le.TekWfm002Le(stream, null, null)
+                : new TekWfm002Be.TekWfm002Be(stream, null, null));
+
+    var sfi = w.staticFileInfo;
+    var hdr = w.wfmHeader;
+    var exp1 = hdr.expDim1;
+    var imp1 = hdr.impDim1;
+    var curveObj = hdr.curve;
+
+    // Waveform label → model identifier
+    var labelBytes = sfi.waveformLabel;
+    var label = '';
+    for (var li = 0; li < labelBytes.length && labelBytes[li]; li++) {
+        label += String.fromCharCode(labelBytes[li]);
+    }
+    label = label.trim() || 'Tektronix';
+
+    // Number of valid samples
+    var nPts = curveObj.numValidSamples;
+    if (nPts <= 0) {
+        nPts = imp1.dimSize;
+    }
+
+    // Curve buffer and data slice
+    var curveBuffer = w.curveBuffer;
+    var dataStart = curveObj.dataStartOffset;
+    var dataEnd = curveObj.postchargeStartOffset;
+    var bytesPerPoint = sfi.numBytesPerPoint || 2;
+    if (dataEnd <= dataStart) {
+        dataEnd = dataStart + nPts * bytesPerPoint;
+    }
+    var rawSlice = curveBuffer.slice(dataStart, dataEnd);
+
+    // Format code for ADC decoding
+    var fmtCode = typeof exp1.format === 'object' ? exp1.format.value : exp1.format;
+
+    // Decode ADC samples using DataView for correct endianness and width
+    var dv = new DataView(rawSlice.buffer, rawSlice.byteOffset, rawSlice.byteLength);
+    var adc = new Float64Array(nPts);
+    for (var ai = 0; ai < nPts; ai++) {
+        var val = 0;
+        switch (fmtCode) {
+            case 0: if (ai * 2 + 1 < rawSlice.length) val = dv.getInt16(ai * 2, isLe); break;   // int16
+            case 1: if (ai * 4 + 3 < rawSlice.length) val = dv.getInt32(ai * 4, isLe); break;   // int32
+            case 2: if (ai * 4 + 3 < rawSlice.length) val = dv.getUint32(ai * 4, isLe); break;  // uint32
+            case 4: if (ai * 4 + 3 < rawSlice.length) val = dv.getFloat32(ai * 4, isLe); break; // fp32
+            case 5: if (ai * 8 + 7 < rawSlice.length) val = dv.getFloat64(ai * 8, isLe); break; // fp64
+            case 6: if (ai < rawSlice.length) val = rawSlice[ai]; break;                          // uint8
+            case 7: if (ai < rawSlice.length) val = rawSlice[ai] < 128 ? rawSlice[ai] : rawSlice[ai] - 256; break; // int8
+            default: if (ai * 2 + 1 < rawSlice.length) val = dv.getInt16(ai * 2, isLe); break;
+        }
+        adc[ai] = val;
+    }
+
+    // Calibrate voltage: volts = dimScale * adc + dimOffset
+    var dimScale = exp1.dimScale;
+    var dimOffset = exp1.dimOffset;
+    var volts = new Float64Array(nPts);
+    for (var ci = 0; ci < nPts; ci++) {
+        volts[ci] = dimScale * adc[ci] + dimOffset;
+    }
+
+    // Volt per division from user_scale, or fallback
+    var userScale = exp1.userScale;
+    var voltPerDiv = (userScale !== 0) ? userScale : Math.abs(dimScale) * 25;
+
+    // Time axis: t[i] = t0 + i * tScale (t0 = dim_offset + first_valid_sample * dim_scale)
+    var tScale = imp1.dimScale;
+    var t0 = imp1.dimOffset + curveObj.firstValidSample * tScale;
+    var times = new Float64Array(nPts);
+    for (var ti2 = 0; ti2 < nPts; ti2++) {
+        times[ti2] = t0 + ti2 * tScale;
+    }
+
+    var raw = proxyRawFromCalibrated(volts);
+    var parserModel = isV1 ? 'tek_wfm_001' : 'tek_wfm_002';
+
+    return {
+        format: 'Tektronix WFM',
+        fileModel: label,
+        userModel: 'Tektronix',
+        parserModel: parserModel,
+        firmware: 'unknown',
+        triggerInfo: null,
+        channels: [{
+            name: 'CH1',
+            color: CH_COLORS[0],
+            times: times,
+            volts: volts,
+            raw: raw,
+            channelNumber: 1,
+            points: nPts,
+            coupling: 'DC',
+            voltPerDiv: voltPerDiv,
+            voltOffset: dimOffset,
+            probeValue: 1.0,
+            inverted: false,
+            timeScale: nPts > 0 ? nPts * tScale / 10.0 : 1e-3,
+            timeOffset: t0,
+            secondsPerPoint: tScale,
         }],
     };
 }
