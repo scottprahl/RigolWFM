@@ -244,6 +244,8 @@ class Channel:
             self.dho1000(w, channel_number)
         elif scope == "lecroy_trc":
             self.lecroy(w, channel_number)
+        elif scope == "tek_wfm":
+            self.tek(w, channel_number)
 
     def __str__(self) -> str:
         """Describe this channel."""
@@ -610,6 +612,28 @@ class Channel:
 
     def lecroy(self, w: Any, channel_number: int) -> None:
         """Interpret normalized waveform data for a LeCroy .trc file."""
+        self.time_scale = w.header.time_scale
+        self.time_offset = 0.0
+        self.points = w.header.points
+        self.firmware = w.header.firmware_version
+
+        idx = channel_number - 1
+        ch_data = w.header.channel_data[idx] if idx < len(w.header.channel_data) else None
+        if ch_data is not None and self.enabled_and_selected:
+            self.volts = ch_data.astype(np.float64)
+
+            raw_data = getattr(w.header, "raw_data", None)
+            raw8 = raw_data[idx] if isinstance(raw_data, list) and idx < len(raw_data) else None
+            if raw8 is None:
+                raw8 = np.full(self.volts.shape, 127, dtype=np.uint8)
+
+            self.raw = raw8
+            self.points = len(self.volts)
+            t0 = w.header.x_origin
+            self.times = t0 + np.arange(self.points) * w.header.x_increment
+
+    def tek(self, w: Any, channel_number: int) -> None:
+        """Interpret normalized waveform data for a Tektronix .wfm file."""
         self.time_scale = w.header.time_scale
         self.time_offset = 0.0
         self.points = w.header.points

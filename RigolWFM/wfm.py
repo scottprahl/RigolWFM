@@ -1,12 +1,13 @@
 """
-Parse and convert Rigol oscilloscope waveform files.
+Parse and convert oscilloscope waveform files.
 
-Supports DS1000B/C/D/E/Z, DS2000, DS4000, DS6000, MSO5000, MSO5074,
-MSO7000/8000, and DHO800/DHO1000 scope families via `Wfm.from_file()`.
+Supports Rigol (DS1000B/C/D/E/Z, DS2000, DS4000, DS6000, MSO5000, MSO5074,
+MSO7000/8000, DHO800/DHO1000), Teledyne LeCroy (.trc), and Tektronix (.wfm)
+scope families via ``Wfm.from_file()``.
 
 Example:
-    >>> import RigolWFM.wfm as rigol
-    >>> waveform = rigol.Wfm.from_file("file_name.wfm")
+    >>> import RigolWFM.wfm as wfm
+    >>> waveform = wfm.Wfm.from_file("file_name.wfm")
     >>> description = waveform.describe()
     >>> print(description)
 
@@ -27,138 +28,75 @@ import numpy as np
 import numpy.typing as npt
 import requests  # type: ignore[import-untyped]
 
-import RigolWFM.dho
-import RigolWFM.lecroy
-import RigolWFM.mso5000
-import RigolWFM.mso5074
-import RigolWFM.mso7000_8000
-import RigolWFM.wfm1000b
-import RigolWFM.wfm1000c
-import RigolWFM.wfm1000d
-import RigolWFM.wfm1000e
-import RigolWFM.wfm1000z
-import RigolWFM.wfm2000
-import RigolWFM.wfm4000
-import RigolWFM.wfm6000
 import RigolWFM.channel
+import RigolWFM.lecroy
+import RigolWFM.rigol
+import RigolWFM.tek
 
-# in progress
-DS1000B_scopes: list[str] = ["B", "1000B", "DS1000B", "DS1074B", "DS1104B", "DS1204B"]
+# ---------------------------------------------------------------------------
+# Non-Rigol vendor scope-family model-string lists
+# ---------------------------------------------------------------------------
 
-# tested
-DS1000C_scopes: list[str] = [
-    "C",
-    "1000C",
-    "DS1000C",
-    "DS1000CD",
-    "DS1000MD",
-    "DS1000M",
-    "DS1302CA",
-    "DS1202CA",
-    "DS1102CA",
-    "DS1062CA",
-    "DS1042C",
-]
-
-# tested
-DS1000D_scopes: list[str] = ["D", "1000D", "DS1000D", "DS1102D", "DS1052D"]
-
-# tested
-DS1000E_scopes: list[str] = ["E", "1000E", "DS1000E", "DS1102E", "DS1052E"]
-
-# tested, wonky voltages
-DS1000Z_scopes: list[str] = [
-    "Z",
-    "1000Z",
-    "DS1000Z",
-    "DS1202Z",
-    "DS1054Z",
-    "MSO1054Z",
-    "DS1074Z",
-    "MSO1074Z",
-    "DS1074Z-S",
-    "DS1104Z",
-    "MSO1104Z",
-    "DS1104Z-S",
-]
-
-# tested
-DS2000_scopes: list[str] = [
-    "2",
-    "2000",
-    "DS2000",
-    "DS2072A",
-    "DS2102A",
-    "MSO2102A",
-    "MSO2102A-S",
-    "DS2202A",
-    "MSO2202A",
-    "MSO2202A-S",
-    "DS2302A",
-    "MSO2302A",
-    "MSO2302A-S",
-]
-
-# tested
-DS4000_scopes: list[str] = [
-    "4",
-    "4000",
-    "DS4000",
-    "DS4054",
-    "DS4052",
-    "DS4034",
-    "DS4032",
-    "DS4024",
-    "DS4022",
-    "DS4014",
-    "DS4012",
-    "MSO4054",
-    "MSO4052",
-    "MSO4034",
-    "MSO4032",
-    "MSO4024",
-    "MSO4022",
-    "MSO4014",
-    "MSO4012",
-]
-
-# untested
-DS6000_scopes: list[str] = ["6", "6000", "DS6000", "DS6062", "DS6064", "DS6102", "DS6104"]
-
-# example-backed `.bin` support
-DS5000_scopes: list[str] = ["5", "5000", "MSO5000"]
-
-# MSO5074 uses a different firmware format (uint8 ADC counts, wrong metadata)
-MSO5074_scopes: list[str] = ["5074", "MSO5074"]
-
-# manual-backed `.bin` support
-DS7000_scopes: list[str] = ["7", "7000", "DS7000", "MSO7000"]
-
-# manual-backed `.bin` support
-DS8000_scopes: list[str] = ["8", "8000", "MSO8000"]
-
-# DHO800/DHO1000 series (.bin and .wfm - format detected by file extension)
-DHO1000_scopes: list[str] = [
-    "DHO", "DHO800", "DHO1000",
-    "DHO804", "DHO812", "DHO814", "DHO824",
-    "DHO1072", "DHO1074", "DHO1102", "DHO1202", "DHO1204",
-]
-
-# Teledyne LeCroy .trc files (LECROY_2_3 format)
+# Teledyne LeCroy .trc files (LECROY_1_0 / LECROY_2_3 format)
 LeCroy_scopes: list[str] = ["LeCroy", "LECROY", "lecroy", "trc"]
 
+# Tektronix .wfm files (WFM#001 / WFM#002 / WFM#003 formats)
+Tek_scopes: list[str] = ["Tek", "TEK", "tektronix", "Tektronix", "tek_wfm"]
+
+# Re-export Rigol scope lists so existing callers that reference e.g.
+# ``wfm.DS1000E_scopes`` continue to work without change.
+DS1000B_scopes = RigolWFM.rigol.DS1000B_scopes
+DS1000C_scopes = RigolWFM.rigol.DS1000C_scopes
+DS1000D_scopes = RigolWFM.rigol.DS1000D_scopes
+DS1000E_scopes = RigolWFM.rigol.DS1000E_scopes
+DS1000Z_scopes = RigolWFM.rigol.DS1000Z_scopes
+DS2000_scopes = RigolWFM.rigol.DS2000_scopes
+DS4000_scopes = RigolWFM.rigol.DS4000_scopes
+DS6000_scopes = RigolWFM.rigol.DS6000_scopes
+DS5000_scopes = RigolWFM.rigol.DS5000_scopes
+MSO5074_scopes = RigolWFM.rigol.MSO5074_scopes
+DS7000_scopes = RigolWFM.rigol.DS7000_scopes
+DS8000_scopes = RigolWFM.rigol.DS8000_scopes
+DHO1000_scopes = RigolWFM.rigol.DHO1000_scopes
+
+# Re-export Rigol trigger constants so existing callers continue to work.
+_DS2000_SOURCE_NAMES = RigolWFM.rigol._DS2000_SOURCE_NAMES
+
 _LECROY_MAGIC = b"WAVEDESC"
+_TEK_MAGIC = b"WFM#"
 
-_SWEEP_NAMES: dict[int, str] = {0: "AUTO", 1: "NORMAL", 2: "SINGLE"}
-_COUPLING_NAMES: dict[int, str] = {0: "DC", 1: "LF", 2: "HF", 3: "AC"}
-_DS2000_SOURCE_NAMES: dict[int, str] = {
-    0: "CH1", 1: "CH2", 2: "EXT", 3: "AC LINE",
-    **{4 + i: "D%d" % i for i in range(16)},
-}
-_DS2000_TRIGGER_MODE_NAMES: dict[int, str] = {
-    30: "Edge",
-}
 
+# ---------------------------------------------------------------------------
+# Exceptions
+# ---------------------------------------------------------------------------
+
+class Read_WFM_Error(Exception):
+    """Generic Read Error."""
+
+
+class Parse_WFM_Error(Exception):
+    """Generic Parse Error."""
+
+
+class Invalid_URL(Exception):
+    """URL scheme is not http or https."""
+
+
+class Unknown_Scope_Error(Exception):
+    """Not one of the listed oscilloscope models."""
+
+
+class Write_WAV_Error(Exception):
+    """Something went wrong while writing the .wave file."""
+
+
+class Channel_Not_In_WFM_Error(Exception):
+    """The channel is not in the .wfm file."""
+
+
+# ---------------------------------------------------------------------------
+# Autodetect and utility functions
+# ---------------------------------------------------------------------------
 
 def detect_model(filename: str) -> str:
     """Detect the oscilloscope model from a waveform file's binary signature.
@@ -258,6 +196,10 @@ def detect_model(filename: str) -> str:
             pass
         return "E"  # most common default for this magic
 
+    # Tektronix .wfm: byte_order word at 0 (0x0F0F LE or 0xF0F0 BE), version "WFM#" at offset 2
+    if (hdr[0] in (0x0F, 0xF0) and hdr[1] in (0x0F, 0xF0) and hdr[2:6] == _TEK_MAGIC):
+        return "Tek"
+
     # LeCroy .trc: "WAVEDESC" marker at byte 0, or after a short SCPI prefix
     if _LECROY_MAGIC in hdr[:64]:
         return "LeCroy"
@@ -266,22 +208,12 @@ def detect_model(filename: str) -> str:
 
 
 def valid_scope_list() -> str:
-    """List all the oscilloscope types."""
+    """List all supported oscilloscope model strings."""
     s = "\nRigol oscilloscope models:\n    "
-    s += ", ".join(DS1000B_scopes) + "\n    "
-    s += ", ".join(DS1000C_scopes) + "\n    "
-    s += ", ".join(DS1000D_scopes) + "\n    "
-    s += ", ".join(DS1000E_scopes) + "\n    "
-    s += ", ".join(DS1000Z_scopes) + "\n    "
-    s += ", ".join(DS2000_scopes) + "\n    "
-    s += ", ".join(DS4000_scopes) + "\n    "
-    s += ", ".join(DS5000_scopes) + "\n    "
-    s += ", ".join(MSO5074_scopes) + "\n    "
-    s += ", ".join(DS7000_scopes) + "\n    "
-    s += ", ".join(DS8000_scopes) + "\n    "
-    s += ", ".join(DS6000_scopes) + "\n    "
-    s += ", ".join(DHO1000_scopes) + "\n    "
-    s += ", ".join(LeCroy_scopes) + "\n"
+    s += "\n    ".join(", ".join(family) for family in RigolWFM.rigol.ALL_RIGOL_SCOPES)
+    s += "\n    "
+    s += ", ".join(LeCroy_scopes) + "\n    "
+    s += ", ".join(Tek_scopes) + "\n"
     return s
 
 
@@ -299,171 +231,18 @@ def _scope_family(name: str) -> str:
     return "".join(c for c in head if c.isalpha())
 
 
-def dho_from_file(file_name: str) -> RigolWFM.dho.DhoWaveform:
+# Backward-compatible convenience wrapper
+def dho_from_file(file_name: str) -> Any:
     """Backward-compatible wrapper around `RigolWFM.dho.from_file()`."""
-    return RigolWFM.dho.from_file(file_name)
+    return RigolWFM.rigol.dho_from_file(file_name)
 
 
-def _trig_header_dict(th) -> dict:
-    """Extract a KaitaiStruct trigger_header into a plain dict."""
-    d: dict = {}
-    try:
-        d["mode"] = th.mode.name
-    except Exception:
-        pass
-    try:
-        d["source"] = th.source.name.upper()
-    except Exception:
-        pass
-    try:
-        d["level"] = float(th.level)
-    except Exception:
-        pass
-    try:
-        d["sweep"] = _SWEEP_NAMES.get(th.sweep, str(th.sweep))
-    except Exception:
-        pass
-    try:
-        d["coupling"] = _COUPLING_NAMES.get(th.coupling, str(th.coupling))
-    except Exception:
-        pass
-    return d
-
-
-def _describe_trigger_block(d: dict, indent: str = "        ") -> str:
-    """Format a trigger info dict as indented text."""
-    s = ""
-    if "mode" in d:
-        s += "%sMode     = %s\n" % (indent, d["mode"])
-    if "source" in d:
-        s += "%sSource   = %s\n" % (indent, d["source"])
-    if "level" in d:
-        s += "%sLevel    = %sV\n" % (indent, RigolWFM.channel.engineering_string(d["level"], 2))
-    if "sweep" in d:
-        s += "%sSweep    = %s\n" % (indent, d["sweep"])
-    if "coupling" in d:
-        s += "%sCoupling = %s\n" % (indent, d["coupling"])
-    return s
-
-
-def _scaled_ds4000_trigger_levels(level_block: Any, probe_values: list[float]) -> dict[str, float]:
-    """Scale a parsed DS4000 trigger-level block into volts."""
-    raw_levels = [
-        ("CH1", level_block.ch1_level_uv, probe_values[0]),
-        ("CH2", level_block.ch2_level_uv, probe_values[1]),
-        ("CH3", level_block.ch3_level_uv, probe_values[2]),
-        ("CH4", level_block.ch4_level_uv, probe_values[3]),
-        ("EXT", level_block.ext_level_uv, 1.0),
-    ]
-    return {name: raw_uv * 1.0e-6 * scale for name, raw_uv, scale in raw_levels}
-
-
-def _decode_ds4000_trigger(waveform: Any) -> dict:
-    """Best-effort decode of DS4000 trigger metadata from parsed setup fields."""
-    setup = getattr(waveform.header, "setup", None)
-    if setup is None:
-        return {}
-
-    probe_values = [float(channel.probe_value) for channel in waveform.header.ch]
-
-    modern_levels = getattr(setup, "modern_trigger_levels", None)
-    modern_mode = getattr(setup, "modern_trigger_mode", None)
-    modern_source = getattr(setup, "modern_trigger_source", None)
-    if (
-        modern_levels is not None
-        and hasattr(modern_mode, "name")
-        and hasattr(modern_source, "name")
-    ):
-        input_levels = _scaled_ds4000_trigger_levels(modern_levels, probe_values)
-        source = modern_source.name.upper()
-        info: dict[str, Any] = {
-            "mode": modern_mode.name.capitalize(),
-            "source": source,
-            "input_levels": input_levels,
-        }
-        if source in input_levels:
-            info["level"] = input_levels[source]
-        return info
-
-    legacy_levels = getattr(setup, "legacy_trigger_levels", None)
-    if legacy_levels is not None:
-        return {"input_levels": _scaled_ds4000_trigger_levels(legacy_levels, probe_values)}
-
-    return {}
-
-
-def _decode_ds2000_trigger(waveform: Any) -> dict:
-    """Best-effort decode of DS2000 trigger metadata from parsed setup fields."""
-    setup = getattr(waveform.header, "setup", None)
-    if setup is None:
-        return {}
-
-    source_primary = getattr(setup, "trigger_source_primary", None)
-    source_shadow = getattr(setup, "trigger_source_shadow", None)
-    holdoff_ns = int(getattr(setup, "trigger_holdoff_ns", 0) or 0)
-    level_block = getattr(setup, "trigger_levels", None)
-    if level_block is None:
-        return {}
-
-    input_levels = {
-        "CH1": level_block.ch1_level_uv * 1.0e-6,
-        "CH2": level_block.ch2_level_uv * 1.0e-6,
-        "EXT": level_block.ext_level_uv * 1.0e-6,
-    }
-    has_meaningful_setup = holdoff_ns != 0 or any(level != 0.0 for level in input_levels.values())
-    if not has_meaningful_setup:
-        return {}
-
-    info: dict[str, Any] = {"input_levels": input_levels}
-
-    try:
-        source_code = int(source_primary)
-        if source_shadow is not None and source_code == int(source_shadow):
-            source_name = _DS2000_SOURCE_NAMES.get(source_code)
-            if source_name is not None:
-                info["source"] = source_name
-                if source_name in input_levels:
-                    info["level"] = input_levels[source_name]
-    except (TypeError, ValueError):
-        pass
-
-    mode_code = getattr(setup, "trigger_mode_code", None)
-    try:
-        mode_name = _DS2000_TRIGGER_MODE_NAMES.get(int(mode_code))
-        if mode_name is not None:
-            info["mode"] = mode_name
-    except (TypeError, ValueError):
-        pass
-
-    return info
-
-
-class Read_WFM_Error(Exception):
-    """Generic Read Error."""
-
-
-class Parse_WFM_Error(Exception):
-    """Generic Parse Error."""
-
-
-class Invalid_URL(Exception):
-    """URL scheme is not http or https."""
-
-
-class Unknown_Scope_Error(Exception):
-    """Not one of the listed Rigol oscilloscopes."""
-
-
-class Write_WAV_Error(Exception):
-    """Something went wrong while writing the .wave file."""
-
-
-class Channel_Not_In_WFM_Error(Exception):
-    """The channel is not in the .wfm file."""
-
+# ---------------------------------------------------------------------------
+# Main Wfm class
+# ---------------------------------------------------------------------------
 
 class Wfm:
-    """Class with parsed data from a .wfm file."""
+    """Class with parsed data from a waveform file."""
 
     channels: list[RigolWFM.channel.Channel]
     original_name: str
@@ -500,12 +279,11 @@ class Wfm:
 
         Args:
             file_name: name of file
-            model: Rigol Oscilloscope used, e.g., 'E' or 'Z'; defaults to auto-detect
+            model: oscilloscope family, e.g. 'E', 'Z', 'LeCroy', 'Tek'; defaults to auto-detect
             selected: string of channels to process e.g., '12'
         Returns:
-            a wfm object for the file
+            a Wfm object for the file
         """
-        # ensure that file exists
         try:
             with open(file_name, "rb"):
                 pass
@@ -517,111 +295,26 @@ class Wfm:
         new_wfm.file_name = file_name
         new_wfm.basename = os.path.basename(file_name)
 
-        # parse the waveform
         auto_model = model.upper() == "AUTO"
         umodel = detect_model(file_name).upper() if auto_model else model.upper()
 
-        if umodel in DS1000B_scopes:
-            w = RigolWFM.wfm1000b.Wfm1000b.from_file(file_name)  # type: ignore[attr-defined]
-            new_wfm.header_name = "DS1000B"
-            new_wfm.trigger_info = {
-                "mode": w.header.trigger_mode.name,
-                "source": w.header.trigger_source.name.upper(),
-            }
+        # --- Rigol families ---
+        rigol_result = RigolWFM.rigol.parse_file(umodel, file_name)
+        if rigol_result is not None:
+            w, new_wfm.header_name, new_wfm.serial_number, new_wfm.trigger_info = rigol_result
 
-        elif umodel in DS1000C_scopes:
-            w = RigolWFM.wfm1000c.Wfm1000c.from_file(file_name)  # type: ignore[attr-defined]
-            new_wfm.header_name = "DS1000C"
-            new_wfm.trigger_info = {
-                "mode": w.header.trigger_mode.name,
-                "source": w.header.trigger_source.name.upper(),
-            }
-
-        elif umodel in DS1000D_scopes:
-            w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)  # type: ignore[attr-defined]
-            w.parser_name = "wfm1000d"
-            new_wfm.header_name = "DS1000D"
-            _mode = w.header.trigger_mode.name
-            if _mode == "alt":
-                new_wfm.trigger_info = {
-                    "mode": "alt",
-                    "trigger1": _trig_header_dict(w.header.trigger1),
-                    "trigger2": _trig_header_dict(w.header.trigger2),
-                }
-            else:
-                _d = _trig_header_dict(w.header.trigger1)
-                _d["mode"] = _mode
-                new_wfm.trigger_info = _d
-
-        elif umodel in DS1000E_scopes:
-            w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)  # type: ignore[attr-defined]
-            new_wfm.header_name = "DS1000E"
-            _mode = w.header.trigger_mode.name
-            if _mode == "alt":
-                new_wfm.trigger_info = {
-                    "mode": "alt",
-                    "trigger1": _trig_header_dict(w.header.trigger1),
-                    "trigger2": _trig_header_dict(w.header.trigger2),
-                }
-            else:
-                _d = _trig_header_dict(w.header.trigger1)
-                _d["mode"] = _mode
-                new_wfm.trigger_info = _d
-
-        elif umodel in DS1000Z_scopes:
-            w = RigolWFM.wfm1000z.Wfm1000z.from_file(file_name)  # type: ignore[attr-defined]
-            new_wfm.header_name = w.preheader.model_number
-
-        elif umodel in DS2000_scopes:
-            w = RigolWFM.wfm2000.Wfm2000.from_file(file_name)  # type: ignore[attr-defined]
-            new_wfm.header_name = "DS2000"
-            new_wfm.serial_number = getattr(w.header, "serial_number", w.header.model_number)
-            new_wfm.trigger_info = _decode_ds2000_trigger(w)
-
-        elif umodel in DS4000_scopes:
-            w = RigolWFM.wfm4000.Wfm4000.from_file(file_name)  # type: ignore[attr-defined]
-            new_wfm.header_name = "DS4000"
-            new_wfm.serial_number = getattr(w.header, "serial_number", w.header.model_number)
-            new_wfm.trigger_info = _decode_ds4000_trigger(w)
-
-        elif umodel in DS5000_scopes:
-            w = RigolWFM.mso5000.from_file(file_name)
-            new_wfm.header_name = w.header.model_number or "MSO5000"
-
-        elif umodel in MSO5074_scopes:
-            w = RigolWFM.mso5074.from_file(file_name)
-            new_wfm.header_name = w.header.model_number or "MSO5074"
-
-        elif umodel in DS7000_scopes:
-            w = RigolWFM.mso7000_8000.from_file(file_name)
-            new_wfm.header_name = w.header.model_number or "MSO7000"
-
-        elif umodel in DS8000_scopes:
-            w = RigolWFM.mso7000_8000.from_file(file_name)
-            new_wfm.header_name = w.header.model_number or "MSO8000"
-
-        elif umodel in DS6000_scopes:
-            w = RigolWFM.wfm6000.Wfm6000.from_file(file_name)  # type: ignore[attr-defined]
-            new_wfm.header_name = w.header.model_number
-
-        elif umodel in DHO1000_scopes:
-            w = RigolWFM.dho.from_file(file_name)
-            fallback = "DHO1000"
-            model_hint = w.header.model_number or ""
-            if model_hint.upper().startswith(("DHO8", "HDO8")):
-                fallback = "DHO800"
-            new_wfm.header_name = RigolWFM.dho.family_label(
-                model_hint,
-                is_bin=RigolWFM.dho.is_bin_file(file_name),
-                fallback=fallback,
-            )
-
+        # --- LeCroy ---
         elif umodel in LeCroy_scopes:
             w = RigolWFM.lecroy.from_file(file_name)
             new_wfm.header_name = w.header.model_number or "LeCroy"
 
+        # --- Tektronix ---
+        elif umodel in Tek_scopes:
+            w = RigolWFM.tek.from_file(file_name)
+            new_wfm.header_name = w.header.model or "Tektronix"
+
         else:
-            raise Unknown_Scope_Error(f"Unknown Rigol oscilloscope type: '{umodel}'\n{valid_scope_list()}")
+            raise Unknown_Scope_Error(f"Unknown oscilloscope type: '{umodel}'\n{valid_scope_list()}")
 
         new_wfm.user_name = "auto" if auto_model else model
         pname = getattr(w, "parser_name", type(w).__module__.rsplit(".", 1)[-1])
@@ -645,19 +338,14 @@ class Wfm:
                 file=sys.stderr,
             )
 
-        # assemble into uniform set of names
         enabled = ""
         for ch_number in range(1, 5):
-
             ch = RigolWFM.channel.Channel(w, ch_number, pname, selected)
 
             if not ch.enabled:
                 continue
 
-            # keep track of enabled channels for error message
             enabled += str(ch_number)
-
-            # append all enabled channels
             new_wfm.channels.append(ch)
 
         if len(new_wfm.channels) == 0:
@@ -682,10 +370,10 @@ class Wfm:
 
         Args:
             url: location of the file
-            model: Rigol Oscilloscope used, e.g., 'E' or 'Z'; defaults to auto-detect
+            model: oscilloscope family, e.g. 'E' or 'Z'; defaults to auto-detect
             selected: string of channels to process e.g., '12'
         Returns:
-            a wfm object for the file
+            a Wfm object for the file
         """
         u = urllib.parse.urlparse(url)
         scheme = u[0]
@@ -694,7 +382,6 @@ class Wfm:
             raise Invalid_URL(f"URL scheme must be 'http' or 'https', got '{scheme}': {url}")
 
         try:
-            # need a local file for conversion, download url and save as tempfile
             print(f"downloading '{url}'", file=sys.stderr)
             r = requests.get(url, allow_redirects=True, timeout=10)
             r.raise_for_status()
@@ -706,7 +393,6 @@ class Wfm:
             try:
                 new_wfm = cls.from_file(working_name, model, selected)
                 new_wfm.original_name = url
-                # extract the simple name
                 rawpath = u[2]
                 path = urllib.parse.unquote(rawpath)
                 new_wfm.basename = os.path.basename(path)
@@ -722,7 +408,7 @@ class Wfm:
             raise Read_WFM_Error(f"Failed to download '{url}': {e}") from e
 
     def describe(self) -> str:
-        """Return a string describing the contents of a Rigol wfm file."""
+        """Return a string describing the contents of the waveform file."""
         s = "    General:\n"
         s += "        File Model   = %s\n" % self.header_name
         if self.serial_number:
@@ -742,12 +428,9 @@ class Wfm:
         s += "]\n\n"
 
         # Compute derived trigger levels: voltage at t=0 for relevant analog channels.
-        # If source is known and non-analog (EXT, AC LINE, digital), skip entirely.
-        # If source is known analog (CH1–CH4), restrict to that channel.
-        # If source is unknown, show all enabled analog channels.
         _source = self.trigger_info.get("source", "")
         _CH_SOURCE_MAP = {"CH1": 1, "CH2": 2, "CH3": 3, "CH4": 4}
-        _source_ch_num = _CH_SOURCE_MAP.get(_source)  # None if not a recognised analog source
+        _source_ch_num = _CH_SOURCE_MAP.get(_source)
         _known_non_analog = bool(_source) and _source_ch_num is None
 
         derived_levels: dict[int, float] = {}
@@ -766,12 +449,16 @@ class Wfm:
                     s += "        Mode     = alt\n"
                     if "trigger1" in self.trigger_info:
                         s += "\n        Trigger 1:\n"
-                        s += _describe_trigger_block(self.trigger_info["trigger1"], indent="            ")
+                        s += RigolWFM.rigol.describe_trigger_block(
+                            self.trigger_info["trigger1"], indent="            "
+                        )
                     if "trigger2" in self.trigger_info:
                         s += "\n        Trigger 2:\n"
-                        s += _describe_trigger_block(self.trigger_info["trigger2"], indent="            ")
+                        s += RigolWFM.rigol.describe_trigger_block(
+                            self.trigger_info["trigger2"], indent="            "
+                        )
                 else:
-                    s += _describe_trigger_block(self.trigger_info)
+                    s += RigolWFM.rigol.describe_trigger_block(self.trigger_info)
             show_ch_label = _source_ch_num is None
             for ch_num, level in sorted(derived_levels.items()):
                 label = "Derived Level (CH%d)" % ch_num if show_ch_label else "Derived Level    "
@@ -802,7 +489,6 @@ class Wfm:
 
     def plot(self) -> plt.Figure:
         """Plot the data in oscilloscope style and return the Figure."""
-        # Classic Rigol channel colours: CH1=yellow, CH2=cyan, CH3=magenta, CH4=green
         _CH_COLORS = ["#FFFF00", "#00FFFF", "#FF00FF", "#00FF00"]
 
         h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()
@@ -824,7 +510,6 @@ class Wfm:
         ax.set_title(self.basename, color="white")
         ax.legend(loc="upper right", facecolor="black", edgecolor="#555555", labelcolor="white")
 
-        # Oscilloscope-style grid: visible but not distracting
         ax.grid(True, which="major", color="#2a2a2a", linewidth=0.8, linestyle="-")
         ax.minorticks_on()
         ax.grid(True, which="minor", color="#1a1a1a", linewidth=0.4, linestyle=":")
@@ -849,7 +534,6 @@ class Wfm:
             s += ",%s" % ch.name
         s += ",Start,Increment\n"
 
-        # just output the display 100 pts/division
         ch = data_channels[0]
         incr = ch.time_scale / 100
         off = -6 * ch.time_scale
@@ -953,13 +637,10 @@ class Wfm:
         if n_channels == 1:
             frames = scaled[0][:n_pts]
         else:
-            # Interleave: L R L R ...
             frames = np.empty(n_pts * 2, dtype=np.int16)
             frames[0::2] = scaled[0][:n_pts]
             frames[1::2] = scaled[1][:n_pts]
 
-        # The WAV header stores framerate and byte_rate (framerate × n_channels × sampwidth)
-        # as u32 fields.  Cap so both always fit.
         _MAX_WAV_U32 = 2**32 - 1
         sample_rate = int(min(round(1.0 / channels[0].seconds_per_point),
                               _MAX_WAV_U32 // (n_channels * 2)))
