@@ -12,22 +12,22 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
 class AgilentBin(KaitaiStruct):
     """Binary waveform export used by Agilent and Keysight oscilloscopes.
     
-    This schema is based on the reverse-engineered parser and checked-in sample
-    captures from `docs/vendors/wavebin-master`, which exercise the `AG10`
-    container written by DSO-X / MSO-X scopes. The same container family also
-    appears to exist in `AG01` and `AG03` variants; the vendor parser handles
-    those by widening the file-size and buffer-size fields for version 3.
+    This schema is based on the checked-in vendor parsers plus the Agilent
+    6000 Series and InfiniiVision 2000 manuals. Those sources describe the
+    `AG01` / `AG03` / `AG10` container family written by several
+    Agilent / Keysight oscilloscopes.
     
     File layout:
       [File Header: 12 bytes for AG01 / AG10, 16 bytes for AG03]
       for each exported waveform:
         [Waveform Header: usually 140 bytes]
-        [Data Header: 12 bytes for AG01 / AG10, 16 bytes for AG03]
-        [Sample Data:   buffer_size bytes]
+        repeat n_buffers times:
+          [Data Header: 12 bytes for AG01 / AG10, 16 bytes for AG03]
+          [Sample Data: buffer_size bytes]
     
-    Analog waveforms are stored as float32 buffers. Digital / logic-like
-    captures use the same container but store `u1` samples and are handled by
-    handwritten code rather than normalized directly by the Kaitai schema.
+    Normal analog waveforms are float32. Peak Detect acquisitions can store
+    separate minimum and maximum float32 buffers for a single waveform header.
+    Logic-style records use byte-oriented buffers.
     """
 
     class BufferTypeEnum(IntEnum):
@@ -35,8 +35,8 @@ class AgilentBin(KaitaiStruct):
         normal_float32 = 1
         maximum_float32 = 2
         minimum_float32 = 3
-        time_float32 = 4
-        counts_float32 = 5
+        counts_i32 = 4
+        logic_u8 = 5
         digital_u8 = 6
 
     class UnitEnum(IntEnum):
@@ -175,13 +175,35 @@ class AgilentBin(KaitaiStruct):
 
         def _read(self):
             self.wfm_header = AgilentBin.WaveformHeader(self._io, self, self._root)
+            self.buffers = []
+            for i in range(self.wfm_header.n_buffers):
+                self.buffers.append(AgilentBin.WaveformBuffer(self._io, self, self._root))
+
+
+
+        def _fetch_instances(self):
+            pass
+            self.wfm_header._fetch_instances()
+            for i in range(len(self.buffers)):
+                pass
+                self.buffers[i]._fetch_instances()
+
+
+
+    class WaveformBuffer(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            super(AgilentBin.WaveformBuffer, self).__init__(_io)
+            self._parent = _parent
+            self._root = _root
+            self._read()
+
+        def _read(self):
             self.data_header = AgilentBin.DataHeader(self._io, self, self._root)
             self.data_raw = self._io.read_bytes(self.data_header.buffer_size)
 
 
         def _fetch_instances(self):
             pass
-            self.wfm_header._fetch_instances()
             self.data_header._fetch_instances()
 
 

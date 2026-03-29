@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import struct
 
 import numpy as np
 import pytest
@@ -12,84 +13,181 @@ import RigolWFM.agilent_bin
 import RigolWFM.wfm
 
 _ROOT = Path(__file__).resolve().parents[1]
-_SAMPLES = _ROOT / "docs" / "vendors" / "wavebin-master" / "samples"
-_DSOX = _SAMPLES / "DSOX1102G"
-_SINGLE = _DSOX / "single.bin"
-_DUAL = _DSOX / "dual.bin"
-_DIGITAL = _DSOX / "digital.bin"
-_MSOX4154A = _SAMPLES / "MSOX4154A.bin"
-
-pytestmark = pytest.mark.skipif(
-    not all(path.exists() for path in (_SINGLE, _DUAL, _DIGITAL, _MSOX4154A)),
-    reason="wavebin Agilent/Keysight sample files are not present",
+_BIN_DIR = _ROOT / "tests" / "files" / "bin"
+_MSOX4154A = _ROOT / "docs" / "vendors" / "wavebin-master" / "samples" / "MSOX4154A.bin"
+_skip_no_msox4154a = pytest.mark.skipif(
+    not _MSOX4154A.exists(),
+    reason="wavebin MSOX4154A sample file is not present",
 )
+_WAVEFORM_HEADER = struct.Struct("<5if3d2i16s16s24s16sdI")
+_DATA_HEADER = struct.Struct("<IHHI")
+
+_AGILENT_CASES = [
+    ("agilent_1", 1, 2000, -5.000631603125e-4, 5.0e-7, [True, False, False, False], [1]),
+    ("agilent_2", 2, 20000, -1.0e-5, 1.0e-9, [True, False, False, False], [1]),
+    ("agilent_3", 2, 4000, -1.0e-6, 5.0e-10, [True, True, False, False], [1, 2]),
+    ("agilent_4", 1, 1953, -9.999999999999998e-4, 1.024e-6, [True, False, False, False], [1]),
+    ("agilent_5", 1, 999999, 0.8839843868396875, 5.0e-8, [True, False, False, False], [1]),
+]
 
 
-def test_agilent_bin_low_level_header_matches_wavebin_single():
-    """The low-level Kaitai parser should match the checked-in single-trace sample."""
-    waveform = RigolWFM.agilent_bin.AgilentBin.from_file(str(_SINGLE))
+def _fixture_path(stem: str) -> Path:
+    """Return the path to a checked-in Agilent `.bin` fixture."""
+    return _BIN_DIR / f"{stem}.bin"
+
+
+def _fixed_ascii(text: str, size: int) -> bytes:
+    """Return a NUL-padded ASCII field for synthetic AGxx fixtures."""
+    raw = text.encode("ascii")
+    return raw[:size].ljust(size, b"\x00")
+
+
+def _float_payload(values: list[float]) -> bytes:
+    """Encode a float32 payload."""
+    return struct.pack(f"<{len(values)}f", *values)
+
+
+def _u8_payload(values: list[int]) -> bytes:
+    """Encode a byte payload."""
+    return bytes(values)
+
+
+def _build_agilent_fixture(waveforms: list[dict]) -> bytes:
+    """Build a synthetic AG10 file for regression tests."""
+    body = bytearray()
+    for waveform in waveforms:
+        buffers = waveform["buffers"]
+        body.extend(
+            _WAVEFORM_HEADER.pack(
+                140,
+                waveform.get("waveform_type", 1),
+                len(buffers),
+                waveform["n_pts"],
+                waveform.get("count", 0),
+                waveform.get("x_display_range", waveform["n_pts"] * waveform["x_increment"]),
+                waveform.get("x_display_origin", waveform["x_origin"]),
+                waveform["x_increment"],
+                waveform["x_origin"],
+                waveform.get("x_units", 2),
+                waveform.get("y_units", 1),
+                _fixed_ascii(waveform.get("date", ""), 16),
+                _fixed_ascii(waveform.get("time", ""), 16),
+                _fixed_ascii(waveform.get("frame_string", "DSO-X 1102G:CNTEST"), 24),
+                _fixed_ascii(waveform.get("waveform_label", "1"), 16),
+                waveform.get("time_tag", 0.0),
+                waveform.get("segment_index", 0),
+            )
+        )
+        for buffer in buffers:
+            payload = buffer["payload"]
+            body.extend(
+                _DATA_HEADER.pack(
+                    12,
+                    buffer["buffer_type"],
+                    buffer["bytes_per_point"],
+                    len(payload),
+                )
+            )
+            body.extend(payload)
+
+    return b"AG10" + struct.pack("<II", 12 + len(body), len(waveforms)) + bytes(body)
+
+
+def _expected_analog_waveforms(raw):
+    """Return analog float32 waveform buffers keyed by their 0-based channel slot."""
+    expected = {}
+    for waveform in raw.waveforms:
+        label = waveform.wfm_header.waveform_label.strip()
+        for buffer in waveform.buffers:
+            buffer_type = int(buffer.data_header.buffer_type)
+            if buffer.data_header.bytes_per_point != 4 or buffer_type not in {1, 2, 3}:
+                continue
+            if label.isdigit():
+                slot = int(label) - 1
+            else:
+                slot = len(expected)
+            expected.setdefault(slot, np.frombuffer(buffer.data_raw, dtype="<f4"))
+    return expected
+
+
+@pytest.mark.parametrize(
+    "stem, n_waveforms, points, x_origin, dt, _enabled, _channels",
+    _AGILENT_CASES,
+)
+def test_agilent_bin_low_level_header_matches_fixtures(
+    stem,
+    n_waveforms,
+    points,
+    x_origin,
+    dt,
+    _enabled,
+    _channels,
+):
+    """The low-level Kaitai parser should match the checked-in Agilent fixtures."""
+    path = _fixture_path(stem)
+    waveform = RigolWFM.agilent_bin.AgilentBin.from_file(str(path))
 
     assert waveform.file_header.cookie == b"AG"
     assert waveform.file_header.version == "10"
     assert waveform.file_header.version_num == 10
-    assert waveform.file_header.file_size == _SINGLE.stat().st_size
-    assert waveform.file_header.n_waveforms == 1
+    assert waveform.file_header.file_size == path.stat().st_size
+    assert waveform.file_header.n_waveforms == n_waveforms
 
     first = waveform.waveforms[0]
     assert first.wfm_header.header_size == 140
-    assert first.wfm_header.n_pts == 1953
-    assert first.wfm_header.x_display_origin == pytest.approx(-1.0e-3)
-    assert first.wfm_header.x_increment == pytest.approx(1.024e-6)
-    assert first.data_header.header_size == 12
-    assert first.data_header.bytes_per_point == 4
-    assert first.data_header.buffer_size == 7812
+    assert first.wfm_header.n_buffers == 1
+    assert first.wfm_header.n_pts == points
+    assert first.wfm_header.x_origin == pytest.approx(x_origin)
+    assert first.wfm_header.x_increment == pytest.approx(dt)
+    assert first.buffers[0].data_header.header_size == 12
+    assert first.buffers[0].data_header.bytes_per_point == 4
+    assert first.buffers[0].data_header.buffer_size == points * 4
 
 
-def test_agilent_adapter_preserves_single_trace_samples():
-    """The normalized adapter should preserve the calibrated float32 waveform."""
-    raw = RigolWFM.agilent_bin.AgilentBin.from_file(str(_SINGLE))
-    obj = RigolWFM.agilent.from_file(str(_SINGLE))
+@pytest.mark.parametrize(
+    "stem, n_waveforms, points, x_origin, dt, enabled, expected_channels",
+    _AGILENT_CASES,
+)
+def test_agilent_local_fixtures_round_trip(
+    stem,
+    n_waveforms,
+    points,
+    x_origin,
+    dt,
+    enabled,
+    expected_channels,
+):
+    """Repo-local Agilent fixtures should parse consistently through both APIs."""
+    path = _fixture_path(stem)
+    raw = RigolWFM.agilent_bin.AgilentBin.from_file(str(path))
+    obj = RigolWFM.agilent.from_file(str(path))
+    waveform = RigolWFM.wfm.Wfm.from_file(str(path))
 
     assert obj.header.model_number == "DSO-X 1102G"
     assert obj.header.serial_number == "CN00000000"
-    assert obj.header.points == 1953
-    assert obj.header.seconds_per_point == pytest.approx(1.024e-6)
-    assert obj.header.x_origin == pytest.approx(-1.0e-3)
-    assert [channel.enabled for channel in obj.header.ch] == [True, False, False, False]
+    assert obj.header.n_waveforms == n_waveforms
+    assert obj.header.points == points
+    assert obj.header.seconds_per_point == pytest.approx(dt)
+    assert obj.header.x_origin == pytest.approx(x_origin)
+    assert [channel.enabled for channel in obj.header.ch] == enabled
 
-    expected = np.frombuffer(raw.waveforms[0].data_raw, dtype="<f4")
-    np.testing.assert_allclose(obj.header.channel_data[0], expected)
-
-
-def test_agilent_dual_capture_round_trips_through_wfm():
-    """Auto-detected dual-channel captures should expose both analog channels."""
-    waveform = RigolWFM.wfm.Wfm.from_file(str(_DUAL))
+    expected = _expected_analog_waveforms(raw)
+    for slot, values in expected.items():
+        np.testing.assert_allclose(obj.header.channel_data[slot], values)
 
     assert waveform.parser_name == "agilent_bin"
     assert waveform.header_name == "DSO-X 1102G"
     assert waveform.serial_number == "CN00000000"
-    assert [channel.channel_number for channel in waveform.channels] == [1, 2]
+    assert [channel.channel_number for channel in waveform.channels] == expected_channels
 
     for channel in waveform.channels:
         assert channel.times is not None
         assert channel.volts is not None
-        assert channel.times[0] == pytest.approx(-1.0e-6)
-        assert channel.times[1] - channel.times[0] == pytest.approx(5.0e-10)
+        assert channel.times[0] == pytest.approx(x_origin)
+        assert channel.times[1] - channel.times[0] == pytest.approx(dt)
 
 
-def test_agilent_digital_capture_skips_ext_u8_record():
-    """Mixed analog/digital captures should keep the analog trace and ignore EXT digital data."""
-    obj = RigolWFM.agilent.from_file(str(_DIGITAL))
-    waveform = RigolWFM.wfm.Wfm.from_file(str(_DIGITAL))
-
-    assert obj.header.n_waveforms == 2
-    assert [channel.enabled for channel in obj.header.ch] == [True, False, False, False]
-    assert len(waveform.channels) == 1
-    assert waveform.channels[0].channel_number == 1
-    assert waveform.channels[0].times[0] == pytest.approx(-1.0e-5)
-    assert waveform.channels[0].times[1] - waveform.channels[0].times[0] == pytest.approx(1.0e-9)
-
-
+@_skip_no_msox4154a
 def test_agilent_msox4154a_exposes_four_channels():
     """Four-channel MSO-X captures should normalize all four analog traces."""
     obj = RigolWFM.agilent.from_file(str(_MSOX4154A))
@@ -100,5 +198,129 @@ def test_agilent_msox4154a_exposes_four_channels():
     assert obj.header.points == 2_000_000
     assert [channel.enabled for channel in obj.header.ch] == [True, True, True, True]
     assert len(waveform.channels) == 4
-    assert waveform.channels[0].times[0] == pytest.approx(-0.001027)
+    assert waveform.channels[0].times[0] == pytest.approx(-0.000826612890625)
     assert waveform.channels[0].times[1] - waveform.channels[0].times[0] == pytest.approx(8.0e-10)
+
+
+def test_agilent_low_level_parser_supports_multi_buffer_waveforms(tmp_path):
+    """The Kaitai parser should expose all waveform buffers for Peak Detect files."""
+    path = tmp_path / "peak_detect.bin"
+    path.write_bytes(
+        _build_agilent_fixture(
+            [
+                {
+                    "waveform_label": "1",
+                    "n_pts": 3,
+                    "x_increment": 0.25,
+                    "x_origin": 1.5,
+                    "x_display_origin": 1.0,
+                    "buffers": [
+                        {"buffer_type": 3, "bytes_per_point": 4, "payload": _float_payload([-1.0, -0.5, -0.25])},
+                        {"buffer_type": 2, "bytes_per_point": 4, "payload": _float_payload([1.0, 0.5, 0.25])},
+                    ],
+                }
+            ]
+        )
+    )
+
+    waveform = RigolWFM.agilent_bin.AgilentBin.from_file(str(path))
+
+    assert waveform.file_header.n_waveforms == 1
+    assert waveform.waveforms[0].wfm_header.n_buffers == 2
+    assert [int(buffer.data_header.buffer_type) for buffer in waveform.waveforms[0].buffers] == [3, 2]
+    np.testing.assert_allclose(
+        np.frombuffer(waveform.waveforms[0].buffers[0].data_raw, dtype="<f4"),
+        [-1.0, -0.5, -0.25],
+    )
+    np.testing.assert_allclose(
+        np.frombuffer(waveform.waveforms[0].buffers[1].data_raw, dtype="<f4"),
+        [1.0, 0.5, 0.25],
+    )
+
+
+def test_agilent_normalized_parser_rejects_peak_detect_multi_buffer_waveforms(tmp_path):
+    """The high-level adapter should fail loudly on multi-buffer Peak Detect files."""
+    path = tmp_path / "peak_detect.bin"
+    path.write_bytes(
+        _build_agilent_fixture(
+            [
+                {
+                    "waveform_label": "1",
+                    "n_pts": 3,
+                    "x_increment": 0.25,
+                    "x_origin": 1.5,
+                    "buffers": [
+                        {"buffer_type": 3, "bytes_per_point": 4, "payload": _float_payload([-1.0, -0.5, -0.25])},
+                        {"buffer_type": 2, "bytes_per_point": 4, "payload": _float_payload([1.0, 0.5, 0.25])},
+                    ],
+                }
+            ]
+        )
+    )
+
+    with pytest.raises(ValueError, match="multi-buffer"):
+        RigolWFM.agilent.from_file(str(path))
+
+
+def test_agilent_low_level_parser_preserves_segment_metadata(tmp_path):
+    """The Kaitai parser should expose segment indices and time tags per waveform."""
+    path = tmp_path / "segmented.bin"
+    path.write_bytes(
+        _build_agilent_fixture(
+            [
+                {
+                    "waveform_label": "1",
+                    "n_pts": 2,
+                    "x_increment": 1e-3,
+                    "x_origin": -5e-4,
+                    "segment_index": 1,
+                    "time_tag": 0.0,
+                    "buffers": [
+                        {"buffer_type": 1, "bytes_per_point": 4, "payload": _float_payload([0.0, 1.0])},
+                    ],
+                },
+                {
+                    "waveform_label": "1",
+                    "n_pts": 2,
+                    "x_increment": 1e-3,
+                    "x_origin": -5e-4,
+                    "segment_index": 2,
+                    "time_tag": 0.125,
+                    "buffers": [
+                        {"buffer_type": 1, "bytes_per_point": 4, "payload": _float_payload([2.0, 3.0])},
+                    ],
+                },
+            ]
+        )
+    )
+
+    waveform = RigolWFM.agilent_bin.AgilentBin.from_file(str(path))
+
+    assert waveform.file_header.n_waveforms == 2
+    assert [wave.wfm_header.segment_index for wave in waveform.waveforms] == [1, 2]
+    assert [wave.wfm_header.time_tag for wave in waveform.waveforms] == pytest.approx([0.0, 0.125])
+
+
+def test_agilent_normalized_parser_rejects_segmented_waveforms(tmp_path):
+    """The high-level adapter should fail loudly instead of collapsing segments."""
+    path = tmp_path / "segmented.bin"
+    path.write_bytes(
+        _build_agilent_fixture(
+            [
+                {
+                    "waveform_label": "1",
+                    "n_pts": 2,
+                    "x_increment": 1e-3,
+                    "x_origin": -5e-4,
+                    "segment_index": 1,
+                    "time_tag": 0.0,
+                    "buffers": [
+                        {"buffer_type": 1, "bytes_per_point": 4, "payload": _float_payload([0.0, 1.0])},
+                    ],
+                }
+            ]
+        )
+    )
+
+    with pytest.raises(ValueError, match="Segmented"):
+        RigolWFM.agilent.from_file(str(path))

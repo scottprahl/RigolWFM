@@ -635,7 +635,8 @@ class Channel:
 
             self.raw = raw8
             self.points = len(self.volts)
-            t0 = w.header.x_origin
+            x_origins = getattr(w.header, "x_origins", None)
+            t0 = x_origins[idx] if isinstance(x_origins, list) and idx < len(x_origins) and x_origins[idx] is not None else w.header.x_origin
             self.times = t0 + np.arange(self.points) * w.header.x_increment
 
     def agilent(self, w: Any, channel_number: int) -> None:

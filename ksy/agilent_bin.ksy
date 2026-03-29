@@ -6,22 +6,22 @@ meta:
 doc: |
   Binary waveform export used by Agilent and Keysight oscilloscopes.
 
-  This schema is based on the reverse-engineered parser and checked-in sample
-  captures from `docs/vendors/wavebin-master`, which exercise the `AG10`
-  container written by DSO-X / MSO-X scopes. The same container family also
-  appears to exist in `AG01` and `AG03` variants; the vendor parser handles
-  those by widening the file-size and buffer-size fields for version 3.
+  This schema is based on the checked-in vendor parsers plus the Agilent
+  6000 Series and InfiniiVision 2000 manuals. Those sources describe the
+  `AG01` / `AG03` / `AG10` container family written by several
+  Agilent / Keysight oscilloscopes.
 
   File layout:
     [File Header: 12 bytes for AG01 / AG10, 16 bytes for AG03]
     for each exported waveform:
       [Waveform Header: usually 140 bytes]
-      [Data Header: 12 bytes for AG01 / AG10, 16 bytes for AG03]
-      [Sample Data:   buffer_size bytes]
+      repeat n_buffers times:
+        [Data Header: 12 bytes for AG01 / AG10, 16 bytes for AG03]
+        [Sample Data: buffer_size bytes]
 
-  Analog waveforms are stored as float32 buffers. Digital / logic-like
-  captures use the same container but store `u1` samples and are handled by
-  handwritten code rather than normalized directly by the Kaitai schema.
+  Normal analog waveforms are float32. Peak Detect acquisitions can store
+  separate minimum and maximum float32 buffers for a single waveform header.
+  Logic-style records use byte-oriented buffers.
 
 seq:
   - id: file_header
@@ -58,6 +58,13 @@ types:
     seq:
       - id: wfm_header
         type: waveform_header
+      - id: buffers
+        type: waveform_buffer
+        repeat: expr
+        repeat-expr: wfm_header.n_buffers
+
+  waveform_buffer:
+    seq:
       - id: data_header
         type: data_header
       - id: data_raw
@@ -153,8 +160,8 @@ enums:
     1: normal_float32
     2: maximum_float32
     3: minimum_float32
-    4: time_float32
-    5: counts_float32
+    4: counts_i32
+    5: logic_u8
     6: digital_u8
 
   unit_enum:

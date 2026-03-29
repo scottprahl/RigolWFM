@@ -12,22 +12,22 @@
 /**
  * Binary waveform export used by Agilent and Keysight oscilloscopes.
  * 
- * This schema is based on the reverse-engineered parser and checked-in sample
- * captures from `docs/vendors/wavebin-master`, which exercise the `AG10`
- * container written by DSO-X / MSO-X scopes. The same container family also
- * appears to exist in `AG01` and `AG03` variants; the vendor parser handles
- * those by widening the file-size and buffer-size fields for version 3.
+ * This schema is based on the checked-in vendor parsers plus the Agilent
+ * 6000 Series and InfiniiVision 2000 manuals. Those sources describe the
+ * `AG01` / `AG03` / `AG10` container family written by several
+ * Agilent / Keysight oscilloscopes.
  * 
  * File layout:
  *   [File Header: 12 bytes for AG01 / AG10, 16 bytes for AG03]
  *   for each exported waveform:
  *     [Waveform Header: usually 140 bytes]
- *     [Data Header: 12 bytes for AG01 / AG10, 16 bytes for AG03]
- *     [Sample Data:   buffer_size bytes]
+ *     repeat n_buffers times:
+ *       [Data Header: 12 bytes for AG01 / AG10, 16 bytes for AG03]
+ *       [Sample Data: buffer_size bytes]
  * 
- * Analog waveforms are stored as float32 buffers. Digital / logic-like
- * captures use the same container but store `u1` samples and are handled by
- * handwritten code rather than normalized directly by the Kaitai schema.
+ * Normal analog waveforms are float32. Peak Detect acquisitions can store
+ * separate minimum and maximum float32 buffers for a single waveform header.
+ * Logic-style records use byte-oriented buffers.
  */
 
 var AgilentBin = (function() {
@@ -36,16 +36,16 @@ var AgilentBin = (function() {
     NORMAL_FLOAT32: 1,
     MAXIMUM_FLOAT32: 2,
     MINIMUM_FLOAT32: 3,
-    TIME_FLOAT32: 4,
-    COUNTS_FLOAT32: 5,
+    COUNTS_I32: 4,
+    LOGIC_U8: 5,
     DIGITAL_U8: 6,
 
     0: "UNKNOWN",
     1: "NORMAL_FLOAT32",
     2: "MAXIMUM_FLOAT32",
     3: "MINIMUM_FLOAT32",
-    4: "TIME_FLOAT32",
-    5: "COUNTS_FLOAT32",
+    4: "COUNTS_I32",
+    5: "LOGIC_U8",
     6: "DIGITAL_U8",
   });
 
@@ -183,11 +183,29 @@ var AgilentBin = (function() {
     }
     Waveform.prototype._read = function() {
       this.wfmHeader = new WaveformHeader(this._io, this, this._root);
+      this.buffers = [];
+      for (var i = 0; i < this.wfmHeader.nBuffers; i++) {
+        this.buffers.push(new WaveformBuffer(this._io, this, this._root));
+      }
+    }
+
+    return Waveform;
+  })();
+
+  var WaveformBuffer = AgilentBin.WaveformBuffer = (function() {
+    function WaveformBuffer(_io, _parent, _root) {
+      this._io = _io;
+      this._parent = _parent;
+      this._root = _root;
+
+      this._read();
+    }
+    WaveformBuffer.prototype._read = function() {
       this.dataHeader = new DataHeader(this._io, this, this._root);
       this.dataRaw = this._io.readBytes(this.dataHeader.bufferSize);
     }
 
-    return Waveform;
+    return WaveformBuffer;
   })();
 
   var WaveformHeader = AgilentBin.WaveformHeader = (function() {

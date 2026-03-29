@@ -1715,6 +1715,22 @@ function parseBin70008000(buffer) {
     return parseBinWaveforms(new Bin70008000.Bin70008000(new KaitaiStream(buffer), null, null), 'MSO7000/8000', '7', 'bin7000_8000');
 }
 
+function agilentAnalogBufferSuffix(bufferType, analogBufferCount) {
+    if (analogBufferCount <= 1 && bufferType === 1) {
+        return '';
+    }
+    if (bufferType === 2) {
+        return ' max';
+    }
+    if (bufferType === 3) {
+        return ' min';
+    }
+    if (bufferType === 1) {
+        return ' data';
+    }
+    return ' buffer';
+}
+
 function parseAgilentBin(buffer) {
     var w = new AgilentBin.AgilentBin(new KaitaiStream(buffer), null, null);
     var channels = [];
@@ -1723,39 +1739,32 @@ function parseAgilentBin(buffer) {
 
     for (var wi = 0; wi < w.waveforms.length; wi++) {
         var wfm = w.waveforms[wi];
-        var dh = wfm.dataHeader;
         var wh = wfm.wfmHeader;
-        var bufferType = dh.bufferType;
         var waveformType = wh.waveformType;
+        var analogBuffers = [];
 
-        if (waveformType === 6 || bufferType === 6) {
+        for (var bi = 0; bi < wfm.buffers.length; bi++) {
+            var candidate = wfm.buffers[bi];
+            var candidateHeader = candidate.dataHeader;
+            var candidateType = candidateHeader.bufferType;
+
+            if (waveformType === 6 || candidateType === 5 || candidateType === 6) {
+                continue;
+            }
+            if (candidateType === 4) {
+                continue;
+            }
+            if (candidateHeader.bytesPerPoint !== 4 || candidateType < 1 || candidateType > 3) {
+                throw new Error(
+                    'Unsupported Agilent/Keysight waveform buffer ' +
+                    '(bufferType=' + candidateType + ', bytesPerPoint=' + candidateHeader.bytesPerPoint + ').'
+                );
+            }
+            analogBuffers.push(candidate);
+        }
+
+        if (!analogBuffers.length) {
             continue;
-        }
-        if (dh.bytesPerPoint !== 4 || bufferType < 1 || bufferType > 5) {
-            throw new Error(
-                'Unsupported Agilent/Keysight waveform buffer ' +
-                '(bufferType=' + bufferType + ', bytesPerPoint=' + dh.bytesPerPoint + ').'
-            );
-        }
-
-        var dataRaw = wfm.dataRaw;
-        var n = wh.nPts;
-        var dv = new DataView(dataRaw.buffer, dataRaw.byteOffset, dataRaw.byteLength);
-        var times = new Float64Array(n);
-        var volts = new Float64Array(n);
-        var vMin = Infinity;
-        var vMax = -Infinity;
-
-        for (var i = 0; i < n; i++) {
-            times[i] = wh.xDisplayOrigin + i * wh.xIncrement;
-            var v = dv.getFloat32(i * 4, true);
-            volts[i] = v;
-            if (v < vMin) {
-                vMin = v;
-            }
-            if (v > vMax) {
-                vMax = v;
-            }
         }
 
         var frameParts = splitFrameString(wh.frameString);
@@ -1768,23 +1777,56 @@ function parseAgilentBin(buffer) {
 
         var fallbackChannel = channels.length + 1;
         var channelNumber = channelNumberFromName(wh.waveformLabel, fallbackChannel);
-        channels.push({
-            name: normalizedChannelName(wh.waveformLabel, channelNumber),
-            color: CH_COLORS[(channelNumber - 1) % CH_COLORS.length],
-            times: times,
-            volts: volts,
-            raw: proxyRawFromCalibrated(volts),
-            channelNumber: channelNumber,
-            points: n,
-            coupling: 'unknown',
-            voltPerDiv: vMax > vMin ? (vMax - vMin) / 8 : 1,
-            voltOffset: 0,
-            probeValue: 1,
-            inverted: false,
-            timeScale: wh.xDisplayRange > 0 ? wh.xDisplayRange / 10 : n * wh.xIncrement / 10,
-            timeOffset: wh.xDisplayOrigin,
-            secondsPerPoint: wh.xIncrement,
-        });
+        var normalizedName = normalizedChannelName(wh.waveformLabel, channelNumber);
+        var segmentSuffix = '';
+        var absoluteOrigin = wh.xOrigin;
+        if (wh.segmentIndex || Math.abs(wh.timeTag) > 1e-15) {
+            segmentSuffix = ' S' + (wh.segmentIndex || '?');
+            absoluteOrigin += wh.timeTag;
+        }
+
+        for (bi = 0; bi < analogBuffers.length; bi++) {
+            var analogBuffer = analogBuffers[bi];
+            var bufferHeader = analogBuffer.dataHeader;
+            var bufferType = bufferHeader.bufferType;
+            var dataRaw = analogBuffer.dataRaw;
+            var n = wh.nPts;
+            var dv = new DataView(dataRaw.buffer, dataRaw.byteOffset, dataRaw.byteLength);
+            var times = new Float64Array(n);
+            var volts = new Float64Array(n);
+            var vMin = Infinity;
+            var vMax = -Infinity;
+
+            for (var i = 0; i < n; i++) {
+                times[i] = absoluteOrigin + i * wh.xIncrement;
+                var v = dv.getFloat32(i * 4, true);
+                volts[i] = v;
+                if (v < vMin) {
+                    vMin = v;
+                }
+                if (v > vMax) {
+                    vMax = v;
+                }
+            }
+
+            channels.push({
+                name: normalizedName + segmentSuffix + agilentAnalogBufferSuffix(bufferType, analogBuffers.length),
+                color: CH_COLORS[(channelNumber - 1) % CH_COLORS.length],
+                times: times,
+                volts: volts,
+                raw: proxyRawFromCalibrated(volts),
+                channelNumber: channelNumber,
+                points: n,
+                coupling: 'unknown',
+                voltPerDiv: vMax > vMin ? (vMax - vMin) / 8 : 1,
+                voltOffset: 0,
+                probeValue: 1,
+                inverted: false,
+                timeScale: wh.xDisplayRange > 0 ? wh.xDisplayRange / 10 : n * wh.xIncrement / 10,
+                timeOffset: absoluteOrigin,
+                secondsPerPoint: wh.xIncrement,
+            });
+        }
     }
 
     if (!channels.length) {
