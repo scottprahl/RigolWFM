@@ -78,7 +78,7 @@ def test_from_url_auto_matches_detected_model(monkeypatch):
     with open(path, "rb") as handle:
         content = handle.read()
 
-    class DummyResponse:
+    class DummyResponse:  # pylint: disable=too-few-public-methods
         """Minimal requests response stand-in for unit tests."""
 
         def __init__(self, payload):

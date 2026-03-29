@@ -312,12 +312,12 @@ def from_file(file_name: str) -> IsfWaveform:
         adc_max = adc_all[1::2]
         n_pts = len(adc_min)
         # Use the average of min/max as the representative trace
-        adc = ((adc_min.astype(np.float64) + adc_max.astype(np.float64)) / 2.0)
+        adc = (adc_min.astype(np.float64) + adc_max.astype(np.float64)) / 2.0
     else:
         adc = adc_all.astype(np.float64)
         n_pts = len(adc)
 
-    if nr_pt > 0 and n_pts > nr_pt:
+    if 0 < nr_pt < n_pts:
         adc = adc[:nr_pt]
         n_pts = nr_pt
 

@@ -137,7 +137,7 @@ def _build_ds6000_file(
 
     payload = bytearray(header.getvalue())
 
-    last_offset = max([offset + storage_depth for offset in channel_offsets if offset != 0], default=len(payload))
+    last_offset = max((offset + storage_depth for offset in channel_offsets if offset != 0), default=len(payload))
     if len(payload) < last_offset:
         payload.extend(b"\0" * (last_offset - len(payload)))
 

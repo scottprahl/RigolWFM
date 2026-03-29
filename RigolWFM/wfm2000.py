@@ -292,7 +292,7 @@ class Wfm2000(KaitaiStruct):
             for i in range(4):
                 self.ch.append(Wfm2000.ChannelHeader(self._io, self, self._root))
 
-            self.setup_size = self._io.read_u4le()
+            self.len_setup = self._io.read_u4le()
             self.setup_offset = self._io.read_u4le()
             self.wfm_offset = self._io.read_u4le()
             self.storage_depth = self._io.read_u4le()
@@ -504,7 +504,7 @@ class Wfm2000(KaitaiStruct):
 
             _pos = self._io.pos()
             self._io.seek(self.setup_offset - 56)
-            self._raw__m_setup = self._io.read_bytes(self.setup_size)
+            self._raw__m_setup = self._io.read_bytes(self.len_setup)
             _io__raw__m_setup = KaitaiStream(BytesIO(self._raw__m_setup))
             self._m_setup = Wfm2000.SetupBlock(_io__raw__m_setup, self, self._root)
             self._io.seek(_pos)

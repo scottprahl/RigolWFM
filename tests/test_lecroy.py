@@ -6,7 +6,7 @@ constructed LECROY_2_3 binary blobs that exercise the parser with known values.
 
 WAVEDESC field layout (little-endian, total 346 bytes):
   offset  size  field
-       0    16  descriptor_name ("WAVEDESC\\0\\0...")
+       0    16  descriptor_name ("WAVEDESC[NUL][NUL]...")
       16    16  template_name
       32     2  comm_type (u2)     0=byte, 1=word
       34     2  comm_order (u2)    0=BE, 1=LE
@@ -63,6 +63,7 @@ WAVEDESC field layout (little-endian, total 346 bytes):
      340     4  acq_vert_offset (f4)
      344     2  wave_source (u2)  0=CH1, 1=CH2, ...
 """
+# pylint: disable=unsubscriptable-object  # numpy NDArray subscripting triggers false positives
 
 import struct
 from pathlib import Path
@@ -237,7 +238,7 @@ def test_from_file_8bit_voltage_formula(tmp_path):
 
     obj = RigolWFM.lecroy.from_file(str(p))
     volts = obj.header.channel_data[0]
-    assert volts is not None
+    assert isinstance(volts, np.ndarray)
     for i, exp in enumerate(expected):
         assert volts[i] == pytest.approx(exp, abs=1e-5)
 
@@ -296,7 +297,7 @@ def test_from_file_16bit(tmp_path):
 
     obj = RigolWFM.lecroy.from_file(str(p))
     volts = obj.header.channel_data[0]
-    assert volts is not None
+    assert isinstance(volts, np.ndarray)
     for i, exp in enumerate(expected):
         assert volts[i] == pytest.approx(exp, abs=1e-5)
 
@@ -432,7 +433,7 @@ def test_from_file_big_endian_voltage(tmp_path):
 
     obj = RigolWFM.lecroy.from_file(str(p))
     volts = obj.header.channel_data[0]
-    assert volts is not None
+    assert isinstance(volts, np.ndarray)
     for i, exp in enumerate(expected):
         assert volts[i] == pytest.approx(exp, abs=1e-5)
 
@@ -457,7 +458,7 @@ def test_from_file_big_endian_16bit(tmp_path):
 
     obj = RigolWFM.lecroy.from_file(str(p))
     volts = obj.header.channel_data[0]
-    assert volts is not None
+    assert isinstance(volts, np.ndarray)
     for i, exp in enumerate(expected):
         assert volts[i] == pytest.approx(exp, abs=1e-5)
 
@@ -508,6 +509,7 @@ def test_scpi_prefix_voltage(tmp_path):
 
     obj = RigolWFM.lecroy.from_file(str(p))
     volts = obj.header.channel_data[0]
+    assert isinstance(volts, np.ndarray)
     expected = [gain * a - offset for a in adc]
     for i, exp in enumerate(expected):
         assert volts[i] == pytest.approx(exp, abs=1e-5)

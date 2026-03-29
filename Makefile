@@ -142,7 +142,8 @@ ruff-check:
 
 .PHONY: manifest-check
 manifest-check:
-	@$(RUN) check-manifest
+	@$(RMR) $(PACKAGE_DIR).egg-info
+	@$(RUN) check-manifest --no-build-isolation
 
 .PHONY: pyroma-check
 pyroma-check:

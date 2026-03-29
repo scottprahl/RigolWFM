@@ -178,7 +178,7 @@ def test_ds2000_setup_trigger_matches_scope_export(stem):
     levels = setup.trigger_levels
 
     assert int(setup.trigger_source_primary) == int(setup.trigger_source_shadow)
-    assert RigolWFM.wfm._DS2000_SOURCE_NAMES[int(setup.trigger_source_primary)] == expected["source"]
+    assert RigolWFM.wfm._DS2000_SOURCE_NAMES[int(setup.trigger_source_primary)] == expected["source"]  # pylint: disable=protected-access
     assert setup.trigger_holdoff_ns * 1.0e-9 == pytest.approx(expected["holdoff_s"])
     assert levels.ch1_level_uv * 1.0e-6 == pytest.approx(expected["input_levels"]["CH1"])
     assert levels.ch2_level_uv * 1.0e-6 == pytest.approx(expected["input_levels"]["CH2"])

@@ -108,7 +108,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
@@ -139,6 +138,7 @@ dev = [
   "check-manifest",
   "pyroma",
   "build",
+  "wheel",
   "setuptools",
 
   # Notebooks (local JupyterLab workflows)
@@ -179,7 +179,22 @@ disable = [
 ]
 
 [tool.pylint.main]
-ignore-patterns = ["^\\.#", "^wfm[0-9].*\\.py$", "^bin[0-9].*\\.py$", "^wfmdho1000\\.py$", "^bindho.*\\.py$", "^.*_ksy\\.py$"]
+ignore-patterns = [
+    "^\\.#",
+    # Kaitai-generated parsers from ksy/
+    "^bin5000\\.py$",
+    "^bin7000_8000\\.py$",
+    "^bindho1000\\.py$",
+    "^lecroy_[0-9]_[0-9]_(be|le)\\.py$",
+    "^tek_isf\\.py$",
+    "^tek_wfm_[0-9]{3}_(be|le)\\.py$",
+    "^wfm1000.*\\.py$",
+    "^wfm2000\\.py$",
+    "^wfm4000\\.py$",
+    "^wfm6000\\.py$",
+    "^wfmdho1000\\.py$",
+    "^yokogawa_wvf\\.py$",
+]
 
 [tool.black]
 line-length = 120
@@ -187,7 +202,25 @@ target-version = ["py310", "py311", "py312", "py313", "py314"]
 
 [tool.ruff]
 line-length = 120
-exclude = [".venv", "__pycache__", "docs", "wfm", "RigolWFM/wfm[0-9]*.py", "RigolWFM/bin[0-9]*.py", "RigolWFM/wfmdho1000.py", "RigolWFM/bindho*.py", "RigolWFM/*_ksy.py"]
+exclude = [
+    ".venv",
+    "__pycache__",
+    "docs",
+    "wfm",
+    # Kaitai-generated parsers from ksy/
+    "RigolWFM/bin5000.py",
+    "RigolWFM/bin7000_8000.py",
+    "RigolWFM/bindho1000.py",
+    "RigolWFM/lecroy_*.py",
+    "RigolWFM/tek_isf.py",
+    "RigolWFM/tek_wfm_*.py",
+    "RigolWFM/wfm1000*.py",
+    "RigolWFM/wfm2000.py",
+    "RigolWFM/wfm4000.py",
+    "RigolWFM/wfm6000.py",
+    "RigolWFM/wfmdho1000.py",
+    "RigolWFM/yokogawa_wvf.py",
+]
 
 [tool.ruff.lint]
 select = ["D", "E", "F", "W"]
@@ -200,11 +233,14 @@ ignore = [
     "todo",
     "docs/*",
     "docs/**/*",
+    "docs/vendors",
+    "docs/vendors/**",
     "Makefile",
     "release.txt",
     "RigolWFM/jupyter_lite_config.json",
     "wfm/*",
     "ksy/*",
+    "tests/files/wfm/*.wfm",
 ]
 
 [tool.mypy]

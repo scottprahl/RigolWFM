@@ -102,7 +102,7 @@ types:
         repeat: expr
         repeat-expr: 4
 
-      - id: setup_size
+      - id: len_setup
         type: u4
       - id: setup_offset
         type: u4
@@ -235,7 +235,7 @@ types:
         value: model_number
       setup:
         pos: setup_offset - 56
-        size: setup_size
+        size: len_setup
         type: setup_block
 
       raw_depth:

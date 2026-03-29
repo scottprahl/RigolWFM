@@ -235,9 +235,9 @@ def _decode_ds4000_trigger(waveform: Any) -> dict:
         and hasattr(modern_source, "name")
     ):
         input_levels = _scaled_ds4000_trigger_levels(modern_levels, probe_values)
-        source = modern_source.name.upper()
+        source = modern_source.name.upper()  # type: ignore[union-attr]
         info: dict[str, Any] = {
-            "mode": modern_mode.name.capitalize(),
+            "mode": modern_mode.name.capitalize(),  # type: ignore[union-attr]
             "source": source,
             "input_levels": input_levels,
         }
@@ -277,7 +277,7 @@ def _decode_ds2000_trigger(waveform: Any) -> dict:
     info: dict[str, Any] = {"input_levels": input_levels}
 
     try:
-        source_code = int(source_primary)
+        source_code = int(source_primary)  # type: ignore[arg-type]
         if source_shadow is not None and source_code == int(source_shadow):
             source_name = _DS2000_SOURCE_NAMES.get(source_code)
             if source_name is not None:
@@ -289,7 +289,7 @@ def _decode_ds2000_trigger(waveform: Any) -> dict:
 
     mode_code = getattr(setup, "trigger_mode_code", None)
     try:
-        mode_name = _DS2000_TRIGGER_MODE_NAMES.get(int(mode_code))
+        mode_name = _DS2000_TRIGGER_MODE_NAMES.get(int(mode_code))  # type: ignore[arg-type]
         if mode_name is not None:
             info["mode"] = mode_name
     except (TypeError, ValueError):

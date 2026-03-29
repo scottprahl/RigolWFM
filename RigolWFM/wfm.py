@@ -64,7 +64,7 @@ DS8000_scopes = RigolWFM.rigol.DS8000_scopes
 DHO1000_scopes = RigolWFM.rigol.DHO1000_scopes
 
 # Re-export Rigol trigger constants so existing callers continue to work.
-_DS2000_SOURCE_NAMES = RigolWFM.rigol._DS2000_SOURCE_NAMES
+_DS2000_SOURCE_NAMES = RigolWFM.rigol._DS2000_SOURCE_NAMES  # pylint: disable=protected-access
 
 _LECROY_MAGIC = b"WAVEDESC"
 _TEK_MAGIC = b"WFM#"
@@ -641,9 +641,9 @@ class Wfm:
                 v_max = float(np.max(v))
                 v_range = v_max - v_min if v_max != v_min else 1.0
                 return ((v - v_min) / v_range * 65534 - 32767).astype(np.int16)
-            else:  # "scope"
-                full_scale = 4.0 * ch.volt_per_division if ch.volt_per_division != 0 else 1.0
-                return np.clip(v / full_scale * 32767, -32767, 32767).astype(np.int16)
+            # "scope"
+            full_scale = 4.0 * ch.volt_per_division if ch.volt_per_division != 0 else 1.0
+            return np.clip(v / full_scale * 32767, -32767, 32767).astype(np.int16)
 
         scaled = [_scale_channel(ch) for ch in channels]
         n_channels = len(scaled)
