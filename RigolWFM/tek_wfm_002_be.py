@@ -22,13 +22,11 @@ class TekWfm002Be(KaitaiStruct):
     
     WFM#003 additional difference: point_density in the user-view sections of each
     dimension (exp_dim1, exp_dim2, imp_dim1, imp_dim2) changes from u4 (4 bytes) to
-    f8 (8 bytes).  This shifts each user-view section and all following structures by
-    4 extra bytes per dimension (16 bytes total).  This parser reads point_density as
-    u4; for WFM#003 files the h_ref, trig_delay, time_base, update_spec, and curve
-    fields will be offset by 16 bytes relative to this parser's positions, but
-    dim_scale and dim_offset (the critical calibration fields) remain correct.
+    f8 (8 bytes).  This parser handles that layout difference explicitly, so the
+    downstream time-base, update-spec, and curve offsets are correct for both
+    WFM#002 and WFM#003 files.
     
-    Endianness detection: byte_order at offset 0 is 0x0F0F for little-endian (Intel).
+    Endianness detection: byte_order at offset 0 is 0xF0F0 for big-endian (PPC).
     Version string at offset 2 is "WFM#002" or "WFM#003".
     
     Voltage reconstruction (explicit dimension 1):
@@ -123,7 +121,13 @@ class TekWfm002Be(KaitaiStruct):
 
 
     class ExpDim(KaitaiStruct):
-        """Explicit dimension: 100-byte description block + 56-byte user-view = 156 bytes.
+        """Explicit dimension: 100-byte description block plus a version-dependent
+        user-view section.
+        
+        Total size:
+          WFM#002 = 156 bytes (56-byte user-view)
+          WFM#003 = 160 bytes (60-byte user-view)
+        
         For YT waveforms, explicit dimension 1 defines the voltage (Y) axis:
           volts[i] = dim_scale * adc[i] + dim_offset
         """
@@ -152,17 +156,45 @@ class TekWfm002Be(KaitaiStruct):
             self.user_scale = self._io.read_f8be()
             self.user_units = self._io.read_bytes(20)
             self.user_offset = self._io.read_f8be()
-            self.point_density = self._io.read_u4be()
+            if (not (self._root.is_wfm003)):
+                pass
+                self.point_density_u4 = self._io.read_u4be()
+
+            if self._root.is_wfm003:
+                pass
+                self.point_density_f8 = self._io.read_f8be()
+
             self.h_ref = self._io.read_f8be()
             self.trig_delay = self._io.read_f8be()
 
 
         def _fetch_instances(self):
             pass
+            if (not (self._root.is_wfm003)):
+                pass
+
+            if self._root.is_wfm003:
+                pass
+
+
+        @property
+        def point_density(self):
+            """Version-normalized point_density value."""
+            if hasattr(self, '_m_point_density'):
+                return self._m_point_density
+
+            self._m_point_density = (self.point_density_f8 if self._root.is_wfm003 else self.point_density_u4)
+            return getattr(self, '_m_point_density', None)
 
 
     class ImpDim(KaitaiStruct):
-        """Implicit dimension: 76-byte description block + 56-byte user-view = 132 bytes.
+        """Implicit dimension: 76-byte description block plus a version-dependent
+        user-view section.
+        
+        Total size:
+          WFM#002 = 132 bytes (56-byte user-view)
+          WFM#003 = 136 bytes (60-byte user-view)
+        
         For YT waveforms, implicit dimension 1 defines the time (X) axis:
           t[i] = dim_offset + i * dim_scale
         where i = 0 is the first sample in the curve buffer.
@@ -186,13 +218,35 @@ class TekWfm002Be(KaitaiStruct):
             self.user_scale = self._io.read_f8be()
             self.user_units = self._io.read_bytes(20)
             self.user_offset = self._io.read_f8be()
-            self.point_density = self._io.read_u4be()
+            if (not (self._root.is_wfm003)):
+                pass
+                self.point_density_u4 = self._io.read_u4be()
+
+            if self._root.is_wfm003:
+                pass
+                self.point_density_f8 = self._io.read_f8be()
+
             self.h_ref = self._io.read_f8be()
             self.trig_delay = self._io.read_f8be()
 
 
         def _fetch_instances(self):
             pass
+            if (not (self._root.is_wfm003)):
+                pass
+
+            if self._root.is_wfm003:
+                pass
+
+
+        @property
+        def point_density(self):
+            """Version-normalized point_density value."""
+            if hasattr(self, '_m_point_density'):
+                return self._m_point_density
+
+            self._m_point_density = (self.point_density_f8 if self._root.is_wfm003 else self.point_density_u4)
+            return getattr(self, '_m_point_density', None)
 
 
     class StaticFileInfo(KaitaiStruct):
@@ -207,7 +261,8 @@ class TekWfm002Be(KaitaiStruct):
 
         def _read(self):
             self.byte_order = self._io.read_u2be()
-            self.version_number = self._io.read_bytes(8)
+            self.version_number = (self._io.read_bytes(7)).decode(u"ASCII")
+            self.version_pad = self._io.read_bytes(1)
             self.num_digits_byte_count = self._io.read_u1()
             self.num_bytes_to_eof = self._io.read_s4be()
             self.num_bytes_per_point = self._io.read_u1()
@@ -290,8 +345,15 @@ class TekWfm002Be(KaitaiStruct):
 
     class WfmHeader(KaitaiStruct):
         """Waveform header block.  Differs from WFM#001 by the 2-byte summary_frame_type
-        field inserted after num_acquired_fast_frames.  All subsequent fields are
-        shifted 2 bytes later than in tek_wfm_001_le.
+        field inserted after num_acquired_fast_frames.
+        
+        WFM#002 uses 4-byte point_density values in the user-view sections:
+          exp_dim1 @ 168, exp_dim2 @ 324, imp_dim1 @ 480, imp_dim2 @ 612,
+          time_base1 @ 744, time_base2 @ 756, update_spec @ 768, curve @ 792.
+        
+        WFM#003 uses 8-byte point_density values in the same sections:
+          exp_dim1 @ 168, exp_dim2 @ 328, imp_dim1 @ 488, imp_dim2 @ 624,
+          time_base1 @ 760, time_base2 @ 772, update_spec @ 784, curve @ 808.
         """
         def __init__(self, _io, _parent=None, _root=None):
             super(TekWfm002Be.WfmHeader, self).__init__(_io)
@@ -375,5 +437,14 @@ class TekWfm002Be(KaitaiStruct):
         self._m_curve_buffer = self._io.read_bytes(self.wfm_header.curve.end_of_curve_buffer_offset)
         self._io.seek(_pos)
         return getattr(self, '_m_curve_buffer', None)
+
+    @property
+    def is_wfm003(self):
+        """True when this file uses the WFM#003 layout."""
+        if hasattr(self, '_m_is_wfm003'):
+            return self._m_is_wfm003
+
+        self._m_is_wfm003 = self.static_file_info.version_number == u"WFM#003"
+        return getattr(self, '_m_is_wfm003', None)
 
 

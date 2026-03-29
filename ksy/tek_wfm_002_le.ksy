@@ -17,11 +17,9 @@ doc: |
 
   WFM#003 additional difference: point_density in the user-view sections of each
   dimension (exp_dim1, exp_dim2, imp_dim1, imp_dim2) changes from u4 (4 bytes) to
-  f8 (8 bytes).  This shifts each user-view section and all following structures by
-  4 extra bytes per dimension (16 bytes total).  This parser reads point_density as
-  u4; for WFM#003 files the h_ref, trig_delay, time_base, update_spec, and curve
-  fields will be offset by 16 bytes relative to this parser's positions, but
-  dim_scale and dim_offset (the critical calibration fields) remain correct.
+  f8 (8 bytes).  This parser handles that layout difference explicitly, so the
+  downstream time-base, update-spec, and curve offsets are correct for both
+  WFM#002 and WFM#003 files.
 
   Endianness detection: byte_order at offset 0 is 0x0F0F for little-endian (Intel).
   Version string at offset 2 is "WFM#002" or "WFM#003".
@@ -45,6 +43,9 @@ seq:
     doc: Variable-length waveform header with dimension, time-base, and curve metadata.
 
 instances:
+  is_wfm003:
+    value: static_file_info.version_number == "WFM#003"
+    doc: True when this file uses the WFM#003 layout.
   curve_buffer:
     pos: static_file_info.byte_offset_to_curve_buffer
     size: wfm_header.curve.end_of_curve_buffer_offset
@@ -65,10 +66,15 @@ types:
           Byte-order marker.  0x0F0F = little-endian (Intel / PC); 0xF0F0 = big-endian
           (PPC).  Offset 0.
       - id: version_number
-        size: 8
+        type: str
+        size: 7
+        encoding: ASCII
         doc: |
-          Version identification string, null-padded to 8 bytes.
+          Version identification string.
           "WFM#002" or "WFM#003" for this parser.  Offset 2.
+      - id: version_pad
+        size: 1
+        doc: Null terminator / padding byte after version_number.  Offset 9.
       - id: num_digits_byte_count
         type: u1
         doc: Number of decimal digits in the byte-count field (0–9).  Offset 10.
@@ -108,8 +114,15 @@ types:
   wfm_header:
     doc: |
       Waveform header block.  Differs from WFM#001 by the 2-byte summary_frame_type
-      field inserted after num_acquired_fast_frames.  All subsequent fields are
-      shifted 2 bytes later than in tek_wfm_001_le.
+      field inserted after num_acquired_fast_frames.
+
+      WFM#002 uses 4-byte point_density values in the user-view sections:
+        exp_dim1 @ 168, exp_dim2 @ 324, imp_dim1 @ 480, imp_dim2 @ 612,
+        time_base1 @ 744, time_base2 @ 756, update_spec @ 768, curve @ 792.
+
+      WFM#003 uses 8-byte point_density values in the same sections:
+        exp_dim1 @ 168, exp_dim2 @ 328, imp_dim1 @ 488, imp_dim2 @ 624,
+        time_base1 @ 760, time_base2 @ 772, update_spec @ 784, curve @ 808.
     seq:
       - id: set_type
         type: s4
@@ -176,32 +189,50 @@ types:
         doc: Maximum pixel-map value (display use only).  Offset 160.
       - id: exp_dim1
         type: exp_dim
-        doc: Explicit dimension 1 (156 bytes; voltage axis for YT).  Offset 168.
+        doc: |
+          Explicit dimension 1 (156 bytes in WFM#002, 160 bytes in WFM#003;
+          voltage axis for YT).  Offset 168.
       - id: exp_dim2
         type: exp_dim
-        doc: Explicit dimension 2 (156 bytes).  Offset 324.
+        doc: |
+          Explicit dimension 2 (156 bytes in WFM#002, 160 bytes in WFM#003).
+          Offset 324 in WFM#002, 328 in WFM#003.
       - id: imp_dim1
         type: imp_dim
-        doc: Implicit dimension 1 (132 bytes; time axis for YT).  Offset 480.
+        doc: |
+          Implicit dimension 1 (132 bytes in WFM#002, 136 bytes in WFM#003;
+          time axis for YT).  Offset 480 in WFM#002, 488 in WFM#003.
       - id: imp_dim2
         type: imp_dim
-        doc: Implicit dimension 2 (132 bytes).  Offset 612.
+        doc: |
+          Implicit dimension 2 (132 bytes in WFM#002, 136 bytes in WFM#003).
+          Offset 612 in WFM#002, 624 in WFM#003.
       - id: time_base1
         type: time_base_info
-        doc: Time-base 1 information (12 bytes).  Offset 744.
+        doc: Time-base 1 information (12 bytes).  Offset 744 in WFM#002, 760 in WFM#003.
       - id: time_base2
         type: time_base_info
-        doc: Time-base 2 information (12 bytes).  Offset 756.
+        doc: Time-base 2 information (12 bytes).  Offset 756 in WFM#002, 772 in WFM#003.
       - id: update_spec
         type: wfm_update_spec
-        doc: Update specification for the first waveform frame (24 bytes).  Offset 768.
+        doc: |
+          Update specification for the first waveform frame (24 bytes).
+          Offset 768 in WFM#002, 784 in WFM#003.
       - id: curve
         type: wfm_curve_object
-        doc: Curve object for the first waveform frame (30 bytes).  Offset 792.
+        doc: |
+          Curve object for the first waveform frame (30 bytes).
+          Offset 792 in WFM#002, 808 in WFM#003.
 
   exp_dim:
     doc: |
-      Explicit dimension: 100-byte description block + 56-byte user-view = 156 bytes.
+      Explicit dimension: 100-byte description block plus a version-dependent
+      user-view section.
+
+      Total size:
+        WFM#002 = 156 bytes (56-byte user-view)
+        WFM#003 = 160 bytes (60-byte user-view)
+
       For YT waveforms, explicit dimension 1 defines the voltage (Y) axis:
         volts[i] = dim_scale * adc[i] + dim_offset
     seq:
@@ -255,7 +286,7 @@ types:
       - id: low_range
         size: 4
         doc: Raw 4-byte minimum value.
-      # User-view data (56 bytes)
+      # User-view data
       - id: user_scale
         type: f8
         doc: User display scale in physical units per screen division.
@@ -265,12 +296,16 @@ types:
       - id: user_offset
         type: f8
         doc: User display position offset in screen divisions.
-      - id: point_density
+      - id: point_density_u4
         type: u4
+        if: not _root.is_wfm003
         doc: |
-          Screen-to-data ratio.  Always 1 for explicit dimensions.
-          Note: WFM#003 files store this as f8 (8 bytes); reading as u4 is incorrect
-          for WFM#003 but does not affect dim_scale or dim_offset.
+          Screen-to-data ratio in WFM#002 files.  Always 1 for explicit dimensions.
+      - id: point_density_f8
+        type: f8
+        if: _root.is_wfm003
+        doc: |
+          Screen-to-data ratio in WFM#003 files.  Always 1 for explicit dimensions.
       - id: h_ref
         type: f8
         doc: Trigger horizontal position as a percentage of the waveform (0–100%).
@@ -278,9 +313,20 @@ types:
         type: f8
         doc: Time delay in seconds from trigger to HRef screen position.
 
+    instances:
+      point_density:
+        value: "_root.is_wfm003 ? point_density_f8 : point_density_u4"
+        doc: Version-normalized point_density value.
+
   imp_dim:
     doc: |
-      Implicit dimension: 76-byte description block + 56-byte user-view = 132 bytes.
+      Implicit dimension: 76-byte description block plus a version-dependent
+      user-view section.
+
+      Total size:
+        WFM#002 = 132 bytes (56-byte user-view)
+        WFM#003 = 136 bytes (60-byte user-view)
+
       For YT waveforms, implicit dimension 1 defines the time (X) axis:
         t[i] = dim_offset + i * dim_scale
       where i = 0 is the first sample in the curve buffer.
@@ -314,7 +360,7 @@ types:
       - id: spacing
         type: u4
         doc: Real-time point spacing; 1 for non-interpolated waveforms.
-      # User-view data (56 bytes)
+      # User-view data
       - id: user_scale
         type: f8
         doc: User display time scale.
@@ -324,17 +370,27 @@ types:
       - id: user_offset
         type: f8
         doc: Horizontal center pixel column position relative to trigger (absolute time units).
-      - id: point_density
+      - id: point_density_u4
         type: u4
+        if: not _root.is_wfm003
         doc: |
-          Data points compressed into one pixel column at zoom = 1.
-          Note: WFM#003 stores this as f8; reading as u4 is incorrect for WFM#003.
+          Data points compressed into one pixel column at zoom = 1 for WFM#002 files.
+      - id: point_density_f8
+        type: f8
+        if: _root.is_wfm003
+        doc: |
+          Data points compressed into one pixel column at zoom = 1 for WFM#003 files.
       - id: h_ref
         type: f8
         doc: Trigger horizontal position as a percentage of the waveform (0–100%).
       - id: trig_delay
         type: f8
         doc: Time delay in seconds from trigger to HRef screen position.
+
+    instances:
+      point_density:
+        value: "_root.is_wfm003 ? point_density_f8 : point_density_u4"
+        doc: Version-normalized point_density value.
 
   time_base_info:
     doc: 12-byte time-base acquisition information block.

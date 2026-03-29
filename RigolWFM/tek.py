@@ -57,14 +57,14 @@ _TEK_MAGIC = b"WFM#"
 
 # Explicit-dimension format codes → numpy dtype
 _FORMAT_DTYPE: dict[int, str] = {
-    0: "int16",   # EXPLICIT_INT16
-    1: "int32",   # EXPLICIT_INT32
-    2: "uint32",  # EXPLICIT_UINT32
-    3: "uint64",  # EXPLICIT_UINT64
-    4: "float32", # EXPLICIT_FP32
-    5: "float64", # EXPLICIT_FP64
-    6: "uint8",   # EXPLICIT_UINT8  (WFM#003)
-    7: "int8",    # EXPLICIT_INT8   (WFM#003)
+    0: "i2",  # EXPLICIT_INT16
+    1: "i4",  # EXPLICIT_INT32
+    2: "u4",  # EXPLICIT_UINT32
+    3: "u8",  # EXPLICIT_UINT64
+    4: "f4",  # EXPLICIT_FP32
+    5: "f8",  # EXPLICIT_FP64
+    6: "u1",  # EXPLICIT_UINT8  (WFM#003)
+    7: "i1",  # EXPLICIT_INT8   (WFM#003)
 }
 
 
@@ -242,6 +242,8 @@ def from_file(file_name: str) -> TekWaveform:
 
     # Detect version from version_number string at offset 2 (8 bytes)
     version_str = data[2:10].split(b"\x00")[0].decode("ascii", errors="ignore").strip()
+    if version_str not in {"WFM#001", "WFM#002", "WFM#003"}:
+        raise ValueError(f"File '{file_name}' has unsupported Tektronix WFM version '{version_str}'")
     is_v1 = version_str == "WFM#001"
 
     try:
@@ -257,6 +259,13 @@ def from_file(file_name: str) -> TekWaveform:
     hdr = raw.wfm_header
     exp1 = hdr.exp_dim1
     imp1 = hdr.imp_dim1
+
+    if not is_v1:
+        set_type = getattr(hdr.set_type, "value", int(hdr.set_type))
+        if int(sfi.n_fast_frames_minus_1) != 0 or set_type != 0:
+            raise ValueError(f"FastFrame Tektronix WFM files are not yet supported: '{file_name}'")
+        if int(hdr.curve_ref_count) != 1:
+            raise ValueError(f"Multi-curve Tektronix WFM files are not yet supported: '{file_name}'")
 
     # Waveform label → model identifier
     try:
