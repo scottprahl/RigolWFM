@@ -276,6 +276,19 @@ function modelFromFrameString(frameString, fallback) {
     return frameString || fallback;
 }
 
+function splitFrameString(frameString) {
+    if (frameString && frameString.indexOf(':') >= 0) {
+        return {
+            model: frameString.split(':', 1)[0].trim(),
+            serial: frameString.substring(frameString.indexOf(':') + 1).trim(),
+        };
+    }
+    return {
+        model: (frameString || '').trim(),
+        serial: '',
+    };
+}
+
 function dhoFamilyLabel(model, fallback) {
     var text = String(model || '').toUpperCase();
     if (/^(?:DHO|HDO)8/.test(text)) {
@@ -288,8 +301,29 @@ function dhoFamilyLabel(model, fallback) {
 }
 
 function channelNumberFromName(name, fallback) {
-    var match = /^CH\s*([1-4])$/i.exec(name || '');
-    return match ? parseInt(match[1], 10) : fallback;
+    var text = String(name || '').trim();
+    var match = /^CH\s*([1-4])$/i.exec(text);
+    if (match) {
+        return parseInt(match[1], 10);
+    }
+    if (/^[1-4]$/.test(text)) {
+        return parseInt(text, 10);
+    }
+    return fallback;
+}
+
+function normalizedChannelName(name, fallbackNumber) {
+    var text = String(name || '').trim();
+    if (!text) {
+        return 'CH' + fallbackNumber;
+    }
+    if (/^[1-4]$/.test(text)) {
+        return 'CH' + text;
+    }
+    if (/^CH\s*[1-4]$/i.test(text)) {
+        return text.toUpperCase().replace(/\s+/g, '');
+    }
+    return text;
 }
 
 function proxyRawFromCalibrated(values) {
@@ -766,6 +800,13 @@ async function detectAndParse(buffer, filename) {
 
     if (magicStr === 'RG03') {
         return parseDhoBin(buffer);
+    }
+
+    if (magicStr.substring(0, 2) === 'AG') {
+        var agVersion = magicStr.substring(2, 4);
+        if (agVersion === '01' || agVersion === '03' || agVersion === '10') {
+            return parseAgilentBin(buffer);
+        }
     }
 
     if (magicStr === 'RG01') {
@@ -1672,6 +1713,98 @@ function parseBin5000(buffer) {
 
 function parseBin70008000(buffer) {
     return parseBinWaveforms(new Bin70008000.Bin70008000(new KaitaiStream(buffer), null, null), 'MSO7000/8000', '7', 'bin7000_8000');
+}
+
+function parseAgilentBin(buffer) {
+    var w = new AgilentBin.AgilentBin(new KaitaiStream(buffer), null, null);
+    var channels = [];
+    var fileModel = 'Keysight';
+    var serialNumber = '';
+
+    for (var wi = 0; wi < w.waveforms.length; wi++) {
+        var wfm = w.waveforms[wi];
+        var dh = wfm.dataHeader;
+        var wh = wfm.wfmHeader;
+        var bufferType = dh.bufferType;
+        var waveformType = wh.waveformType;
+
+        if (waveformType === 6 || bufferType === 6) {
+            continue;
+        }
+        if (dh.bytesPerPoint !== 4 || bufferType < 1 || bufferType > 5) {
+            throw new Error(
+                'Unsupported Agilent/Keysight waveform buffer ' +
+                '(bufferType=' + bufferType + ', bytesPerPoint=' + dh.bytesPerPoint + ').'
+            );
+        }
+
+        var dataRaw = wfm.dataRaw;
+        var n = wh.nPts;
+        var dv = new DataView(dataRaw.buffer, dataRaw.byteOffset, dataRaw.byteLength);
+        var times = new Float64Array(n);
+        var volts = new Float64Array(n);
+        var vMin = Infinity;
+        var vMax = -Infinity;
+
+        for (var i = 0; i < n; i++) {
+            times[i] = wh.xDisplayOrigin + i * wh.xIncrement;
+            var v = dv.getFloat32(i * 4, true);
+            volts[i] = v;
+            if (v < vMin) {
+                vMin = v;
+            }
+            if (v > vMax) {
+                vMax = v;
+            }
+        }
+
+        var frameParts = splitFrameString(wh.frameString);
+        if (frameParts.model) {
+            fileModel = frameParts.model;
+        }
+        if (frameParts.serial) {
+            serialNumber = frameParts.serial;
+        }
+
+        var fallbackChannel = channels.length + 1;
+        var channelNumber = channelNumberFromName(wh.waveformLabel, fallbackChannel);
+        channels.push({
+            name: normalizedChannelName(wh.waveformLabel, channelNumber),
+            color: CH_COLORS[(channelNumber - 1) % CH_COLORS.length],
+            times: times,
+            volts: volts,
+            raw: proxyRawFromCalibrated(volts),
+            channelNumber: channelNumber,
+            points: n,
+            coupling: 'unknown',
+            voltPerDiv: vMax > vMin ? (vMax - vMin) / 8 : 1,
+            voltOffset: 0,
+            probeValue: 1,
+            inverted: false,
+            timeScale: wh.xDisplayRange > 0 ? wh.xDisplayRange / 10 : n * wh.xIncrement / 10,
+            timeOffset: wh.xDisplayOrigin,
+            secondsPerPoint: wh.xIncrement,
+        });
+    }
+
+    if (!channels.length) {
+        throw new Error('No supported analog waveform records were found in this Agilent/Keysight capture.');
+    }
+
+    channels.sort(function(a, b) {
+        return a.channelNumber - b.channelNumber;
+    });
+
+    return {
+        format: 'Agilent / Keysight BIN',
+        fileModel: fileModel,
+        serialNumber: serialNumber,
+        userModel: 'Keysight',
+        parserModel: 'agilent_bin',
+        firmware: 'unknown',
+        triggerInfo: null,
+        channels: channels,
+    };
 }
 
 async function parseDhoWfm(buffer) {

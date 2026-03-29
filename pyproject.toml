@@ -182,6 +182,7 @@ disable = [
 ignore-patterns = [
     "^\\.#",
     # Kaitai-generated parsers from ksy/
+    "^agilent_bin\\.py$",
     "^bin5000\\.py$",
     "^bin7000_8000\\.py$",
     "^bindho1000\\.py$",
@@ -208,6 +209,7 @@ exclude = [
     "docs",
     "wfm",
     # Kaitai-generated parsers from ksy/
+    "RigolWFM/agilent_bin.py",
     "RigolWFM/bin5000.py",
     "RigolWFM/bin7000_8000.py",
     "RigolWFM/bindho1000.py",

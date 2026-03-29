@@ -2,8 +2,9 @@
 Parse and convert oscilloscope waveform files.
 
 Supports Rigol (DS1000B/C/D/E/Z, DS2000, DS4000, DS6000, MSO5000, MSO5074,
-MSO7000/8000, DHO800/DHO1000), Teledyne LeCroy (.trc), Tektronix (.wfm/.isf),
-and Yokogawa (.wfm) scope families via ``Wfm.from_file()``.
+MSO7000/8000, DHO800/DHO1000), Agilent / Keysight (`AGxx` `.bin`), Teledyne
+LeCroy (.trc), Tektronix (.wfm/.isf), and Yokogawa (.wfm) scope families via
+``Wfm.from_file()``.
 
 Example:
     >>> import RigolWFM.wfm as wfm
@@ -29,6 +30,7 @@ import numpy.typing as npt
 import requests  # type: ignore[import-untyped]
 
 import RigolWFM.channel
+import RigolWFM.agilent
 import RigolWFM.isf
 import RigolWFM.lecroy
 import RigolWFM.rigol
@@ -38,6 +40,17 @@ import RigolWFM.yokogawa
 # ---------------------------------------------------------------------------
 # Non-Rigol vendor scope-family model-string lists
 # ---------------------------------------------------------------------------
+
+# Agilent / Keysight `AGxx` .bin files
+Keysight_scopes: list[str] = [
+    "Keysight",
+    "KEYSIGHT",
+    "keysight",
+    "Agilent",
+    "AGILENT",
+    "agilent",
+    "agilent_bin",
+]
 
 # Teledyne LeCroy .trc files (LECROY_1_0 / LECROY_2_3 format)
 LeCroy_scopes: list[str] = ["LeCroy", "LECROY", "lecroy", "trc"]
@@ -52,6 +65,7 @@ ISF_scopes: list[str] = ["ISF", "isf", "tek_isf", "TEK_ISF"]
 Yokogawa_scopes: list[str] = ["Yokogawa", "YOKOGAWA", "yokogawa", "yoko", "yokogawa_wfm"]
 
 _GENERIC_VENDOR_MODELS = {
+    *(name.upper() for name in Keysight_scopes),
     *(name.upper() for name in LeCroy_scopes),
     *(name.upper() for name in Tek_scopes),
     *(name.upper() for name in ISF_scopes),
@@ -159,6 +173,15 @@ def detect_model(filename: str) -> str:
     if hdr[:4] == b"RG03":
         return "DHO"
 
+    # Agilent / Keysight `.bin`: AG01 / AG03 / AG10
+    if hdr[:2] == b"AG":
+        try:
+            version = int(hdr[2:4].decode("ascii"))
+        except ValueError:
+            version = -1
+        if version in (1, 3, 10):
+            return "Keysight"
+
     # RG01: MSO5000, MSO5074, MSO7000, MSO8000
     if hdr[:4] == b"RG01":
         if len(hdr) >= 16:
@@ -240,6 +263,7 @@ def valid_scope_list() -> str:
     s = "\nRigol oscilloscope models:\n    "
     s += "\n    ".join(", ".join(family) for family in RigolWFM.rigol.ALL_RIGOL_SCOPES)
     s += "\n    "
+    s += ", ".join(Keysight_scopes) + "\n    "
     s += ", ".join(LeCroy_scopes) + "\n    "
     s += ", ".join(Tek_scopes) + "\n    "
     s += ", ".join(ISF_scopes) + "\n"
@@ -332,6 +356,12 @@ class Wfm:
         rigol_result = RigolWFM.rigol.parse_file(umodel, file_name)
         if rigol_result is not None:
             w, new_wfm.header_name, new_wfm.serial_number, new_wfm.trigger_info = rigol_result
+
+        # --- Agilent / Keysight `.bin` ---
+        elif umodel in Keysight_scopes:
+            w = RigolWFM.agilent.from_file(file_name)
+            new_wfm.header_name = w.header.model or "Keysight"
+            new_wfm.serial_number = w.header.serial_number
 
         # --- LeCroy ---
         elif umodel in LeCroy_scopes:

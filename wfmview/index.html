@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rigol WFM Viewer</title>
+<title>RigolWFM Viewer</title>
 <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -56,8 +56,8 @@
     <div class="display-area" id="display-area">
       <div id="drop-zone">
         <div class="dz-icon">&#11123;</div>
-        <div class="dz-main">Drop one or more Rigol .wfm or .bin files here</div>
-        <div class="dz-hint">DS1000B/C/E/Z &nbsp;&middot;&nbsp; DS2000 &nbsp;&middot;&nbsp; DS4000 &nbsp;&middot;&nbsp; MSO5000/7000/8000 &nbsp;&middot;&nbsp; DHO &nbsp;&middot;&nbsp; LeCroy .trc &nbsp;&middot;&nbsp; Tektronix .wfm/.isf</div>
+        <div class="dz-main">Drop one or more waveform files here</div>
+        <div class="dz-hint">Rigol DS/MSO/DHO &nbsp;&middot;&nbsp; Agilent / Keysight .bin &nbsp;&middot;&nbsp; LeCroy .trc &nbsp;&middot;&nbsp; Tektronix .wfm/.isf</div>
       </div>
       <canvas id="scope"></canvas>
       <div id="zoom-rect"></div>
@@ -130,6 +130,7 @@
 <script defer src="./Bin5000.js"></script>
 <script defer src="./Bin70008000.js"></script>
 <script defer src="./Bindho1000.js"></script>
+<script defer src="./AgilentBin.js"></script>
 <script defer src="./Lecroy23Le.js"></script>
 <script defer src="./Lecroy23Be.js"></script>
 <script defer src="./Lecroy10Le.js"></script>

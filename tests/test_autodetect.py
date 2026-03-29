@@ -35,6 +35,8 @@ _CASES = [
     ("tests/files/bin/DHO1074.bin", "DHO"),
     ("tests/files/bin/DHO824-ch1.bin", "DHO"),
     ("tests/files/wfm/DHO824-ch1.wfm", "DHO"),
+    # Agilent / Keysight `.bin` — AG01 / AG03 / AG10
+    ("docs/vendors/wavebin-master/samples/DSOX1102G/single.bin", "Keysight"),
 ]
 
 @pytest.mark.parametrize("path, expected", _CASES)
@@ -56,6 +58,7 @@ def test_detect_model_missing_file():
         "tests/files/wfm/DS1202Z-E.wfm",
         "tests/files/bin/MSO5000-A.bin",
         "tests/files/bin/DHO824-ch1.bin",
+        "docs/vendors/wavebin-master/samples/DSOX1102G/single.bin",
     ],
 )
 def test_from_file_auto_matches_detected_model(path):
