@@ -246,6 +246,8 @@ class Channel:
             self.lecroy(w, channel_number)
         elif scope == "tek_wfm":
             self.tek(w, channel_number)
+        elif scope == "tek_isf":
+            self.tek(w, channel_number)
 
     def __str__(self) -> str:
         """Describe this channel."""

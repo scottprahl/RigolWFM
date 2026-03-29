@@ -29,6 +29,7 @@ import numpy.typing as npt
 import requests  # type: ignore[import-untyped]
 
 import RigolWFM.channel
+import RigolWFM.isf
 import RigolWFM.lecroy
 import RigolWFM.rigol
 import RigolWFM.tek
@@ -42,6 +43,9 @@ LeCroy_scopes: list[str] = ["LeCroy", "LECROY", "lecroy", "trc"]
 
 # Tektronix .wfm files (WFM#001 / WFM#002 / WFM#003 formats)
 Tek_scopes: list[str] = ["Tek", "TEK", "tektronix", "Tektronix", "tek_wfm"]
+
+# Tektronix .isf files (ISF Internal Save Format)
+ISF_scopes: list[str] = ["ISF", "isf", "tek_isf", "TEK_ISF"]
 
 # Re-export Rigol scope lists so existing callers that reference e.g.
 # ``wfm.DS1000E_scopes`` continue to work without change.
@@ -64,6 +68,7 @@ _DS2000_SOURCE_NAMES = RigolWFM.rigol._DS2000_SOURCE_NAMES
 
 _LECROY_MAGIC = b"WAVEDESC"
 _TEK_MAGIC = b"WFM#"
+_ISF_MAGIC = b":CURV"  # matches both ":CURV #" and ":CURVE #"
 
 
 # ---------------------------------------------------------------------------
@@ -114,7 +119,7 @@ def detect_model(filename: str) -> str:
     try:
         fsize = os.path.getsize(filename)
         with open(filename, "rb") as f:
-            hdr = f.read(300)
+            hdr = f.read(512)
     except OSError as exc:
         raise FileNotFoundError(filename) from exc
 
@@ -200,6 +205,10 @@ def detect_model(filename: str) -> str:
     if (hdr[0] in (0x0F, 0xF0) and hdr[1] in (0x0F, 0xF0) and hdr[2:6] == _TEK_MAGIC):
         return "Tek"
 
+    # Tektronix .isf: ASCII header containing ":CURV " or ":CURVE " followed by '#'
+    if _ISF_MAGIC in hdr:
+        return "ISF"
+
     # LeCroy .trc: "WAVEDESC" marker at byte 0, or after a short SCPI prefix
     if _LECROY_MAGIC in hdr[:64]:
         return "LeCroy"
@@ -213,7 +222,8 @@ def valid_scope_list() -> str:
     s += "\n    ".join(", ".join(family) for family in RigolWFM.rigol.ALL_RIGOL_SCOPES)
     s += "\n    "
     s += ", ".join(LeCroy_scopes) + "\n    "
-    s += ", ".join(Tek_scopes) + "\n"
+    s += ", ".join(Tek_scopes) + "\n    "
+    s += ", ".join(ISF_scopes) + "\n"
     return s
 
 
@@ -308,10 +318,15 @@ class Wfm:
             w = RigolWFM.lecroy.from_file(file_name)
             new_wfm.header_name = w.header.model_number or "LeCroy"
 
-        # --- Tektronix ---
+        # --- Tektronix .wfm ---
         elif umodel in Tek_scopes:
             w = RigolWFM.tek.from_file(file_name)
             new_wfm.header_name = w.header.model or "Tektronix"
+
+        # --- Tektronix .isf ---
+        elif umodel in ISF_scopes:
+            w = RigolWFM.isf.from_file(file_name)
+            new_wfm.header_name = w.header.model or "Tektronix ISF"
 
         else:
             raise Unknown_Scope_Error(f"Unknown oscilloscope type: '{umodel}'\n{valid_scope_list()}")

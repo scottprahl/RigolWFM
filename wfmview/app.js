@@ -813,6 +813,17 @@ async function detectAndParse(buffer, filename) {
         }
     }
 
+    // Tektronix .isf: ASCII text header containing ":CURV" somewhere in first 512 bytes
+    // (both ":CURV #" and ":CURVE #" share this prefix)
+    var isfMagic = [0x3A, 0x43, 0x55, 0x52, 0x56]; // ":CURV"
+    for (var ii = 0; ii <= Math.min(507, b.length - 5); ii++) {
+        var isfMatch = true;
+        for (var ij = 0; ij < 5; ij++) {
+            if (b[ii + ij] !== isfMagic[ij]) { isfMatch = false; break; }
+        }
+        if (isfMatch) { return parseIsf(buffer); }
+    }
+
     // LeCroy .trc: "WAVEDESC" ASCII somewhere in the first 64 bytes
     // (SCPI-prefixed files have a #N<digits> header before WAVEDESC)
     var wavDesc = [0x57, 0x41, 0x56, 0x45, 0x44, 0x45, 0x53, 0x43]; // "WAVEDESC"
@@ -1068,6 +1079,144 @@ function parseTek(buffer) {
             timeScale: nPts > 0 ? nPts * tScale / 10.0 : 1e-3,
             timeOffset: t0,
             secondsPerPoint: tScale,
+        }],
+    };
+}
+
+function parseIsf(buffer) {
+    var w = new TekIsf.TekIsf(new KaitaiStream(buffer), null, null);
+    var headerText = w.headerText;
+    var curveData = w.curveData;
+
+    // Parse semicolon-delimited key VALUE pairs; strip optional :WFMP: prefix
+    var fields = {};
+    var aliases = {
+        'BYT_NR': 'byt_nr', 'BYT_N': 'byt_nr',
+        'BYT_OR': 'byt_or', 'BYT_O': 'byt_or',
+        'NR_PT': 'nr_pt', 'NR_P': 'nr_pt',
+        'PT_FMT': 'pt_fmt', 'PT_F': 'pt_fmt',
+        'WFID': 'wfid', 'WFI': 'wfid',
+        'XINCR': 'xincr', 'XIN': 'xincr',
+        'XZERO': 'xzero', 'XZE': 'xzero',
+        'PT_OFF': 'pt_off', 'PT_O': 'pt_off',
+        'YMULT': 'ymult', 'YMU': 'ymult',
+        'YOFF': 'yoff', 'YOF': 'yoff',
+        'YZERO': 'yzero', 'YZE': 'yzero',
+        'VSCALE': 'vscale',
+    };
+    var frags = headerText.split(';');
+    for (var fi = 0; fi < frags.length; fi++) {
+        var frag = frags[fi].trim();
+        if (!frag) { continue; }
+        // Strip :WORD: SCPI prefix
+        frag = frag.replace(/^:[A-Z]+:/, '');
+        var sp = frag.indexOf(' ');
+        if (sp < 0) { continue; }
+        var keyRaw = frag.substring(0, sp).toUpperCase();
+        var val = frag.substring(sp + 1).trim().replace(/^"|"$/g, '');
+        var canonical = aliases[keyRaw];
+        if (canonical !== undefined) { fields[canonical] = val; }
+    }
+
+    var bytNr = fields['byt_nr'] ? parseInt(fields['byt_nr']) : 2;
+    var bytOr = (fields['byt_or'] || 'MSB').toUpperCase();
+    var isBe = (bytOr === 'MSB');
+    var nrPt = fields['nr_pt'] ? parseInt(fields['nr_pt']) : 0;
+    var ptFmt = (fields['pt_fmt'] || 'Y').toUpperCase();
+    var isEnv = (ptFmt === 'ENV');
+    var xincr = fields['xincr'] ? parseFloat(fields['xincr']) : 1e-6;
+    var xzero = fields['xzero'] ? parseFloat(fields['xzero']) : 0.0;
+    var ptOff = fields['pt_off'] ? parseFloat(fields['pt_off']) : 0.0;
+    var ymult = fields['ymult'] ? parseFloat(fields['ymult']) : 1.0;
+    var yoff  = fields['yoff']  ? parseFloat(fields['yoff'])  : 0.0;
+    var yzero = fields['yzero'] ? parseFloat(fields['yzero']) : 0.0;
+    var vscale = fields['vscale'] ? parseFloat(fields['vscale']) : 0.0;
+    var wfid = fields['wfid'] || '';
+
+    // Trim trailing CR/LF (not null bytes — they are valid sample data)
+    var dataEnd = curveData.length;
+    while (dataEnd > 0 && (curveData[dataEnd - 1] === 0x0A || curveData[dataEnd - 1] === 0x0D)) {
+        dataEnd--;
+    }
+    var dataBytes = curveData.buffer.slice(curveData.byteOffset, curveData.byteOffset + dataEnd);
+    var dv = new DataView(dataBytes);
+
+    // Decode ADC samples (int16 or int8, big- or little-endian)
+    var bytesPerSample = (bytNr === 1) ? 1 : 2;
+    var totalSamples = Math.floor(dataEnd / bytesPerSample);
+    var nPts = isEnv ? Math.floor(totalSamples / 2) : totalSamples;
+    if (nrPt > 0 && nPts > nrPt) { nPts = nrPt; }
+
+    var adc = new Float64Array(nPts);
+    if (isEnv) {
+        // Average of min/max pairs
+        for (var ai = 0; ai < nPts; ai++) {
+            var vMin, vMax;
+            if (bytesPerSample === 2) {
+                vMin = dv.getInt16(ai * 4,     !isBe);
+                vMax = dv.getInt16(ai * 4 + 2, !isBe);
+            } else {
+                vMin = dv.getInt8(ai * 2);
+                vMax = dv.getInt8(ai * 2 + 1);
+            }
+            adc[ai] = (vMin + vMax) / 2.0;
+        }
+    } else {
+        for (var ai2 = 0; ai2 < nPts; ai2++) {
+            if (bytesPerSample === 2) {
+                adc[ai2] = dv.getInt16(ai2 * 2, !isBe);
+            } else {
+                adc[ai2] = dv.getInt8(ai2);
+            }
+        }
+    }
+
+    // Calibrate: volts = yzero + ymult * (adc - yoff)
+    var volts = new Float64Array(nPts);
+    for (var ci = 0; ci < nPts; ci++) {
+        volts[ci] = yzero + ymult * (adc[ci] - yoff);
+    }
+
+    // Time axis
+    var tStep = isEnv ? xincr * 2 : xincr;
+    var t0 = isEnv ? (xzero + (0 * 2 - ptOff) * xincr) : (xzero - ptOff * xincr);
+    var times = new Float64Array(nPts);
+    for (var ti3 = 0; ti3 < nPts; ti3++) {
+        times[ti3] = t0 + ti3 * tStep;
+    }
+
+    // Volts per division
+    var voltPerDiv = (vscale !== 0) ? Math.abs(vscale) : (Math.abs(ymult) * 32.0);
+
+    // Instrument label from WFID (first comma-delimited token)
+    var commaIdx = wfid.indexOf(',');
+    var fileModel = commaIdx >= 0 ? wfid.substring(0, commaIdx).trim() : (wfid || 'Tektronix ISF');
+
+    var raw = proxyRawFromCalibrated(volts);
+
+    return {
+        format: 'Tektronix ISF',
+        fileModel: fileModel,
+        userModel: 'Tektronix ISF',
+        parserModel: 'tek_isf',
+        firmware: 'unknown',
+        triggerInfo: null,
+        channels: [{
+            name: 'CH1',
+            color: CH_COLORS[0],
+            times: times,
+            volts: volts,
+            raw: raw,
+            channelNumber: 1,
+            points: nPts,
+            coupling: 'DC',
+            voltPerDiv: voltPerDiv,
+            voltOffset: 0,
+            probeValue: 1.0,
+            inverted: false,
+            timeScale: nPts > 0 ? nPts * tStep / 10.0 : 1e-3,
+            timeOffset: t0,
+            secondsPerPoint: tStep,
         }],
     };
 }

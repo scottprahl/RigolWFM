@@ -203,7 +203,7 @@ def main() -> None:
         "--model",
         type=str,
         default="auto",
-        choices=["auto", "B", "C", "D", "E", "Z", "2", "4", "5", "5074", "6", "7", "8", "DHO", "LeCroy"],
+        choices=["auto", "B", "C", "D", "E", "Z", "2", "4", "5", "5074", "6", "7", "8", "DHO", "LeCroy", "Tek", "ISF"],
         help="oscilloscope model (default: auto-detect from file).  See list below.",
     )
 

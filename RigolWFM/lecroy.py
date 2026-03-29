@@ -45,6 +45,7 @@ import numpy as np
 import numpy.typing as npt
 from kaitaistruct import KaitaiStream  # type: ignore[import]
 
+import RigolWFM.channel
 import RigolWFM.lecroy_1_0_be
 import RigolWFM.lecroy_1_0_le
 import RigolWFM.lecroy_2_3_be
@@ -89,9 +90,9 @@ class ChannelHeader:
         self.coupling = "DC"
 
     @property
-    def unit(self) -> int:
-        """Return a unit code compatible with DHO-style UnitEnum (1 = volts)."""
-        return 1
+    def unit(self) -> RigolWFM.channel.UnitEnum:
+        """Return the unit enum for volts."""
+        return RigolWFM.channel.UnitEnum.v
 
     @property
     def y_scale(self) -> float:
