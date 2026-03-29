@@ -36,6 +36,7 @@ Time axis
 from __future__ import annotations
 
 import io as _io
+import struct as _struct
 from typing import Any, Optional
 
 import numpy as np
@@ -54,6 +55,7 @@ _TekWfm002Le: Any = RigolWFM.tek_wfm_002_le.TekWfm002Le  # type: ignore[attr-def
 _TekWfm002Be: Any = RigolWFM.tek_wfm_002_be.TekWfm002Be  # type: ignore[attr-defined]
 
 _TEK_MAGIC = b"WFM#"
+_LLWFM_MAGIC = b"LLWFM"
 
 # Explicit-dimension format codes → numpy dtype
 _FORMAT_DTYPE: dict[int, str] = {
@@ -111,6 +113,7 @@ class Header:
     """Normalized header used by `Wfm.from_file()` for Tektronix .wfm captures."""
 
     model: str
+    trace_label: str
     n_pts: int
     x_origin: float
     x_increment: float
@@ -121,6 +124,7 @@ class Header:
     def __init__(self) -> None:
         """Initialize an empty Tektronix header."""
         self.model = ""
+        self.trace_label = ""
         self.n_pts = 0
         self.x_origin = 0.0
         self.x_increment = 1e-6
@@ -196,12 +200,113 @@ def _decode_adc(raw_bytes: bytes, fmt_code: int, byte_order: str, n_pts: int) ->
     Returns:
         1-D numpy array of ADC values.
     """
-    base_dtype = _FORMAT_DTYPE.get(fmt_code, "int16")
+    base_dtype = _FORMAT_DTYPE.get(fmt_code, "i2")
     dtype = np.dtype(f"{byte_order}{base_dtype}")
     arr = np.frombuffer(raw_bytes, dtype=dtype)
     if len(arr) > n_pts > 0:
         arr = arr[:n_pts]
     return arr
+
+
+def _parse_legacy_llwfm(data: bytes, file_name: str) -> TekWaveform:
+    """Parse the older big-endian Tektronix ``LLWFM`` layout."""
+    start = data[:8].find(_LLWFM_MAGIC)
+    if start < 0:
+        raise ValueError(f"File '{file_name}' does not start with a supported LLWFM header")
+    offset = start + len(_LLWFM_MAGIC)
+    if offset < len(data) and data[offset:offset + 1] == b"#":
+        offset += 1
+
+    def read(fmt: str) -> Any:
+        nonlocal offset
+        size = _struct.calcsize(fmt)
+        if offset + size > len(data):
+            raise ValueError(f"Legacy Tektronix file '{file_name}' is truncated")
+        values = _struct.unpack_from(fmt, data, offset)
+        offset += size
+        return values[0] if len(values) == 1 else values
+
+    if offset >= len(data):
+        raise ValueError(f"Legacy Tektronix file '{file_name}' is truncated before byte-count metadata")
+    count_len_char = chr(data[offset])
+    offset += 1
+    if not count_len_char.isdigit():
+        raise ValueError(f"Legacy Tektronix file '{file_name}' has invalid byte-count length")
+    count_len = int(count_len_char)
+    if offset + count_len > len(data):
+        raise ValueError(f"Legacy Tektronix file '{file_name}' is truncated in byte-count metadata")
+    offset += count_len
+
+    _magic_num = read(">i")
+    length = int(read(">i"))
+
+    # Reference header (display state only)
+    _vert_pos_ref = read(">d")
+    _horz_pos_ref = read(">d")
+    _vert_zoom = read(">d")
+    _horz_zoom = read(">d")
+
+    # Waveform header
+    _acq_mode = read(">h")
+    _min_max_format = read(">h")
+    _duration = read(">d")
+    vert_coupling = int(read(">h"))
+    _horz_unit = read(">h")
+    horz_scale = float(read(">d"))
+    _vert_unit = read(">h")
+    vert_offset = float(read(">d"))
+    vert_pos = float(read(">d"))
+    vert_gain = float(read(">d"))
+    record_length = int(read(">I"))
+    trig_pos = float(read(">h"))
+    _wfm_header_version = read(">h")
+    _sample_density = read(">h")
+    _burst_segment_length = read(">h")
+    _source_wfm = read(">h")
+    _video_header1 = read(">3h")
+    _video_header2 = read(">d")
+    _video_header3 = read(">h")
+
+    extended_header_len = length - 2 * record_length - 64
+    if extended_header_len == 196:
+        raise ValueError(f"Legacy Tektronix extended headers are not yet supported: '{file_name}'")
+
+    preamble_bytes = 16 * 2
+    curve_bytes = record_length * 2
+    postamble_bytes = 16 * 2
+    checksum_bytes = 2
+    if offset + preamble_bytes + curve_bytes + postamble_bytes + checksum_bytes > len(data):
+        raise ValueError(f"Legacy Tektronix file '{file_name}' is truncated in the curve buffer")
+
+    offset += preamble_bytes
+    adc = np.frombuffer(data[offset:offset + curve_bytes], dtype=">i2").astype(np.int16)
+
+    volts = (
+        adc.astype(np.float64) * (vert_gain / (25.0 * 256.0))
+        + vert_offset
+        - vert_pos * vert_gain
+    ).astype(np.float32)
+
+    obj = TekWaveform()
+    h = obj.header
+    h.model = "Tektronix"
+    h.n_pts = len(volts)
+    h.x_origin = -(record_length * trig_pos / 100.0) * horz_scale
+    h.x_increment = horz_scale
+
+    ch = h.ch[0]
+    ch.name = "CH1"
+    ch.enabled = True
+    ch.coupling = {565: "DC", 566: "AC"}.get(vert_coupling, "DC")
+    ch.probe_value = 1.0
+    ch.volt_per_division = abs(vert_gain) if vert_gain != 0 else 1.0
+    ch.volt_scale = vert_gain / (25.0 * 256.0)
+    ch.volt_offset = vert_offset - vert_pos * vert_gain
+
+    h.channel_data[0] = volts
+    h.raw_data[0] = (adc.view(np.uint16) >> 8).astype(np.uint8)
+
+    return obj
 
 
 def from_file(file_name: str) -> TekWaveform:
@@ -221,6 +326,9 @@ def from_file(file_name: str) -> TekWaveform:
         ValueError: if the file cannot be parsed as a valid Tektronix waveform.
     """
     data = _read_file_bytes(file_name)
+
+    if _LLWFM_MAGIC in data[:8]:
+        return _parse_legacy_llwfm(data, file_name)
 
     if len(data) < 16:
         raise ValueError(f"File '{file_name}' is too short to be a Tektronix WFM file")
@@ -269,10 +377,10 @@ def from_file(file_name: str) -> TekWaveform:
 
     # Waveform label → model identifier
     try:
-        label = sfi.waveform_label.split(b"\x00")[0].decode("ascii", errors="ignore").strip()
+        trace_label = sfi.waveform_label.split(b"\x00")[0].decode("ascii", errors="ignore").strip()
     except Exception:
-        label = ""
-    model_str = label or "Tektronix"
+        trace_label = ""
+    model_str = "Tektronix"
 
     # Data format and byte-count per point
     fmt_code = getattr(exp1.format, "value", int(exp1.format))
@@ -322,6 +430,7 @@ def from_file(file_name: str) -> TekWaveform:
     obj = TekWaveform()
     h = obj.header
     h.model = model_str
+    h.trace_label = trace_label
     h.n_pts = n_pts
     h.x_origin = t_origin
     h.x_increment = x_increment

@@ -19,8 +19,8 @@ SCPI prefix
 -----------
 Files transferred via GPIB/SCPI may carry an IEEE 488.2 block-data prefix of
 the form  ``#N<N digits of byte count>``  before the WAVEDESC marker.  This
-module searches the first 64 bytes for ``WAVEDESC`` and strips the prefix
-before handing the bytes to the KSY parser.
+module searches for ``WAVEDESC`` and strips any such prefix before handing the
+bytes to the KSY parser.
 
 Endianness detection
 --------------------
@@ -176,13 +176,19 @@ class LeCroyWaveform:
 def _find_wavedesc(data: bytes) -> int:
     """Return the byte offset of the WAVEDESC marker in data.
 
-    Searches the first 64 bytes for the 8-byte ASCII string ``WAVEDESC``.
-    Raises ValueError if not found.
+    Searches the file for the first plausible 8-byte ASCII string
+    ``WAVEDESC`` and validates the surrounding header bytes enough to avoid
+    obvious false positives in arbitrary payload data.
     """
-    pos = data[:64].find(_LECROY_MAGIC)
-    if pos < 0:
-        raise ValueError("WAVEDESC marker not found in the first 64 bytes")
-    return pos
+    start = 0
+    while True:
+        pos = data.find(_LECROY_MAGIC, start)
+        if pos < 0:
+            raise ValueError("WAVEDESC marker not found in file")
+        candidate = data[pos:]
+        if len(candidate) >= 35 and candidate[34] in (0, 1):
+            return pos
+        start = pos + 1
 
 
 def _read_file_bytes(file_name: str) -> bytes:

@@ -489,6 +489,11 @@ def _add_scpi_prefix(trc_bytes: bytes) -> bytes:
     return prefix + trc_bytes
 
 
+def _add_long_ascii_prefix(trc_bytes: bytes, pad_len: int = 96) -> bytes:
+    """Prepend a longer transport prefix before WAVEDESC."""
+    return (b"SCPI-PREFIX-" * ((pad_len // 12) + 1))[:pad_len] + trc_bytes
+
+
 def test_scpi_prefix_parsed(tmp_path):
     """from_file() should strip the SCPI '#N<digits>' prefix before parsing."""
     trc = _build_trc(n_pts=10, vertical_gain=0.01, vertical_offset=0.0, samples=list(range(10)))
@@ -520,6 +525,25 @@ def test_scpi_prefix_autodetect(tmp_path):
     trc = _build_trc(n_pts=10)
     p = tmp_path / "scpi_detect.trc"
     p.write_bytes(_add_scpi_prefix(trc))
+
+    assert RigolWFM.wfm.detect_model(str(p)) == "LeCroy"
+
+
+def test_long_prefix_parsed(tmp_path):
+    """from_file() should find WAVEDESC even when it starts beyond 64 bytes."""
+    trc = _build_trc(n_pts=8, samples=list(range(8)))
+    p = tmp_path / "long_prefix.trc"
+    p.write_bytes(_add_long_ascii_prefix(trc))
+
+    obj = RigolWFM.lecroy.from_file(str(p))
+    assert obj.header.n_pts == 8
+
+
+def test_long_prefix_autodetect(tmp_path):
+    """detect_model() should still classify long-prefixed LeCroy files."""
+    trc = _build_trc(n_pts=8, samples=list(range(8)))
+    p = tmp_path / "long_prefix_auto.trc"
+    p.write_bytes(_add_long_ascii_prefix(trc))
 
     assert RigolWFM.wfm.detect_model(str(p)) == "LeCroy"
 

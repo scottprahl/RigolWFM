@@ -260,6 +260,58 @@ def _build_tek_wfm(
     return bytes(buf)
 
 
+def _build_legacy_llwfm(
+    *,
+    samples: list[int],
+    vert_gain: float = 0.5,
+    vert_offset: float = -0.125,
+    vert_pos: float = 0.25,
+    horz_scale: float = 2.0e-9,
+    trig_pos: int = 40,
+) -> bytes:
+    """Build a minimal big-endian legacy Tektronix LLWFM file."""
+    record_length = len(samples)
+
+    body = bytearray()
+    body.extend(struct.pack(">i", 0x13579BDF))
+    body.extend(struct.pack(">i", 2 * record_length + 64))
+
+    # Reference header
+    body.extend(struct.pack(">d", vert_pos))
+    body.extend(struct.pack(">d", 0.0))
+    body.extend(struct.pack(">d", 1.0))
+    body.extend(struct.pack(">d", 1.0))
+
+    # Waveform header
+    body.extend(struct.pack(">h", 0))     # acqmode
+    body.extend(struct.pack(">h", 0))     # minMaxFormat
+    body.extend(struct.pack(">d", record_length * horz_scale))
+    body.extend(struct.pack(">h", 565))   # vertCpl = DC
+    body.extend(struct.pack(">h", 610))   # horzUnit = seconds
+    body.extend(struct.pack(">d", horz_scale))
+    body.extend(struct.pack(">h", 609))   # vertUnit = volts
+    body.extend(struct.pack(">d", vert_offset))
+    body.extend(struct.pack(">d", vert_pos))
+    body.extend(struct.pack(">d", vert_gain))
+    body.extend(struct.pack(">I", record_length))
+    body.extend(struct.pack(">h", trig_pos))
+    body.extend(struct.pack(">h", 1))     # header version
+    body.extend(struct.pack(">h", 1))     # sample density
+    body.extend(struct.pack(">h", 0))     # burst segment length
+    body.extend(struct.pack(">h", 0))     # source waveform
+    body.extend(struct.pack(">3h", 0, 0, 0))
+    body.extend(struct.pack(">d", 0.0))
+    body.extend(struct.pack(">h", 0))
+
+    body.extend(struct.pack(">16h", *([0] * 16)))
+    body.extend(struct.pack(f">{record_length}h", *samples))
+    body.extend(struct.pack(">16h", *([0] * 16)))
+    body.extend(struct.pack(">h", 0))
+
+    count = str(len(body)).encode("ascii")
+    return b":LLWFM#" + str(len(count)).encode("ascii") + count + bytes(body)
+
+
 def test_wfm002_synthetic_from_file(tmp_path):
     """Synthetic WFM#002 files should still parse correctly after the WFM#003 fix."""
     samples = [-8, -1, 0, 7, 12]
@@ -315,8 +367,36 @@ def test_wfm003_synthetic_from_file(tmp_path):
     expected_times = -2.5e-9 + np.arange(len(samples), dtype=np.float64) * 1.25e-9
 
     assert waveform.parser_name == "tek_wfm"
-    assert waveform.header_name == "DPO7000"
+    assert waveform.header_name == "Tektronix"
     assert len(waveform.channels) == 1
     np.testing.assert_allclose(waveform.channels[0].volts, expected_volts)
     np.testing.assert_allclose(waveform.channels[0].times, expected_times)
 
+
+def test_legacy_llwfm_synthetic_from_file(tmp_path):
+    """Legacy LLWFM files should parse through the Tek adapter."""
+    samples = [-2048, -1024, 0, 1024, 2047]
+    data = _build_legacy_llwfm(samples=samples, vert_gain=0.4, vert_offset=0.1, vert_pos=0.5)
+    path = tmp_path / "legacy_llwfm.wfm"
+    path.write_bytes(data)
+
+    waveform = RigolWFM.wfm.Wfm.from_file(str(path), "Tek", "1")
+    expected_volts = (
+        np.asarray(samples, dtype=np.float64) * (0.4 / (25.0 * 256.0))
+        + 0.1
+        - 0.5 * 0.4
+    )
+    expected_times = -(len(samples) * 40 / 100.0) * 2.0e-9 + np.arange(len(samples)) * 2.0e-9
+
+    assert waveform.parser_name == "tek_wfm"
+    assert waveform.header_name == "Tektronix"
+    np.testing.assert_allclose(waveform.channels[0].volts, expected_volts)
+    np.testing.assert_allclose(waveform.channels[0].times, expected_times)
+
+
+def test_legacy_llwfm_autodetect(tmp_path):
+    """detect_model() should classify legacy LLWFM files as Tek."""
+    path = tmp_path / "legacy_auto.wfm"
+    path.write_bytes(_build_legacy_llwfm(samples=[-1, 0, 1]))
+
+    assert RigolWFM.wfm.detect_model(str(path)) == "Tek"

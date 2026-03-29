@@ -2,8 +2,8 @@
 Parse and convert oscilloscope waveform files.
 
 Supports Rigol (DS1000B/C/D/E/Z, DS2000, DS4000, DS6000, MSO5000, MSO5074,
-MSO7000/8000, DHO800/DHO1000), Teledyne LeCroy (.trc), and Tektronix (.wfm)
-scope families via ``Wfm.from_file()``.
+MSO7000/8000, DHO800/DHO1000), Teledyne LeCroy (.trc), Tektronix (.wfm/.isf),
+and Yokogawa (.wfm) scope families via ``Wfm.from_file()``.
 
 Example:
     >>> import RigolWFM.wfm as wfm
@@ -33,6 +33,7 @@ import RigolWFM.isf
 import RigolWFM.lecroy
 import RigolWFM.rigol
 import RigolWFM.tek
+import RigolWFM.yokogawa
 
 # ---------------------------------------------------------------------------
 # Non-Rigol vendor scope-family model-string lists
@@ -46,6 +47,16 @@ Tek_scopes: list[str] = ["Tek", "TEK", "tektronix", "Tektronix", "tek_wfm"]
 
 # Tektronix .isf files (ISF Internal Save Format)
 ISF_scopes: list[str] = ["ISF", "isf", "tek_isf", "TEK_ISF"]
+
+# Yokogawa ASCII-header .wfm files
+Yokogawa_scopes: list[str] = ["Yokogawa", "YOKOGAWA", "yokogawa", "yoko", "yokogawa_wfm"]
+
+_GENERIC_VENDOR_MODELS = {
+    *(name.upper() for name in LeCroy_scopes),
+    *(name.upper() for name in Tek_scopes),
+    *(name.upper() for name in ISF_scopes),
+    *(name.upper() for name in Yokogawa_scopes),
+}
 
 # Re-export Rigol scope lists so existing callers that reference e.g.
 # ``wfm.DS1000E_scopes`` continue to work without change.
@@ -119,7 +130,7 @@ def detect_model(filename: str) -> str:
     try:
         fsize = os.path.getsize(filename)
         with open(filename, "rb") as f:
-            hdr = f.read(512)
+            hdr = f.read(4096)
     except OSError as exc:
         raise FileNotFoundError(filename) from exc
 
@@ -201,6 +212,14 @@ def detect_model(filename: str) -> str:
             pass
         return "E"  # most common default for this magic
 
+    # Yokogawa single-file .wfm: ASCII header with NR_PT/XIN/YMU/YOF fields
+    if all(token in hdr for token in (b"NR_PT:", b"PT_O:", b"XIN:", b"YMU:", b"YOF:", b"BYT:")):
+        return "Yokogawa"
+
+    # Tektronix legacy .wfm: "LLWFM" marker in the opening bytes
+    if b"LLWFM" in hdr[:8]:
+        return "Tek"
+
     # Tektronix .wfm: byte_order word at 0 (0x0F0F LE or 0xF0F0 BE), version "WFM#" at offset 2
     if (hdr[0] in (0x0F, 0xF0) and hdr[1] in (0x0F, 0xF0) and hdr[2:6] == _TEK_MAGIC):
         return "Tek"
@@ -209,8 +228,8 @@ def detect_model(filename: str) -> str:
     if _ISF_MAGIC in hdr:
         return "ISF"
 
-    # LeCroy .trc: "WAVEDESC" marker at byte 0, or after a short SCPI prefix
-    if _LECROY_MAGIC in hdr[:64]:
+    # LeCroy .trc: "WAVEDESC" marker at byte 0, or after a SCPI / transport prefix
+    if _LECROY_MAGIC in hdr:
         return "LeCroy"
 
     raise Parse_WFM_Error(f"Unrecognised file signature {magic4.hex()} in {filename}")
@@ -224,6 +243,7 @@ def valid_scope_list() -> str:
     s += ", ".join(LeCroy_scopes) + "\n    "
     s += ", ".join(Tek_scopes) + "\n    "
     s += ", ".join(ISF_scopes) + "\n"
+    s += "    " + ", ".join(Yokogawa_scopes) + "\n"
     return s
 
 
@@ -328,6 +348,11 @@ class Wfm:
             w = RigolWFM.isf.from_file(file_name)
             new_wfm.header_name = w.header.model or "Tektronix ISF"
 
+        # --- Yokogawa .wfm ---
+        elif umodel in Yokogawa_scopes:
+            w = RigolWFM.yokogawa.from_file(file_name)
+            new_wfm.header_name = w.header.model or "Yokogawa"
+
         else:
             raise Unknown_Scope_Error(f"Unknown oscilloscope type: '{umodel}'\n{valid_scope_list()}")
 
@@ -344,6 +369,7 @@ class Wfm:
         if (
             file_family
             and len(user_family) > 1
+            and umodel not in _GENERIC_VENDOR_MODELS
             and file_family not in user_family
             and user_family not in file_family
         ):

@@ -177,6 +177,7 @@ class Header:
     """Normalized header used by `Wfm.from_file()` for Tektronix ISF captures."""
 
     model: str
+    trace_label: str
     n_pts: int
     x_origin: float
     x_increment: float
@@ -187,6 +188,7 @@ class Header:
     def __init__(self) -> None:
         """Initialize an empty ISF header."""
         self.model = ""
+        self.trace_label = ""
         self.n_pts = 0
         self.x_origin = 0.0
         self.x_increment = 1e-6
@@ -347,14 +349,11 @@ def from_file(file_name: str) -> IsfWaveform:
     else:
         raw8 = (adc.astype(np.int8).view(np.uint8))
 
-    # --- Extract instrument label from WFID ---
-    # WFID often starts with channel label like "Ch1, DC coupling, ..."
-    model_str = wfid.split(",")[0].strip() if wfid else "Tektronix ISF"
-
     # --- Assemble normalized objects ---
     obj = IsfWaveform()
     h = obj.header
-    h.model = model_str
+    h.model = "Tektronix"
+    h.trace_label = wfid
     h.n_pts = n_pts
     h.x_origin = t0
     h.x_increment = t_step
@@ -366,6 +365,8 @@ def from_file(file_name: str) -> IsfWaveform:
     ch.coupling = "DC"
     ch.probe_value = 1.0
     ch.volt_per_division = volt_per_div
+    ch.volt_scale = ymult
+    ch.volt_offset = yzero - ymult * yoff
 
     h.channel_data[slot] = volts
     h.raw_data[slot] = raw8
