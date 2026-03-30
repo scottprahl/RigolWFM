@@ -35,6 +35,7 @@ class Header:
     x_increment: float
     x_display_range: float
     x_origins: list[Optional[float]]
+    x_increments: list[Optional[float]]
     model: str
     serial_number: str
     ch: list[ChannelHeader]
@@ -51,6 +52,7 @@ class Header:
         self.x_increment = 1e-6
         self.x_display_range = 0.0
         self.x_origins = [None] * 4
+        self.x_increments = [None] * 4
         self.model = ""
         self.serial_number = ""
         self.ch = [ChannelHeader(f"CH{i + 1}", enabled=False) for i in range(4)]
@@ -258,6 +260,7 @@ def from_file(file_name: str) -> AgilentWaveform:
 
         header.ch[slot] = channel
         header.x_origins[slot] = wfm_header.x_origin
+        header.x_increments[slot] = wfm_header.x_increment
         header.channel_data[slot] = data
         header.raw_data[slot] = raw_proxy
         analog_found += 1

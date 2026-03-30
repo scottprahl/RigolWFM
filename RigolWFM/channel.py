@@ -655,8 +655,19 @@ class Channel:
 
             self.raw = raw8
             self.points = len(self.volts)
-            t0 = w.header.x_origin
-            self.times = t0 + np.arange(self.points) * w.header.x_increment
+            x_origins = getattr(w.header, "x_origins", None)
+            t0 = (
+                x_origins[idx]
+                if isinstance(x_origins, list) and idx < len(x_origins) and x_origins[idx] is not None
+                else w.header.x_origin
+            )
+            x_increments = getattr(w.header, "x_increments", None)
+            dt = (
+                x_increments[idx]
+                if isinstance(x_increments, list) and idx < len(x_increments) and x_increments[idx] is not None
+                else w.header.x_increment
+            )
+            self.times = t0 + np.arange(self.points) * dt
 
     def tek(self, w: Any, channel_number: int) -> None:
         """Interpret normalized waveform data for a Tektronix .wfm file."""

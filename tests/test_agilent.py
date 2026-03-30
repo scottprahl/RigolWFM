@@ -187,6 +187,46 @@ def test_agilent_local_fixtures_round_trip(
         assert channel.times[1] - channel.times[0] == pytest.approx(dt)
 
 
+def test_agilent_waveform_preserves_per_channel_time_axes(tmp_path):
+    """Each normalized Agilent channel should keep its own time origin and increment."""
+    path = tmp_path / "per_channel_time.bin"
+    path.write_bytes(
+        _build_agilent_fixture(
+            [
+                {
+                    "waveform_label": "1",
+                    "n_pts": 3,
+                    "x_increment": 0.25,
+                    "x_origin": 1.5,
+                    "buffers": [{"buffer_type": 3, "bytes_per_point": 4, "payload": _float_payload([0.0, 1.0, 2.0])}],
+                },
+                {
+                    "waveform_label": "2",
+                    "n_pts": 3,
+                    "x_increment": 0.5,
+                    "x_origin": 9.5,
+                    "buffers": [{"buffer_type": 3, "bytes_per_point": 4, "payload": _float_payload([3.0, 4.0, 5.0])}],
+                },
+            ]
+        )
+    )
+
+    obj = RigolWFM.agilent.from_file(str(path))
+    waveform = RigolWFM.wfm.Wfm.from_file(str(path))
+
+    assert obj.header.x_origins[:2] == pytest.approx([1.5, 9.5])
+    assert obj.header.x_increments[:2] == pytest.approx([0.25, 0.5])
+
+    assert len(waveform.channels) == 2
+    ch1, ch2 = waveform.channels
+    assert ch1.times is not None
+    assert ch2.times is not None
+    assert ch1.times[0] == pytest.approx(1.5)
+    assert ch1.times[1] - ch1.times[0] == pytest.approx(0.25)
+    assert ch2.times[0] == pytest.approx(9.5)
+    assert ch2.times[1] - ch2.times[0] == pytest.approx(0.5)
+
+
 @_skip_no_msox4154a
 def test_agilent_msox4154a_exposes_four_channels():
     """Four-channel MSO-X captures should normalize all four analog traces."""

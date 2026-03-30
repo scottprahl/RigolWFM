@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 import shlex
+import shutil
+import sys
 
 import pytest
 
 import RigolWFM.wfm
-from tests.cli_helpers import run_command, run_command_failure
+from tests.cli_helpers import run_command, run_command_failure, run_command_result
 from tests.test_isf import _build_isf
 from tests.test_lecroy import _build_trc
 from tests.test_siglent import _build_siglent_v6
@@ -17,7 +19,7 @@ from tests.test_yokogawa import _build_yokogawa_wfm
 _ROOT = Path(__file__).resolve().parents[1]
 _KEYSIGHT = _ROOT / "tests" / "files" / "bin" / "agilent_1.bin"
 _ROHDE = (
-    _ROOT / "docs" / "vendors" / "rohde & schwarz" / "rs_file_reader-main" / "tests" / "testdata" / "singleChan.bin"
+    _ROOT / "docs" / "vendors" / "rohde_schwarz" / "rs_file_reader-main" / "tests" / "testdata" / "singleChan.bin"
 )
 
 
@@ -68,6 +70,21 @@ def _newer_family_cases(tmp_path: Path) -> list[tuple[str, str]]:
     ]
 
 
+def _assert_sigrok_conversion(scope: str, path: str, output_dir: Path) -> None:
+    """Assert sigrok conversion succeeds with output or fails with a clear error."""
+    command = f"wfmconvert --model {scope} --output-dir {shlex.quote(str(output_dir))} sigrok {path}"
+    expected = output_dir / (Path(shlex.split(path)[0]).stem + ".sr")
+
+    if shutil.which("sigrok-cli"):
+        run_command(command)
+        assert expected.is_file()
+        return
+
+    result = run_command_failure(command)
+    assert "sigrok-cli is not installed or not found in PATH." in result.stderr
+    assert not expected.exists()
+
+
 def test_wfmconvert_info(tmp_path):
     """Verify `info` conversion succeeds for representative scopes."""
     for scope, path in _LEGACY_INFO + _BIN_INFO:
@@ -101,11 +118,11 @@ def test_wfmconvert_vcsv(tmp_path):
 
 
 def test_wfmconvert_sigrok(tmp_path):
-    """Verify sigrok export succeeds (or gracefully skips if sigrok-cli absent)."""
+    """Verify sigrok export either writes output or reports the missing dependency."""
     for scope, path in _LEGACY_INFO + _BIN_INFO:
-        run_command(f"wfmconvert --model {scope} --output-dir {tmp_path} sigrok {path}")
+        _assert_sigrok_conversion(scope, path, tmp_path)
     for scope, path in _newer_family_cases(tmp_path):
-        run_command(f"wfmconvert --model {scope} --output-dir {shlex.quote(str(tmp_path))} sigrok {path}")
+        _assert_sigrok_conversion(scope, path, tmp_path)
 
 
 def test_wfmconvert_model_aliases():
@@ -146,3 +163,20 @@ def test_wfmconvert_missing_file_reports_clean_error():
     result = run_command_failure("wfmconvert --model E info tests/files/wfm/does_not_exist.wfm")
     assert "wfmconvert error: file not found" in result.stderr
     assert "Traceback" not in result.stderr
+
+
+def test_wfmconvert_sigrok_missing_dependency_fails_cleanly(tmp_path):
+    """Missing `sigrok-cli` should produce a non-zero exit code and no output file."""
+    if shutil.which("sigrok-cli") is None:
+        pytest.skip("sigrok-cli is already absent in this environment")
+
+    command = (
+        f"PATH=/nonexistent {shlex.quote(sys.executable)} -m RigolWFM.wfmconvert "
+        f"--model E --force --output-dir {shlex.quote(str(tmp_path))} "
+        "sigrok tests/files/wfm/DS1102E-A.wfm"
+    )
+    result = run_command_result(command)
+
+    assert result.returncode != 0
+    assert "sigrok-cli is not installed or not found in PATH." in result.stderr
+    assert not (tmp_path / "DS1102E-A.sr").exists()

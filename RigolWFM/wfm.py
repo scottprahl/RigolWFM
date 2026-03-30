@@ -467,40 +467,40 @@ class Wfm:
             w, new_wfm.header_name, new_wfm.serial_number, new_wfm.trigger_info = rigol_result
 
         # --- Agilent / Keysight `.bin` ---
-        elif umodel in Keysight_scopes:
+        elif _model_in_family(umodel, Keysight_scopes):
             w = RigolWFM.agilent.from_file(file_name)
             new_wfm.header_name = w.header.model or "Keysight"
             new_wfm.serial_number = w.header.serial_number
 
         # --- Siglent `.bin` waveform files ---
-        elif umodel in Siglent_scopes or umodel in Siglent_old_scopes:
+        elif _model_in_family(umodel, Siglent_scopes) or _model_in_family(umodel, Siglent_old_scopes):
             w = RigolWFM.siglent.from_file(file_name, umodel)
             new_wfm.header_name = w.header.model or "Siglent"
             new_wfm.serial_number = getattr(w.header, "serial_number", "")
 
         # --- Rohde & Schwarz RTP `.bin` metadata files ---
-        elif umodel in RohdeSchwarz_scopes:
+        elif _model_in_family(umodel, RohdeSchwarz_scopes):
             w = RigolWFM.rohde_schwarz.from_file(file_name)
             new_wfm.header_name = w.header.model or "Rohde & Schwarz"
             new_wfm.serial_number = getattr(w.header, "serial_number", "")
 
         # --- LeCroy ---
-        elif umodel in LeCroy_scopes:
+        elif _model_in_family(umodel, LeCroy_scopes):
             w = RigolWFM.lecroy.from_file(file_name)
             new_wfm.header_name = w.header.model_number or "LeCroy"
 
         # --- Tektronix .wfm ---
-        elif umodel in Tek_scopes:
+        elif _model_in_family(umodel, Tek_scopes):
             w = RigolWFM.tek.from_file(file_name)
             new_wfm.header_name = w.header.model or "Tektronix"
 
         # --- Tektronix .isf ---
-        elif umodel in ISF_scopes:
+        elif _model_in_family(umodel, ISF_scopes):
             w = RigolWFM.isf.from_file(file_name)
             new_wfm.header_name = w.header.model or "Tektronix ISF"
 
         # --- Yokogawa .wfm ---
-        elif umodel in Yokogawa_scopes:
+        elif _model_in_family(umodel, Yokogawa_scopes):
             w = RigolWFM.yokogawa.from_file(file_name)
             new_wfm.header_name = w.header.model or "Yokogawa"
 

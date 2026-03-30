@@ -6,6 +6,10 @@ import pytest
 
 from RigolWFM import wfm
 from tests.test_siglent import _build_siglent_v6
+from tests.test_tek import _build_tek_wfm
+
+_ROOT = Path(__file__).resolve().parents[1]
+_ROHDE = _ROOT / "docs" / "vendors" / "rohde_schwarz" / "rs_file_reader-main" / "tests" / "testdata" / "singleChan.bin"
 
 # (filename, expected_model)
 # One representative file per detectable family.
@@ -40,7 +44,7 @@ _CASES = [
     # Agilent / Keysight `.bin` — AG01 / AG03 / AG10
     ("tests/files/bin/agilent_1.bin", "Keysight"),
     # Rohde & Schwarz RTP `.bin` metadata with companion `.Wfm.bin` payload
-    ("docs/vendors/rohde & schwarz/rs_file_reader-main/tests/testdata/singleChan.bin", "RohdeSchwarz"),
+    ("docs/vendors/rohde_schwarz/rs_file_reader-main/tests/testdata/singleChan.bin", "RohdeSchwarz"),
 ]
 
 
@@ -64,7 +68,7 @@ def test_detect_model_missing_file():
         "tests/files/bin/MSO5000-A.bin",
         "tests/files/bin/DHO824-ch1.bin",
         "tests/files/bin/agilent_1.bin",
-        "docs/vendors/rohde & schwarz/rs_file_reader-main/tests/testdata/singleChan.bin",
+        "docs/vendors/rohde_schwarz/rs_file_reader-main/tests/testdata/singleChan.bin",
     ],
 )
 def test_from_file_auto_matches_detected_model(path):
@@ -149,7 +153,7 @@ def test_from_url_auto_matches_detected_model_for_siglent(monkeypatch, tmp_path)
 
 def test_from_url_auto_matches_detected_model_for_rohde_schwarz(monkeypatch):
     """`from_url(auto)` should fetch the companion R&S payload when needed."""
-    root = Path("docs/vendors/rohde & schwarz/rs_file_reader-main/tests/testdata")
+    root = Path("docs/vendors/rohde_schwarz/rs_file_reader-main/tests/testdata")
     metadata = (root / "singleChan.bin").read_bytes()
     payload = (root / "singleChan.Wfm.bin").read_bytes()
 
@@ -182,3 +186,25 @@ def test_from_url_auto_matches_detected_model_for_rohde_schwarz(monkeypatch):
     assert auto_wave.header_name == explicit_wave.header_name
     assert auto_wave.basename == "singleChan.bin"
     assert [ch.channel_number for ch in auto_wave.channels] == [ch.channel_number for ch in explicit_wave.channels]
+
+
+def test_from_file_accepts_documented_vendor_aliases(tmp_path):
+    """Explicit `model=` aliases advertised by `valid_scope_list()` should work."""
+    tek_path = tmp_path / "synthetic_tek.wfm"
+    tek_path.write_bytes(_build_tek_wfm(version="WFM#002", samples=[-10, 0, 10]))
+
+    cases = [
+        ("tests/files/bin/agilent_1.bin", "agilent_bin", "Keysight"),
+        (str(_ROHDE), "rohde_schwarz_bin", "RohdeSchwarz"),
+        (str(tek_path), "Tektronix", "Tek"),
+        (str(tek_path), "tek_wfm", "Tek"),
+    ]
+
+    for path, alias, canonical in cases:
+        alias_wave = wfm.Wfm.from_file(path, alias)
+        canonical_wave = wfm.Wfm.from_file(path, canonical)
+
+        assert alias_wave.user_name == alias
+        assert alias_wave.parser_name == canonical_wave.parser_name
+        assert alias_wave.header_name == canonical_wave.header_name
+        assert [ch.channel_number for ch in alias_wave.channels] == [ch.channel_number for ch in canonical_wave.channels]

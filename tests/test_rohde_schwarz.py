@@ -12,7 +12,7 @@ import RigolWFM.rohde_schwarz_rtp_wfm
 import RigolWFM.wfm
 
 _ROOT = Path(__file__).resolve().parents[1]
-_RTP_DIR = _ROOT / "docs/vendors/rohde & schwarz/rs_file_reader-main/tests/testdata"
+_RTP_DIR = _ROOT / "docs/vendors/rohde_schwarz/rs_file_reader-main/tests/testdata"
 
 
 def _rtp_path(name: str) -> Path:

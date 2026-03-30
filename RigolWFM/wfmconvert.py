@@ -387,7 +387,9 @@ def main() -> None:
                 print(f"Detected model: {model}", file=sys.stderr)
 
             scope_data = RigolWFM.wfm.Wfm.from_file(filename, model, selected)
-            actionMap[args.action](args, scope_data, filename)
+            result = actionMap[args.action](args, scope_data, filename)
+            if result is False:
+                sys.exit(1)
 
         except FileNotFoundError:
             print(f"wfmconvert error: file not found: '{filename}'", file=sys.stderr)

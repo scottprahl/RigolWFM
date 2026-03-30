@@ -5,8 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 import tempfile
 import shlex
+import shutil
 
-from tests.cli_helpers import run_command
+from tests.cli_helpers import run_command, run_command_failure
 from tests.test_isf import _build_isf
 from tests.test_lecroy import _build_trc
 from tests.test_siglent import _build_siglent_v6
@@ -15,7 +16,7 @@ from tests.test_yokogawa import _build_yokogawa_wfm
 _ROOT = Path(__file__).resolve().parents[1]
 _KEYSIGHT = _ROOT / "tests" / "files" / "bin" / "agilent_1.bin"
 _ROHDE = (
-    _ROOT / "docs" / "vendors" / "rohde & schwarz" / "rs_file_reader-main" / "tests" / "testdata" / "singleChan.bin"
+    _ROOT / "docs" / "vendors" / "rohde_schwarz" / "rs_file_reader-main" / "tests" / "testdata" / "singleChan.bin"
 )
 
 
@@ -48,8 +49,23 @@ def _newer_sigrok_cases(tmp_path: Path) -> list[tuple[str, str]]:
     ]
 
 
+def _assert_sigrok_result(scope: str, path: str, output_dir: Path) -> None:
+    """Assert sigrok export behavior matches whether `sigrok-cli` is available."""
+    command = f"wfmconvert --model {scope} --output-dir {_quote(output_dir)} sigrok {path}"
+    expected = output_dir / (Path(shlex.split(path)[0]).stem + ".sr")
+
+    if shutil.which("sigrok-cli"):
+        run_command(command)
+        assert expected.is_file()
+        return
+
+    result = run_command_failure(command)
+    assert "sigrok-cli is not installed or not found in PATH." in result.stderr
+    assert not expected.exists()
+
+
 def test_wfmconvert_sigrok(tmp_path):
-    """Verify sigrok export succeeds for representative scopes."""
+    """Verify sigrok export either writes output or reports the missing dependency."""
     cases = [
         ("B", "tests/files/wfm/DS1204B-A.wfm"),
         ("C", "tests/files/wfm/DS1202CA-A.wfm"),
@@ -61,9 +77,9 @@ def test_wfmconvert_sigrok(tmp_path):
     ]
 
     for scope, path in cases:
-        run_command(f"wfmconvert --model {scope} --output-dir {tmp_path} sigrok {path}")
+        _assert_sigrok_result(scope, path, tmp_path)
     for scope, path in _newer_sigrok_cases(tmp_path):
-        run_command(f"wfmconvert --model {scope} --output-dir {_quote(tmp_path)} sigrok {path}")
+        _assert_sigrok_result(scope, path, tmp_path)
 
 
 # Run the tests
