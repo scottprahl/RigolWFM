@@ -13,6 +13,18 @@ class Rigol1000bWfm(KaitaiStruct):
     """This was put together based on an excel header list of unknown provenance.
     It has been tested with a handful of different files.  The offset to the
     data seems correct but the channel coupling is untested.
+    
+    Sources used for this KSY binary format: a legacy Excel header list of
+    unknown provenance preserved in the project history, reverse-engineering from
+    checked-in `DS1204B` captures, and comparison against the closely related
+    DS1000E family documentation in `docs/vendors/rigol/WFM format - DS1000E.pdf`.
+    
+    Tested file formats: real repo fixtures `DS1204B-A.wfm` through
+    `DS1204B-E.wfm`, with matching snapshot/info regressions.
+    
+    Oscilloscope models this format may apply to: DS1000B family models
+    currently listed by the library, including `DS1074B`, `DS1104B`, `DS1204B`,
+    and other DS1000B-series scopes that share this layout.
     """
 
     class MachineModeEnum(IntEnum):

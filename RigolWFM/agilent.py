@@ -192,9 +192,7 @@ def from_file(file_name: str) -> AgilentWaveform:
         for buffer in waveform.buffers:
             data_header = buffer.data_header
             buffer_type = data_header.buffer_type
-            is_digital = (
-                waveform_type == AgilentAgxxBin.WaveformTypeEnum.logic or buffer_type in ignored_buffer_types
-            )
+            is_digital = waveform_type == AgilentAgxxBin.WaveformTypeEnum.logic or buffer_type in ignored_buffer_types
             if is_digital:
                 continue
 

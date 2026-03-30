@@ -37,6 +37,18 @@ class TektronixWfm002LeWfm(KaitaiStruct):
     where i = 0 corresponds to the first sample in the curve buffer.
     
     Reference: Tektronix "Reference Waveform File Format" (001-1378-03), version notes.
+    
+    Sources used for this KSY binary format:
+    `docs/vendors/tektronix/tek_docs.pdf`, the version-difference notes captured
+    in this schema, and the shared Tektronix adapter logic in this repository.
+    
+    Tested file formats: synthetic little-endian `WFM#002` and `WFM#003`
+    fixtures in `tests/test_tek.py`, including the `WFM#003` offset regression
+    after the `point_density` field; no checked-in vendor capture is present yet.
+    
+    Oscilloscope models this format may apply to: `TDS5000B` for `WFM#002` and
+    `DPO7000`, `DPO70000`, `DSA70000`, and closely related Tektronix scopes for
+    `WFM#003`.
     """
 
     class BaseTypeEnum(IntEnum):

@@ -13,6 +13,18 @@ class SiglentV02Bin(KaitaiStruct):
     
     V0.2 keeps the V0.1 analog-only sample packing but moves the horizontal
     timing metadata to later offsets in the file.
+    
+    Sources used for this KSY binary format:
+    `docs/vendors/siglent/siglent-binaries.pdf` plus the synthetic regression
+    builder in `tests/test_siglent.py`.
+    
+    Tested file formats: the synthetic `Binary Format V0.2` fixture in
+    `tests/test_siglent.py`, exercised through revision detection, low-level
+    Kaitai parsing, and normalized waveform loading.
+    
+    Oscilloscope models this format may apply to: Siglent instruments that write
+    `Binary Format V0.2`; the checked-in tests do not yet narrow this revision to
+    a smaller verified model list.
     """
     def __init__(self, _io, _parent=None, _root=None):
         super(SiglentV02Bin, self).__init__(_io)

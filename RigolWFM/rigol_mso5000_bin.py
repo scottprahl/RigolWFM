@@ -19,13 +19,28 @@ class RigolMso5000Bin(KaitaiStruct):
     
     File layout:
       [File Header:      12 bytes]
-      for each exported waveform:
-        [Waveform Header: 140 bytes]
-        [Data Header:      12 bytes]
+    for each exported waveform:
+      [Waveform Header: 140 bytes]
+      [Data Header:      12 bytes]
         [Sample Data:      buffer_size bytes]
     
     The shipped examples only exercise analog float32 buffers. Logic-analyzer
     records are identified by the enums below and handled in handwritten code.
+    
+    Sources used for this KSY binary format: vendor material under
+    `docs/vendors/rigol/5000/rigol_mso5000-main`, the companion
+    `readRigolWaveform.m` MATLAB reader in `docs/vendors/rigol/5000`, the
+    `wavebin` MSO5000 examples under `docs/vendors/wavebin-master`, and the
+    checked-in project fixtures.
+    
+    Tested file formats: real repo fixtures `MSO5000-A.bin` and `MSO5000-B.bin`;
+    the separate `MSO5074-A.bin` and `MSO5074-B.bin` captures are handled by the
+    dedicated `mso5074` adapter rather than this KSY.
+    
+    Oscilloscope models this format may apply to: Rigol `MSO5000` family scopes
+    that emit the standard float32 `.bin` export; the repo currently confirms
+    that layout with `MSO5000`-class captures, not with the separate `MSO5074`
+    legacy variant.
     """
 
     class BufferTypeEnum(IntEnum):

@@ -89,6 +89,17 @@ class TektronixInternalIsf(KaitaiStruct):
       TDS 340A / 360 / 380 (070-9442-02)
       TDS3000/B/C Series (071-0381-03)
       TDS5000B/6000/7000 Series
+    
+    Sources used for this KSY binary format: the Tektronix programmer manuals
+    listed above together with the shared ISF adapter in this repository.
+    
+    Tested file formats: synthetic `.isf` fixtures in `tests/test_isf.py`
+    covering metadata cleanup, voltage scaling, time-axis reconstruction, and
+    autodetection; no checked-in real ISF file is present yet.
+    
+    Oscilloscope models this format may apply to: `TDS300` / `340A` / `360` /
+    `380`, `TDS1000` / `2000` / `3000`, `TDS5000B` / `6000` / `7000`, and other
+    Tektronix scopes that export ISF waveforms.
     """
     def __init__(self, _io, _parent=None, _root=None):
         super(TektronixInternalIsf, self).__init__(_io)

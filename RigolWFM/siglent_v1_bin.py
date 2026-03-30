@@ -13,6 +13,18 @@ class SiglentV1Bin(KaitaiStruct):
     
     V1.0 introduces a compact 2 KiB waveform header at the start of the file and
     stores enabled analog channels first in the sample payload at offset 0x800.
+    
+    Sources used for this KSY binary format:
+    `docs/vendors/siglent/siglent-binaries.pdf` plus the synthetic regression
+    builder in `tests/test_siglent.py`.
+    
+    Tested file formats: the synthetic `Binary Format V1.0` fixture in
+    `tests/test_siglent.py`, exercised through revision detection, low-level
+    Kaitai parsing, and normalized waveform loading.
+    
+    Oscilloscope models this format may apply to: Siglent instruments that write
+    `Binary Format V1.0`; the checked-in tests do not yet narrow this revision to
+    a smaller verified model list.
     """
     def __init__(self, _io, _parent=None, _root=None):
         super(SiglentV1Bin, self).__init__(_io)

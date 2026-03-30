@@ -10,6 +10,21 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
     raise Exception("Incompatible Kaitai Struct Python API: 0.11 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Rigol6000Wfm(KaitaiStruct):
+    """Rigol DS6000 waveform file format.
+    
+    Sources used for this KSY binary format:
+    `docs/vendors/rigol/WFM format - DS6000.pdf` and the synthetic regression
+    builder in `tests/test_6.py` that encodes the documented offsets, channel
+    tables, and tail fields.
+    
+    Tested file formats: synthetic DS6000 files generated in `tests/test_6.py`,
+    including normal two-channel captures and a zero-offset / missing-channel
+    case; no checked-in real DS6000 fixture is present yet.
+    
+    Oscilloscope models this format may apply to: DS6000 family models currently
+    listed by the library, including `DS6062`, `DS6064`, `DS6102`, and
+    `DS6104`.
+    """
 
     class AcquisitionEnum(IntEnum):
         normal = 0

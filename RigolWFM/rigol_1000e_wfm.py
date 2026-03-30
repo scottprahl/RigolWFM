@@ -11,6 +11,18 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
 
 class Rigol1000eWfm(KaitaiStruct):
     """Rigol DS1102E scope .wmf format abstracted from a python script
+    
+    Sources used for this KSY binary format:
+    `docs/vendors/rigol/WFM format - DS1000E.pdf`, the older project parser, and
+    checked-in `DS1102E`, `DS1052E`, and `DS1000E` captures.
+    
+    Tested file formats: real repo fixtures `DS1102E-A.wfm` through
+    `DS1102E-G.wfm`, `DS1052E.wfm`, and `DS1000E-A.wfm` through
+    `DS1000E-D.wfm`.
+    
+    Oscilloscope models this format may apply to: DS1000E family models
+    currently listed by the library, including `DS1102E`, `DS1052E`, and closely
+    related DS1000E-series scopes.
     """
 
     class BandwidthEnum(IntEnum):

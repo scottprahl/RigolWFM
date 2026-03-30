@@ -11,6 +11,21 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
 
 class Rigol1000zWfm(KaitaiStruct):
     """Rigol DS1000Z scope .wmf file format.
+    
+    Sources used for this KSY binary format:
+    `docs/vendors/rigol/WFM format - DS1000Z.pdf` plus checked-in DS1000Z /
+    `MSO1104` captures with CSV and text sidecars used for cross-checking
+    voltages and trigger metadata.
+    
+    Tested file formats: real repo fixtures `DS1202Z-E.wfm`, `DS1054Z-A.wfm`
+    through `DS1054Z-D.wfm`, `DS1074Z-A.wfm` through `DS1074Z-C.wfm`,
+    `MSO1104.wfm`, and the two-channel SP3 fixtures
+    `DS1054Z-ch1SquareCH2Uart.wfm` and `DS1054Z-ch1SquareCH4Uart.wfm`.
+    
+    Oscilloscope models this format may apply to: DS1000Z family models
+    currently listed by the library, including `DS1202Z`, `DS1054Z`, `MSO1054Z`,
+    `DS1074Z`, `MSO1074Z`, `DS1074Z-S`, `DS1104Z`, `MSO1104Z`, and
+    `DS1104Z-S`.
     """
 
     class AcquistionEnum(IntEnum):

@@ -22,7 +22,7 @@ class Lecroy10BeTrc(KaitaiStruct):
       - No ris_time_array field
     
     Endianness detection (performed by the caller before selecting this parser):
-      COMM_ORDER is a u2 at offset 34.  byte 34 == 0 → HIFIRST (little-endian, use lecroy_1_0_le).
+      COMM_ORDER is a u2 at offset 34.  byte 34 == 0 → HIFIRST (big-endian, use lecroy_1_0_be).
     
     Voltage reconstruction:
       volts[i] = vertical_gain * adc[i] - acq_vert_offset
@@ -30,6 +30,20 @@ class Lecroy10BeTrc(KaitaiStruct):
     
     Time axis:
       t[i] = horiz_offset + i * horiz_interval   (i = 0 … wave_array_count − 1)
+    
+    Sources used for this KSY binary format: `docs/vendors/lecroy/LeCroyWaveformTemplate_1_0.txt`,
+    the checked-in LeCroy adapter logic, and comparison against the repo's real
+    `trace*.000` fixtures for the sibling `LECROY_1_0` layout.
+    
+    Tested file formats: synthetic big-endian `LECROY_1_0` files with both
+    8-bit and 16-bit sample payloads and known calibration values; the checked-in
+    real `trace1.000` through `trace4.000` fixtures exercise the little-endian
+    `LECROY_1_0` layout rather than this exact big-endian variant.
+    
+    Oscilloscope models this format may apply to: Teledyne LeCroy oscilloscopes
+    that write the `LECROY_1_0` template, including older 7200-series /
+    WaveRunner-era instruments and related scopes that store `.trc` or `.000`
+    waveform files in big-endian form.
     """
 
     class BandwidthLimitEnum(IntEnum):

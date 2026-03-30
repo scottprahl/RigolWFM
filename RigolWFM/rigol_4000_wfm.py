@@ -10,6 +10,23 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
     raise Exception("Incompatible Kaitai Struct Python API: 0.11 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Rigol4000Wfm(KaitaiStruct):
+    """Rigol DS4000 / MSO4000 waveform file format.
+    
+    Sources used for this KSY binary format: reverse-engineering from the
+    checked-in `DS4022` and `DS4024` captures, comparison against the closely
+    related DS2000 / DS6000 Rigol waveform documentation, and the existing
+    project parser.
+    
+    Tested file formats: real repo fixtures `DS4022-A.wfm`, `DS4022-B.wfm`,
+    `DS4024-A.wfm`, and `DS4024-B.wfm`, with `DS4024` text sidecars used for
+    time-base and trigger cross-checks.
+    
+    Oscilloscope models this format may apply to: DS4000 and MSO4000 family
+    models currently listed by the library, including `DS4054`, `DS4052`,
+    `DS4034`, `DS4032`, `DS4024`, `DS4022`, `DS4014`, `DS4012`, `MSO4054`,
+    `MSO4052`, `MSO4034`, `MSO4032`, `MSO4024`, `MSO4022`, `MSO4014`, and
+    `MSO4012`.
+    """
 
     class AcquisitionEnum(IntEnum):
         normal = 0

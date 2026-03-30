@@ -36,6 +36,19 @@ class TektronixWfm001LeWfm(KaitaiStruct):
     Valid user data starts at curve.data_start_offset bytes into the buffer.
     
     Reference: Tektronix "Reference Waveform File Format" (001-1378-03).
+    
+    Sources used for this KSY binary format:
+    `docs/vendors/tektronix/tek_docs.pdf` and the shared Tektronix adapter logic
+    in this repository.
+    
+    Tested file formats: no checked-in `WFM#001` little-endian fixture currently
+    exercises this exact schema; current Tek regression tests cover synthetic
+    `WFM#002`, `WFM#003`, and legacy `LLWFM` files, so this variant is
+    document-backed rather than fixture-backed today.
+    
+    Oscilloscope models this format may apply to: Tektronix `TDS6000` / `B` /
+    `C`, `TDS/CSA7000` / `B`, and similar Intel / PC-based instruments that
+    write little-endian `WFM#001` files.
     """
 
     class BaseTypeEnum(IntEnum):

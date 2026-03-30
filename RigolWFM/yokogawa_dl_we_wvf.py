@@ -207,6 +207,20 @@ class YokogawaDlWeWvf(KaitaiStruct):
     Erik Benkler, "wvfread v1.7", Physikalisch-Technische Bundesanstalt, 2011.
     Yokogawa Technical Information TI 7000-21 E, 1998 (3rd edition).
     Yokogawa DL 1640 User Manual, Appendix 3.
+    
+    Sources used for this KSY binary format: the Yokogawa references listed
+    above, especially the WVF File Access Toolkit documentation in
+    `docs/vendors/yokogawa/WDF_File_Access_Library.pdf`, plus the checked-in
+    parser notes in this repository.
+    
+    Tested file formats: no checked-in `.hdr` + `.wvf` pair currently exercises
+    this schema directly; current repository tests cover only the separate
+    single-file Yokogawa ASCII-header `.wfm` adapter, so this KSY is presently
+    document-backed rather than fixture-backed.
+    
+    Oscilloscope models this format may apply to: `WE7000`; `DL708`,
+    `DL708E`, `DL716`, `DL750`; `DL1720`, `DL1740`; `DL1500` series;
+    `DL1600` series; `DL7100`, `DL7200`; and `DL7400` series.
     """
     def __init__(self, len_leading_unused, _io, _parent=None, _root=None):
         super(YokogawaDlWeWvf, self).__init__(_io)

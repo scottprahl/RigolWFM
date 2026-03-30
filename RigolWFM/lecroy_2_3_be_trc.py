@@ -12,9 +12,9 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
 class Lecroy23BeTrc(KaitaiStruct):
     """Teledyne LeCroy LECROY_2_3 binary waveform format (.trc files) — big-endian variant.
     
-    This parser handles files where byte 34 (the low byte of COMM_ORDER) equals 1,
-    indicating LOFIRST (little-endian) byte order.  Use lecroy_2_3_be for big-endian
-    files (byte 34 == 0).
+    This parser handles files where byte 34 (the low byte of COMM_ORDER) equals 0,
+    indicating HIFIRST (big-endian) byte order.  Use lecroy_2_3_le for
+    little-endian files (byte 34 == 1).
     
     File layout:
       [WAVEDESC block:   346 bytes  — main waveform descriptor (WAVE_DESCRIPTOR field)]
@@ -33,7 +33,7 @@ class Lecroy23BeTrc(KaitaiStruct):
       COMM_ORDER is a u2 at offset 34.  Because COMM_ORDER can only be 0 or 1,
       the low byte at offset 34 is unambiguous in both byte orders:
         byte 34 == 0  →  HIFIRST (big-endian,    use lecroy_2_3_be)
-        byte 34 == 1  →  LOFIRST (little-endian, use lecroy_2_3_be)
+        byte 34 == 1  →  LOFIRST (little-endian, use lecroy_2_3_le)
     
     Voltage reconstruction (single sweep):
       volts[i] = VERTICAL_GAIN * adc[i] - VERTICAL_OFFSET
@@ -45,6 +45,21 @@ class Lecroy23BeTrc(KaitaiStruct):
     For sequence acquisitions (SUBARRAY_COUNT > 1), the time axis for segment k is:
       t[k,i] = (trigtime_array[k].trigger_time + trigtime_array[k].trigger_offset)
                + i * HORIZ_INTERVAL
+    
+    Sources used for this KSY binary format:
+    `docs/vendors/lecroy/LeCroyWaveformTemplate_2_3.pdf`,
+    `docs/vendors/lecroy/LeCroyWaveformTemplate_2_2.pdf`, the checked-in LeCroy
+    adapter logic, and comparison against the repo's real `LECROY_2_3` fixtures.
+    
+    Tested file formats: synthetic big-endian `LECROY_2_3` files with 8-bit and
+    16-bit sample payloads, plus prefixed-detection regressions; the checked-in
+    real `lecroy_1.trc` through `lecroy_4.trc` fixtures are little-endian
+    SCPI-prefixed `LECROY_2_3` captures, so this exact big-endian variant remains
+    synthetic-only today.
+    
+    Oscilloscope models this format may apply to: Teledyne LeCroy oscilloscopes
+    that write the `LECROY_2_3` template in big-endian order, especially older
+    PPC-based WavePro, WaveRunner, WaveSurfer, and similar instruments.
     """
 
     class BandwidthLimitEnum(IntEnum):

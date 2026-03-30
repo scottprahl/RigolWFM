@@ -45,6 +45,20 @@ class Lecroy23LeTrc(KaitaiStruct):
     For sequence acquisitions (SUBARRAY_COUNT > 1), the time axis for segment k is:
       t[k,i] = (trigtime_array[k].trigger_time + trigtime_array[k].trigger_offset)
                + i * HORIZ_INTERVAL
+    
+    Sources used for this KSY binary format:
+    `docs/vendors/lecroy/LeCroyWaveformTemplate_2_3.pdf`,
+    `docs/vendors/lecroy/LeCroyWaveformTemplate_2_2.pdf`, the checked-in LeCroy
+    adapter logic, and the repo's real `LECROY_2_3` fixtures.
+    
+    Tested file formats: synthetic little-endian `LECROY_2_3` files with 8-bit
+    and 16-bit sample payloads, SCPI-prefixed fixtures, and long-prefix
+    autodetect cases, plus the checked-in real `lecroy_1.trc` through
+    `lecroy_4.trc` SCPI-prefixed captures.
+    
+    Oscilloscope models this format may apply to: Teledyne LeCroy oscilloscopes
+    that write the `LECROY_2_3` template in little-endian form, including many
+    WaveRunner, WavePro, WaveSurfer, and later Teledyne LeCroy families.
     """
 
     class BandwidthLimitEnum(IntEnum):

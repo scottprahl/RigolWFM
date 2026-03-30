@@ -13,6 +13,18 @@ class SiglentV3Bin(KaitaiStruct):
     
     V3.0 retains the V2.0 2 KiB header but adds byte order, horizontal grid
     count, per-channel code-per-division values, and math-wave metadata.
+    
+    Sources used for this KSY binary format:
+    `docs/vendors/siglent/siglent-binaries.pdf` plus the synthetic regression
+    builder in `tests/test_siglent.py`.
+    
+    Tested file formats: the synthetic `Binary Format V3.0` fixture in
+    `tests/test_siglent.py`, exercised through revision detection, low-level
+    Kaitai parsing, and normalized waveform loading.
+    
+    Oscilloscope models this format may apply to: Siglent instruments that write
+    `Binary Format V3.0`; the checked-in tests do not yet narrow this revision to
+    a smaller verified model list.
     """
     def __init__(self, _io, _parent=None, _root=None):
         super(SiglentV3Bin, self).__init__(_io)

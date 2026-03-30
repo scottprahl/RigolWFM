@@ -34,10 +34,7 @@ def test_rohde_schwarz_rtp_low_level_header():
 
     raw = RigolWFM.rohde_schwarz_rtp_wfm_bin.RohdeSchwarzRtpWfmBin.from_file(str(path))
 
-    assert (
-        raw.format_code
-        == RigolWFM.rohde_schwarz_rtp_wfm_bin.RohdeSchwarzRtpWfmBin.FormatCodeEnum.float32
-    )
+    assert raw.format_code == RigolWFM.rohde_schwarz_rtp_wfm_bin.RohdeSchwarzRtpWfmBin.FormatCodeEnum.float32
     assert raw.record_length == 4070
     assert raw.payload_size == path.stat().st_size - 8
 

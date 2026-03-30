@@ -22,9 +22,7 @@ import numpy.typing as npt
 import RigolWFM.rohde_schwarz_rtp_wfm_bin
 from RigolWFM.mso5000 import ChannelHeader, _proxy_raw
 
-_RohdeSchwarzRtpWfmBin: Any = (
-    RigolWFM.rohde_schwarz_rtp_wfm_bin.RohdeSchwarzRtpWfmBin  # type: ignore[attr-defined]
-)
+_RohdeSchwarzRtpWfmBin: Any = RigolWFM.rohde_schwarz_rtp_wfm_bin.RohdeSchwarzRtpWfmBin  # type: ignore[attr-defined]
 
 _SOURCE_PREFIX = "eRS_SIGNAL_SOURCE_"
 _BYTE_ORDER_PREFIX = "eRS_BYTE_ORDER_"
