@@ -39,16 +39,24 @@ RigolWFM
 
 by Scott Prahl
 
-A utility to process Rigol oscilloscope ``.wfm`` files
-------------------------------------------------------
+A utility to process oscilloscope waveform files
+------------------------------------------------
 
 |pypi-badge| |github-badge| |conda-badge| |kaitaistruct| |zenodo-badge|
 
 |license-badge| |test-badge| |docs-badge| |downloads-badge|
 
-This project is a comprehensive resource for interpreting waveform the proprietary format ``.wmf`` files created by most (?) Rigol oscilloscopes.  Open source (and Rigol's own applications) that can parse/convert Rigol's binary ``.wfm`` files are sadly balkanized: each program tends to support a single oscilloscope group.
+This project started as a resource for interpreting the proprietary ``.wfm``
+files created by Rigol oscilloscopes.  It now also includes parsers for
+Tektronix, LeCroy, Agilent / Keysight, Siglent, and Yokogawa waveform files.
+Open source tools that can parse or convert these binary oscilloscope formats
+are often balkanized: each program tends to support a single oscilloscope
+group.
 
-This project leverages a domain specific language <https://doc.kaitai.io> to represent the binary files.  Once a binary file has been described in this text format, parsers can be generated for a wide range of languages. 
+This project leverages the domain specific language at
+<https://doc.kaitai.io> to describe binary files.  Once a format has been
+described in this text form, parsers can be generated for a wide range of
+languages.
 
 Installation
 ---------------
@@ -66,7 +74,8 @@ or just open <https://scottprahl.github.io/RigolWFM/> and try the web version.
 Usage
 -----
 
-Once ``RigolWFM`` is installed, you can plot the signals from binary Rigol ``.wfm`` files by::
+Once ``RigolWFM`` is installed, you can plot signals from supported waveform
+files by::
 
    import matplotlib.pyplot as plt
    from RigolWFM import Wfm
@@ -77,6 +86,11 @@ Once ``RigolWFM`` is installed, you can plot the signals from binary Rigol ``.wf
    w = Wfm.from_file(filename)
    w.plot()
    plt.show()
+
+``Wfm.from_file()`` will autodetect the file family for supported formats, so
+the same call works for Rigol ``.wfm`` / ``.bin`` files, Tektronix ``.wfm`` /
+``.isf`` files, LeCroy ``.trc`` files, Agilent / Keysight ``AGxx`` ``.bin``
+files, supported Siglent ``.bin`` revisions, and Yokogawa ``.wfm`` files.
 
 
 Alternatively, ``wfmconvert`` can be used from the command line.  For example, the following should convert all the DS1000E files in the current directory to the ``.csv`` format::
@@ -95,43 +109,70 @@ If you want to create a ``.wav`` file with channels one and four as signals (and
 
    prompt> wfmconvert --autoscale --channel 14 wav *.wfm
 
+The project also includes a browser-based viewer at
+<https://scottprahl.github.io/RigolWFM/>.  The current web app supports Rigol
+``.wfm`` / ``.bin`` files, Tektronix ``.wfm`` / ``.isf`` files, LeCroy
+``.trc`` files, Agilent / Keysight ``AGxx`` ``.bin`` files, and supported
+Siglent ``.bin`` revisions.
+
 Status
 ------
 
-There are binary file descriptions for waveform files created by the following scopes:
+There are binary file descriptions and normalized adapters for waveform files
+created by the following oscilloscopes.  Most of these work directly through
+``Wfm.from_file()``; rows with special limitations are called out in the notes.
 
-+-------------+------------------+----------+------------------------------------------+
-| Family      | Models           | Format   | Notes                                    |
-+=============+==================+==========+==========================================+
-| DS1000B     | DS1074/1104/     | ``.wfm`` | tested                                   |
-|             | 1204B            |          |                                          |
-+-------------+------------------+----------+------------------------------------------+
-| DS1000C     | DS1042/1102/     | ``.wfm`` | tested (limited files)                   |
-|             | 1202CA           |          |                                          |
-+-------------+------------------+----------+------------------------------------------+
-| DS1000D     | DS1052/1102D     | ``.wfm`` | tested (limited files)                   |
-+-------------+------------------+----------+------------------------------------------+
-| DS1000E     | DS1052/1102E     | ``.wfm`` | tested                                   |
-+-------------+------------------+----------+------------------------------------------+
-| DS1000Z     | DS1054Z,         | ``.wfm`` | tested                                   |
-|             | MSO1054Z, etc.   |          |                                          |
-+-------------+------------------+----------+------------------------------------------+
-| DS2000      | DS2072A,         | ``.wfm`` | tested                                   |
-|             | MSO2102A, etc.   |          |                                          |
-+-------------+------------------+----------+------------------------------------------+
-| DS4000      | DS4012–DS4054,   | ``.wfm`` | tested                                   |
-|             | MSO4012–MSO4054  |          |                                          |
-+-------------+------------------+----------+------------------------------------------+
-| DS6000      | DS6062–DS6104    | ``.wfm`` | untested                                 |
-+-------------+------------------+----------+------------------------------------------+
-| MSO5000     | MSO5354, etc.    | ``.bin`` | tested                                   |
-+-------------+------------------+----------+------------------------------------------+
-| MSO7000/    | DS7000, MSO7000, | ``.bin`` | tested                                   |
-| MSO8000     | MSO8000, DS8000  |          |                                          |
-+-------------+------------------+----------+------------------------------------------+
-| DHO800/     | DHO800, DHO1000  | ``.bin`` | tested; calibrated float32 samples,      |
-| DHO1000     |                  | ``.wfm`` | official format documented in User Guide |
-+-------------+------------------+----------+------------------------------------------+
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Family             | Models           | Format            | Notes                                         |
++====================+==================+===================+===============================================+
+| Rigol DS1000B      | DS1074/1104/     | ``.wfm``          | tested                                        |
+|                    | 1204B            |                   |                                               |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Rigol DS1000C      | DS1042/1102/     | ``.wfm``          | tested (limited files)                        |
+|                    | 1202CA           |                   |                                               |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Rigol DS1000D      | DS1052/1102D     | ``.wfm``          | tested (limited files)                        |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Rigol DS1000E      | DS1052/1102E     | ``.wfm``          | tested                                        |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Rigol DS1000Z      | DS1054Z,         | ``.wfm``          | tested                                        |
+|                    | MSO1054Z, etc.   |                   |                                               |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Rigol DS2000       | DS2072A,         | ``.wfm``          | tested                                        |
+|                    | MSO2102A, etc.   |                   |                                               |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Rigol DS4000       | DS4012-DS4054,   | ``.wfm``          | tested                                        |
+|                    | MSO4012-MSO4054  |                   |                                               |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Rigol DS6000       | DS6062-DS6104    | ``.wfm``          | untested                                      |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Rigol MSO5000      | MSO5354, etc.    | ``.bin``          | tested                                        |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Rigol MSO7000 /    | DS7000, MSO7000, | ``.bin``          | tested                                        |
+| MSO8000            | MSO8000, DS8000  |                   |                                               |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Rigol DHO800 /     | DHO800, DHO1000  | ``.bin``          | tested; calibrated float32 samples, official  |
+| DHO1000            |                  | ``.wfm``          | ``.bin`` and proprietary ``.wfm`` support     |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Tektronix WFM      | modern DPO/DSA   | ``.wfm``          | supports ``WFM#001``/``WFM#002``/``WFM#003``; |
+|                    | families         |                   | legacy ``LLWFM`` also supported               |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Tektronix ISF      | many Tek scopes  | ``.isf``          | tested                                        |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| LeCroy             | many WaveRunner/ | ``.trc``          | tested; handles SCPI-prefixed ``WAVEDESC``    |
+|                    | WaveSurfer/etc.  |                   | files                                         |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Agilent /          | InfiniiVision /  | ``.bin``          | supports ``AG01``/``AG03``/``AG10`` analog    |
+| Keysight           | Infiniium        |                   | captures; low-level parser preserves segments |
+|                    |                  |                   | and multi-buffer metadata                     |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Siglent            | documented       | ``.bin``          | supports documented V0.1-V6 revisions; old    |
+|                    | ``.bin``         |                   | platform files are detectable via low-level   |
+|                    | families         |                   | parsers but not normalized yet                |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Yokogawa           | ASCII-header     | ``.wfm``          | tested single-file import path                |
+|                    | waveform exports |                   |                                               |
++--------------------+------------------+-------------------+-----------------------------------------------+
 
 Resources
 ---------
@@ -150,6 +191,10 @@ This has been a bit of an adventure.  In the process of nailing down the basic f
 * Rigol's documentation of the ``.bin`` formats for the 1000, 5000, and 8000
 * Lathe's <https://github.com/Lathe26/WFM_for_Rigol_DHO800_900>
 * Nezarati's <https://nezarati.github.io/waveform-viewer/index.html>
+* Wavebin's <https://github.com/eyalroz/wavebin> Agilent / Keysight parsers and samples
+* Agilent / Keysight ``.bin`` reference readers and programming guides
+* Siglent's waveform format PDF and vendor reference parsers
+* SMASH toolbox vendor importers for Tektronix, LeCroy, and Yokogawa formats
 
 License
 -------

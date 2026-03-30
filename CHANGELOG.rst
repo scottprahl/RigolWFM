@@ -1,9 +1,11 @@
 Changelog
 =========
 
-Unreleased (2026-03-26)
+Unreleased (2026-03-29)
 ------------------------
 *    add web based viewer of .wfm files
+*    extend ``wfmview`` to support Agilent / Keysight ``AG01``/``AG03``/``AG10`` ``.bin`` files
+*    extend ``wfmview`` to support Siglent ``.bin`` files for documented revisions V0.1, V0.2, V1.0, V2.0, V3.0, V4.0, V5.0, and V6.0
 *    fix timing issue for DHO800.wfm files
 *    added autodetect to eliminate need to give file type
 *    add Rigol MSO5000 binary waveform support
@@ -19,10 +21,22 @@ Unreleased (2026-03-26)
 *    warn to stderr when the model string in the file disagrees with the user-supplied scope type
 *    add Rigol DHO800 and DHO1000 support for both official ``.bin`` exports and proprietary ``.wfm`` captures
 *    add Kaitai Struct descriptions for DHO binary and proprietary formats
+*    add Kaitai Struct descriptions and normalized adapters for Agilent / Keysight ``AGxx`` ``.bin`` files
+*    add Kaitai Struct descriptions for Siglent documented ``.bin`` revisions plus browser-side generated parsers for ``wfmview``
 *    add ``RigolWFM.dho`` adapter logic so DHO ``.bin`` and ``.wfm`` files match ``Wfm`` and ``Channel`` interfaces
+*    add ``RigolWFM.agilent`` adapter logic so Agilent / Keysight ``.bin`` files match ``Wfm`` and ``Channel`` interfaces
+*    add ``RigolWFM.siglent`` adapter logic so supported Siglent ``.bin`` revisions match ``Wfm`` and ``Channel`` interfaces
 *    extend DHO ``.wfm`` decoding for DHO800 differences and DHO1000 multichannel captures
 *    fail fast on unsupported DHO ``.bin`` buffer types instead of silently misinterpreting non-analog payloads
+*    add Yokogawa ``.wfm`` support via ``RigolWFM.yokogawa`` and autodetect integration
+*    add legacy Tektronix ``LLWFM`` support alongside modern ``WFM#001``/``WFM#002``/``WFM#003`` parsing
+*    fix Tektronix ``WFM#003`` parsing by reading user-view ``point_density`` fields at their correct 8-byte layout
+*    reject unsupported Tektronix FastFrame, multi-curve, and unknown-version ``.wfm`` files more explicitly
+*    preserve Tektronix ``WFID`` and waveform labels as trace metadata instead of reporting them as instrument models
+*    improve LeCroy ``.trc`` detection by scanning for ``WAVEDESC`` beyond short SCPI / transport prefixes
+*    align Agilent / Keysight parsing with vendor docs and reference readers: use ``x_origin``, expose multi-buffer waveforms in the low-level parser, preserve segment metadata, and reject unsupported segmented or Peak Detect normalization paths
 *    add test coverage in ``tests/test_dho1000.py`` and ``tests/test_dho800.py``
+*    add regression coverage for Agilent / Keysight, Siglent, Yokogawa, Tektronix ``WFM#003``/``LLWFM``, Tektronix ``.isf`` label handling, and LeCroy SCPI-prefixed ``.trc`` files
 *    add notebooks ``1-DHO1000-Waveforms.ipynb`` and ``1-DHO800-Waveforms.ipynb`` and include the new waveform docs in the notebook test suite
 *    ignore generated parser modules in Ruff and Pylint to keep lint results focused on handwritten code
 *    update README, docs index, Makefile targets, and manifest entries for the new DHO parser and documentation workflow
