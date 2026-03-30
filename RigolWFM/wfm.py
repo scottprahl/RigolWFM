@@ -26,6 +26,7 @@ import urllib.parse
 import wave
 from typing import IO, TYPE_CHECKING, Any, Literal
 
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import requests  # type: ignore[import-untyped]
@@ -39,6 +40,7 @@ import RigolWFM.rigol
 import RigolWFM.siglent
 import RigolWFM.tek
 import RigolWFM.yokogawa
+import RigolWFM.yokogawa_hdr
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -97,6 +99,9 @@ ISF_scopes: list[str] = ["ISF", "isf", "tek_isf", "TEK_ISF"]
 # Yokogawa ASCII-header .wfm files
 Yokogawa_scopes: list[str] = ["Yokogawa", "YOKOGAWA", "yokogawa", "yoko", "yokogawa_wfm"]
 
+# Yokogawa two-file .hdr + .wvf pairs
+Yokogawa_wvf_scopes: list[str] = ["yokogawa_wvf", "yokogawa_hdr", "Yokogawa_WVF", "YOKOGAWA_WVF"]
+
 _GENERIC_VENDOR_MODELS = {
     *(name.upper() for name in Keysight_scopes),
     *(name.upper() for name in Siglent_scopes),
@@ -106,6 +111,7 @@ _GENERIC_VENDOR_MODELS = {
     *(name.upper() for name in Tek_scopes),
     *(name.upper() for name in ISF_scopes),
     *(name.upper() for name in Yokogawa_scopes),
+    *(name.upper() for name in Yokogawa_wvf_scopes),
 }
 
 # Re-export Rigol scope lists so existing callers that reference e.g.
@@ -301,6 +307,10 @@ def _detect_model_from_header(hdr: bytes, fsize: int, filename_hint: str = "") -
     if all(token in hdr for token in (b"NR_PT:", b"PT_O:", b"XIN:", b"YMU:", b"YOF:", b"BYT:")):
         return "Yokogawa"
 
+    # Yokogawa two-file .hdr + .wvf: ASCII text with $PublicInfo section
+    if b"$PublicInfo" in hdr:
+        return "yokogawa_wvf"
+
     # Tektronix legacy .wfm: "LLWFM" marker in the opening bytes
     if b"LLWFM" in hdr[:8]:
         return "Tek"
@@ -376,6 +386,7 @@ def valid_scope_list() -> str:
     s += ", ".join(Tek_scopes) + "\n    "
     s += ", ".join(ISF_scopes) + "\n"
     s += "    " + ", ".join(Yokogawa_scopes) + "\n"
+    s += "    " + ", ".join(Yokogawa_wvf_scopes) + "\n"
     return s
 
 
@@ -502,6 +513,11 @@ class Wfm:
         # --- Yokogawa .wfm ---
         elif _model_in_family(umodel, Yokogawa_scopes):
             w = RigolWFM.yokogawa.from_file(file_name)
+            new_wfm.header_name = w.header.model or "Yokogawa"
+
+        # --- Yokogawa .hdr + .wvf ---
+        elif _model_in_family(umodel, Yokogawa_wvf_scopes):
+            w = RigolWFM.yokogawa_hdr.from_hdr_file(file_name)
             new_wfm.header_name = w.header.model or "Yokogawa"
 
         else:
@@ -697,8 +713,6 @@ class Wfm:
 
     def plot(self) -> Figure:
         """Plot the data in oscilloscope style and return the Figure."""
-        import matplotlib.pyplot as plt
-
         _CH_COLORS = ["#FFFF00", "#00FFFF", "#FF00FF", "#00FF00"]
 
         h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()

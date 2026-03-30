@@ -267,6 +267,6 @@ def from_file(file_name: str) -> AgilentWaveform:
         analog_slot += 1
 
     if analog_found == 0:
-        raise ValueError("No supported analog waveform records were found in this " "Agilent/Keysight capture.")
+        raise ValueError("No supported analog waveform records were found in this Agilent/Keysight capture.")
 
     return obj

@@ -257,6 +257,8 @@ class Channel:
             self.tek(w, channel_number)
         elif scope == "yokogawa_wfm":
             self.yokogawa(w, channel_number)
+        elif scope == "yokogawa_wvf":
+            self.yokogawa(w, channel_number)
 
     def __str__(self) -> str:
         """Describe this channel."""

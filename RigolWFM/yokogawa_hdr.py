@@ -33,6 +33,7 @@ References:
     Yokogawa DL1640 User Manual, Appendix 3.
     Erik Benkler, "wvfread v1.7", Physikalisch-Technische Bundesanstalt, 2011.
 """
+
 from __future__ import annotations
 
 import re
@@ -40,16 +41,20 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
+import numpy.typing as npt
 
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class VDataTypeInfo:
     """Decoded vertical data type for one trace (from the VDataType .hdr field)."""
-    raw: str        # original token, e.g. "IS2", "IU2", "FS4", "B16"
-    byte_num: int   # bytes per ADC sample
+
+    raw: str  # original token, e.g. "IS2", "IU2", "FS4", "B16"
+    byte_num: int  # bytes per ADC sample
     numpy_dtype: str  # endian-neutral numpy dtype string, e.g. "i2", "u2", "f4"
     is_logic: bool  # True for B-type (raw logic bit-fields, e.g. DL750 digital channels)
 
@@ -57,43 +62,46 @@ class VDataTypeInfo:
 @dataclass
 class TraceInfo:
     """Per-trace metadata within one group."""
-    name: str                           = ""
-    block_size: int                     = 0      # samples per block
-    v_resolution: float                 = 1.0    # volts per ADC count (ScaleA)
-    v_offset: float                     = 0.0    # volt offset (ScaleB)
+
+    name: str = ""
+    block_size: int = 0  # samples per block
+    v_resolution: float = 1.0  # volts per ADC count (ScaleA)
+    v_offset: float = 0.0  # volt offset (ScaleB)
     v_data_type: Optional[VDataTypeInfo] = None
-    v_unit: str                         = "V"
-    v_plus_over: Optional[int]          = None   # ADC value meaning upper overrange
-    v_minus_over: Optional[int]         = None   # ADC value meaning lower overrange
-    v_illegal: Optional[int]            = None   # ADC value meaning invalid/hidden sample
-    v_max: Optional[int]                = None   # maximum valid ADC value
-    v_min: Optional[int]                = None   # minimum valid ADC value
-    h_resolution: float                 = 1e-9   # seconds per sample (SamplingInterval)
-    h_offset: float                     = 0.0    # time of first sample relative to trigger (s)
-    h_unit: str                         = "s"
-    dates: list[str]                    = field(default_factory=list)  # one entry per block
-    times: list[str]                    = field(default_factory=list)  # one entry per block
+    v_unit: str = "V"
+    v_plus_over: Optional[int] = None  # ADC value meaning upper overrange
+    v_minus_over: Optional[int] = None  # ADC value meaning lower overrange
+    v_illegal: Optional[int] = None  # ADC value meaning invalid/hidden sample
+    v_max: Optional[int] = None  # maximum valid ADC value
+    v_min: Optional[int] = None  # minimum valid ADC value
+    h_resolution: float = 1e-9  # seconds per sample (SamplingInterval)
+    h_offset: float = 0.0  # time of first sample relative to trigger (s)
+    h_unit: str = "s"
+    dates: list[str] = field(default_factory=list)  # one entry per block
+    times: list[str] = field(default_factory=list)  # one entry per block
 
 
 @dataclass
 class GroupInfo:
     """Per-group metadata (one $Group<N> section)."""
-    trace_number: int           = 0
-    block_number: int           = 0
-    traces: list[TraceInfo]     = field(default_factory=list)
+
+    trace_number: int = 0
+    block_number: int = 0
+    traces: list[TraceInfo] = field(default_factory=list)
 
 
 @dataclass
 class HdrInfo:
     """Complete parsed contents of a Yokogawa .hdr metadata file."""
-    format_version: str         = ""
-    model: str                  = ""
-    endian: str                 = "Ltl"    # "Big" (Motorola) or "Ltl" (Intel x86)
-    data_format: str            = "TRACE"  # "TRACE" or "BLOCK" layout in .wvf
-    group_number: int           = 0
-    trace_total_number: int     = 0
-    data_offset: int            = 0        # leading unused bytes in .wvf
-    groups: list[GroupInfo]     = field(default_factory=list)
+
+    format_version: str = ""
+    model: str = ""
+    endian: str = "Ltl"  # "Big" (Motorola) or "Ltl" (Intel x86)
+    data_format: str = "TRACE"  # "TRACE" or "BLOCK" layout in .wvf
+    group_number: int = 0
+    trace_total_number: int = 0
+    data_offset: int = 0  # leading unused bytes in .wvf
+    groups: list[GroupInfo] = field(default_factory=list)
 
     @property
     def is_big_endian(self) -> bool:
@@ -109,6 +117,7 @@ class HdrInfo:
 # ---------------------------------------------------------------------------
 # Public entry points
 # ---------------------------------------------------------------------------
+
 
 def parse_hdr(path: str) -> HdrInfo:
     """Parse a Yokogawa .hdr file and return a structured :class:`HdrInfo`.
@@ -146,6 +155,7 @@ def parse_hdr_text(text: str) -> HdrInfo:
 # ---------------------------------------------------------------------------
 # Byte-offset calculator
 # ---------------------------------------------------------------------------
+
 
 def wvf_byte_offset(hdr: HdrInfo, group: int, trace: int, block: int) -> int:
     """Return the byte offset of a (group, trace, block) slice in the .wvf file.
@@ -245,7 +255,7 @@ def _split_sections(
                 current = {}
                 groups.append(current)
             else:
-                current = None      # e.g. $PrivateInfo — skip
+                current = None  # e.g. $PrivateInfo — skip
             continue
 
         if current is None:
@@ -267,6 +277,7 @@ def _split_sections(
 # ---------------------------------------------------------------------------
 # VDataType parsing
 # ---------------------------------------------------------------------------
+
 
 def _parse_vdtype(code: str) -> VDataTypeInfo:
     """Decode one VDataType token string.
@@ -308,6 +319,7 @@ def _parse_vdtype(code: str) -> VDataTypeInfo:
 # Column-position helpers  (replicate MATLAB rowpos logic from hdrread.m)
 # ---------------------------------------------------------------------------
 
+
 def _vdtype_col_positions(vdtype_line: str) -> list[int]:
     """Return the starting column index of each VDataType token in *vdtype_line*.
 
@@ -348,6 +360,7 @@ def _try_int(s: Optional[str]) -> Optional[int]:
 # Main builder
 # ---------------------------------------------------------------------------
 
+
 def _req(d: _SectionDict, key: str) -> str:
     if key not in d:
         raise ValueError(f".hdr file is missing required field: {key!r}")
@@ -366,13 +379,13 @@ def _opt_line(d: _SectionDict, key: str) -> Optional[str]:
 
 def _build_info(public: _SectionDict, group_raws: list[_SectionDict]) -> HdrInfo:
     info = HdrInfo()
-    info.format_version     = _req(public, "FormatVersion")
-    info.model              = _req(public, "Model")
-    info.endian             = _req(public, "Endian")
-    info.data_format        = _req(public, "DataFormat")
-    info.group_number       = int(_req(public, "GroupNumber"))
+    info.format_version = _req(public, "FormatVersion")
+    info.model = _req(public, "Model")
+    info.endian = _req(public, "Endian")
+    info.data_format = _req(public, "DataFormat")
+    info.group_number = int(_req(public, "GroupNumber"))
     info.trace_total_number = int(_req(public, "TraceTotalNumber"))
-    info.data_offset        = int(_req(public, "DataOffset"))
+    info.data_offset = int(_req(public, "DataOffset"))
 
     for g_idx, gd in enumerate(group_raws):
         grp = _build_group(g_idx, gd)
@@ -390,10 +403,10 @@ def _build_group(g_idx: int, gd: _SectionDict) -> GroupInfo:
     nb = grp.block_number
     grp.traces = [TraceInfo() for _ in range(n)]
 
-    _assign_str  (grp.traces, n, _req(gd, "TraceName"),   "name")
-    _assign_int  (grp.traces, n, _req(gd, "BlockSize"),   "block_size")
+    _assign_str(grp.traces, n, _req(gd, "TraceName"), "name")
+    _assign_int(grp.traces, n, _req(gd, "BlockSize"), "block_size")
     _assign_float(grp.traces, n, _req(gd, "VResolution"), "v_resolution")
-    _assign_float(grp.traces, n, _req(gd, "VOffset"),     "v_offset")
+    _assign_float(grp.traces, n, _req(gd, "VOffset"), "v_offset")
 
     # --- VDataType: parse codes and capture column positions ---
     vdtype_entry = gd.get("VDataType")
@@ -412,15 +425,15 @@ def _build_group(g_idx: int, gd: _SectionDict) -> GroupInfo:
     _assign_col_str(grp.traces, n, _opt_line(gd, "HUnit"), col_pos, "HUnit", "h_unit")
 
     # --- Column-aligned optional integer fields ---
-    _assign_col_int(grp.traces, n, _opt_line(gd, "VPlusOverData"),  col_pos, "v_plus_over")
+    _assign_col_int(grp.traces, n, _opt_line(gd, "VPlusOverData"), col_pos, "v_plus_over")
     _assign_col_int(grp.traces, n, _opt_line(gd, "VMinusOverData"), col_pos, "v_minus_over")
-    _assign_col_int(grp.traces, n, _opt_line(gd, "VIllegalData"),   col_pos, "v_illegal")
-    _assign_col_int(grp.traces, n, _opt_line(gd, "VMaxData"),       col_pos, "v_max")
-    _assign_col_int(grp.traces, n, _opt_line(gd, "VMinData"),       col_pos, "v_min")
+    _assign_col_int(grp.traces, n, _opt_line(gd, "VIllegalData"), col_pos, "v_illegal")
+    _assign_col_int(grp.traces, n, _opt_line(gd, "VMaxData"), col_pos, "v_max")
+    _assign_col_int(grp.traces, n, _opt_line(gd, "VMinData"), col_pos, "v_min")
 
     # --- HResolution / HOffset ---
     _assign_float(grp.traces, n, _req(gd, "HResolution"), "h_resolution")
-    _assign_float(grp.traces, n, _req(gd, "HOffset"),     "h_offset")
+    _assign_float(grp.traces, n, _req(gd, "HOffset"), "h_offset")
 
     # --- Per-block Date / Time ---
     for tr in grp.traces:
@@ -432,8 +445,8 @@ def _build_group(g_idx: int, gd: _SectionDict) -> GroupInfo:
     # Newer DL750 (v6.22+) may write only "Date" even with multiple blocks.
     for b_idx in range(nb):
         if nb == 1:
-            d_key = "Date"  if "Date"  in gd else "Date1"
-            t_key = "Time"  if "Time"  in gd else "Time1"
+            d_key = "Date" if "Date" in gd else "Date1"
+            t_key = "Time" if "Time" in gd else "Time1"
         else:
             d_key = f"Date{b_idx + 1}"
             t_key = f"Time{b_idx + 1}"
@@ -457,6 +470,7 @@ def _build_group(g_idx: int, gd: _SectionDict) -> GroupInfo:
 # ---------------------------------------------------------------------------
 # Trace-level assignment helpers (module-level to avoid cell-var-from-loop)
 # ---------------------------------------------------------------------------
+
 
 def _assign_str(traces: list[TraceInfo], n: int, val: str, attr: str) -> None:
     for i, tok in enumerate(val.split()[:n]):
@@ -499,3 +513,160 @@ def _assign_col_int(
         v = _try_int(val)
         if v is not None:
             setattr(traces[i], attr, v)
+
+
+# ---------------------------------------------------------------------------
+# Normalized waveform wrapper for channel.py consumption
+# ---------------------------------------------------------------------------
+
+
+class YokogawaWvfHeader:
+    """Normalized header for a Yokogawa .hdr+.wvf pair consumed by :class:`channel.Channel`."""
+
+    def __init__(
+        self,
+        hdr: HdrInfo,
+        channel_data: list[Optional[npt.NDArray[np.float64]]],
+        raw_data: list[Optional[npt.NDArray[np.uint8]]],
+    ) -> None:
+        """Initialize from parsed HdrInfo and pre-decoded channel arrays."""
+        self._hdr = hdr
+        self.channel_data = channel_data
+        self.raw_data = raw_data
+        tr = self._first_trace()
+        self.x_increment: float = tr.h_resolution if tr else 1e-9
+        self.x_origin: float = tr.h_offset if tr else 0.0
+
+    def _first_trace(self) -> Optional[TraceInfo]:
+        if self._hdr.groups:
+            g = self._hdr.groups[0]
+            if g.traces:
+                return g.traces[0]
+        return None
+
+    @property
+    def model(self) -> str:
+        """Instrument model string."""
+        return self._hdr.model or "Yokogawa"
+
+    @property
+    def model_number(self) -> str:
+        """Alias for :attr:`model`."""
+        return self.model
+
+    @property
+    def firmware_version(self) -> str:
+        """Yokogawa .hdr files do not embed firmware information."""
+        return "unknown"
+
+    @property
+    def points(self) -> int:
+        """Number of samples per block (from the first trace)."""
+        tr = self._first_trace()
+        return tr.block_size if tr else 0
+
+    @property
+    def time_scale(self) -> float:
+        """Estimated time per division (total capture / 10 divisions)."""
+        if self.points > 0 and self.x_increment > 0:
+            return self.points * self.x_increment / 10.0
+        return 1e-3
+
+
+class YokogawaWvfWaveform:
+    """Normalized Yokogawa .hdr+.wvf parser result consumed by :class:`channel.Channel`."""
+
+    def __init__(self, header: YokogawaWvfHeader) -> None:
+        """Wrap a :class:`YokogawaWvfHeader`."""
+        self.header = header
+
+    @property
+    def parser_name(self) -> str:
+        """Parser tag recognized by :meth:`channel.Channel.__init__`."""
+        return "yokogawa_wvf"
+
+    def __str__(self) -> str:
+        """Return a parser tag string for use by :meth:`~RigolWFM.wfm.Wfm.from_file`."""
+        return f"x.{self.parser_name}"
+
+
+def _decode_trace_samples(
+    wvf_bytes: bytes,
+    hdr: HdrInfo,
+    group: int,
+    trace_idx: int,
+) -> tuple[Optional[npt.NDArray[np.float64]], Optional[npt.NDArray[np.uint8]]]:
+    """Decode one trace's block-0 samples from the .wvf binary.
+
+    Returns ``(volts, raw_u8)``; both are ``None`` if the trace has no samples.
+    """
+    grp = hdr.groups[group]
+    tr = grp.traces[trace_idx]
+    if tr.v_data_type is None or tr.block_size == 0:
+        return None, None
+
+    byte_off = wvf_byte_offset(hdr, group, trace_idx, 0)
+    dtype_info = tr.v_data_type
+    n = tr.block_size
+    nbytes = n * dtype_info.byte_num
+    if byte_off + nbytes > len(wvf_bytes):
+        return None, None
+
+    bo = hdr.byte_order  # '>' or '<'
+    raw_np = np.frombuffer(wvf_bytes, dtype=np.dtype(bo + dtype_info.numpy_dtype), count=n, offset=byte_off)
+
+    # Apply voltage calibration: volts = v_resolution * raw + v_offset
+    volts = tr.v_resolution * raw_np.astype(np.float64) + tr.v_offset
+
+    # Synthesize a uint8 "raw" array scaled to 0–254 for display
+    v_range = np.ptp(volts)
+    if v_range > 0:
+        raw_u8 = np.clip(((volts - volts.min()) / v_range * 254), 0, 254).astype(np.uint8)
+    else:
+        raw_u8 = np.full(n, 127, dtype=np.uint8)
+
+    return volts, raw_u8
+
+
+def from_hdr_file(path: str) -> YokogawaWvfWaveform:
+    """Parse a Yokogawa ``.hdr`` file and load the companion ``.wvf`` binary.
+
+    Args:
+        path: Path to the ``.hdr`` metadata file.  The companion ``.wvf``
+              file must exist alongside it with the same base name.
+
+    Returns:
+        :class:`YokogawaWvfWaveform` ready for use with
+        :class:`~RigolWFM.channel.Channel`.
+
+    Raises:
+        FileNotFoundError: If the ``.hdr`` or ``.wvf`` file does not exist.
+        ValueError:        If a required header field is missing or malformed.
+    """
+    hdr_path = Path(path)
+    wvf_path = hdr_path.with_suffix(".wvf")
+    if not wvf_path.exists():
+        # Try case-insensitive match
+        parent = hdr_path.parent
+        stem = hdr_path.stem
+        matches = list(parent.glob(stem + ".[Ww][Vv][Ff]"))
+        if not matches:
+            raise FileNotFoundError(f"Companion .wvf file not found for '{path}'")
+        wvf_path = matches[0]
+
+    hdr = parse_hdr(str(hdr_path))
+    wvf_bytes = wvf_path.read_bytes()
+
+    # Collect up to 4 traces from group 0 (primary group)
+    channel_data: list[Optional[npt.NDArray[np.float64]]] = [None] * 4
+    raw_data: list[Optional[npt.NDArray[np.uint8]]] = [None] * 4
+
+    if hdr.groups:
+        grp = hdr.groups[0]
+        for t_idx, _ in enumerate(grp.traces[:4]):
+            volts, raw_u8 = _decode_trace_samples(wvf_bytes, hdr, 0, t_idx)
+            channel_data[t_idx] = volts
+            raw_data[t_idx] = raw_u8
+
+    header = YokogawaWvfHeader(hdr, channel_data, raw_data)
+    return YokogawaWvfWaveform(header)

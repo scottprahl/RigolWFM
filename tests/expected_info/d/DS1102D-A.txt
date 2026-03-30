@@ -1,7 +1,7 @@
     General:
         File Model   = DS1000D
         User Model   = D
-        Parser Model = wfm1000d
+        Parser Model = wfm1000e
         Firmware     = unknown
         Filename     = DS1102D-A.wfm
         Channels     = [1, 2]

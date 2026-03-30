@@ -178,6 +178,7 @@ rcheck: realclean
 	@$(MAKE) all
 	@$(MAKE) yaml-check
 	@$(MAKE) rst-check
+	@$(MAKE) black-check
 	@$(MAKE) pylint-check
 	@$(MAKE) mypy-check
 	@$(MAKE) manifest-check

@@ -23,6 +23,8 @@ import subprocess
 import textwrap
 from typing import NoReturn
 
+import matplotlib.pyplot as plt
+
 import RigolWFM
 import RigolWFM.wfm
 
@@ -173,8 +175,6 @@ def wav(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> 
 
 def png(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
     """Save a PNG plot of the waveform."""
-    import matplotlib.pyplot as plt
-
     png_name = _output_path(infile, ".png", args.output_dir)
     if os.path.isfile(png_name) and not args.force:
         print(f"'{png_name}' exists, use --force to overwrite")

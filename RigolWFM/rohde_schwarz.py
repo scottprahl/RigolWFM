@@ -14,7 +14,7 @@ from __future__ import annotations
 import os
 import re
 import xml.etree.ElementTree as ET
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
 import numpy.typing as npt

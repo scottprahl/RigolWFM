@@ -218,7 +218,8 @@ def test_agilent_waveform_preserves_per_channel_time_axes(tmp_path):
     assert obj.header.x_increments[:2] == pytest.approx([0.25, 0.5])
 
     assert len(waveform.channels) == 2
-    ch1, ch2 = waveform.channels
+    ch1 = waveform.channels[0]
+    ch2 = waveform.channels[1]
     assert ch1.times is not None
     assert ch2.times is not None
     assert ch1.times[0] == pytest.approx(1.5)

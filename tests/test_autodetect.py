@@ -208,4 +208,6 @@ def test_from_file_accepts_documented_vendor_aliases(tmp_path):
         assert alias_wave.user_name == alias
         assert alias_wave.parser_name == canonical_wave.parser_name
         assert alias_wave.header_name == canonical_wave.header_name
-        assert [ch.channel_number for ch in alias_wave.channels] == [ch.channel_number for ch in canonical_wave.channels]
+        assert [ch.channel_number for ch in alias_wave.channels] == [
+            ch.channel_number for ch in canonical_wave.channels
+        ]

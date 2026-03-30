@@ -1174,7 +1174,7 @@ async function detectAndParse(buffer, filename, fileMap) {
             return parse4000(buffer);
         }
         if (modelStr.indexOf('DS6') === 0 || modelStr.indexOf('MSO6') === 0) {
-            throw new Error('DS6000 format is not yet supported by this viewer.');
+            return parse6000(buffer);
         }
         return parse2000(buffer);
     }
@@ -1236,6 +1236,10 @@ async function detectAndParse(buffer, filename, fileMap) {
     }
     if (wdOffset >= 0) {
         return parseLeCroy(buffer, wdOffset);
+    }
+
+    if (looksLikeYokogawaHdr(buffer, filename)) {
+        return parseYokogawaHdrWvf(buffer, filename, fileMap);
     }
 
     throw new Error((filename || 'This file') + ' is not a supported file type.');
@@ -2000,6 +2004,59 @@ function parse4000(buffer) {
         parserModel: 'wfm4000',
         firmware: h.firmwareVersion || 'unknown',
         triggerInfo: decode4000Trigger(h),
+        channels: channels,
+    };
+}
+
+function parse6000(buffer) {
+    var w = new Wfm6000.Wfm6000(new KaitaiStream(buffer), null, null);
+    var h = w.header;
+    var channels = [];
+    var spp = h.secondsPerPoint;
+    var start = h.timeOffset;
+    var enFlags = [h.enabled.channel1, h.enabled.channel2, h.enabled.channel3, h.enabled.channel4];
+    var rawArrays = [h.raw1, h.raw2, h.raw3, h.raw4];
+    for (var ci = 0; ci < 4; ci++) {
+        if (!enFlags[ci]) {
+            continue;
+        }
+        var raw = toU8(rawArrays[ci]);
+        if (!raw || raw.length === 0) {
+            continue;
+        }
+        var n = raw.length;
+        var times = new Float64Array(n);
+        var volts = new Float64Array(n);
+        for (var i = 0; i < n; i++) {
+            times[i] = start + i * spp;
+            volts[i] = -h.ch[ci].voltScale * (127 - raw[i]) - h.ch[ci].voltOffset;
+        }
+        channels.push({
+            name: 'CH' + (ci + 1),
+            color: CH_COLORS[ci],
+            times: times,
+            volts: volts,
+            raw: raw,
+            channelNumber: ci + 1,
+            points: n,
+            coupling: enumName(Wfm6000.Wfm6000.CouplingEnum, h.ch[ci].coupling).toUpperCase(),
+            voltPerDiv: h.ch[ci].voltPerDivision,
+            voltOffset: h.ch[ci].voltOffset,
+            probeValue: h.ch[ci].probeValue || 1,
+            inverted: h.ch[ci].inverted || false,
+            timeScale: h.timeScale,
+            timeOffset: h.timeOffset,
+            secondsPerPoint: spp,
+        });
+    }
+    return {
+        format: 'DS6000',
+        fileModel: h.modelNumber || 'DS6000',
+        serialNumber: h.modelNumber || '',
+        userModel: '6',
+        parserModel: 'wfm6000',
+        firmware: h.firmwareVersion || 'unknown',
+        triggerInfo: null,
         channels: channels,
     };
 }
@@ -4986,6 +5043,322 @@ fileList.addEventListener('input', function(e) {
     }
 });
 
+// ---------------------------------------------------------------------------
+// Yokogawa .hdr + .wvf two-file format
+// ---------------------------------------------------------------------------
+
+function shouldSkipYokogawaWvf(file, fileMap) {
+    var name = lowerFilename(file && file.name);
+    if (!/\.wvf$/i.test(name)) {
+        return false;
+    }
+    var hdrName = name.replace(/\.wvf$/i, '.hdr');
+    return Object.prototype.hasOwnProperty.call(fileMap, hdrName);
+}
+
+function looksLikeYokogawaHdr(buffer, filename) {
+    if (!/\.hdr$/i.test(filename || '')) {
+        return false;
+    }
+    var headBytes = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 512));
+    var head = decodeUtf8Bytes(headBytes);
+    return head.indexOf('$PublicInfo') >= 0;
+}
+
+function yokogawaHdrSplitSections(text) {
+    var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    var publicInfo = {};
+    var groups = [];
+    var current = null;
+
+    for (var li = 0; li < lines.length; li++) {
+        var line = lines[li];
+        var stripped = line.trim();
+        if (!stripped) { continue; }
+
+        if (stripped === '$PublicInfo') {
+            current = publicInfo;
+        } else if (/^\$Group\d+$/.test(stripped)) {
+            current = {};
+            groups.push(current);
+        } else if (stripped.charAt(0) === '$') {
+            current = null;
+        } else if (current !== null) {
+            var spIdx = stripped.search(/\s/);
+            var key = spIdx < 0 ? stripped : stripped.substring(0, spIdx);
+            var val = spIdx < 0 ? '' : stripped.substring(spIdx + 1).trim();
+            if (!Object.prototype.hasOwnProperty.call(current, key)) {
+                current[key] = { line: line, val: val };
+            }
+        }
+    }
+    return { publicInfo: publicInfo, groups: groups };
+}
+
+function yokogawaHdrReq(sec, key) {
+    if (!Object.prototype.hasOwnProperty.call(sec, key)) {
+        throw new Error('Yokogawa .hdr missing required field: ' + key);
+    }
+    return sec[key].val;
+}
+
+function yokogawaHdrOpt(sec, key) {
+    return Object.prototype.hasOwnProperty.call(sec, key) ? sec[key].val : null;
+}
+
+function yokogawaHdrOptLine(sec, key) {
+    return Object.prototype.hasOwnProperty.call(sec, key) ? sec[key].line : null;
+}
+
+function yokogawaVdtypeColPositions(vdtypeLine) {
+    var positions = [];
+    var re = /[IFBifb]\w*/g;
+    var m;
+    while ((m = re.exec(vdtypeLine)) !== null) {
+        positions.push(m.index);
+    }
+    return positions;
+}
+
+function yokogawaColAlignedValues(line, colPositions, nTraces) {
+    var result = [];
+    var tokenMap = {};
+    if (line) {
+        var re = /\S+/g;
+        var m;
+        while ((m = re.exec(line)) !== null) {
+            tokenMap[m.index] = m[0];
+        }
+    }
+    for (var ti = 0; ti < nTraces; ti++) {
+        var col = ti < colPositions.length ? colPositions[ti] : -1;
+        result.push(col >= 0 && Object.prototype.hasOwnProperty.call(tokenMap, col) ? tokenMap[col] : null);
+    }
+    return result;
+}
+
+function yokogawaParseHdrText(text) {
+    var sections = yokogawaHdrSplitSections(text);
+    var pub = sections.publicInfo;
+    var grpRaws = sections.groups;
+
+    var info = {
+        model:             yokogawaHdrReq(pub, 'Model'),
+        endian:            yokogawaHdrReq(pub, 'Endian'),
+        dataFormat:        yokogawaHdrReq(pub, 'DataFormat'),
+        dataOffset:        parseInt(yokogawaHdrReq(pub, 'DataOffset'), 10) || 0,
+        groups:            [],
+    };
+
+    for (var gi = 0; gi < grpRaws.length; gi++) {
+        var gd = grpRaws[gi];
+        var nTraces = parseInt(yokogawaHdrReq(gd, 'TraceNumber'), 10);
+        var nBlocks = parseInt(yokogawaHdrReq(gd, 'BlockNumber'), 10);
+
+        var traceNames   = yokogawaHdrReq(gd, 'TraceName').split(/\s+/);
+        var blockSizes   = yokogawaHdrReq(gd, 'BlockSize').split(/\s+/).map(Number);
+        var vResolutions = yokogawaHdrReq(gd, 'VResolution').split(/\s+/).map(parseFloat);
+        var vOffsets     = yokogawaHdrReq(gd, 'VOffset').split(/\s+/).map(parseFloat);
+        var hResolutions = yokogawaHdrReq(gd, 'HResolution').split(/\s+/).map(parseFloat);
+        var hOffsets     = yokogawaHdrReq(gd, 'HOffset').split(/\s+/).map(parseFloat);
+
+        // VDataType: parse codes and record column positions for alignment
+        var vdtypeEntry = gd['VDataType'];
+        if (!vdtypeEntry) {
+            throw new Error('Yokogawa .hdr Group' + (gi + 1) + ' missing VDataType');
+        }
+        var vdtypeLine = vdtypeEntry.line;
+        var colPos = yokogawaVdtypeColPositions(vdtypeLine);
+        var vdtypeToks = vdtypeEntry.val.split(/\s+/);
+
+        // Column-aligned VUnit and VIllegalData
+        var vUnits    = yokogawaColAlignedValues(yokogawaHdrOptLine(gd, 'VUnit'), colPos, nTraces);
+        var vIllegals = yokogawaColAlignedValues(yokogawaHdrOptLine(gd, 'VIllegalData'), colPos, nTraces);
+
+        var traces = [];
+        for (var ti = 0; ti < nTraces; ti++) {
+            var vdtCode = ti < vdtypeToks.length ? vdtypeToks[ti] : 'IS2';
+            var byteNum = 2;
+            var isSigned = true;
+            var isFloat = false;
+            var isLogic = false;
+            var k = vdtCode.charAt(0).toUpperCase();
+            var sub = vdtCode.charAt(1).toUpperCase();
+            if (k === 'I' || k === 'F') {
+                byteNum = parseInt(vdtCode.substring(2), 10) || 2;
+                isSigned = sub === 'S';
+                isFloat = k === 'F';
+            } else if (k === 'B') {
+                byteNum = parseInt(vdtCode.substring(1), 10) || 2;
+                isLogic = true;
+                isSigned = false;
+            }
+
+            var vIllegalRaw = vIllegals[ti] ? parseInt(vIllegals[ti], 10) : null;
+
+            traces.push({
+                name:        ti < traceNames.length ? traceNames[ti] : ('CH' + (ti + 1)),
+                blockSize:   ti < blockSizes.length ? blockSizes[ti] : 0,
+                vResolution: ti < vResolutions.length ? vResolutions[ti] : 1.0,
+                vOffset:     ti < vOffsets.length ? vOffsets[ti] : 0.0,
+                vUnit:       (vUnits[ti] && vUnits[ti] !== 'VUnit') ? vUnits[ti] : 'V',
+                hResolution: ti < hResolutions.length ? hResolutions[ti] : 1e-9,
+                hOffset:     ti < hOffsets.length ? hOffsets[ti] : 0.0,
+                byteNum:     byteNum,
+                isSigned:    isSigned,
+                isFloat:     isFloat,
+                isLogic:     isLogic,
+                vIllegal:    isNaN(vIllegalRaw) ? null : vIllegalRaw,
+            });
+        }
+
+        info.groups.push({ traceNumber: nTraces, blockNumber: nBlocks, traces: traces });
+    }
+
+    return info;
+}
+
+function yokogawaWvfByteOffset(hdr, tgtG, tgtT, tgtB) {
+    var fmt = (hdr.dataFormat || 'TRACE').toUpperCase();
+    var off = hdr.dataOffset || 0;
+    var groups = hdr.groups;
+
+    if (fmt === 'TRACE') {
+        for (var g = 0; g < groups.length; g++) {
+            var grp = groups[g];
+            var nb = grp.blockNumber;
+            for (var t = 0; t < grp.traces.length; t++) {
+                var tr = grp.traces[t];
+                var w = tr.byteNum;
+                var s = tr.blockSize;
+                if (g === tgtG && t === tgtT) {
+                    return off + tgtB * s * w;
+                }
+                off += s * nb * w;
+            }
+        }
+    } else { // BLOCK
+        for (var bg = 0; bg < groups.length; bg++) {
+            var bgrp = groups[bg];
+            var bnb = bgrp.blockNumber;
+            for (var bb = 0; bb < bnb; bb++) {
+                for (var bt = 0; bt < bgrp.traces.length; bt++) {
+                    var btr = bgrp.traces[bt];
+                    if (bg === tgtG && bt === tgtT && bb === tgtB) {
+                        return off;
+                    }
+                    off += btr.blockSize * btr.byteNum;
+                }
+            }
+        }
+    }
+    throw new Error('Yokogawa .wvf: (group=' + tgtG + ', trace=' + tgtT + ', block=' + tgtB + ') not found.');
+}
+
+async function parseYokogawaHdrWvf(buffer, filename, fileMap) {
+    var hdrText = decodeUtf8Bytes(new Uint8Array(buffer));
+    var hdr = yokogawaParseHdrText(hdrText);
+
+    var wvfName = lowerFilename(filename).replace(/\.hdr$/i, '.wvf');
+    var wvfFile = fileMap ? fileMap[wvfName] : null;
+    if (!wvfFile) {
+        throw new Error(
+            'Companion .wvf file not found for ' + filename + '. ' +
+            'Drop both the .hdr and .wvf files together.'
+        );
+    }
+    var wvfBuffer = await readBrowserFileAsArrayBuffer(wvfFile);
+    return yokogawaExtractChannels(hdr, wvfBuffer, filename);
+}
+
+function yokogawaExtractChannels(hdr, wvfBuffer, filename) {
+    var isLe = hdr.endian.toUpperCase() !== 'BIG';
+    var channels = [];
+
+    for (var g = 0; g < hdr.groups.length; g++) {
+        var grp = hdr.groups[g];
+        // Show only the last (most recent) history block for each trace
+        var bShow = grp.blockNumber - 1;
+
+        for (var t = 0; t < grp.traces.length; t++) {
+            var tr = grp.traces[t];
+            var n = tr.blockSize;
+            if (n <= 0) { continue; }
+
+            var byteOff = yokogawaWvfByteOffset(hdr, g, t, bShow);
+            var byteLen = n * tr.byteNum;
+            if (byteOff + byteLen > wvfBuffer.byteLength) {
+                throw new Error(
+                    'Yokogawa .wvf: trace ' + tr.name + ' data extends beyond end of file.'
+                );
+            }
+
+            var view = new DataView(wvfBuffer, byteOff, byteLen);
+            var volts = new Float64Array(n);
+            var times = new Float64Array(n);
+            var vr = tr.vResolution;
+            var vo = tr.vOffset;
+            var hr = tr.hResolution;
+            var ho = tr.hOffset;
+            var ill = tr.vIllegal;
+
+            for (var i = 0; i < n; i++) {
+                times[i] = ho + hr * i;
+                var raw;
+                if (tr.isFloat) {
+                    raw = tr.byteNum === 4
+                        ? view.getFloat32(i * tr.byteNum, isLe)
+                        : view.getFloat64(i * tr.byteNum, isLe);
+                    volts[i] = raw * vr + vo;
+                } else {
+                    raw = tr.byteNum === 1
+                        ? (tr.isSigned ? view.getInt8(i)         : view.getUint8(i))
+                        : tr.byteNum === 2
+                            ? (tr.isSigned ? view.getInt16(i * 2, isLe) : view.getUint16(i * 2, isLe))
+                            : (tr.isSigned ? view.getInt32(i * 4, isLe) : view.getUint32(i * 4, isLe));
+                    if (ill !== null && raw === ill) {
+                        volts[i] = NaN;
+                    } else {
+                        volts[i] = raw * vr + vo;
+                    }
+                }
+            }
+
+            var slot = channels.length;
+            var voltPerDiv = (tr.vResolution * 32768) / 5.0;
+            channels.push({
+                name:           tr.name,
+                color:          CH_COLORS[slot % CH_COLORS.length],
+                times:          times,
+                volts:          volts,
+                raw:            proxyRawFromCalibrated(volts),
+                channelNumber:  t + 1,
+                points:         n,
+                coupling:       'DC',
+                voltPerDiv:     voltPerDiv || 1.0,
+                voltOffset:     tr.vOffset,
+                probeValue:     1.0,
+                inverted:       false,
+                timeScale:      n > 1 ? (times[n - 1] - times[0]) / 10.0 : 1e-3,
+                timeOffset:     ho,
+                secondsPerPoint: hr,
+            });
+        }
+    }
+
+    return {
+        format:       'Yokogawa WVF',
+        fileModel:    hdr.model || 'Yokogawa',
+        userModel:    'Yokogawa',
+        parserModel:  'yokogawa_wvf',
+        firmware:     'unknown',
+        triggerInfo:  null,
+        channels:     channels,
+    };
+}
+
+// ---------------------------------------------------------------------------
+
 function loadFiles(fileSet) {
     var files = Array.prototype.slice.call(fileSet || []);
     if (!files.length) {
@@ -4994,7 +5367,8 @@ function loadFiles(fileSet) {
 
     var fileMap = buildSelectedFileMap(files);
     files = files.filter(function(file) {
-        return !shouldSkipRohdeSchwarzPayload(file, fileMap);
+        return !shouldSkipRohdeSchwarzPayload(file, fileMap)
+            && !shouldSkipYokogawaWvf(file, fileMap);
     });
 
     function next(index) {

@@ -20,7 +20,6 @@ import RigolWFM.mso5074
 import RigolWFM.mso7000_8000
 import RigolWFM.wfm1000b
 import RigolWFM.wfm1000c
-import RigolWFM.wfm1000d
 import RigolWFM.wfm1000e
 import RigolWFM.wfm1000z
 import RigolWFM.wfm2000
@@ -360,7 +359,7 @@ def parse_file(
 
     elif umodel in DS1000D_scopes:
         w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)  # type: ignore[attr-defined]
-        w.parser_name = "wfm1000d"
+        w.parser_name = "wfm1000e"
         header_name = "DS1000D"
         _mode = w.header.trigger_mode.name
         if _mode == "alt":
