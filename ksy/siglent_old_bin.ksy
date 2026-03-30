@@ -1,5 +1,5 @@
 meta:
-  id: siglent_old_platform
+  id: siglent_old_bin
   title: Siglent Old-Platform Binary Format
   file-extension: bin
   endian: le

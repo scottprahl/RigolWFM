@@ -1,5 +1,5 @@
 meta:
-  id: tek_wfm_002_be
+  id: tektronix_wfm_002_be_wfm
   title: Tektronix WFM002/WFM003 Binary Format (Big-Endian)
   file-extension: wfm
   endian: be

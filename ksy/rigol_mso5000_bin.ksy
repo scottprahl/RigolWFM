@@ -1,5 +1,5 @@
 meta:
-  id: bin5000
+  id: rigol_mso5000_bin
   title: Rigol MSO5000 Binary Format
   file-extension: bin
   endian: le

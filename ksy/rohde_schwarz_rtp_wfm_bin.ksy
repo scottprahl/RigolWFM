@@ -1,5 +1,5 @@
 meta:
-  id: rohde_schwarz_rtp_wfm
+  id: rohde_schwarz_rtp_wfm_bin
   title: Rohde & Schwarz RTP WFM.BIN Binary Format
   ks-version: 0.9
   endian: le

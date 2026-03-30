@@ -23,7 +23,7 @@ def _run_script(*args: str) -> subprocess.CompletedProcess[str]:
 
 def test_markdown_output_includes_types_and_enums():
     """Markdown output should summarize metadata, root fields, types, and enums."""
-    result = _run_script("--format", "markdown", "ksy/agilent_AGxx_bin.ksy")
+    result = _run_script("--format", "markdown", "ksy/agilent_agxx_bin.ksy")
 
     assert result.returncode == 0, result.stderr
     assert "# Agilent / Keysight AGxx Binary Format" in result.stdout

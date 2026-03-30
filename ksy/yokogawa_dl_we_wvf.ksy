@@ -1,5 +1,5 @@
 meta:
-  id: yokogawa_wvf
+  id: yokogawa_dl_we_wvf
   title: Yokogawa DL/WE WVF Binary Format
   file-extension: wvf
   encoding: ASCII

@@ -1,5 +1,5 @@
 meta:
-  id: siglent_v2
+  id: siglent_v2_bin
   title: Siglent V2.0 Binary Format
   file-extension: bin
   endian: le

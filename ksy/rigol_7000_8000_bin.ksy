@@ -1,5 +1,5 @@
 meta:
-  id: bin7000_8000
+  id: rigol_7000_8000_bin
   title: Rigol 7000/8000 Binary Format
   file-extension: bin
   endian: le

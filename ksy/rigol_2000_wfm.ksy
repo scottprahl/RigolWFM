@@ -1,5 +1,5 @@
 meta:
-  id: wfm2000
+  id: rigol_2000_wfm
   title: Rigol 2000 Binary Format
   file-extension: wfm
   endian: le

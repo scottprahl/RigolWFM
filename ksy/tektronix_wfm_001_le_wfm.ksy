@@ -1,5 +1,5 @@
 meta:
-  id: tek_wfm_001_le
+  id: tektronix_wfm_001_le_wfm
   title: Tektronix WFM001 Binary Format (Little-Endian)
   file-extension: wfm
   endian: le

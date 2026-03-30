@@ -1,5 +1,5 @@
 meta:
-  id: bindho1000
+  id: rigol_dho800_1000_bin
   title: Rigol DHO800/DHO1000 BIN Format
   file-extension: bin
   endian: le
