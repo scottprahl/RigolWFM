@@ -371,6 +371,288 @@ function proxyRawFromDhoVolts(values) {
     return out;
 }
 
+function siglentU16le(bytes, offset) {
+    if (offset + 1 >= bytes.length) {
+        return 0;
+    }
+    return (bytes[offset] | (bytes[offset + 1] << 8)) >>> 0;
+}
+
+function siglentU32le(bytes, offset) {
+    if (offset + 3 >= bytes.length) {
+        return 0;
+    }
+    return (bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24)) >>> 0;
+}
+
+function siglentF64le(bytes, offset) {
+    if (offset + 7 >= bytes.length) {
+        return NaN;
+    }
+    return new DataView(bytes.buffer, bytes.byteOffset + offset, 8).getFloat64(0, true);
+}
+
+function siglentAsciiSlice(bytes, start, stop) {
+    var end = Math.min(stop, bytes.length);
+    var out = '';
+    for (var i = start; i < end && bytes[i]; i++) {
+        out += String.fromCharCode(bytes[i]);
+    }
+    return out.trim();
+}
+
+function siglentAllFlags(bytes, offsets) {
+    for (var i = 0; i < offsets.length; i++) {
+        var value = siglentU32le(bytes, offsets[i]);
+        if (value !== 0 && value !== 1) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function siglentLooksLikeScaled16(bytes, offset) {
+    if (offset + 16 > bytes.length) {
+        return false;
+    }
+    var value = siglentF64le(bytes, offset);
+    var magnitude = siglentU32le(bytes, offset + 8);
+    var unit = siglentU32le(bytes, offset + 12);
+    return Number.isFinite(value) && Math.abs(value) < 1e300 && magnitude >= 0 && magnitude <= 16 && unit >= 0 && unit <= 23;
+}
+
+function siglentLooksLikeDataWithUnit(bytes, offset) {
+    if (offset + 40 > bytes.length) {
+        return false;
+    }
+    var value = siglentF64le(bytes, offset);
+    var magnitude = siglentU32le(bytes, offset + 8);
+    var basicUnit = siglentU32le(bytes, offset + 12);
+    return Number.isFinite(value) && Math.abs(value) < 1e300 && magnitude >= 0 && magnitude <= 16 && basicUnit >= 0 && basicUnit <= 12;
+}
+
+function siglentMinPayloadOk(fileSize, dataOffset, enabledCount, points, sampleWidth) {
+    if (enabledCount <= 0 || points <= 0 || sampleWidth <= 0) {
+        return false;
+    }
+    return fileSize >= dataOffset + enabledCount * points * sampleWidth;
+}
+
+function siglentLooksLikeV6(bytes, fileSize) {
+    if (fileSize < 108 || bytes.length < 108 || siglentU32le(bytes, 0) !== 6) {
+        return false;
+    }
+    var headerBytes = siglentU16le(bytes, 4);
+    var waveNumber = siglentU32le(bytes, 0x68);
+    var module = siglentAsciiSlice(bytes, 0x08, 0x28);
+    return headerBytes >= 108 && waveNumber > 0 && Boolean(module);
+}
+
+function siglentLooksLikeV5(bytes, fileSize) {
+    var enabled = 0;
+    if (bytes.length >= 0x7A) {
+        enabled += siglentU32le(bytes, 0x76);
+    }
+    if (bytes.length >= 0xF4) {
+        enabled += siglentU32le(bytes, 0xF0);
+    }
+    if (bytes.length >= 0x198) {
+        enabled += siglentU32le(bytes, 0x194);
+    }
+    if (bytes.length >= 0x23C) {
+        enabled += siglentU32le(bytes, 0x238);
+    }
+    return (
+        bytes.length >= 0x1BA2 &&
+        siglentU32le(bytes, 0x00) === 5 &&
+        siglentLooksLikeScaled16(bytes, 0x1B68) &&
+        siglentLooksLikeScaled16(bytes, 0x1B78) &&
+        siglentU32le(bytes, 0x1B88) > 0 &&
+        siglentMinPayloadOk(fileSize, 0x800, enabled, siglentU32le(bytes, 0x1B88), 1)
+    );
+}
+
+function siglentLooksLikeV4(bytes, fileSize) {
+    if (bytes.length < 0x280 || siglentU32le(bytes, 0x00) !== 4) {
+        return false;
+    }
+    var enabled = siglentU32le(bytes, 0x08) + siglentU32le(bytes, 0x0C) + siglentU32le(bytes, 0x10) + siglentU32le(bytes, 0x14);
+    var dataOffset = siglentU32le(bytes, 0x04);
+    var points = siglentU32le(bytes, 0x1EC);
+    return (
+        dataOffset >= 0x1000 &&
+        siglentAllFlags(bytes, [0x08, 0x0C, 0x10, 0x14]) &&
+        siglentLooksLikeDataWithUnit(bytes, 0x19C) &&
+        siglentLooksLikeDataWithUnit(bytes, 0x1F0) &&
+        (bytes[0x264] === 0 || bytes[0x264] === 1) &&
+        (bytes[0x265] === 0 || bytes[0x265] === 1) &&
+        siglentMinPayloadOk(fileSize, dataOffset, enabled, points, bytes[0x264] === 0 ? 1 : 2)
+    );
+}
+
+function siglentLooksLikeV3(bytes, fileSize) {
+    if (bytes.length < 0x280 || siglentU32le(bytes, 0x00) !== 3) {
+        return false;
+    }
+    var enabled = siglentU32le(bytes, 0x04) + siglentU32le(bytes, 0x08) + siglentU32le(bytes, 0x0C) + siglentU32le(bytes, 0x10);
+    var points = siglentU32le(bytes, 0x1E8);
+    var sampleWidth = bytes[0x260] === 0 ? 1 : 2;
+    return (
+        siglentAllFlags(bytes, [0x04, 0x08, 0x0C, 0x10]) &&
+        siglentLooksLikeDataWithUnit(bytes, 0x198) &&
+        siglentLooksLikeDataWithUnit(bytes, 0x1EC) &&
+        (bytes[0x260] === 0 || bytes[0x260] === 1) &&
+        (bytes[0x261] === 0 || bytes[0x261] === 1) &&
+        siglentU32le(bytes, 0x268) >= 1 &&
+        siglentU32le(bytes, 0x268) <= 20 &&
+        siglentMinPayloadOk(fileSize, 0x800, enabled, points, sampleWidth)
+    );
+}
+
+function siglentLooksLikeV2(bytes, fileSize) {
+    if (bytes.length < 0x261 || siglentU32le(bytes, 0x00) !== 2) {
+        return false;
+    }
+    var enabled = siglentU32le(bytes, 0x04) + siglentU32le(bytes, 0x08) + siglentU32le(bytes, 0x0C) + siglentU32le(bytes, 0x10);
+    var points = siglentU32le(bytes, 0x1E8);
+    var sampleWidth = bytes[0x260] === 0 ? 1 : 2;
+    return (
+        siglentAllFlags(bytes, [0x04, 0x08, 0x0C, 0x10]) &&
+        siglentLooksLikeDataWithUnit(bytes, 0x198) &&
+        siglentLooksLikeDataWithUnit(bytes, 0x1EC) &&
+        (bytes[0x260] === 0 || bytes[0x260] === 1) &&
+        siglentMinPayloadOk(fileSize, 0x800, enabled, points, sampleWidth)
+    );
+}
+
+function siglentLooksLikeV1(bytes, fileSize) {
+    if (bytes.length < 0x11C) {
+        return false;
+    }
+    var enabled = siglentU32le(bytes, 0x00) + siglentU32le(bytes, 0x04) + siglentU32le(bytes, 0x08) + siglentU32le(bytes, 0x0C);
+    var points = siglentU32le(bytes, 0xF4);
+    return (
+        siglentAllFlags(bytes, [0x00, 0x04, 0x08, 0x0C]) &&
+        siglentLooksLikeScaled16(bytes, 0xD4) &&
+        siglentLooksLikeScaled16(bytes, 0xF8) &&
+        siglentMinPayloadOk(fileSize, 0x800, enabled, points, 1)
+    );
+}
+
+function siglentLooksLikeV02(bytes, fileSize) {
+    if (bytes.length < 0xDEC) {
+        return false;
+    }
+    var enabled = siglentU32le(bytes, 0x44) + siglentU32le(bytes, 0xE8) + siglentU32le(bytes, 0x18C) + siglentU32le(bytes, 0x230);
+    var points = siglentU32le(bytes, 0xDD8);
+    return (
+        siglentAllFlags(bytes, [0x44, 0xE8, 0x18C, 0x230]) &&
+        siglentLooksLikeScaled16(bytes, 0xDB8) &&
+        siglentLooksLikeScaled16(bytes, 0xDDC) &&
+        siglentMinPayloadOk(fileSize, 0x932C, enabled, points, 1)
+    );
+}
+
+function siglentLooksLikeV01(bytes, fileSize) {
+    if (bytes.length < 0xAB8) {
+        return false;
+    }
+    var enabled = siglentU32le(bytes, 0x44) + siglentU32le(bytes, 0xC0) + siglentU32le(bytes, 0x13C) + siglentU32le(bytes, 0x1B8);
+    var points = siglentU32le(bytes, 0xAA4);
+    return (
+        siglentAllFlags(bytes, [0x44, 0xC0, 0x13C, 0x1B8]) &&
+        siglentLooksLikeScaled16(bytes, 0xA84) &&
+        siglentLooksLikeScaled16(bytes, 0xAA8) &&
+        siglentMinPayloadOk(fileSize, 0x8A60, enabled, points, 1)
+    );
+}
+
+function siglentLooksLikeOldPlatform(bytes, fileSize) {
+    if (bytes.length < 0x254) {
+        return false;
+    }
+    var enabled = siglentU32le(bytes, 0x100) + siglentU32le(bytes, 0x104) + siglentU32le(bytes, 0x108) + siglentU32le(bytes, 0x10C);
+    if (enabled <= 0 || fileSize <= 0x1470) {
+        return false;
+    }
+    var timeDivIndex = siglentU32le(bytes, 0x248);
+    return siglentAllFlags(bytes, [0x100, 0x104, 0x108, 0x10C]) && timeDivIndex <= 32;
+}
+
+function detectSiglentRevision(buffer, filename) {
+    if (!/\.bin$/i.test(filename || '')) {
+        return '';
+    }
+    var bytes = new Uint8Array(buffer);
+    var fileSize = bytes.length;
+    if (siglentLooksLikeV6(bytes, fileSize)) {
+        return 'v6';
+    }
+    if (siglentLooksLikeV5(bytes, fileSize)) {
+        return 'v5';
+    }
+    if (siglentLooksLikeV4(bytes, fileSize)) {
+        return 'v4';
+    }
+    if (siglentLooksLikeV3(bytes, fileSize)) {
+        return 'v3';
+    }
+    if (siglentLooksLikeV2(bytes, fileSize)) {
+        return 'v2';
+    }
+    if (siglentLooksLikeV1(bytes, fileSize)) {
+        return 'v1';
+    }
+    if (siglentLooksLikeV02(bytes, fileSize)) {
+        return 'v0_2';
+    }
+    if (siglentLooksLikeV01(bytes, fileSize)) {
+        return 'v0_1';
+    }
+    if (siglentLooksLikeOldPlatform(bytes, fileSize)) {
+        return 'old';
+    }
+    return '';
+}
+
+function siglentScaledToSi(node) {
+    return node.value * Math.pow(10, 3 * (node.magnitude - 8));
+}
+
+function siglentEstimateVoltPerDiv(vMin, vMax, fallback) {
+    if (Number.isFinite(fallback) && fallback > 0) {
+        return Math.abs(fallback);
+    }
+    if (!Number.isFinite(vMin) || !Number.isFinite(vMax) || vMax <= vMin) {
+        return 1;
+    }
+    return Math.max((vMax - vMin) / 8, 1e-3);
+}
+
+function siglentDecodeUnsignedCode(view, index, sampleWidth, littleEndian) {
+    var offset = index * sampleWidth;
+    if (sampleWidth === 1) {
+        return view.getUint8(offset);
+    }
+    if (sampleWidth === 2) {
+        return view.getUint16(offset, littleEndian);
+    }
+    if (sampleWidth === 4) {
+        return view.getUint32(offset, littleEndian);
+    }
+    throw new Error('Unsupported Siglent sample width: ' + sampleWidth + ' bytes');
+}
+
+function siglentRawByteFromCode(code, sampleWidth) {
+    if (sampleWidth === 1) {
+        return code & 0xFF;
+    }
+    if (sampleWidth === 2) {
+        return (code >>> 8) & 0xFF;
+    }
+    return (code >>> 24) & 0xFF;
+}
+
 function describeTriggerBlock(triggerInfo, indent) {
     var s = '';
     if (triggerInfo.mode) {
@@ -792,7 +1074,13 @@ async function detectAndParse(buffer, filename) {
         return parseZ(buffer);
     }
 
-    if (b0 === 0x02 && b1 === 0x00 && b2 === 0x00 && b3 === 0x00) {
+    if (
+        b0 === 0x02 &&
+        b1 === 0x00 &&
+        b2 === 0x00 &&
+        b3 === 0x00 &&
+        /\.wfm$/i.test(filename || '')
+    ) {
         return parseDhoWfm(buffer);
     }
 
@@ -807,6 +1095,11 @@ async function detectAndParse(buffer, filename) {
         if (agVersion === '01' || agVersion === '03' || agVersion === '10') {
             return parseAgilentBin(buffer);
         }
+    }
+
+    var siglentRevision = detectSiglentRevision(buffer, filename);
+    if (siglentRevision) {
+        return parseSiglentBin(buffer, siglentRevision);
     }
 
     if (magicStr === 'RG01') {
@@ -1713,6 +2006,381 @@ function parseBin5000(buffer) {
 
 function parseBin70008000(buffer) {
     return parseBinWaveforms(new Bin70008000.Bin70008000(new KaitaiStream(buffer), null, null), 'MSO7000/8000', '7', 'bin7000_8000');
+}
+
+function buildSiglentFixedHeaderResult(options) {
+    var payload = options.payload;
+    var enabled = options.enabled;
+    var waveLength = options.waveLength;
+    var sampleRate = options.sampleRate;
+    var sampleWidth = options.sampleWidth || 1;
+    var littleEndian = options.littleEndian !== false;
+    var analogCount = 0;
+    var channels = [];
+    var sampleBytes = waveLength * sampleWidth;
+    var centerCode = Math.pow(2, 8 * sampleWidth - 1);
+    var xIncrement = 1 / sampleRate;
+    var timeScale = waveLength > 0 ? waveLength * xIncrement / 10 : 1e-3;
+
+    if (!(sampleRate > 0)) {
+        throw new Error('Siglent ' + options.revision + ' file reports a non-positive sample rate.');
+    }
+    if (!(waveLength > 0)) {
+        throw new Error('Siglent ' + options.revision + ' file reports a non-positive waveform length.');
+    }
+
+    for (var countIndex = 0; countIndex < Math.min(4, enabled.length); countIndex++) {
+        if (enabled[countIndex]) {
+            analogCount += 1;
+        }
+    }
+    if (!analogCount) {
+        throw new Error('Siglent ' + options.revision + ' file does not enable any of the first four analog channels.');
+    }
+    if (payload.length < analogCount * sampleBytes) {
+        throw new Error(
+            'Siglent ' + options.revision + ' payload is too short for ' +
+            analogCount + ' enabled analog channel(s).'
+        );
+    }
+
+    var offset = 0;
+    for (var slot = 0; slot < Math.min(4, enabled.length); slot++) {
+        if (!enabled[slot]) {
+            continue;
+        }
+
+        var chunk = payload.subarray(offset, offset + sampleBytes);
+        var view = new DataView(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+        var times = new Float64Array(waveLength);
+        var volts = new Float64Array(waveLength);
+        var raw = new Uint8Array(waveLength);
+        var vMin = Infinity;
+        var vMax = -Infinity;
+        var codePerDiv = options.codePerDivs[slot];
+        var scale = options.voltDivs[slot] / codePerDiv;
+        var voltOffset = options.vertOffsets[slot];
+
+        if (!(codePerDiv > 0)) {
+            throw new Error('Siglent ' + options.revision + ' channel ' + (slot + 1) + ' has a non-positive code-per-division value.');
+        }
+
+        for (var i = 0; i < waveLength; i++) {
+            var code = siglentDecodeUnsignedCode(view, i, sampleWidth, littleEndian);
+            var voltage = (code - centerCode) * scale + voltOffset;
+            var time = options.xOrigin + i * xIncrement;
+            volts[i] = voltage;
+            times[i] = time;
+            raw[i] = siglentRawByteFromCode(code, sampleWidth);
+            if (voltage < vMin) {
+                vMin = voltage;
+            }
+            if (voltage > vMax) {
+                vMax = voltage;
+            }
+        }
+
+        channels.push({
+            name: 'CH' + (slot + 1),
+            color: CH_COLORS[slot % CH_COLORS.length],
+            times: times,
+            volts: volts,
+            raw: raw,
+            channelNumber: slot + 1,
+            points: waveLength,
+            coupling: 'DC',
+            voltPerDiv: siglentEstimateVoltPerDiv(vMin, vMax, options.voltDivs[slot]),
+            voltOffset: voltOffset,
+            probeValue: options.probes[slot] || 1,
+            inverted: false,
+            timeScale: timeScale,
+            timeOffset: options.xOrigin,
+            secondsPerPoint: xIncrement,
+        });
+
+        offset += sampleBytes;
+    }
+
+    return {
+        format: 'Siglent BIN',
+        fileModel: options.model,
+        serialNumber: options.serialNumber || '',
+        userModel: 'Siglent',
+        parserModel: 'siglent_bin',
+        firmware: options.firmware || options.revision || 'unknown',
+        triggerInfo: null,
+        channels: channels,
+    };
+}
+
+function siglentV6Slot(header) {
+    var index = header.channelIndex;
+    if (index >= 1 && index <= 4) {
+        return index - 1;
+    }
+    if (index >= 0 && index < 4) {
+        return index;
+    }
+    var label = String(header.label || '').trim().toUpperCase();
+    if (/^CH\s*[1-4]$/.test(label)) {
+        return parseInt(label.replace(/\D+/g, ''), 10) - 1;
+    }
+    return -1;
+}
+
+function parseSiglentBin(buffer, revision) {
+    if (revision === 'old') {
+        throw new Error(
+            'Siglent old-platform files are detected, but wfmview does not normalize them yet ' +
+            'because the vendor documentation leaves their family-specific scaling ambiguous.'
+        );
+    }
+
+    if (revision === 'v0_1') {
+        var v01 = new SiglentV01.SiglentV01(new KaitaiStream(buffer), null, null);
+        return buildSiglentFixedHeaderResult({
+            revision: 'V0.1',
+            model: 'Siglent V0.1',
+            payload: v01.waveData,
+            enabled: [Boolean(v01.ch1On), Boolean(v01.ch2On), Boolean(v01.ch3On), Boolean(v01.ch4On)],
+            voltDivs: [
+                siglentScaledToSi(v01.ch1VoltDiv),
+                siglentScaledToSi(v01.ch2VoltDiv),
+                siglentScaledToSi(v01.ch3VoltDiv),
+                siglentScaledToSi(v01.ch4VoltDiv),
+            ],
+            vertOffsets: [
+                siglentScaledToSi(v01.ch1VertOffset),
+                siglentScaledToSi(v01.ch2VertOffset),
+                siglentScaledToSi(v01.ch3VertOffset),
+                siglentScaledToSi(v01.ch4VertOffset),
+            ],
+            probes: [1, 1, 1, 1],
+            waveLength: v01.waveLength,
+            sampleRate: siglentScaledToSi(v01.sampleRate),
+            xOrigin: -(siglentScaledToSi(v01.timeDiv) * 14 / 2),
+            codePerDivs: [25, 25, 25, 25],
+        });
+    }
+
+    if (revision === 'v0_2') {
+        var v02 = new SiglentV02.SiglentV02(new KaitaiStream(buffer), null, null);
+        return buildSiglentFixedHeaderResult({
+            revision: 'V0.2',
+            model: 'Siglent V0.2',
+            payload: v02.waveData,
+            enabled: [Boolean(v02.ch1On), Boolean(v02.ch2On), Boolean(v02.ch3On), Boolean(v02.ch4On)],
+            voltDivs: [
+                siglentScaledToSi(v02.ch1VoltDiv),
+                siglentScaledToSi(v02.ch2VoltDiv),
+                siglentScaledToSi(v02.ch3VoltDiv),
+                siglentScaledToSi(v02.ch4VoltDiv),
+            ],
+            vertOffsets: [
+                siglentScaledToSi(v02.ch1VertOffset),
+                siglentScaledToSi(v02.ch2VertOffset),
+                siglentScaledToSi(v02.ch3VertOffset),
+                siglentScaledToSi(v02.ch4VertOffset),
+            ],
+            probes: [1, 1, 1, 1],
+            waveLength: v02.waveLength,
+            sampleRate: siglentScaledToSi(v02.sampleRate),
+            xOrigin: -(siglentScaledToSi(v02.timeDiv) * 14 / 2),
+            codePerDivs: [25, 25, 25, 25],
+        });
+    }
+
+    if (revision === 'v1') {
+        var v1 = new SiglentV1.SiglentV1(new KaitaiStream(buffer), null, null);
+        return buildSiglentFixedHeaderResult({
+            revision: 'V1.0',
+            model: 'Siglent V1.0',
+            payload: v1.waveData,
+            enabled: v1.chOn.entries.map(Boolean),
+            voltDivs: v1.chVoltDiv.entries.map(siglentScaledToSi),
+            vertOffsets: v1.chVertOffset.entries.map(siglentScaledToSi),
+            probes: [1, 1, 1, 1],
+            waveLength: v1.waveLength,
+            sampleRate: siglentScaledToSi(v1.sampleRate),
+            xOrigin: -(siglentScaledToSi(v1.timeDiv) * 14 / 2),
+            codePerDivs: [25, 25, 25, 25],
+        });
+    }
+
+    if (revision === 'v2') {
+        var v2 = new SiglentV2.SiglentV2(new KaitaiStream(buffer), null, null);
+        return buildSiglentFixedHeaderResult({
+            revision: 'V2.0',
+            model: 'Siglent V2.0',
+            payload: v2.waveData,
+            enabled: v2.chOn.entries.map(Boolean),
+            voltDivs: v2.chVoltDiv.entries.map(siglentScaledToSi),
+            vertOffsets: v2.chVertOffset.entries.map(siglentScaledToSi),
+            probes: v2.chProbe.entries.slice(),
+            waveLength: v2.waveLength,
+            sampleRate: siglentScaledToSi(v2.sampleRate),
+            xOrigin: -(siglentScaledToSi(v2.timeDiv) * 14 / 2),
+            codePerDivs: [25, 25, 25, 25],
+            sampleWidth: v2.dataWidth === 0 ? 1 : 2,
+        });
+    }
+
+    if (revision === 'v3') {
+        var v3 = new SiglentV3.SiglentV3(new KaitaiStream(buffer), null, null);
+        return buildSiglentFixedHeaderResult({
+            revision: 'V3.0',
+            model: 'Siglent V3.0',
+            payload: v3.waveData,
+            enabled: v3.chOn.entries.map(Boolean),
+            voltDivs: v3.chVoltDiv.entries.map(siglentScaledToSi),
+            vertOffsets: v3.chVertOffset.entries.map(siglentScaledToSi),
+            probes: v3.chProbe.entries.slice(),
+            waveLength: v3.waveLength,
+            sampleRate: siglentScaledToSi(v3.sampleRate),
+            xOrigin: -(siglentScaledToSi(v3.timeDiv) * v3.horiDivNum / 2) - siglentScaledToSi(v3.timeDelay),
+            codePerDivs: v3.chVertCodePerDiv.entries.slice(),
+            sampleWidth: v3.dataWidth === 0 ? 1 : 2,
+            littleEndian: v3.byteOrder === 0,
+        });
+    }
+
+    if (revision === 'v4') {
+        var v4 = new SiglentV4.SiglentV4(new KaitaiStream(buffer), null, null);
+        return buildSiglentFixedHeaderResult({
+            revision: 'V4.0',
+            model: 'Siglent V4.0',
+            payload: v4.waveData,
+            enabled: v4.chOn14.entries.map(Boolean),
+            voltDivs: v4.chVoltDiv14.entries.map(siglentScaledToSi),
+            vertOffsets: v4.chVertOffset14.entries.map(siglentScaledToSi),
+            probes: v4.chProbe14.entries.slice(),
+            waveLength: v4.waveLength,
+            sampleRate: siglentScaledToSi(v4.sampleRate),
+            xOrigin: -(siglentScaledToSi(v4.timeDiv) * v4.horiDivNum / 2) - siglentScaledToSi(v4.timeDelay),
+            codePerDivs: v4.chVertCodePerDiv14.entries.slice(),
+            sampleWidth: v4.dataWidth === 0 ? 1 : 2,
+            littleEndian: v4.byteOrder === 0,
+        });
+    }
+
+    if (revision === 'v5') {
+        var v5 = new SiglentV5.SiglentV5(new KaitaiStream(buffer), null, null);
+        return buildSiglentFixedHeaderResult({
+            revision: 'V5.0',
+            model: 'Siglent V5.0',
+            payload: v5.waveData,
+            enabled: [Boolean(v5.ch1On), Boolean(v5.ch2On), Boolean(v5.ch3On), Boolean(v5.ch4On)],
+            voltDivs: [
+                siglentScaledToSi(v5.ch1VoltDiv),
+                siglentScaledToSi(v5.ch2VoltDiv),
+                siglentScaledToSi(v5.ch3VoltDiv),
+                siglentScaledToSi(v5.ch4VoltDiv),
+            ],
+            vertOffsets: [
+                siglentScaledToSi(v5.ch1VertOffset),
+                siglentScaledToSi(v5.ch2VertOffset),
+                siglentScaledToSi(v5.ch3VertOffset),
+                siglentScaledToSi(v5.ch4VertOffset),
+            ],
+            probes: [1, 1, 1, 1],
+            waveLength: v5.waveLength,
+            sampleRate: siglentScaledToSi(v5.sampleRate),
+            xOrigin: -(siglentScaledToSi(v5.timeDiv) * 14 / 2),
+            codePerDivs: [25, 25, 25, 25],
+        });
+    }
+
+    if (revision === 'v6') {
+        var v6 = new SiglentV6.SiglentV6(new KaitaiStream(buffer), null, null);
+        var channels = [];
+        var seen = {};
+
+        for (var wi = 0; wi < v6.waveforms.length; wi++) {
+            var waveform = v6.waveforms[wi];
+            var wh = waveform.header;
+            var slot = siglentV6Slot(wh);
+            if (slot < 0 || wh.dataNumber <= 0) {
+                continue;
+            }
+            if (wh.dataBytes % wh.dataNumber !== 0) {
+                throw new Error('Siglent V6.0 waveform byte count does not divide evenly by its point count.');
+            }
+
+            var sampleWidth = wh.dataBytes / wh.dataNumber;
+            if (sampleWidth !== 1 && sampleWidth !== 2 && sampleWidth !== 4) {
+                throw new Error('Unsupported Siglent V6.0 sample width (' + sampleWidth + ' bytes per point).');
+            }
+
+            var times = new Float64Array(wh.dataNumber);
+            var volts = new Float64Array(wh.dataNumber);
+            var raw = new Uint8Array(wh.dataNumber);
+            var view = new DataView(waveform.dataRaw.buffer, waveform.dataRaw.byteOffset, waveform.dataRaw.byteLength);
+            var xOrigin = -wh.horiOriginPos * wh.horiInterval;
+            var vMin = Infinity;
+            var vMax = -Infinity;
+
+            for (var i = 0; i < wh.dataNumber; i++) {
+                var code = siglentDecodeUnsignedCode(view, i, sampleWidth, true);
+                var voltage = (code - wh.vertOriginPos) * wh.vertInterval;
+                volts[i] = voltage;
+                times[i] = xOrigin + i * wh.horiInterval;
+                raw[i] = siglentRawByteFromCode(code, sampleWidth);
+                if (voltage < vMin) {
+                    vMin = voltage;
+                }
+                if (voltage > vMax) {
+                    vMax = voltage;
+                }
+            }
+
+            var channelNumber = slot + 1;
+            var baseName = normalizedChannelName(wh.label, channelNumber);
+            seen[channelNumber] = (seen[channelNumber] || 0) + 1;
+            var name = seen[channelNumber] > 1 ? (baseName + ' #' + seen[channelNumber]) : baseName;
+
+            channels.push({
+                name: name,
+                color: CH_COLORS[slot % CH_COLORS.length],
+                times: times,
+                volts: volts,
+                raw: raw,
+                channelNumber: channelNumber,
+                points: wh.dataNumber,
+                coupling: 'DC',
+                voltPerDiv: siglentEstimateVoltPerDiv(vMin, vMax, Math.abs(wh.vertScale)),
+                voltOffset: 0,
+                probeValue: 1,
+                inverted: false,
+                timeScale: wh.dataNumber > 0 ? wh.dataNumber * wh.horiInterval / 10 : 1e-3,
+                timeOffset: xOrigin,
+                secondsPerPoint: wh.horiInterval,
+            });
+        }
+
+        if (!channels.length) {
+            throw new Error('No supported analog waveform records were found in this Siglent V6.0 capture.');
+        }
+
+        channels.sort(function(a, b) {
+            if (a.channelNumber !== b.channelNumber) {
+                return a.channelNumber - b.channelNumber;
+            }
+            return a.name.localeCompare(b.name);
+        });
+
+        return {
+            format: 'Siglent BIN',
+            fileModel: v6.fileHeader.module || 'Siglent',
+            serialNumber: v6.fileHeader.serial || '',
+            userModel: 'Siglent',
+            parserModel: 'siglent_bin',
+            firmware: v6.fileHeader.softwareVersion || 'V6.0',
+            triggerInfo: null,
+            channels: channels,
+        };
+    }
+
+    throw new Error('Unsupported Siglent revision: ' + revision);
 }
 
 function agilentAnalogBufferSuffix(bufferType, analogBufferCount) {

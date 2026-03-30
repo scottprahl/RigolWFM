@@ -246,6 +246,8 @@ class Channel:
             self.lecroy(w, channel_number)
         elif scope == "agilent_bin":
             self.agilent(w, channel_number)
+        elif scope == "siglent_bin":
+            self.siglent(w, channel_number)
         elif scope == "tek_wfm":
             self.tek(w, channel_number)
         elif scope == "tek_isf":
@@ -682,6 +684,40 @@ class Channel:
             self.points = len(self.volts)
             t0 = w.header.x_origin
             self.times = t0 + np.arange(self.points) * w.header.x_increment
+
+    def siglent(self, w: Any, channel_number: int) -> None:
+        """Interpret normalized waveform data for a Siglent `.bin` file."""
+        self.time_scale = w.header.time_scale
+        self.time_offset = 0.0
+        self.points = w.header.points
+        self.firmware = w.header.firmware_version
+
+        idx = channel_number - 1
+        ch_data = w.header.channel_data[idx] if idx < len(w.header.channel_data) else None
+        if ch_data is not None and self.enabled_and_selected:
+            self.volts = ch_data.astype(np.float64)
+
+            raw_data = getattr(w.header, "raw_data", None)
+            raw8 = raw_data[idx] if isinstance(raw_data, list) and idx < len(raw_data) else None
+            if raw8 is None:
+                raw8 = np.full(self.volts.shape, 127, dtype=np.uint8)
+
+            self.raw = raw8
+            self.points = len(self.volts)
+
+            x_origins = getattr(w.header, "x_origins", None)
+            t0 = (
+                x_origins[idx]
+                if isinstance(x_origins, list) and idx < len(x_origins) and x_origins[idx] is not None
+                else w.header.x_origin
+            )
+            x_increments = getattr(w.header, "x_increments", None)
+            dt = (
+                x_increments[idx]
+                if isinstance(x_increments, list) and idx < len(x_increments) and x_increments[idx] is not None
+                else w.header.x_increment
+            )
+            self.times = t0 + np.arange(self.points) * dt
 
     def yokogawa(self, w: Any, channel_number: int) -> None:
         """Interpret normalized waveform data for a Yokogawa .wfm file."""

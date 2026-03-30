@@ -2,9 +2,9 @@
 Parse and convert oscilloscope waveform files.
 
 Supports Rigol (DS1000B/C/D/E/Z, DS2000, DS4000, DS6000, MSO5000, MSO5074,
-MSO7000/8000, DHO800/DHO1000), Agilent / Keysight (`AGxx` `.bin`), Teledyne
-LeCroy (.trc), Tektronix (.wfm/.isf), and Yokogawa (.wfm) scope families via
-``Wfm.from_file()``.
+MSO7000/8000, DHO800/DHO1000), Agilent / Keysight (`AGxx` `.bin`), Siglent
+(`.bin` waveform revisions), Teledyne LeCroy (.trc), Tektronix (.wfm/.isf),
+and Yokogawa (.wfm) scope families via ``Wfm.from_file()``.
 
 Example:
     >>> import RigolWFM.wfm as wfm
@@ -34,6 +34,7 @@ import RigolWFM.agilent
 import RigolWFM.isf
 import RigolWFM.lecroy
 import RigolWFM.rigol
+import RigolWFM.siglent
 import RigolWFM.tek
 import RigolWFM.yokogawa
 
@@ -52,6 +53,20 @@ Keysight_scopes: list[str] = [
     "agilent_bin",
 ]
 
+# Siglent `.bin` waveform files
+Siglent_scopes: list[str] = [
+    "Siglent",
+    "SIGLENT",
+    "siglent",
+    "siglent_bin",
+]
+
+Siglent_old_scopes: list[str] = [
+    "SiglentOld",
+    "SIGLENTOLD",
+    "siglentold",
+]
+
 # Teledyne LeCroy .trc files (LECROY_1_0 / LECROY_2_3 format)
 LeCroy_scopes: list[str] = ["LeCroy", "LECROY", "lecroy", "trc"]
 
@@ -66,6 +81,8 @@ Yokogawa_scopes: list[str] = ["Yokogawa", "YOKOGAWA", "yokogawa", "yoko", "yokog
 
 _GENERIC_VENDOR_MODELS = {
     *(name.upper() for name in Keysight_scopes),
+    *(name.upper() for name in Siglent_scopes),
+    *(name.upper() for name in Siglent_old_scopes),
     *(name.upper() for name in LeCroy_scopes),
     *(name.upper() for name in Tek_scopes),
     *(name.upper() for name in ISF_scopes),
@@ -144,7 +161,7 @@ def detect_model(filename: str) -> str:
     try:
         fsize = os.path.getsize(filename)
         with open(filename, "rb") as f:
-            hdr = f.read(4096)
+            hdr = f.read(8192)
     except OSError as exc:
         raise FileNotFoundError(filename) from exc
 
@@ -166,7 +183,7 @@ def detect_model(filename: str) -> str:
         return "Z"
 
     # DHO proprietary .wfm: 02 00 00 00
-    if magic4 == bytes([0x02, 0x00, 0x00, 0x00]):
+    if magic4 == bytes([0x02, 0x00, 0x00, 0x00]) and filename.lower().endswith(".wfm"):
         return "DHO"
 
     # DHO .bin export: RG03
@@ -181,6 +198,15 @@ def detect_model(filename: str) -> str:
             version = -1
         if version in (1, 3, 10):
             return "Keysight"
+
+    # Siglent `.bin`: documented old platform and V0.1-V6 waveform families
+    if filename.lower().endswith(".bin"):
+        try:
+            siglent_revision = RigolWFM.siglent.detect_revision_from_bytes(hdr, fsize)
+        except ValueError:
+            siglent_revision = ""
+        if siglent_revision:
+            return "SiglentOld" if siglent_revision == "old" else "Siglent"
 
     # RG01: MSO5000, MSO5074, MSO7000, MSO8000
     if hdr[:4] == b"RG01":
@@ -264,6 +290,8 @@ def valid_scope_list() -> str:
     s += "\n    ".join(", ".join(family) for family in RigolWFM.rigol.ALL_RIGOL_SCOPES)
     s += "\n    "
     s += ", ".join(Keysight_scopes) + "\n    "
+    s += ", ".join(Siglent_scopes) + "\n    "
+    s += ", ".join(Siglent_old_scopes) + "\n    "
     s += ", ".join(LeCroy_scopes) + "\n    "
     s += ", ".join(Tek_scopes) + "\n    "
     s += ", ".join(ISF_scopes) + "\n"
@@ -362,6 +390,12 @@ class Wfm:
             w = RigolWFM.agilent.from_file(file_name)
             new_wfm.header_name = w.header.model or "Keysight"
             new_wfm.serial_number = w.header.serial_number
+
+        # --- Siglent `.bin` waveform files ---
+        elif umodel in Siglent_scopes or umodel in Siglent_old_scopes:
+            w = RigolWFM.siglent.from_file(file_name, umodel)
+            new_wfm.header_name = w.header.model or "Siglent"
+            new_wfm.serial_number = getattr(w.header, "serial_number", "")
 
         # --- LeCroy ---
         elif umodel in LeCroy_scopes:

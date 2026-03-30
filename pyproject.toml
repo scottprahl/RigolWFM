@@ -187,6 +187,7 @@ ignore-patterns = [
     "^bin7000_8000\\.py$",
     "^bindho1000\\.py$",
     "^lecroy_[0-9]_[0-9]_(be|le)\\.py$",
+    "^siglent_.*\\.py$",
     "^tek_isf\\.py$",
     "^tek_wfm_[0-9]{3}_(be|le)\\.py$",
     "^wfm1000.*\\.py$",
@@ -214,6 +215,7 @@ exclude = [
     "RigolWFM/bin7000_8000.py",
     "RigolWFM/bindho1000.py",
     "RigolWFM/lecroy_*.py",
+    "RigolWFM/siglent_*.py",
     "RigolWFM/tek_isf.py",
     "RigolWFM/tek_wfm_*.py",
     "RigolWFM/wfm1000*.py",
@@ -253,6 +255,7 @@ exclude = [
     "RigolWFM/bin[0-9].*\\.py",
     "RigolWFM/wfmdho1000\\.py",
     "RigolWFM/bindho.*\\.py",
+    "RigolWFM/siglent_.*\\.py",
 ]
 
 [[tool.mypy.overrides]]
