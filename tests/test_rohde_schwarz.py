@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 import RigolWFM.rohde_schwarz
-import RigolWFM.rohde_schwarz_rtp_wfm
+import RigolWFM.rohde_schwarz_rtp_wfm_bin
 import RigolWFM.wfm
 
 _ROOT = Path(__file__).resolve().parents[1]
@@ -32,9 +32,12 @@ def test_rohde_schwarz_rtp_low_level_header():
     """The low-level RTP payload parser should expose the 8-byte file header."""
     path = _rtp_path("rs_rtp_01.Wfm.bin")
 
-    raw = RigolWFM.rohde_schwarz_rtp_wfm.RohdeSchwarzRtpWfm.from_file(str(path))
+    raw = RigolWFM.rohde_schwarz_rtp_wfm_bin.RohdeSchwarzRtpWfmBin.from_file(str(path))
 
-    assert raw.format_code == RigolWFM.rohde_schwarz_rtp_wfm.RohdeSchwarzRtpWfm.FormatCodeEnum.float32
+    assert (
+        raw.format_code
+        == RigolWFM.rohde_schwarz_rtp_wfm_bin.RohdeSchwarzRtpWfmBin.FormatCodeEnum.float32
+    )
     assert raw.record_length == 4070
     assert raw.payload_size == path.stat().st_size - 8
 

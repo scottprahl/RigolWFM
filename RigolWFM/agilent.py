@@ -1,7 +1,7 @@
 """
 Adapter layer for Agilent / Keysight oscilloscope binary waveform exports.
 
-This module bridges the generated `agilent_bin` Kaitai parser and the rest of
+This module bridges the generated `agilent_agxx_bin` Kaitai parser and the rest of
 RigolWFM. The container layout is described by the checked-in vendor parsers,
 the wavebin sample corpus, and the Agilent 6000 / InfiniiVision 2000 manuals.
 
@@ -20,7 +20,7 @@ from typing import Any, Optional
 import numpy as np
 import numpy.typing as npt
 
-import RigolWFM.agilent_bin
+import RigolWFM.agilent_agxx_bin
 from RigolWFM.mso5000 import ChannelHeader, _estimate_volts_per_division, _proxy_raw
 
 
@@ -154,17 +154,17 @@ def _is_segmented_waveform(wfm_header: Any) -> bool:
 
 def from_file(file_name: str) -> AgilentWaveform:
     """Parse an Agilent / Keysight `AGxx` `.bin` file and normalize it."""
-    AgilentBin: Any = RigolWFM.agilent_bin.AgilentBin  # type: ignore[attr-defined]
-    raw = AgilentBin.from_file(file_name)
+    AgilentAgxxBin: Any = RigolWFM.agilent_agxx_bin.AgilentAgxxBin  # type: ignore[attr-defined]
+    raw = AgilentAgxxBin.from_file(file_name)
     supported_buffer_types = {
-        AgilentBin.BufferTypeEnum.normal_float32,
-        AgilentBin.BufferTypeEnum.maximum_float32,
-        AgilentBin.BufferTypeEnum.minimum_float32,
+        AgilentAgxxBin.BufferTypeEnum.normal_float32,
+        AgilentAgxxBin.BufferTypeEnum.maximum_float32,
+        AgilentAgxxBin.BufferTypeEnum.minimum_float32,
     }
     ignored_buffer_types = {
-        AgilentBin.BufferTypeEnum.counts_i32,
-        AgilentBin.BufferTypeEnum.logic_u8,
-        AgilentBin.BufferTypeEnum.digital_u8,
+        AgilentAgxxBin.BufferTypeEnum.counts_i32,
+        AgilentAgxxBin.BufferTypeEnum.logic_u8,
+        AgilentAgxxBin.BufferTypeEnum.digital_u8,
     }
 
     obj = AgilentWaveform()
@@ -184,7 +184,7 @@ def from_file(file_name: str) -> AgilentWaveform:
         if _is_segmented_waveform(wfm_header):
             raise ValueError(
                 "Segmented Agilent/Keysight captures are not yet supported by "
-                "the normalized parser. Use RigolWFM.agilent_bin.AgilentBin for "
+                "the normalized parser. Use RigolWFM.agilent_agxx_bin.AgilentAgxxBin for "
                 "low-level access to per-segment waveforms."
             )
 
@@ -192,7 +192,9 @@ def from_file(file_name: str) -> AgilentWaveform:
         for buffer in waveform.buffers:
             data_header = buffer.data_header
             buffer_type = data_header.buffer_type
-            is_digital = waveform_type == AgilentBin.WaveformTypeEnum.logic or buffer_type in ignored_buffer_types
+            is_digital = (
+                waveform_type == AgilentAgxxBin.WaveformTypeEnum.logic or buffer_type in ignored_buffer_types
+            )
             if is_digital:
                 continue
 
@@ -214,7 +216,7 @@ def from_file(file_name: str) -> AgilentWaveform:
             raise ValueError(
                 "Peak Detect / multi-buffer Agilent/Keysight waveforms are not "
                 "yet supported by the normalized parser. Use "
-                "RigolWFM.agilent_bin.AgilentBin to inspect all buffers."
+                "RigolWFM.agilent_agxx_bin.AgilentAgxxBin to inspect all buffers."
             )
 
         slot = _channel_slot(label, analog_slot)

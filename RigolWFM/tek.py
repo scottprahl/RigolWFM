@@ -7,12 +7,12 @@ Normalises the parsed KSY data into the header/data shape expected by
 Two format versions are supported:
 
   WFM#001 (TDS6000/B/C, TDS/CSA7000/B):
-    ksy/tektronix_wfm_001_le_wfm.ksy → RigolWFM/tek_wfm_001_le.py   (LE)
-    ksy/tektronix_wfm_001_be_wfm.ksy → RigolWFM/tek_wfm_001_be.py   (BE)
+    ksy/tektronix_wfm_001_le_wfm.ksy → RigolWFM/tektronix_wfm_001_le_wfm.py   (LE)
+    ksy/tektronix_wfm_001_be_wfm.ksy → RigolWFM/tektronix_wfm_001_be_wfm.py   (BE)
 
   WFM#002/003 (TDS5000B, DPO7000, DPO70000, DSA70000):
-    ksy/tektronix_wfm_002_le_wfm.ksy → RigolWFM/tek_wfm_002_le.py   (LE)
-    ksy/tektronix_wfm_002_be_wfm.ksy → RigolWFM/tek_wfm_002_be.py   (BE)
+    ksy/tektronix_wfm_002_le_wfm.ksy → RigolWFM/tektronix_wfm_002_le_wfm.py   (LE)
+    ksy/tektronix_wfm_002_be_wfm.ksy → RigolWFM/tektronix_wfm_002_be_wfm.py   (BE)
 
 Endianness detection
 --------------------
@@ -46,15 +46,15 @@ import numpy.typing as npt
 from kaitaistruct import KaitaiStream  # type: ignore[import]
 
 import RigolWFM.channel
-import RigolWFM.tek_wfm_001_be
-import RigolWFM.tek_wfm_001_le
-import RigolWFM.tek_wfm_002_be
-import RigolWFM.tek_wfm_002_le
+import RigolWFM.tektronix_wfm_001_be_wfm
+import RigolWFM.tektronix_wfm_001_le_wfm
+import RigolWFM.tektronix_wfm_002_be_wfm
+import RigolWFM.tektronix_wfm_002_le_wfm
 
-_TekWfm001Le: Any = RigolWFM.tek_wfm_001_le.TekWfm001Le  # type: ignore[attr-defined]
-_TekWfm001Be: Any = RigolWFM.tek_wfm_001_be.TekWfm001Be  # type: ignore[attr-defined]
-_TekWfm002Le: Any = RigolWFM.tek_wfm_002_le.TekWfm002Le  # type: ignore[attr-defined]
-_TekWfm002Be: Any = RigolWFM.tek_wfm_002_be.TekWfm002Be  # type: ignore[attr-defined]
+_TekWfm001Le: Any = RigolWFM.tektronix_wfm_001_le_wfm.TektronixWfm001LeWfm  # type: ignore[attr-defined]
+_TekWfm001Be: Any = RigolWFM.tektronix_wfm_001_be_wfm.TektronixWfm001BeWfm  # type: ignore[attr-defined]
+_TekWfm002Le: Any = RigolWFM.tektronix_wfm_002_le_wfm.TektronixWfm002LeWfm  # type: ignore[attr-defined]
+_TekWfm002Be: Any = RigolWFM.tektronix_wfm_002_be_wfm.TektronixWfm002BeWfm  # type: ignore[attr-defined]
 
 _TEK_MAGIC = b"WFM#"
 _LLWFM_MAGIC = b"LLWFM"

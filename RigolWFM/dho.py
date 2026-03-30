@@ -9,12 +9,12 @@ inputs into the header/data shape expected by `RigolWFM.wfm.Wfm` and
 The generated Kaitai modules are intentionally not called directly by
 `RigolWFM.wfm.Wfm.from_file()`:
 
-    - `RigolWFM.bindho1000` only knows the official DHO `.bin` export format.
+    - `RigolWFM.rigol_dho800_1000_bin` only knows the official DHO `.bin` export format.
       It parses per-channel float32 sample buffers, but it does not produce the
       common `header.ch`, `header.channel_data`, `header.raw_data`,
       `header.model_number` structure used by the rest of the project.
 
-    - `RigolWFM.wfmdho1000` only knows the low-level proprietary `.wfm` block
+    - `RigolWFM.rigol_dho800_1000_wfm` only knows the low-level proprietary `.wfm` block
       layout.  It is still not a complete project-level waveform reader because
       DHO `.wfm` files need runtime work after the Kaitai parse: decompress
       block payloads, scan past the zero-padding region, locate the sample
@@ -39,11 +39,11 @@ import numpy as np
 import numpy.typing as npt
 from kaitaistruct import BytesIO, KaitaiStream
 
-import RigolWFM.bindho1000
-import RigolWFM.wfmdho1000
+import RigolWFM.rigol_dho800_1000_bin
+import RigolWFM.rigol_dho800_1000_wfm
 
-_Bindho1000: Any = RigolWFM.bindho1000.Bindho1000  # type: ignore[attr-defined]
-_Wfmdho1000: Any = RigolWFM.wfmdho1000.Wfmdho1000  # type: ignore[attr-defined]
+_RigolDho8001000Bin: Any = RigolWFM.rigol_dho800_1000_bin.RigolDho8001000Bin  # type: ignore[attr-defined]
+_RigolDho8001000Wfm: Any = RigolWFM.rigol_dho800_1000_wfm.RigolDho8001000Wfm  # type: ignore[attr-defined]
 
 _DHO_FILE_HEADER_SIZE = 24
 _DHO_BLOCK_HEADER_SIZE = 12
@@ -255,7 +255,7 @@ def _parse_blocks(
     file_header_size: int = _DHO_FILE_HEADER_SIZE,
 ) -> tuple[list[tuple[Any, bytes, int]], int]:
     """Return decompressed DHO metadata blocks and the start of the padding region."""
-    parsed = _Wfmdho1000.from_bytes(data)
+    parsed = _RigolDho8001000Wfm.from_bytes(data)
     blocks: list[tuple[Any, bytes, int]] = []
     offset = file_header_size
 
@@ -274,7 +274,7 @@ def _extract_volt_calibration(
     blocks: list[tuple[Any, bytes, int]],
 ) -> tuple[bool, dict[int, tuple[float, float, float]]]:
     """Extract DHO channel calibration from parsed metadata blocks."""
-    parser = _Wfmdho1000
+    parser = _RigolDho8001000Wfm
     block_type_enum = parser.BlockTypeEnum
     dho1000_params_type = parser.Dho1000ChannelParams
     dho800_params_type = parser.Dho800ChannelParams
@@ -407,11 +407,11 @@ def _parse_model(blocks: list[tuple[Any, bytes, int]]) -> str:
 
 def _from_bin(file_name: str) -> DhoWaveform:
     """Parse a DHO `.bin` file and normalize it for `Wfm.from_file()`."""
-    raw = _Bindho1000.from_file(file_name)
+    raw = _RigolDho8001000Bin.from_file(file_name)
     supported_buffer_types = {
-        _Bindho1000.BufferTypeEnum.float32_normal,
-        _Bindho1000.BufferTypeEnum.float32_maximum,
-        _Bindho1000.BufferTypeEnum.float32_minimum,
+        _RigolDho8001000Bin.BufferTypeEnum.float32_normal,
+        _RigolDho8001000Bin.BufferTypeEnum.float32_maximum,
+        _RigolDho8001000Bin.BufferTypeEnum.float32_minimum,
     }
 
     obj = DhoWaveform()

@@ -137,6 +137,18 @@ _LECROY_MAGIC = b"WAVEDESC"
 _TEK_MAGIC = b"WFM#"
 _ISF_MAGIC = b":CURV"  # matches both ":CURV #" and ":CURVE #"
 
+_CANONICAL_PARSER_NAMES = {
+    "rigol_1000b_wfm": "wfm1000b",
+    "rigol_1000c_wfm": "wfm1000c",
+    "rigol_1000e_wfm": "wfm1000e",
+    "rigol_1000z_wfm": "wfm1000z",
+    "rigol_2000_wfm": "wfm2000",
+    "rigol_4000_wfm": "wfm4000",
+    "rigol_6000_wfm": "wfm6000",
+    "rigol_mso5000_bin": "bin5000",
+    "rigol_7000_8000_bin": "bin7000_8000",
+}
+
 
 # ---------------------------------------------------------------------------
 # Exceptions
@@ -525,6 +537,7 @@ class Wfm:
 
         new_wfm.user_name = "auto" if auto_model else model
         pname = getattr(w, "parser_name", type(w).__module__.rsplit(".", 1)[-1])
+        pname = _CANONICAL_PARSER_NAMES.get(pname, pname)
         new_wfm.parser_name = pname
 
         # Warn when the model embedded in the file clearly disagrees with the

@@ -1,7 +1,7 @@
 """
 Adapter layer for Rigol MSO7000/DS7000 and MSO8000 binary waveform exports.
 
-`RigolWFM.bin7000_8000` is the generated low-level Kaitai parser for the
+`RigolWFM.rigol_7000_8000_bin` is the generated low-level Kaitai parser for the
 UltraVision `.bin` container documented in the 7000 and 8000 manuals, but the
 rest of RigolWFM expects a normalized object with fixed channel slots, common
 timing fields, and calibrated sample arrays.
@@ -21,7 +21,7 @@ from typing import Any
 
 import numpy as np
 
-import RigolWFM.bin7000_8000
+import RigolWFM.rigol_7000_8000_bin
 from RigolWFM.mso5000 import (
     ChannelHeader,
     Header,
@@ -53,12 +53,12 @@ class Mso7000_8000Waveform:
 
 def from_file(file_name: str) -> Mso7000_8000Waveform:
     """Parse a Rigol 7000/8000 `.bin` file and normalize it for `Wfm.from_file()`."""
-    Bin70008000: Any = RigolWFM.bin7000_8000.Bin70008000  # type: ignore[attr-defined]
-    raw = Bin70008000.from_file(file_name)
+    Rigol70008000Bin: Any = RigolWFM.rigol_7000_8000_bin.Rigol70008000Bin  # type: ignore[attr-defined]
+    raw = Rigol70008000Bin.from_file(file_name)
     supported_buffer_types = {
-        Bin70008000.BufferTypeEnum.normal_float32,
-        Bin70008000.BufferTypeEnum.maximum_float32,
-        Bin70008000.BufferTypeEnum.minimum_float32,
+        Rigol70008000Bin.BufferTypeEnum.normal_float32,
+        Rigol70008000Bin.BufferTypeEnum.maximum_float32,
+        Rigol70008000Bin.BufferTypeEnum.minimum_float32,
     }
 
     obj = Mso7000_8000Waveform()
@@ -77,9 +77,9 @@ def from_file(file_name: str) -> Mso7000_8000Waveform:
         buffer_type = data_header.buffer_type
 
         if (
-            waveform_type == Bin70008000.WaveformTypeEnum.logic
+            waveform_type == Rigol70008000Bin.WaveformTypeEnum.logic
             or label.upper().startswith("LA")
-            or buffer_type == Bin70008000.BufferTypeEnum.digital_u8
+            or buffer_type == Rigol70008000Bin.BufferTypeEnum.digital_u8
         ):
             raise ValueError(
                 "Unsupported 7000/8000 logic waveform record. "

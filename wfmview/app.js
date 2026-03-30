@@ -243,13 +243,13 @@ function decode4000Trigger(h) {
 
     if (
         setup.modernTriggerLevels &&
-        Object.prototype.hasOwnProperty.call(Wfm4000.Wfm4000.TriggerModeEnum, setup.modernTriggerMode) &&
-        Object.prototype.hasOwnProperty.call(Wfm4000.Wfm4000.TriggerSourceEnum, setup.modernTriggerSource)
+        Object.prototype.hasOwnProperty.call(Rigol4000Wfm.Rigol4000Wfm.TriggerModeEnum, setup.modernTriggerMode) &&
+        Object.prototype.hasOwnProperty.call(Rigol4000Wfm.Rigol4000Wfm.TriggerSourceEnum, setup.modernTriggerSource)
     ) {
         var inputLevels = scaled4000TriggerLevels(setup.modernTriggerLevels, probeValues);
-        var source = enumName(Wfm4000.Wfm4000.TriggerSourceEnum, setup.modernTriggerSource).toUpperCase();
+        var source = enumName(Rigol4000Wfm.Rigol4000Wfm.TriggerSourceEnum, setup.modernTriggerSource).toUpperCase();
         var info = {
-            mode: enumName(Wfm4000.Wfm4000.TriggerModeEnum, setup.modernTriggerMode).toLowerCase(),
+            mode: enumName(Rigol4000Wfm.Rigol4000Wfm.TriggerModeEnum, setup.modernTriggerMode).toLowerCase(),
             source: source,
             inputLevels: inputLevels,
         };
@@ -945,7 +945,7 @@ function parseDhoPayload(ctor, content) {
 }
 
 async function parseDhoBlocks(buffer) {
-    var parsed = new Wfmdho1000.Wfmdho1000(new KaitaiStream(buffer), null, null);
+    var parsed = new RigolDho8001000Wfm.RigolDho8001000Wfm(new KaitaiStream(buffer), null, null);
     var blocks = [];
     var offset = DHO_FILE_HEADER_SIZE;
 
@@ -964,7 +964,7 @@ async function parseDhoBlocks(buffer) {
 }
 
 function extractDhoVoltCalibration(blocks) {
-    var blockTypes = Wfmdho1000.Wfmdho1000.BlockTypeEnum;
+    var blockTypes = RigolDho8001000Wfm.RigolDho8001000Wfm.BlockTypeEnum;
     var isDho800 = blocks.some(function(entry) {
         return entry.block.blockType === blockTypes.DHO800_CHANNEL_PARAMS &&
             entry.block.blockId >= 1 && entry.block.blockId <= 4;
@@ -977,7 +977,7 @@ function extractDhoVoltCalibration(blocks) {
         blocks.forEach(function(entry) {
             if (entry.block.blockType === blockTypes.DHO800_CHANNEL_PARAMS &&
                 entry.block.blockId >= 1 && entry.block.blockId <= 4) {
-                var params = parseDhoPayload(Wfmdho1000.Wfmdho1000.Dho800ChannelParams, entry.content);
+                var params = parseDhoPayload(RigolDho8001000Wfm.RigolDho8001000Wfm.Dho800ChannelParams, entry.content);
                 cal[entry.block.blockId] = {
                     scale: params.scale,
                     vCenter: params.vCenter,
@@ -991,7 +991,7 @@ function extractDhoVoltCalibration(blocks) {
     blocks.forEach(function(entry) {
         if (entry.block.blockType === blockTypes.CHANNEL_PARAMS &&
             entry.block.blockId >= 1 && entry.block.blockId <= 4) {
-            var params = parseDhoPayload(Wfmdho1000.Wfmdho1000.Dho1000ChannelParams, entry.content);
+            var params = parseDhoPayload(RigolDho8001000Wfm.RigolDho8001000Wfm.Dho1000ChannelParams, entry.content);
             cal[entry.block.blockId] = {
                 scale: params.scale,
                 vCenter: params.vCenter,
@@ -1001,7 +1001,7 @@ function extractDhoVoltCalibration(blocks) {
                 scale1 = params.scale;
             }
         } else if (entry.block.blockType === blockTypes.SETTINGS) {
-            settingsCenter = parseDhoPayload(Wfmdho1000.Wfmdho1000.SettingsBlock, entry.content).vCenter;
+            settingsCenter = parseDhoPayload(RigolDho8001000Wfm.RigolDho8001000Wfm.SettingsBlock, entry.content).vCenter;
         }
     });
 
@@ -1263,11 +1263,11 @@ function parseLeCroy(buffer, wavedescOffset) {
 
     var w = isV1
         ? (isLe
-            ? new Lecroy10Le.Lecroy10Le(new KaitaiStream(payload), null, null)
-            : new Lecroy10Be.Lecroy10Be(new KaitaiStream(payload), null, null))
+            ? new Lecroy10LeTrc.Lecroy10LeTrc(new KaitaiStream(payload), null, null)
+            : new Lecroy10BeTrc.Lecroy10BeTrc(new KaitaiStream(payload), null, null))
         : (isLe
-            ? new Lecroy23Le.Lecroy23Le(new KaitaiStream(payload), null, null)
-            : new Lecroy23Be.Lecroy23Be(new KaitaiStream(payload), null, null));
+            ? new Lecroy23LeTrc.Lecroy23LeTrc(new KaitaiStream(payload), null, null)
+            : new Lecroy23BeTrc.Lecroy23BeTrc(new KaitaiStream(payload), null, null));
 
     var wd = w.wavedesc;
     var n = wd.waveArrayCount;
@@ -1380,10 +1380,10 @@ function parseTek(buffer) {
 
     var stream = new KaitaiStream(buffer);
     var w = isV1
-        ? (isLe ? new TekWfm001Le.TekWfm001Le(stream, null, null)
-                : new TekWfm001Be.TekWfm001Be(stream, null, null))
-        : (isLe ? new TekWfm002Le.TekWfm002Le(stream, null, null)
-                : new TekWfm002Be.TekWfm002Be(stream, null, null));
+        ? (isLe ? new TektronixWfm001LeWfm.TektronixWfm001LeWfm(stream, null, null)
+                : new TektronixWfm001BeWfm.TektronixWfm001BeWfm(stream, null, null))
+        : (isLe ? new TektronixWfm002LeWfm.TektronixWfm002LeWfm(stream, null, null)
+                : new TektronixWfm002BeWfm.TektronixWfm002BeWfm(stream, null, null));
 
     var sfi = w.staticFileInfo;
     var hdr = w.wfmHeader;
@@ -1487,7 +1487,7 @@ function parseTek(buffer) {
 }
 
 function parseIsf(buffer) {
-    var w = new TekIsf.TekIsf(new KaitaiStream(buffer), null, null);
+    var w = new TektronixInternalIsf.TektronixInternalIsf(new KaitaiStream(buffer), null, null);
     var headerText = w.headerText;
     var curveData = w.curveData;
 
@@ -1625,7 +1625,7 @@ function parseIsf(buffer) {
 }
 
 function parseB(buffer) {
-    var w = new Wfm1000b.Wfm1000b(new KaitaiStream(buffer), null, null);
+    var w = new Rigol1000bWfm.Rigol1000bWfm(new KaitaiStream(buffer), null, null);
     var h = w.header;
     var channels = [];
     var spp = h.secondsPerPoint;
@@ -1683,21 +1683,21 @@ function parseB(buffer) {
         parserModel: 'wfm1000b',
         firmware: 'unknown',
         triggerInfo: {
-            mode: enumName(Wfm1000b.Wfm1000b.TriggerModeEnum, h.triggerMode).toLowerCase(),
-            source: enumName(Wfm1000b.Wfm1000b.TriggerSourceEnum, h.triggerSource).toUpperCase(),
+            mode: enumName(Rigol1000bWfm.Rigol1000bWfm.TriggerModeEnum, h.triggerMode).toLowerCase(),
+            source: enumName(Rigol1000bWfm.Rigol1000bWfm.TriggerSourceEnum, h.triggerSource).toUpperCase(),
         },
         channels: channels,
     };
 }
 
 function parseE(buffer) {
-    var w = new Wfm1000e.Wfm1000e(new KaitaiStream(buffer), null, null);
+    var w = new Rigol1000eWfm.Rigol1000eWfm(new KaitaiStream(buffer), null, null);
     var h = w.header;
     var channels = [];
     function triggerHeaderInfo(th) {
         return {
-            mode: enumName(Wfm1000e.Wfm1000e.TriggerModeEnum, th.mode).toLowerCase(),
-            source: enumName(Wfm1000e.Wfm1000e.SourceEnum, th.source).toUpperCase(),
+            mode: enumName(Rigol1000eWfm.Rigol1000eWfm.TriggerModeEnum, th.mode).toLowerCase(),
+            source: enumName(Rigol1000eWfm.Rigol1000eWfm.SourceEnum, th.source).toUpperCase(),
             level: th.level,
             sweep: sweepName(th.sweep),
             coupling: triggerCouplingName(th.coupling),
@@ -1742,7 +1742,7 @@ function parseE(buffer) {
             secondsPerPoint: spp,
         });
     }
-    var triggerMode = enumName(Wfm1000e.Wfm1000e.TriggerModeEnum, h.triggerMode).toLowerCase();
+    var triggerMode = enumName(Rigol1000eWfm.Rigol1000eWfm.TriggerModeEnum, h.triggerMode).toLowerCase();
     var triggerInfo = triggerMode === 'alt' ? {
         mode: 'alt',
         trigger1: triggerHeaderInfo(h.trigger1),
@@ -1763,7 +1763,7 @@ function parseE(buffer) {
 }
 
 function parseC(buffer) {
-    var w = new Wfm1000c.Wfm1000c(new KaitaiStream(buffer), null, null);
+    var w = new Rigol1000cWfm.Rigol1000cWfm(new KaitaiStream(buffer), null, null);
     var h = w.header;
     var channels = [];
     var spp = h.secondsPerPoint;
@@ -1813,15 +1813,15 @@ function parseC(buffer) {
         parserModel: 'wfm1000c',
         firmware: 'unknown',
         triggerInfo: {
-            mode: enumName(Wfm1000c.Wfm1000c.TriggerModeEnum, h.triggerMode).toLowerCase(),
-            source: enumName(Wfm1000c.Wfm1000c.TriggerSourceEnum, h.triggerSource).toUpperCase(),
+            mode: enumName(Rigol1000cWfm.Rigol1000cWfm.TriggerModeEnum, h.triggerMode).toLowerCase(),
+            source: enumName(Rigol1000cWfm.Rigol1000cWfm.TriggerSourceEnum, h.triggerSource).toUpperCase(),
         },
         channels: channels,
     };
 }
 
 function parseZ(buffer) {
-    var w = new Wfm1000z.Wfm1000z(new KaitaiStream(buffer), null, null);
+    var w = new Rigol1000zWfm.Rigol1000zWfm(new KaitaiStream(buffer), null, null);
     var h = w.header;
     var all = toU8(w.data.raw);
     var spp = h.secondsPerPoint;
@@ -1867,7 +1867,7 @@ function parseZ(buffer) {
             raw: raw,
             channelNumber: ci + 1,
             points: points,
-            coupling: enumName(Wfm1000z.Wfm1000z.CouplingEnum, chh.coupling).toUpperCase(),
+            coupling: enumName(Rigol1000zWfm.Rigol1000zWfm.CouplingEnum, chh.coupling).toUpperCase(),
             voltPerDiv: chh.voltPerDivision,
             voltOffset: chh.voltOffset,
             probeValue: chh.probeValue,
@@ -1902,7 +1902,7 @@ function effective2000TimeOffset(h) {
 }
 
 function parse2000(buffer) {
-    var w = new Wfm2000.Wfm2000(new KaitaiStream(buffer), null, null);
+    var w = new Rigol2000Wfm.Rigol2000Wfm(new KaitaiStream(buffer), null, null);
     var h = w.header;
     var channels = [];
     var spp = h.secondsPerPoint;
@@ -1933,7 +1933,7 @@ function parse2000(buffer) {
             raw: raw,
             channelNumber: ci + 1,
             points: n,
-            coupling: enumName(Wfm2000.Wfm2000.CouplingEnum, chh.coupling).toUpperCase(),
+            coupling: enumName(Rigol2000Wfm.Rigol2000Wfm.CouplingEnum, chh.coupling).toUpperCase(),
             voltPerDiv: chh.voltPerDivision,
             voltOffset: chh.voltOffset,
             probeValue: chh.probeValue || 1,
@@ -1956,7 +1956,7 @@ function parse2000(buffer) {
 }
 
 function parse4000(buffer) {
-    var w = new Wfm4000.Wfm4000(new KaitaiStream(buffer), null, null);
+    var w = new Rigol4000Wfm.Rigol4000Wfm(new KaitaiStream(buffer), null, null);
     var h = w.header;
     var channels = [];
     var spp = h.secondsPerPoint;
@@ -1986,7 +1986,7 @@ function parse4000(buffer) {
             raw: raw,
             channelNumber: ci + 1,
             points: n,
-            coupling: enumName(Wfm4000.Wfm4000.CouplingEnum, h.ch[ci].coupling).toUpperCase(),
+            coupling: enumName(Rigol4000Wfm.Rigol4000Wfm.CouplingEnum, h.ch[ci].coupling).toUpperCase(),
             voltPerDiv: h.ch[ci].voltPerDivision,
             voltOffset: h.ch[ci].voltOffset,
             probeValue: h.ch[ci].probeValue || 1,
@@ -2009,7 +2009,7 @@ function parse4000(buffer) {
 }
 
 function parse6000(buffer) {
-    var w = new Wfm6000.Wfm6000(new KaitaiStream(buffer), null, null);
+    var w = new Rigol6000Wfm.Rigol6000Wfm(new KaitaiStream(buffer), null, null);
     var h = w.header;
     var channels = [];
     var spp = h.secondsPerPoint;
@@ -2039,7 +2039,7 @@ function parse6000(buffer) {
             raw: raw,
             channelNumber: ci + 1,
             points: n,
-            coupling: enumName(Wfm6000.Wfm6000.CouplingEnum, h.ch[ci].coupling).toUpperCase(),
+            coupling: enumName(Rigol6000Wfm.Rigol6000Wfm.CouplingEnum, h.ch[ci].coupling).toUpperCase(),
             voltPerDiv: h.ch[ci].voltPerDivision,
             voltOffset: h.ch[ci].voltOffset,
             probeValue: h.ch[ci].probeValue || 1,
@@ -2123,11 +2123,21 @@ function parseBinWaveforms(w, format, userModel, parserModel) {
 }
 
 function parseBin5000(buffer) {
-    return parseBinWaveforms(new Bin5000.Bin5000(new KaitaiStream(buffer), null, null), 'MSO5000', '5', 'bin5000');
+    return parseBinWaveforms(
+        new RigolMso5000Bin.RigolMso5000Bin(new KaitaiStream(buffer), null, null),
+        'MSO5000',
+        '5',
+        'bin5000'
+    );
 }
 
 function parseBin70008000(buffer) {
-    return parseBinWaveforms(new Bin70008000.Bin70008000(new KaitaiStream(buffer), null, null), 'MSO7000/8000', '7', 'bin7000_8000');
+    return parseBinWaveforms(
+        new Rigol70008000Bin.Rigol70008000Bin(new KaitaiStream(buffer), null, null),
+        'MSO7000/8000',
+        '7',
+        'bin7000_8000'
+    );
 }
 
 function buildSiglentFixedHeaderResult(options) {
@@ -2259,7 +2269,7 @@ function parseSiglentBin(buffer, revision) {
     }
 
     if (revision === 'v0_1') {
-        var v01 = new SiglentV01.SiglentV01(new KaitaiStream(buffer), null, null);
+        var v01 = new SiglentV01Bin.SiglentV01Bin(new KaitaiStream(buffer), null, null);
         return buildSiglentFixedHeaderResult({
             revision: 'V0.1',
             model: 'Siglent V0.1',
@@ -2286,7 +2296,7 @@ function parseSiglentBin(buffer, revision) {
     }
 
     if (revision === 'v0_2') {
-        var v02 = new SiglentV02.SiglentV02(new KaitaiStream(buffer), null, null);
+        var v02 = new SiglentV02Bin.SiglentV02Bin(new KaitaiStream(buffer), null, null);
         return buildSiglentFixedHeaderResult({
             revision: 'V0.2',
             model: 'Siglent V0.2',
@@ -2313,7 +2323,7 @@ function parseSiglentBin(buffer, revision) {
     }
 
     if (revision === 'v1') {
-        var v1 = new SiglentV1.SiglentV1(new KaitaiStream(buffer), null, null);
+        var v1 = new SiglentV1Bin.SiglentV1Bin(new KaitaiStream(buffer), null, null);
         return buildSiglentFixedHeaderResult({
             revision: 'V1.0',
             model: 'Siglent V1.0',
@@ -2330,7 +2340,7 @@ function parseSiglentBin(buffer, revision) {
     }
 
     if (revision === 'v2') {
-        var v2 = new SiglentV2.SiglentV2(new KaitaiStream(buffer), null, null);
+        var v2 = new SiglentV2Bin.SiglentV2Bin(new KaitaiStream(buffer), null, null);
         return buildSiglentFixedHeaderResult({
             revision: 'V2.0',
             model: 'Siglent V2.0',
@@ -2348,7 +2358,7 @@ function parseSiglentBin(buffer, revision) {
     }
 
     if (revision === 'v3') {
-        var v3 = new SiglentV3.SiglentV3(new KaitaiStream(buffer), null, null);
+        var v3 = new SiglentV3Bin.SiglentV3Bin(new KaitaiStream(buffer), null, null);
         return buildSiglentFixedHeaderResult({
             revision: 'V3.0',
             model: 'Siglent V3.0',
@@ -2367,7 +2377,7 @@ function parseSiglentBin(buffer, revision) {
     }
 
     if (revision === 'v4') {
-        var v4 = new SiglentV4.SiglentV4(new KaitaiStream(buffer), null, null);
+        var v4 = new SiglentV4Bin.SiglentV4Bin(new KaitaiStream(buffer), null, null);
         return buildSiglentFixedHeaderResult({
             revision: 'V4.0',
             model: 'Siglent V4.0',
@@ -2386,7 +2396,7 @@ function parseSiglentBin(buffer, revision) {
     }
 
     if (revision === 'v5') {
-        var v5 = new SiglentV5.SiglentV5(new KaitaiStream(buffer), null, null);
+        var v5 = new SiglentV5Bin.SiglentV5Bin(new KaitaiStream(buffer), null, null);
         return buildSiglentFixedHeaderResult({
             revision: 'V5.0',
             model: 'Siglent V5.0',
@@ -2413,7 +2423,7 @@ function parseSiglentBin(buffer, revision) {
     }
 
     if (revision === 'v6') {
-        var v6 = new SiglentV6.SiglentV6(new KaitaiStream(buffer), null, null);
+        var v6 = new SiglentV6Bin.SiglentV6Bin(new KaitaiStream(buffer), null, null);
         var channels = [];
         var seen = {};
 
@@ -2855,7 +2865,7 @@ async function parseRohdeSchwarzBin(buffer, filename, fileMap) {
     }
 
     var payloadBuffer = await readBrowserFileAsArrayBuffer(payloadFile);
-    var raw = new RohdeSchwarzRtpWfm.RohdeSchwarzRtpWfm(new KaitaiStream(payloadBuffer), null, null);
+    var raw = new RohdeSchwarzRtpWfmBin.RohdeSchwarzRtpWfmBin(new KaitaiStream(payloadBuffer), null, null);
     var expectedFormat = rohdeSchwarzExpectedFormatCode(signalFormat);
     if (raw.formatCode !== expectedFormat) {
         throw new Error(
@@ -2958,7 +2968,7 @@ function agilentAnalogBufferSuffix(bufferType, analogBufferCount) {
 }
 
 function parseAgilentBin(buffer) {
-    var w = new AgilentBin.AgilentBin(new KaitaiStream(buffer), null, null);
+    var w = new AgilentAgxxBin.AgilentAgxxBin(new KaitaiStream(buffer), null, null);
     var channels = [];
     var fileModel = 'Keysight';
     var serialNumber = '';
@@ -3156,7 +3166,7 @@ async function parseDhoWfm(buffer) {
 }
 
 function parseDhoBin(buffer) {
-    var w = new Bindho1000.Bindho1000(new KaitaiStream(buffer), null, null);
+    var w = new RigolDho8001000Bin.RigolDho8001000Bin(new KaitaiStream(buffer), null, null);
     var channels = [];
     var fileModel = 'DHO1000';
     for (var wi = 0; wi < w.waveforms.length; wi++) {

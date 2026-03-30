@@ -6,10 +6,10 @@ meta:
 
 doc: |
   Waveform format for DS1000C/CD/MD/M series scopes.  Related to but distinct
-  from DS1000D: the magic byte at offset 0 is 0xA1 (versus 0xA5 for DS1000D),
-  data starts at offset 256 (versus 276 for DS1000D), there is an optional
+  from DS1000D/E: the magic byte at offset 0 is 0xA1 (versus 0xA5 for DS1000D),
+  data starts at offset 256 (versus 276 for DS1000D/E), there is an optional
   16-byte padding block before the sample data when byte 0 is 0xA5, and
-  volt_per_division includes the probe_value factor (DS1000D firmware stores
+  volt_per_division includes the probe_value factor (DS1000D/E firmware stores
   scale_measured already probe-corrected).
 
 instances:

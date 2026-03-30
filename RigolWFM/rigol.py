@@ -18,13 +18,13 @@ import RigolWFM.dho
 import RigolWFM.mso5000
 import RigolWFM.mso5074
 import RigolWFM.mso7000_8000
-import RigolWFM.wfm1000b
-import RigolWFM.wfm1000c
-import RigolWFM.wfm1000e
-import RigolWFM.wfm1000z
-import RigolWFM.wfm2000
-import RigolWFM.wfm4000
-import RigolWFM.wfm6000
+import RigolWFM.rigol_1000b_wfm
+import RigolWFM.rigol_1000c_wfm
+import RigolWFM.rigol_1000e_wfm
+import RigolWFM.rigol_1000z_wfm
+import RigolWFM.rigol_2000_wfm
+import RigolWFM.rigol_4000_wfm
+import RigolWFM.rigol_6000_wfm
 
 # ---------------------------------------------------------------------------
 # Scope-family model-string lists
@@ -342,7 +342,7 @@ def parse_file(
     trigger_info: dict = {}
 
     if umodel in DS1000B_scopes:
-        w = RigolWFM.wfm1000b.Wfm1000b.from_file(file_name)  # type: ignore[attr-defined]
+        w = RigolWFM.rigol_1000b_wfm.Rigol1000bWfm.from_file(file_name)  # type: ignore[attr-defined]
         header_name = "DS1000B"
         trigger_info = {
             "mode": w.header.trigger_mode.name,
@@ -350,7 +350,7 @@ def parse_file(
         }
 
     elif umodel in DS1000C_scopes:
-        w = RigolWFM.wfm1000c.Wfm1000c.from_file(file_name)  # type: ignore[attr-defined]
+        w = RigolWFM.rigol_1000c_wfm.Rigol1000cWfm.from_file(file_name)  # type: ignore[attr-defined]
         header_name = "DS1000C"
         trigger_info = {
             "mode": w.header.trigger_mode.name,
@@ -358,7 +358,7 @@ def parse_file(
         }
 
     elif umodel in DS1000D_scopes:
-        w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)  # type: ignore[attr-defined]
+        w = RigolWFM.rigol_1000e_wfm.Rigol1000eWfm.from_file(file_name)  # type: ignore[attr-defined]
         w.parser_name = "wfm1000e"
         header_name = "DS1000D"
         _mode = w.header.trigger_mode.name
@@ -373,7 +373,7 @@ def parse_file(
             trigger_info["mode"] = _mode
 
     elif umodel in DS1000E_scopes:
-        w = RigolWFM.wfm1000e.Wfm1000e.from_file(file_name)  # type: ignore[attr-defined]
+        w = RigolWFM.rigol_1000e_wfm.Rigol1000eWfm.from_file(file_name)  # type: ignore[attr-defined]
         header_name = "DS1000E"
         _mode = w.header.trigger_mode.name
         if _mode == "alt":
@@ -387,17 +387,17 @@ def parse_file(
             trigger_info["mode"] = _mode
 
     elif umodel in DS1000Z_scopes:
-        w = RigolWFM.wfm1000z.Wfm1000z.from_file(file_name)  # type: ignore[attr-defined]
+        w = RigolWFM.rigol_1000z_wfm.Rigol1000zWfm.from_file(file_name)  # type: ignore[attr-defined]
         header_name = w.preheader.model_number
 
     elif umodel in DS2000_scopes:
-        w = RigolWFM.wfm2000.Wfm2000.from_file(file_name)  # type: ignore[attr-defined]
+        w = RigolWFM.rigol_2000_wfm.Rigol2000Wfm.from_file(file_name)  # type: ignore[attr-defined]
         header_name = "DS2000"
         serial_number = getattr(w.header, "serial_number", w.header.model_number)
         trigger_info = _decode_ds2000_trigger(w)
 
     elif umodel in DS4000_scopes:
-        w = RigolWFM.wfm4000.Wfm4000.from_file(file_name)  # type: ignore[attr-defined]
+        w = RigolWFM.rigol_4000_wfm.Rigol4000Wfm.from_file(file_name)  # type: ignore[attr-defined]
         header_name = "DS4000"
         serial_number = getattr(w.header, "serial_number", w.header.model_number)
         trigger_info = _decode_ds4000_trigger(w)
@@ -419,7 +419,7 @@ def parse_file(
         header_name = w.header.model_number or "MSO8000"
 
     elif umodel in DS6000_scopes:
-        w = RigolWFM.wfm6000.Wfm6000.from_file(file_name)  # type: ignore[attr-defined]
+        w = RigolWFM.rigol_6000_wfm.Rigol6000Wfm.from_file(file_name)  # type: ignore[attr-defined]
         header_name = w.header.model_number
 
     elif umodel in DHO1000_scopes:

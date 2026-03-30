@@ -1,7 +1,7 @@
 """
 Adapter layer for Rigol MSO5000 binary waveform exports.
 
-`RigolWFM.bin5000` is the generated low-level Kaitai parser for the exported
+`RigolWFM.rigol_mso5000_bin` is the generated low-level Kaitai parser for the exported
 `.bin` container, but the rest of RigolWFM expects a normalized object with
 fixed channel slots, common timing fields, and calibrated sample arrays.
 
@@ -19,7 +19,7 @@ from typing import Any, Optional
 import numpy as np
 import numpy.typing as npt
 
-import RigolWFM.bin5000
+import RigolWFM.rigol_mso5000_bin
 
 
 class UnitEnum(IntEnum):
@@ -212,14 +212,14 @@ def _model_from_frame(frame_string: str) -> str:
 
 def from_file(file_name: str) -> Mso5000Waveform:
     """Parse a Rigol MSO5000 `.bin` file and normalize it for `Wfm.from_file()`."""
-    Bin5000: Any = RigolWFM.bin5000.Bin5000  # type: ignore[attr-defined]
-    raw = Bin5000.from_file(file_name)
+    RigolMso5000Bin: Any = RigolWFM.rigol_mso5000_bin.RigolMso5000Bin  # type: ignore[attr-defined]
+    raw = RigolMso5000Bin.from_file(file_name)
     supported_buffer_types = {
-        Bin5000.BufferTypeEnum.normal_float32,
-        Bin5000.BufferTypeEnum.maximum_float32,
-        Bin5000.BufferTypeEnum.minimum_float32,
-        Bin5000.BufferTypeEnum.time_float32,
-        Bin5000.BufferTypeEnum.counts_float32,
+        RigolMso5000Bin.BufferTypeEnum.normal_float32,
+        RigolMso5000Bin.BufferTypeEnum.maximum_float32,
+        RigolMso5000Bin.BufferTypeEnum.minimum_float32,
+        RigolMso5000Bin.BufferTypeEnum.time_float32,
+        RigolMso5000Bin.BufferTypeEnum.counts_float32,
     }
 
     obj = Mso5000Waveform()
@@ -238,9 +238,9 @@ def from_file(file_name: str) -> Mso5000Waveform:
         buffer_type = data_header.buffer_type
 
         if (
-            waveform_type == Bin5000.WaveformTypeEnum.logic
+            waveform_type == RigolMso5000Bin.WaveformTypeEnum.logic
             or label.upper().startswith("LA")
-            or buffer_type == Bin5000.BufferTypeEnum.digital_u8
+            or buffer_type == RigolMso5000Bin.BufferTypeEnum.digital_u8
         ):
             raise ValueError(
                 "Unsupported MSO5000 logic waveform record. "

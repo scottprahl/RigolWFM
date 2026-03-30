@@ -36,26 +36,26 @@ import numpy as np
 import numpy.typing as npt
 
 import RigolWFM.channel
-import RigolWFM.siglent_old_platform
-import RigolWFM.siglent_v0_1
-import RigolWFM.siglent_v0_2
-import RigolWFM.siglent_v1
-import RigolWFM.siglent_v2
-import RigolWFM.siglent_v3
-import RigolWFM.siglent_v4
-import RigolWFM.siglent_v5
-import RigolWFM.siglent_v6
+import RigolWFM.siglent_old_bin
+import RigolWFM.siglent_v0_1_bin
+import RigolWFM.siglent_v0_2_bin
+import RigolWFM.siglent_v1_bin
+import RigolWFM.siglent_v2_bin
+import RigolWFM.siglent_v3_bin
+import RigolWFM.siglent_v4_bin
+import RigolWFM.siglent_v5_bin
+import RigolWFM.siglent_v6_bin
 from RigolWFM.mso5000 import _estimate_volts_per_division
 
-_SiglentOldPlatform: Any = RigolWFM.siglent_old_platform.SiglentOldPlatform  # type: ignore[attr-defined]
-_SiglentV01: Any = RigolWFM.siglent_v0_1.SiglentV01  # type: ignore[attr-defined]
-_SiglentV02: Any = RigolWFM.siglent_v0_2.SiglentV02  # type: ignore[attr-defined]
-_SiglentV1: Any = RigolWFM.siglent_v1.SiglentV1  # type: ignore[attr-defined]
-_SiglentV2: Any = RigolWFM.siglent_v2.SiglentV2  # type: ignore[attr-defined]
-_SiglentV3: Any = RigolWFM.siglent_v3.SiglentV3  # type: ignore[attr-defined]
-_SiglentV4: Any = RigolWFM.siglent_v4.SiglentV4  # type: ignore[attr-defined]
-_SiglentV5: Any = RigolWFM.siglent_v5.SiglentV5  # type: ignore[attr-defined]
-_SiglentV6: Any = RigolWFM.siglent_v6.SiglentV6  # type: ignore[attr-defined]
+_SiglentOldPlatform: Any = RigolWFM.siglent_old_bin.SiglentOldBin  # type: ignore[attr-defined]
+_SiglentV01: Any = RigolWFM.siglent_v0_1_bin.SiglentV01Bin  # type: ignore[attr-defined]
+_SiglentV02: Any = RigolWFM.siglent_v0_2_bin.SiglentV02Bin  # type: ignore[attr-defined]
+_SiglentV1: Any = RigolWFM.siglent_v1_bin.SiglentV1Bin  # type: ignore[attr-defined]
+_SiglentV2: Any = RigolWFM.siglent_v2_bin.SiglentV2Bin  # type: ignore[attr-defined]
+_SiglentV3: Any = RigolWFM.siglent_v3_bin.SiglentV3Bin  # type: ignore[attr-defined]
+_SiglentV4: Any = RigolWFM.siglent_v4_bin.SiglentV4Bin  # type: ignore[attr-defined]
+_SiglentV5: Any = RigolWFM.siglent_v5_bin.SiglentV5Bin  # type: ignore[attr-defined]
+_SiglentV6: Any = RigolWFM.siglent_v6_bin.SiglentV6Bin  # type: ignore[attr-defined]
 
 
 class ChannelHeader:
@@ -834,7 +834,7 @@ def from_file(file_name: str, model_hint: str = "SIGLENT") -> SiglentWaveform:
     if revision == "old":
         raise ValueError(
             "Siglent old-platform files are exposed via the low-level "
-            "RigolWFM.siglent_old_platform parser, but `Wfm.from_file()` does "
+            "RigolWFM.siglent_old_bin parser, but `Wfm.from_file()` does "
             "not normalize them because the vendor documentation leaves their "
             "family-specific voltage/time scaling ambiguous."
         )

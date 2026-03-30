@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 import RigolWFM.wfm
-import RigolWFM.wfm2000
+import RigolWFM.rigol_2000_wfm
 
 from tests.cli_helpers import assert_wfmconvert_info_snapshot
 
@@ -146,7 +146,7 @@ def test_ds2000_serial_number_is_exposed(stem):
 @pytest.mark.parametrize("stem", _2_TXT_CASES)
 def test_ds2000_parser_matches_scope_metadata(stem):
     """Low-level DS2000 metadata should match the sidecar scope export."""
-    waveform = RigolWFM.wfm2000.Wfm2000.from_file(f"tests/files/wfm/{stem}.wfm")
+    waveform = RigolWFM.rigol_2000_wfm.Rigol2000Wfm.from_file(f"tests/files/wfm/{stem}.wfm")
     metadata = _read_scope_metadata(stem)
 
     impedance_map = {"50": "ohm_50", "1M": "ohm_1meg"}
@@ -165,7 +165,7 @@ def test_ds2000_parser_matches_scope_metadata(stem):
 @pytest.mark.parametrize("stem", _2_TXT_CASES)
 def test_ds2000_setup_trigger_matches_scope_export(stem):
     """DS2072A setup fields should match the sidecar trigger settings."""
-    waveform = RigolWFM.wfm2000.Wfm2000.from_file(f"tests/files/wfm/{stem}.wfm")
+    waveform = RigolWFM.rigol_2000_wfm.Rigol2000Wfm.from_file(f"tests/files/wfm/{stem}.wfm")
     expected = _read_scope_trigger_metadata(stem)
     setup = waveform.header.setup
     levels = setup.trigger_levels
@@ -201,7 +201,7 @@ def test_ds2000_legacy_captures_do_not_report_setup_trigger(stem):
 def test_ds2000_windowed_data_uses_effective_length_and_offset(tmp_path):
     """Windowed non-interwoven DS2000 data should honor `z_pt_offset` and `wfm_len`."""
     source = Path("tests/files/wfm/DS2000-A.wfm")
-    original = RigolWFM.wfm2000.Wfm2000.from_file(str(source))
+    original = RigolWFM.rigol_2000_wfm.Rigol2000Wfm.from_file(str(source))
     data = bytearray(source.read_bytes())
     z_pt_offset = 100
     wfm_len = 700
@@ -212,7 +212,7 @@ def test_ds2000_windowed_data_uses_effective_length_and_offset(tmp_path):
     path = tmp_path / "windowed-ds2000.wfm"
     path.write_bytes(data)
 
-    patched = RigolWFM.wfm2000.Wfm2000.from_file(str(path))
+    patched = RigolWFM.rigol_2000_wfm.Rigol2000Wfm.from_file(str(path))
     assert patched.header.points == wfm_len
     assert len(patched.header.raw_1) == wfm_len
     assert len(patched.header.raw_2) == wfm_len
@@ -235,7 +235,7 @@ def test_ds2000_windowed_data_uses_effective_length_and_offset(tmp_path):
 def test_ds2000_interwoven_data_uses_effective_half_windows(tmp_path):
     """Interwoven DS2000 data should read half windows and interleave them."""
     source = Path("tests/files/wfm/DS2072A-6.wfm")
-    original = RigolWFM.wfm2000.Wfm2000.from_file(str(source))
+    original = RigolWFM.rigol_2000_wfm.Rigol2000Wfm.from_file(str(source))
     data = bytearray(source.read_bytes())
     z_pt_offset = 50
     wfm_len = 1400
@@ -247,7 +247,7 @@ def test_ds2000_interwoven_data_uses_effective_half_windows(tmp_path):
     path = tmp_path / "windowed-ds2072a-6.wfm"
     path.write_bytes(data)
 
-    patched = RigolWFM.wfm2000.Wfm2000.from_file(str(path))
+    patched = RigolWFM.rigol_2000_wfm.Rigol2000Wfm.from_file(str(path))
     assert patched.header.points == wfm_len
     assert len(patched.header.raw_1) == wfm_len // 2
     assert len(patched.header.raw_2) == wfm_len // 2

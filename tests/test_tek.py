@@ -10,7 +10,7 @@ import pytest
 from kaitaistruct import KaitaiStream  # type: ignore[import]
 
 import RigolWFM.tek
-import RigolWFM.tek_wfm_002_le
+import RigolWFM.tektronix_wfm_002_le_wfm
 import RigolWFM.wfm
 
 
@@ -336,7 +336,7 @@ def test_wfm003_parser_uses_post_point_density_offsets():
         update_real_point_offset=321,
     )
 
-    raw = RigolWFM.tek_wfm_002_le.TekWfm002Le(KaitaiStream(io.BytesIO(data)))
+    raw = RigolWFM.tektronix_wfm_002_le_wfm.TektronixWfm002LeWfm(KaitaiStream(io.BytesIO(data)))
 
     assert raw.is_wfm003 is True
     assert raw.wfm_header.time_base1.real_point_spacing == 11

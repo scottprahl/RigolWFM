@@ -6,7 +6,7 @@ import struct
 import pytest
 
 import RigolWFM.wfm
-import RigolWFM.wfm6000
+import RigolWFM.rigol_6000_wfm
 
 
 def _padded_ascii(text, size):
@@ -154,7 +154,7 @@ def test_ds6000_parser_uses_wfm_offset_and_channel_offsets(tmp_path):
     path = tmp_path / "synthetic-ds6000.wfm"
     path.write_bytes(_build_ds6000_file())
 
-    waveform = RigolWFM.wfm6000.Wfm6000.from_file(str(path))
+    waveform = RigolWFM.rigol_6000_wfm.Rigol6000Wfm.from_file(str(path))
     assert waveform.header.points == 6
     assert waveform.header.structure_size == 360
     assert waveform.header.acquisition_mode.name == "high_resolution"
@@ -193,7 +193,7 @@ def test_ds6000_zero_channel_offset_means_no_saved_trace(tmp_path):
     path = tmp_path / "synthetic-ds6000-missing-ch1.wfm"
     path.write_bytes(_build_ds6000_file(channel_offsets=(0, 528, 0, 0)))
 
-    waveform = RigolWFM.wfm6000.Wfm6000.from_file(str(path))
+    waveform = RigolWFM.rigol_6000_wfm.Rigol6000Wfm.from_file(str(path))
     assert not waveform.header.enabled.channel_1
     assert waveform.header.raw_1 is None
     assert waveform.header.raw_2[0] == 113

@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 import RigolWFM.agilent
-import RigolWFM.agilent_bin
+import RigolWFM.agilent_agxx_bin
 import RigolWFM.wfm
 
 _ROOT = Path(__file__).resolve().parents[1]
@@ -125,7 +125,7 @@ def test_agilent_bin_low_level_header_matches_fixtures(
 ):
     """The low-level Kaitai parser should match the checked-in Agilent fixtures."""
     path = _fixture_path(stem)
-    waveform = RigolWFM.agilent_bin.AgilentBin.from_file(str(path))
+    waveform = RigolWFM.agilent_agxx_bin.AgilentAgxxBin.from_file(str(path))
 
     assert waveform.file_header.cookie == b"AG"
     assert waveform.file_header.version == "10"
@@ -159,7 +159,7 @@ def test_agilent_local_fixtures_round_trip(
 ):
     """Repo-local Agilent fixtures should parse consistently through both APIs."""
     path = _fixture_path(stem)
-    raw = RigolWFM.agilent_bin.AgilentBin.from_file(str(path))
+    raw = RigolWFM.agilent_agxx_bin.AgilentAgxxBin.from_file(str(path))
     obj = RigolWFM.agilent.from_file(str(path))
     waveform = RigolWFM.wfm.Wfm.from_file(str(path))
 
@@ -264,7 +264,7 @@ def test_agilent_low_level_parser_supports_multi_buffer_waveforms(tmp_path):
         )
     )
 
-    waveform = RigolWFM.agilent_bin.AgilentBin.from_file(str(path))
+    waveform = RigolWFM.agilent_agxx_bin.AgilentAgxxBin.from_file(str(path))
 
     assert waveform.file_header.n_waveforms == 1
     assert waveform.waveforms[0].wfm_header.n_buffers == 2
@@ -335,7 +335,7 @@ def test_agilent_low_level_parser_preserves_segment_metadata(tmp_path):
         )
     )
 
-    waveform = RigolWFM.agilent_bin.AgilentBin.from_file(str(path))
+    waveform = RigolWFM.agilent_agxx_bin.AgilentAgxxBin.from_file(str(path))
 
     assert waveform.file_header.n_waveforms == 2
     assert [wave.wfm_header.segment_index for wave in waveform.waveforms] == [1, 2]

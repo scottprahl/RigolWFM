@@ -8,12 +8,12 @@ It normalises the binary data into the header/data shape expected by
 Two template versions are supported:
 
   LECROY_2_3 (346-byte WAVEDESC):
-    ksy/lecroy_2_3_le_trc.ksy → RigolWFM/lecroy_2_3_le.py   (LOFIRST / LE)
-    ksy/lecroy_2_3_be_trc.ksy → RigolWFM/lecroy_2_3_be.py   (HIFIRST / BE)
+    ksy/lecroy_2_3_le_trc.ksy → RigolWFM/lecroy_2_3_le_trc.py   (LOFIRST / LE)
+    ksy/lecroy_2_3_be_trc.ksy → RigolWFM/lecroy_2_3_be_trc.py   (HIFIRST / BE)
 
   LECROY_1_0 (320-byte WAVEDESC, older format):
-    ksy/lecroy_1_0_le_trc.ksy → RigolWFM/lecroy_1_0_le.py  (LOFIRST / LE)
-    ksy/lecroy_1_0_be_trc.ksy → RigolWFM/lecroy_1_0_be.py  (HIFIRST / BE)
+    ksy/lecroy_1_0_le_trc.ksy → RigolWFM/lecroy_1_0_le_trc.py  (LOFIRST / LE)
+    ksy/lecroy_1_0_be_trc.ksy → RigolWFM/lecroy_1_0_be_trc.py  (HIFIRST / BE)
 
 SCPI prefix
 -----------
@@ -47,15 +47,15 @@ import numpy.typing as npt
 from kaitaistruct import KaitaiStream  # type: ignore[import]
 
 import RigolWFM.channel
-import RigolWFM.lecroy_1_0_be
-import RigolWFM.lecroy_1_0_le
-import RigolWFM.lecroy_2_3_be
-import RigolWFM.lecroy_2_3_le
+import RigolWFM.lecroy_1_0_be_trc
+import RigolWFM.lecroy_1_0_le_trc
+import RigolWFM.lecroy_2_3_be_trc
+import RigolWFM.lecroy_2_3_le_trc
 
-_Lecroy23Le: Any = RigolWFM.lecroy_2_3_le.Lecroy23Le  # type: ignore[attr-defined]
-_Lecroy23Be: Any = RigolWFM.lecroy_2_3_be.Lecroy23Be  # type: ignore[attr-defined]
-_Lecroy10Le: Any = RigolWFM.lecroy_1_0_le.Lecroy10Le  # type: ignore[attr-defined]
-_Lecroy10Be: Any = RigolWFM.lecroy_1_0_be.Lecroy10Be  # type: ignore[attr-defined]
+_Lecroy23Le: Any = RigolWFM.lecroy_2_3_le_trc.Lecroy23LeTrc  # type: ignore[attr-defined]
+_Lecroy23Be: Any = RigolWFM.lecroy_2_3_be_trc.Lecroy23BeTrc  # type: ignore[attr-defined]
+_Lecroy10Le: Any = RigolWFM.lecroy_1_0_le_trc.Lecroy10LeTrc  # type: ignore[attr-defined]
+_Lecroy10Be: Any = RigolWFM.lecroy_1_0_be_trc.Lecroy10BeTrc  # type: ignore[attr-defined]
 
 _LECROY_MAGIC = b"WAVEDESC"
 _COUPLING_MAP = {

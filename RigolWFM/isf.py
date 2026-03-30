@@ -43,9 +43,9 @@ import numpy.typing as npt
 from kaitaistruct import KaitaiStream  # type: ignore[import]
 
 import RigolWFM.channel
-import RigolWFM.tek_isf
+import RigolWFM.tektronix_internal_isf
 
-_TekIsf: Any = RigolWFM.tek_isf.TekIsf  # type: ignore[attr-defined]
+_TektronixInternalIsf: Any = RigolWFM.tektronix_internal_isf.TektronixInternalIsf  # type: ignore[attr-defined]
 
 # Maps both long-form and short-form field names to a canonical key
 _FIELD_ALIASES: dict[str, str] = {
@@ -283,7 +283,7 @@ def from_file(file_name: str) -> IsfWaveform:
         raise ValueError(f"Cannot open ISF file '{file_name}': {exc}") from exc
 
     try:
-        parsed = _TekIsf(KaitaiStream(_io.BytesIO(data)))
+        parsed = _TektronixInternalIsf(KaitaiStream(_io.BytesIO(data)))
         header_text: str = parsed.header_text
         curve_bytes: bytes = bytes(parsed.curve_data)
     except Exception as exc:

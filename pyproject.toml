@@ -198,21 +198,14 @@ disable = [
 [tool.pylint.main]
 ignore-patterns = [
     "^\\.#",
-    "^agilent_bin\\.py$",
-    "^bin5000\\.py$",
-    "^bin7000_8000\\.py$",
-    "^bindho1000\\.py$",
-    "^lecroy_[0-9]_[0-9]_(be|le)\\.py$",
+    "^agilent_agxx_bin\\.py$",
+    "^lecroy_[0-9]_[0-9]_(be|le)_trc\\.py$",
+    "^rigol_.*_(bin|wfm)\\.py$",
     "^rohde_schwarz_.*\\.py$",
-    "^siglent_.*\\.py$",
-    "^tek_isf\\.py$",
-    "^tek_wfm_[0-9]{3}_(be|le)\\.py$",
-    "^wfm1000.*\\.py$",
-    "^wfm2000\\.py$",
-    "^wfm4000\\.py$",
-    "^wfm6000\\.py$",
-    "^wfmdho1000\\.py$",
-    "^yokogawa_wvf\\.py$",
+    "^siglent_.*_bin\\.py$",
+    "^tektronix_internal_isf\\.py$",
+    "^tektronix_wfm_[0-9]{3}_(be|le)_wfm\\.py$",
+    "^yokogawa_dl_we_wvf\\.py$",
 ]
 
 [tool.black]
@@ -220,21 +213,14 @@ line-length = 120
 target-version = ["py310", "py311", "py312", "py313", "py314"]
 force-exclude = '''
 /(
-    RigolWFM/agilent_bin\.py
-  | RigolWFM/bin5000\.py
-  | RigolWFM/bin7000_8000\.py
-  | RigolWFM/bindho1000\.py
-  | RigolWFM/lecroy_[0-9]_[0-9]_(be|le)\.py
+    RigolWFM/agilent_agxx_bin\.py
+  | RigolWFM/lecroy_[0-9]_[0-9]_(be|le)_trc\.py
+  | RigolWFM/rigol_.*_(bin|wfm)\.py
   | RigolWFM/rohde_schwarz_.*\.py
-  | RigolWFM/siglent_.*\.py
-  | RigolWFM/tek_isf\.py
-  | RigolWFM/tek_wfm_[0-9]{3}_(be|le)\.py
-  | RigolWFM/wfm1000.*\.py
-  | RigolWFM/wfm2000\.py
-  | RigolWFM/wfm4000\.py
-  | RigolWFM/wfm6000\.py
-  | RigolWFM/wfmdho1000\.py
-  | RigolWFM/yokogawa_wvf\.py
+  | RigolWFM/siglent_.*_bin\.py
+  | RigolWFM/tektronix_internal_isf\.py
+  | RigolWFM/tektronix_wfm_[0-9]{3}_(be|le)_wfm\.py
+  | RigolWFM/yokogawa_dl_we_wvf\.py
 )$
 '''
 
@@ -246,21 +232,15 @@ exclude = [
     "docs",
     "wfm",
     # Kaitai-generated parsers from ksy/
-    "RigolWFM/agilent_bin.py",
-    "RigolWFM/bin5000.py",
-    "RigolWFM/bin7000_8000.py",
-    "RigolWFM/bindho1000.py",
-    "RigolWFM/lecroy_*.py",
+    "RigolWFM/agilent_agxx_bin.py",
+    "RigolWFM/lecroy_*_trc.py",
+    "RigolWFM/rigol_*_bin.py",
+    "RigolWFM/rigol_*_wfm.py",
     "RigolWFM/rohde_schwarz_*.py",
-    "RigolWFM/siglent_*.py",
-    "RigolWFM/tek_isf.py",
-    "RigolWFM/tek_wfm_*.py",
-    "RigolWFM/wfm1000*.py",
-    "RigolWFM/wfm2000.py",
-    "RigolWFM/wfm4000.py",
-    "RigolWFM/wfm6000.py",
-    "RigolWFM/wfmdho1000.py",
-    "RigolWFM/yokogawa_wvf.py",
+    "RigolWFM/siglent_*_bin.py",
+    "RigolWFM/tektronix_internal_isf.py",
+    "RigolWFM/tektronix_wfm_*_wfm.py",
+    "RigolWFM/yokogawa_dl_we_wvf.py",
 ]
 
 [tool.ruff.lint]
@@ -288,12 +268,14 @@ ignore = [
 python_version = "3.10"
 files = ["RigolWFM"]
 exclude = [
-    "RigolWFM/wfm[0-9].*\\.py",
-    "RigolWFM/bin[0-9].*\\.py",
-    "RigolWFM/wfmdho1000\\.py",
-    "RigolWFM/bindho.*\\.py",
+    "RigolWFM/rigol_.*_(wfm|bin)\\.py",
     "RigolWFM/rohde_schwarz_.*\\.py",
-    "RigolWFM/siglent_.*\\.py",
+    "RigolWFM/siglent_.*_bin\\.py",
+    "RigolWFM/tektronix_internal_isf\\.py",
+    "RigolWFM/tektronix_wfm_.*_wfm\\.py",
+    "RigolWFM/lecroy_.*_trc\\.py",
+    "RigolWFM/agilent_agxx_bin\\.py",
+    "RigolWFM/yokogawa_dl_we_wvf\\.py",
 ]
 
 [[tool.mypy.overrides]]

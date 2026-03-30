@@ -3,7 +3,7 @@
 from pathlib import Path
 
 import pytest
-import RigolWFM.bin5000
+import RigolWFM.rigol_mso5000_bin
 import RigolWFM.mso5000
 import RigolWFM.wfm
 
@@ -39,7 +39,7 @@ def test_wfmconvert_5_info_matches_snapshot(stem, _points, _dt, _xorigin):
 @pytest.mark.parametrize("stem, points, dt, xorigin", _5_CASES)
 def test_bin5000_low_level_header_matches_examples(stem, points, dt, xorigin):
     """The low-level MSO5000 parser should match the shipped example headers."""
-    waveform = RigolWFM.bin5000.Bin5000.from_file(str(_example_path(stem)))
+    waveform = RigolWFM.rigol_mso5000_bin.RigolMso5000Bin.from_file(str(_example_path(stem)))
 
     assert waveform.file_header.cookie == b"RG"
     assert waveform.file_header.n_waveforms == 4

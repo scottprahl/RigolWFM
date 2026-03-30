@@ -8,7 +8,7 @@ import pytest
 import RigolWFM.mso7000_8000
 import RigolWFM.wfm
 
-import RigolWFM.bin7000_8000
+import RigolWFM.rigol_7000_8000_bin
 
 
 def _padded_ascii(text, size):
@@ -92,7 +92,7 @@ def test_bin7000_8000_low_level_parser_reads_synthetic_file(tmp_path, _family, m
     path = Path(tmp_path) / f"{model}.bin"
     dt, xorigin = _write_synthetic_bin(path, model)
 
-    waveform = RigolWFM.bin7000_8000.Bin70008000.from_file(str(path))
+    waveform = RigolWFM.rigol_7000_8000_bin.Rigol70008000Bin.from_file(str(path))
 
     assert waveform.file_header.cookie == b"RG"
     assert waveform.file_header.version == "01"
