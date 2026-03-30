@@ -136,6 +136,7 @@ docs = [
     "sphinx-automodapi",
     "sphinx_rtd_theme",
     "ipython",
+    "PyYAML",
 ]
 dev = [
   "pytest",
@@ -161,6 +162,7 @@ dev = [
   "nbformat",
   "imageio",
   "pandas",
+  "PyYAML",
 ]
 lite = [
     "jupyterlite-core>=0.7,<0.8",

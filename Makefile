@@ -16,6 +16,7 @@ YAML_LINT_OPTS  := -d "{extends: default, rules: {document-start: disable, line-
 
 DOCS_DIR        := docs
 HTML_DIR        := $(DOCS_DIR)/_build/html
+TABLES_DIR      := $(DOCS_DIR)/tables
 WEB_DIR         := wfmview
 JS_DIR          := $(WEB_DIR)
 OUT_ROOT        := _site
@@ -39,6 +40,7 @@ PYTEST_OPTS     :=
 KSY_FILES       := $(wildcard ksy/*.ksy)
 PYTHON_PARSERS  := $(patsubst ksy/%.ksy,$(PACKAGE_DIR)/%.py,$(KSY_FILES))
 JS_PARSERS      := $(patsubst ksy/%.ksy,$(JS_DIR)/%.js,$(KSY_FILES))
+TABLE_RSTS      := $(patsubst ksy/%.ksy,$(TABLES_DIR)/%_table.rst,$(KSY_FILES))
 
 
 PYLINT_TARGETS  := $(PACKAGE_DIR)/*.py tests/*.py .github/scripts/update_citation.py
@@ -69,6 +71,7 @@ help:
 	@echo "  pyroma-check    - Run pyroma checks"
 	@echo "  ruff-check      - Run ruff checks"
 	@echo "  rst-check       - Lint rst files"
+	@echo "  tables          - Generate Kaitai schema tables for docs"
 	@echo "  yaml-check      - Lint ksy and workflow YAML files"
 	@echo ""
 	@echo "Test Targets:"
@@ -105,10 +108,19 @@ $(JS_DIR)/%.js: ksy/%.ksy
 	$(KSC) -t javascript --outdir $(JS_DIR) $<
 
 .PHONY: html
-html: $(PYTHON_PARSERS)
+html: tables $(PYTHON_PARSERS)
 	@mkdir -p "$(HTML_DIR)"
 	$(RUN_DOCS) sphinx-build $(SPHINX_OPTS) "$(DOCS_DIR)" "$(HTML_DIR)"
 	@command -v open >/dev/null 2>&1 && open "$(HTML_DIR)/index.html" || true
+
+$(TABLES_DIR):
+	@mkdir -p "$(TABLES_DIR)"
+
+$(TABLES_DIR)/%_table.rst: ksy/%.ksy | $(TABLES_DIR)
+	@$(RUN_DOCS) python scripts/ksy_to_table.py --format rst --output "$@" "$<"
+
+.PHONY: tables
+tables: $(TABLE_RSTS)
 
 .PHONY: dist
 dist:
@@ -153,7 +165,6 @@ black-check:
 
 .PHONY: manifest-check
 manifest-check:
-	@$(RMR) $(PACKAGE_DIR).egg-info
 	@$(RUN) check-manifest --no-build-isolation
 
 .PHONY: pyroma-check
@@ -184,8 +195,6 @@ rcheck: realclean
 	@$(MAKE) manifest-check
 	@$(MAKE) pyroma-check
 	@$(MAKE) html
-	@$(MAKE) lite
-	@$(MAKE) dist
 	@$(MAKE) test
 	@$(MAKE) note-test
 	@echo "Release checks complete"
@@ -281,6 +290,7 @@ clean: lite-clean
 	@find . -name '.pytest_cache' -type d -prune -exec $(RMR) {} +
 	@$(RMR) build docs/_build docs/api docs/.jupyter docs/github.com docs/raw.githubusercontent.com docs/media.githubusercontent.com
 	@$(RMR) .ruff_cache $(PACKAGE_DIR).egg-info
+	@find "$(TABLES_DIR)" -name '*_table.rst' -type f -exec $(RM) {} +
 	@$(RM) tests/files/wfm/*.sr
 
 .PHONY: realclean

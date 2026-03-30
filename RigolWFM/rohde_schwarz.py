@@ -14,13 +14,15 @@ from __future__ import annotations
 import os
 import re
 import xml.etree.ElementTree as ET
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 import numpy.typing as npt
 
 import RigolWFM.rohde_schwarz_rtp_wfm
 from RigolWFM.mso5000 import ChannelHeader, _proxy_raw
+
+_RohdeSchwarzRtpWfm: Any = RigolWFM.rohde_schwarz_rtp_wfm.RohdeSchwarzRtpWfm  # type: ignore[attr-defined]
 
 _SOURCE_PREFIX = "eRS_SIGNAL_SOURCE_"
 _BYTE_ORDER_PREFIX = "eRS_BYTE_ORDER_"
@@ -371,7 +373,7 @@ def from_file(file_name: str) -> RohdeSchwarzWaveform:
     if not os.path.exists(raw_file_name):
         raise ValueError(f"Companion Rohde & Schwarz payload file not found: {raw_file_name}")
 
-    raw = RigolWFM.rohde_schwarz_rtp_wfm.RohdeSchwarzRtpWfm.from_file(raw_file_name)
+    raw = _RohdeSchwarzRtpWfm.from_file(raw_file_name)
     expected_format = _expected_format_code(signal_format)
     actual_format = int(raw.format_code)
     if actual_format != expected_format:

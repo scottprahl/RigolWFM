@@ -3,6 +3,7 @@ __pycache__
 
 .DS_Store
 .cache/
+.pylint.d/
 .gh-pages/
 .jupyterlite.doit.db
 .lite_src/
@@ -15,6 +16,7 @@ docs/_build/
 docs/.ipynb_checkpoints
 docs/.jupyter/
 docs/api
+docs/tables/*_table.rst
 docs/raw.githubusercontent.com/
 docs/old/
 docs/vendors/

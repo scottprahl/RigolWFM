@@ -815,12 +815,14 @@ class Wfm:
                 and selected.  In LTspice, the first channel is addressed as ``chan=0``
                 and the second as ``chan=1``.
             scale: How to map voltages to the ±32767 integer range.
-                ``"auto"``  — each channel's own min/max volts are mapped to ±32767.
-                    Preserves waveform shape; absolute voltage information is lost.
-                    In LTspice, set Vpeak on the WAV source to the actual peak voltage.
-                ``"scope"`` — each channel's ±(4 × V/div) full-scale range is mapped
-                    to ±32767.  Zero volts remains at zero.
-                    In LTspice, set Vpeak = 4 × V/div.
+                ``"auto"`` maps each channel's own min/max volts to ±32767.
+                This preserves waveform shape, but absolute voltage information is
+                lost. In LTspice, set ``Vpeak`` on the WAV source to the actual
+                peak voltage.
+
+                ``"scope"`` maps each channel's ±(4 × V/div) full-scale range to
+                ±32767 while keeping zero volts at zero. In LTspice, set
+                ``Vpeak = 4 × V/div``.
 
         Raises:
             ValueError: If more than two channels are requested, or if any requested

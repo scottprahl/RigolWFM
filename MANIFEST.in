@@ -2,9 +2,13 @@ include CHANGELOG.rst
 include CITATION.cff
 include LICENSE.txt
 include README.rst
+recursive-include scripts *.py
 recursive-include wfmview *.js *.html *.css
 recursive-include tests *.py
 recursive-include tests *.txt
 recursive-include tests *.000
 recursive-include tests *.bin
 recursive-include tests *.trc
+recursive-include tests *.csv
+recursive-include tests *.png
+recursive-include tests *.sr

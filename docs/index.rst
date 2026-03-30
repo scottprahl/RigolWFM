@@ -7,6 +7,7 @@
    :caption: Introduction
 
    0-Basics.ipynb
+   0-Saving-As-WAV.ipynb
 
 .. toctree::
    :caption: B Series
@@ -21,7 +22,7 @@
 .. toctree::
    :caption: D Series
 
-   1-DS1102D-Waveforms.ipynb
+   1-DS1000D-Waveforms.ipynb
 
 .. toctree::
    :caption: E Series
@@ -48,6 +49,11 @@
 
    1-DHO800-Waveforms.ipynb
    1-DHO1000-Waveforms.ipynb
+
+.. toctree::
+   :caption: Schema Tables
+
+   tables/index
 
 .. toctree::
    :caption: API

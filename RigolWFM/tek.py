@@ -30,8 +30,9 @@ Voltage calibration
 Time axis
 ---------
   t[i] = imp_dim1.dim_offset + i * imp_dim1.dim_scale
-  (i = 0 is the first sample in the curve buffer; valid data starts at
-   curve.first_valid_sample)
+
+where ``i = 0`` is the first sample in the curve buffer and valid user data
+starts at ``curve.first_valid_sample``.
 """
 
 from __future__ import annotations
