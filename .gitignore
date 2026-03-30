@@ -15,7 +15,7 @@ docs/_build/
 docs/.ipynb_checkpoints
 docs/.jupyter/
 docs/api
-docs/github.com/
+docs/raw.githubusercontent.com/
 docs/old/
 docs/vendors/
 RigolWFM.egg-info/
