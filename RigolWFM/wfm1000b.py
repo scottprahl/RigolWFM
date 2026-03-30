@@ -12,7 +12,7 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
 class Wfm1000b(KaitaiStruct):
     """This was put together based on an excel header list of unknown provenance.
     It has been tested with a handful of different files.  The offset to the
-    data seems correct and the channel coupling is untested.
+    data seems correct but the channel coupling is untested.
     """
 
     class MachineModeEnum(IntEnum):

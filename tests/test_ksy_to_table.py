@@ -23,10 +23,10 @@ def _run_script(*args: str) -> subprocess.CompletedProcess[str]:
 
 def test_markdown_output_includes_types_and_enums():
     """Markdown output should summarize metadata, root fields, types, and enums."""
-    result = _run_script("--format", "markdown", "ksy/agilent_bin.ksy")
+    result = _run_script("--format", "markdown", "ksy/agilent_AGxx_bin.ksy")
 
     assert result.returncode == 0, result.stderr
-    assert "# Agilent / Keysight binary waveform export" in result.stdout
+    assert "# Agilent / Keysight AGxx Binary Format" in result.stdout
     assert "## Metadata" in result.stdout
     assert "## Top-Level Sequence" in result.stdout
     assert "| file_header | file_header |" in result.stdout
@@ -37,7 +37,7 @@ def test_markdown_output_includes_types_and_enums():
 
 def test_rst_output_includes_parameters_and_size_eos():
     """reStructuredText output should render top-level params and size-eos fields."""
-    result = _run_script("--format", "rst", "ksy/yokogawa_wvf.ksy")
+    result = _run_script("--format", "rst", "ksy/yokogawa_dl_we_wvf.ksy")
 
     assert result.returncode == 0, result.stderr
     assert "Yokogawa" in result.stdout
@@ -50,8 +50,14 @@ def test_rst_output_includes_parameters_and_size_eos():
 def test_script_can_write_output_file(tmp_path: Path):
     """The CLI should support writing rendered output to a file."""
     output_path = tmp_path / "rohde.md"
-    result = _run_script("--format", "markdown", "--output", str(output_path), "ksy/rohde_schwarz_rtp_wfm.ksy")
+    result = _run_script(
+        "--format",
+        "markdown",
+        "--output",
+        str(output_path),
+        "ksy/rohde_schwarz_rtp_wfm_bin.ksy",
+    )
 
     assert result.returncode == 0, result.stderr
     assert output_path.exists()
-    assert "Rohde & Schwarz RTP Waveform Payload" in output_path.read_text(encoding="utf-8")
+    assert "Rohde & Schwarz RTP WFM.BIN Binary Format" in output_path.read_text(encoding="utf-8")

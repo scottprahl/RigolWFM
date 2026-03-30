@@ -7,12 +7,12 @@ Normalises the parsed KSY data into the header/data shape expected by
 Two format versions are supported:
 
   WFM#001 (TDS6000/B/C, TDS/CSA7000/B):
-    ksy/tek_wfm_001_le.ksy → RigolWFM/tek_wfm_001_le.py   (LE)
-    ksy/tek_wfm_001_be.ksy → RigolWFM/tek_wfm_001_be.py   (BE)
+    ksy/tektronix_wfm_001_le_wfm.ksy → RigolWFM/tek_wfm_001_le.py   (LE)
+    ksy/tektronix_wfm_001_be_wfm.ksy → RigolWFM/tek_wfm_001_be.py   (BE)
 
   WFM#002/003 (TDS5000B, DPO7000, DPO70000, DSA70000):
-    ksy/tek_wfm_002_le.ksy → RigolWFM/tek_wfm_002_le.py   (LE)
-    ksy/tek_wfm_002_be.ksy → RigolWFM/tek_wfm_002_be.py   (BE)
+    ksy/tektronix_wfm_002_le_wfm.ksy → RigolWFM/tek_wfm_002_le.py   (LE)
+    ksy/tektronix_wfm_002_be_wfm.ksy → RigolWFM/tek_wfm_002_be.py   (BE)
 
 Endianness detection
 --------------------

@@ -16,7 +16,8 @@ platform-independent parser and the ``.hdr`` + ``.wvf`` writer.
 Output format goal
 ------------------
 The target ``.hdr`` / ``.wvf`` pair follows the WVF File Access Toolkit
-format (IM 707713-61E), which is already parsed by ``yokogawa_wvf.ksy``::
+format (IM 707713-61E), which is already parsed by
+``yokogawa_dl_we_wvf.ksy``::
 
     $PublicInfo
     FormatVersion 1.11

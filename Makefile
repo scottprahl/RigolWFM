@@ -38,8 +38,9 @@ SPHINX_OPTS     := -T -E -b html -d $(DOCS_DIR)/_build/doctrees -D language=en
 PYTEST_OPTS     :=
 
 KSY_FILES       := $(wildcard ksy/*.ksy)
-PYTHON_PARSERS  := $(patsubst ksy/%.ksy,$(PACKAGE_DIR)/%.py,$(KSY_FILES))
-JS_PARSERS      := $(patsubst ksy/%.ksy,$(JS_DIR)/%.js,$(KSY_FILES))
+GENERATED_PY_FILES := $(shell grep -l "This is a generated file!" $(PACKAGE_DIR)/*.py 2>/dev/null || true)
+PYTHON_STAMP    := .generated_python_parsers.stamp
+JS_STAMP        := .generated_javascript_parsers.stamp
 TABLE_RSTS      := $(patsubst ksy/%.ksy,$(TABLES_DIR)/%_table.rst,$(KSY_FILES))
 
 
@@ -47,7 +48,7 @@ PYLINT_TARGETS  := $(PACKAGE_DIR)/*.py tests/*.py .github/scripts/update_citatio
 PYDOC_TARGETS   := $(PACKAGE_DIR)/wfm.py $(PACKAGE_DIR)/channel.py $(PACKAGE_DIR)/wfmconvert.py
 YAML_TARGETS    := .github/workflows/*.yaml .readthedocs.yaml
 RST_TARGETS     := README.rst CHANGELOG.rst $(DOCS_DIR)/index.rst $(DOCS_DIR)/changelog.rst
-BLACK_PY_TARGETS := $(filter-out $(PYTHON_PARSERS),$(wildcard $(PACKAGE_DIR)/*.py)) \
+BLACK_PY_TARGETS := $(filter-out $(GENERATED_PY_FILES),$(wildcard $(PACKAGE_DIR)/*.py)) \
 	$(wildcard tests/*.py) \
 	.github/scripts/update_citation.py \
 	$(DOCS_DIR)/conf.py
@@ -96,19 +97,21 @@ venv:
 	@$(UV) sync --python $(PY_VERSION) --extra dev --extra docs --extra lite
 
 .PHONY: all
-all: $(PYTHON_PARSERS)
+all: $(PYTHON_STAMP)
 
-$(PACKAGE_DIR)/%.py: ksy/%.ksy
-	$(KSC) -t python --outdir $(PACKAGE_DIR) $<
+$(PYTHON_STAMP): $(KSY_FILES)
+	$(KSC) -t python --outdir $(PACKAGE_DIR) $(KSY_FILES)
+	@touch "$@"
 
 .PHONY: js
-js: $(JS_PARSERS)
+js: $(JS_STAMP)
 
-$(JS_DIR)/%.js: ksy/%.ksy
-	$(KSC) -t javascript --outdir $(JS_DIR) $<
+$(JS_STAMP): $(KSY_FILES)
+	$(KSC) -t javascript --outdir $(JS_DIR) $(KSY_FILES)
+	@touch "$@"
 
 .PHONY: html
-html: tables $(PYTHON_PARSERS)
+html: tables $(PYTHON_STAMP)
 	@mkdir -p "$(HTML_DIR)"
 	$(RUN_DOCS) sphinx-build $(SPHINX_OPTS) "$(DOCS_DIR)" "$(HTML_DIR)"
 	@command -v open >/dev/null 2>&1 && open "$(HTML_DIR)/index.html" || true
@@ -120,7 +123,9 @@ $(TABLES_DIR)/%_table.rst: ksy/%.ksy | $(TABLES_DIR)
 	@$(RUN_DOCS) python scripts/ksy_to_table.py --format rst --output "$@" "$<"
 
 .PHONY: tables
-tables: $(TABLE_RSTS)
+tables: | $(TABLES_DIR)
+	@find "$(TABLES_DIR)" -name '*_table.rst' -type f -exec $(RM) {} +
+	@$(MAKE) $(TABLE_RSTS)
 
 .PHONY: dist
 dist:
@@ -176,11 +181,11 @@ mypy-check:
 	@$(RUN) mypy
 
 .PHONY: test
-test: $(PYTHON_PARSERS)
+test: $(PYTHON_STAMP)
 	$(RUN) pytest $(PYTEST_OPTS) tests --ignore=tests/test_all_notebooks.py
 
 .PHONY: note-test
-note-test: $(PYTHON_PARSERS)
+note-test: $(PYTHON_STAMP)
 	$(RUN) pytest --verbose tests/test_all_notebooks.py
 
 .PHONY: rcheck
@@ -290,6 +295,7 @@ clean: lite-clean
 	@find . -name '.pytest_cache' -type d -prune -exec $(RMR) {} +
 	@$(RMR) build docs/_build docs/api docs/.jupyter docs/github.com docs/raw.githubusercontent.com docs/media.githubusercontent.com
 	@$(RMR) .ruff_cache $(PACKAGE_DIR).egg-info
+	@$(RM) $(PYTHON_STAMP) $(JS_STAMP)
 	@find "$(TABLES_DIR)" -name '*_table.rst' -type f -exec $(RM) {} +
 	@$(RM) tests/files/wfm/*.sr
 
@@ -301,4 +307,5 @@ realclean: clean
 	@$(RMR) .venv
 	@$(RMR) docs/github.com
 	@$(RM) uv.lock
-	@$(RM) $(PYTHON_PARSERS)
+	@set -- $$(grep -l "This is a generated file!" $(PACKAGE_DIR)/*.py 2>/dev/null); \
+		if [ "$$#" -gt 0 ]; then $(RM) "$$@"; fi

@@ -8,12 +8,12 @@ It normalises the binary data into the header/data shape expected by
 Two template versions are supported:
 
   LECROY_2_3 (346-byte WAVEDESC):
-    ksy/lecroy_2_3_le.ksy → RigolWFM/lecroy_2_3_le.py   (LOFIRST / LE)
-    ksy/lecroy_2_3_be.ksy → RigolWFM/lecroy_2_3_be.py   (HIFIRST / BE)
+    ksy/lecroy_2_3_le_trc.ksy → RigolWFM/lecroy_2_3_le.py   (LOFIRST / LE)
+    ksy/lecroy_2_3_be_trc.ksy → RigolWFM/lecroy_2_3_be.py   (HIFIRST / BE)
 
   LECROY_1_0 (320-byte WAVEDESC, older format):
-    ksy/lecroy_1_0_le.ksy → RigolWFM/lecroy_1_0_le.py  (LOFIRST / LE)
-    ksy/lecroy_1_0_be.ksy → RigolWFM/lecroy_1_0_be.py  (HIFIRST / BE)
+    ksy/lecroy_1_0_le_trc.ksy → RigolWFM/lecroy_1_0_le.py  (LOFIRST / LE)
+    ksy/lecroy_1_0_be_trc.ksy → RigolWFM/lecroy_1_0_be.py  (HIFIRST / BE)
 
 SCPI prefix
 -----------
