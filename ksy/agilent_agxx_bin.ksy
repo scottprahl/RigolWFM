@@ -23,6 +23,22 @@ doc: |
   separate minimum and maximum float32 buffers for a single waveform header.
   Logic-style records use byte-oriented buffers.
 
+  Sources used for this KSY binary format: checked-in vendor reference code in
+  `docs/vendors/agilent` and `docs/vendors/wavebin-master`, plus the Agilent
+  6000 Series and InfiniiVision 2000 manuals in
+  `docs/vendors/agilent/Agilent Technologies 6000 Series 248586.pdf` and
+  `docs/vendors/agilent/agilent_InfiniiVision_2000.pdf`.
+
+  Tested file formats: repo fixtures `agilent_1.bin` through `agilent_5.bin`
+  and `agilent_msox4154a_01.bin`; all checked-in real samples are `AG10`
+  captures, and the regression builders additionally exercise multi-buffer and
+  per-channel-timing edge cases within the same `AG10` container layout.
+
+  Oscilloscope models this format may apply to: confirmed `DSO-X 1102G` and
+  `MSO-X 4154A` captures, plus other Agilent / Keysight 6000 Series and
+  InfiniiVision 2000/3000/4000/X instruments that export `AG01`, `AG03`, or
+  `AG10` `.bin` files.
+
 seq:
   - id: file_header
     type: file_header

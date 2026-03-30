@@ -10,6 +10,18 @@ doc: |
   16 bytes to 40 bytes. Analog samples still begin at offset 0x800 and are
   packed channel-by-channel for the enabled channels.
 
+  Sources used for this KSY binary format:
+  `docs/vendors/siglent/siglent-binaries.pdf` plus the synthetic regression
+  builder in `tests/test_siglent.py`.
+
+  Tested file formats: the synthetic `Binary Format V2.0` fixture in
+  `tests/test_siglent.py`, exercised through revision detection, low-level
+  Kaitai parsing, and normalized waveform loading.
+
+  Oscilloscope models this format may apply to: Siglent instruments that write
+  `Binary Format V2.0`; the checked-in tests do not yet narrow this revision to
+  a smaller verified model list.
+
 instances:
   version:
     pos: 0x00

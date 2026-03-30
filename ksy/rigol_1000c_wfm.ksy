@@ -12,6 +12,17 @@ doc: |
   volt_per_division includes the probe_value factor (DS1000D/E firmware stores
   scale_measured already probe-corrected).
 
+  Sources used for this KSY binary format: reverse-engineering from the
+  checked-in `DS1042C-A.wfm` and `DS1202CA-A.wfm` captures, comparison against
+  the closely related DS1000D/E layout, and the existing project parser
+  behavior.
+
+  Tested file formats: real repo fixtures `DS1042C-A.wfm` and `DS1202CA-A.wfm`.
+
+  Oscilloscope models this format may apply to: DS1000C / DS1000CD /
+  DS1000MD / DS1000M family captures, including `DS1302CA`, `DS1202CA`,
+  `DS1102CA`, `DS1062CA`, and `DS1042C`.
+
 instances:
   header:
     pos: 0

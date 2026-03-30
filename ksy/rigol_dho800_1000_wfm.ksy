@@ -76,6 +76,20 @@ doc: |
   region and the data section require sequential runtime scanning and cannot
   be expressed as fixed-offset KSY instances.
 
+  Sources used for this KSY binary format: reverse-engineering from the
+  checked-in `DHO1074.wfm`, `DHO824-ch1.wfm`, `DHO824-ch12.wfm`, and
+  `DHO824-ch1234.wfm` captures, cross-checked against matching `.bin` exports
+  from the same scopes.
+
+  Tested file formats: real repo fixtures `DHO1074.wfm`, `DHO824-ch1.wfm`,
+  `DHO824-ch12.wfm`, and `DHO824-ch1234.wfm`, with matching `.bin`
+  comparisons used for time-axis and voltage-correlation regressions.
+
+  Oscilloscope models this format may apply to: `DHO804`, `DHO812`, `DHO814`,
+  `DHO824`, `DHO1072`, `DHO1074`, `DHO1102`, `DHO1202`, and related
+  `DHO800` / `DHO1000` family scopes that write this proprietary `.wfm`
+  container.
+
 seq:
   - id: file_header
     type: file_header

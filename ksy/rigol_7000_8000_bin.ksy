@@ -20,6 +20,19 @@ doc: |
   The manuals document analog, logic, and math records in the same container.
   The handwritten adapter currently normalizes analog float32 buffers only.
 
+  Sources used for this KSY binary format: the Rigol "Binary Data Format
+  (.bin)" tables in `docs/vendors/lecroy/manuals/Rigol MSO7000 Series User Manual.pdf`
+  and `docs/vendors/lecroy/manuals/MSO8000 Series Digital.pdf`, plus the
+  checked-in synthetic regression builder in `tests/test_7_8.py`.
+
+  Tested file formats: synthetic `MSO7034` and `MSO8204` analog float32 `.bin`
+  captures generated in `tests/test_7_8.py`, plus a negative regression that
+  confirms logic-record rejection.
+
+  Oscilloscope models this format may apply to: Rigol `DS7000` / `MSO7000`
+  and `MSO8000` family scopes that emit the documented float32 `.bin` export,
+  including the synthetic reference models `MSO7034` and `MSO8204`.
+
 seq:
   - id: file_header
     type: file_header

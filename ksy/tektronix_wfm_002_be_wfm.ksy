@@ -33,6 +33,19 @@ doc: |
 
   Reference: Tektronix "Reference Waveform File Format" (001-1378-03), version notes.
 
+  Sources used for this KSY binary format:
+  `docs/vendors/tektronix/tek_docs.pdf`, the version-difference notes captured
+  in this schema, and the shared Tektronix adapter logic in this repository.
+
+  Tested file formats: no checked-in big-endian `WFM#002` / `WFM#003` fixture
+  currently exercises this exact schema; the little-endian sibling is covered
+  by synthetic `WFM#002` / `WFM#003` regressions and this variant is the
+  byte-swapped counterpart from the same Tektronix reference manual.
+
+  Oscilloscope models this format may apply to: big-endian Tektronix scopes
+  that write `WFM#002` or `WFM#003`, especially older PPC-based variants of
+  the `TDS5000B`, `DPO7000`, `DPO70000`, and `DSA70000` families.
+
 seq:
   - id: static_file_info
     type: static_file_info

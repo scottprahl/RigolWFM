@@ -26,6 +26,20 @@ doc: |
   Time axis:
     t[i] = horiz_offset + i * horiz_interval   (i = 0 … wave_array_count − 1)
 
+  Sources used for this KSY binary format: `docs/vendors/lecroy/LeCroyWaveformTemplate_1_0.txt`,
+  the checked-in LeCroy adapter logic, and the real `trace*.000` repo
+  fixtures.
+
+  Tested file formats: synthetic little-endian `LECROY_1_0` files with both
+  8-bit and 16-bit sample payloads, plus the checked-in real
+  `trace1.000` through `trace4.000` fixtures used for parse, scaling, time-axis,
+  and autodetect coverage.
+
+  Oscilloscope models this format may apply to: Teledyne LeCroy oscilloscopes
+  that write the `LECROY_1_0` template, including older 7200-series /
+  WaveRunner-era instruments and related scopes that store `.trc` or `.000`
+  waveform files in little-endian form.
+
 seq:
   - id: wavedesc
     type: wavedesc
