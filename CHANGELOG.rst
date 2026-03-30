@@ -5,7 +5,10 @@ Unreleased (2026-03-29)
 ------------------------
 *    add web based viewer of .wfm files
 *    extend ``wfmview`` to support Agilent / Keysight ``AG01``/``AG03``/``AG10`` ``.bin`` files
+*    extend ``wfmview`` to support Rohde & Schwarz RTP XML ``.bin`` files with companion ``.Wfm.bin`` payloads
 *    extend ``wfmview`` to support Siglent ``.bin`` files for documented revisions V0.1, V0.2, V1.0, V2.0, V3.0, V4.0, V5.0, and V6.0
+*    fix ``wfmview`` file-picker filters to advertise supported ``.trc`` and ``.isf`` files
+*    improve browser-side LeCroy detection by scanning for ``WAVEDESC`` beyond short prefixes
 *    fix timing issue for DHO800.wfm files
 *    added autodetect to eliminate need to give file type
 *    add Rigol MSO5000 binary waveform support
@@ -22,9 +25,11 @@ Unreleased (2026-03-29)
 *    add Rigol DHO800 and DHO1000 support for both official ``.bin`` exports and proprietary ``.wfm`` captures
 *    add Kaitai Struct descriptions for DHO binary and proprietary formats
 *    add Kaitai Struct descriptions and normalized adapters for Agilent / Keysight ``AGxx`` ``.bin`` files
+*    add Kaitai Struct descriptions and normalized adapters for Rohde & Schwarz RTP XML ``.bin`` metadata plus companion ``.Wfm.bin`` payloads
 *    add Kaitai Struct descriptions for Siglent documented ``.bin`` revisions plus browser-side generated parsers for ``wfmview``
 *    add ``RigolWFM.dho`` adapter logic so DHO ``.bin`` and ``.wfm`` files match ``Wfm`` and ``Channel`` interfaces
 *    add ``RigolWFM.agilent`` adapter logic so Agilent / Keysight ``.bin`` files match ``Wfm`` and ``Channel`` interfaces
+*    add ``RigolWFM.rohde_schwarz`` adapter logic so supported Rohde & Schwarz RTP exports match ``Wfm`` and ``Channel`` interfaces
 *    add ``RigolWFM.siglent`` adapter logic so supported Siglent ``.bin`` revisions match ``Wfm`` and ``Channel`` interfaces
 *    extend DHO ``.wfm`` decoding for DHO800 differences and DHO1000 multichannel captures
 *    fail fast on unsupported DHO ``.bin`` buffer types instead of silently misinterpreting non-analog payloads
@@ -37,6 +42,10 @@ Unreleased (2026-03-29)
 *    align Agilent / Keysight parsing with vendor docs and reference readers: use ``x_origin``, expose multi-buffer waveforms in the low-level parser, preserve segment metadata, and reject unsupported segmented or Peak Detect normalization paths
 *    add test coverage in ``tests/test_dho1000.py`` and ``tests/test_dho800.py``
 *    add regression coverage for Agilent / Keysight, Siglent, Yokogawa, Tektronix ``WFM#003``/``LLWFM``, Tektronix ``.isf`` label handling, and LeCroy SCPI-prefixed ``.trc`` files
+*    add smoke tests for ``wfmview`` assets plus CLI coverage for newer waveform families using checked-in and synthetic fixtures
+*    run real tests and lint in GitHub Actions instead of only checking ``wfmconvert --version``
+*    scope default ``pytest`` discovery to the repository test suite and ignore vendored test trees under ``docs/vendors``
+*    expand ``wfmconvert --model`` to accept newer families and their aliases explicitly
 *    add notebooks ``1-DHO1000-Waveforms.ipynb`` and ``1-DHO800-Waveforms.ipynb`` and include the new waveform docs in the notebook test suite
 *    ignore generated parser modules in Ruff and Pylint to keep lint results focused on handwritten code
 *    update README, docs index, Makefile targets, and manifest entries for the new DHO parser and documentation workflow
@@ -50,6 +59,7 @@ Unreleased (2026-03-29)
 *    improve docs configuration and project automation/help targets
 *    fix badges and default branch references
 *    improve testing structure
+*    broaden README and package metadata to describe the current multi-vendor scope of the project
 *    fix the hardcoded absolute path in ``1-DS1000E-Waveforms.ipynb``
 *    rewrite ``test_wfmconvert.py`` to copy fixtures into pytest ``tmp_path`` so conversion output never pollutes
 *    remove ``CONVERT_CASES``, ``CLEANTEST_FILES``, ``cleantest``, ``csv``, ``wav``, ``vcsv``, and ``sigrok`` Makefile targets

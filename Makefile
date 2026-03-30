@@ -45,6 +45,11 @@ PYLINT_TARGETS  := $(PACKAGE_DIR)/*.py tests/*.py .github/scripts/update_citatio
 PYDOC_TARGETS   := $(PACKAGE_DIR)/wfm.py $(PACKAGE_DIR)/channel.py $(PACKAGE_DIR)/wfmconvert.py
 YAML_TARGETS    := .github/workflows/*.yaml .readthedocs.yaml
 RST_TARGETS     := README.rst CHANGELOG.rst $(DOCS_DIR)/index.rst $(DOCS_DIR)/changelog.rst
+BLACK_PY_TARGETS := $(filter-out $(PYTHON_PARSERS),$(wildcard $(PACKAGE_DIR)/*.py)) \
+	$(wildcard tests/*.py) \
+	.github/scripts/update_citation.py \
+	$(DOCS_DIR)/conf.py
+BLACK_NOTEBOOKS := $(wildcard $(DOCS_DIR)/*.ipynb)
 
 
 .PHONY: help
@@ -59,6 +64,7 @@ help:
 	@echo "Quality Targets:"
 	@echo "  rcheck         - Run full release checks"
 	@echo "  manifest-check  - Run MANIFEST.in checks"
+	@echo "  black-check     - Run black formatting checks"
 	@echo "  pylint-check    - Run pylint checks"
 	@echo "  pyroma-check    - Run pyroma checks"
 	@echo "  ruff-check      - Run ruff checks"
@@ -139,6 +145,11 @@ pylint-check:
 .PHONY: ruff-check
 ruff-check:
 	@$(RUN) ruff check .
+
+.PHONY: black-check
+black-check:
+	@$(RUN) black --check --diff $(BLACK_PY_TARGETS)
+	@$(RUN) black --check --diff --ipynb $(BLACK_NOTEBOOKS)
 
 .PHONY: manifest-check
 manifest-check:

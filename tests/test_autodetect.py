@@ -1,8 +1,11 @@
 """Tests for `detect_model()` automatic scope-family detection."""
 
+from pathlib import Path
+
 import pytest
 
 from RigolWFM import wfm
+from tests.test_siglent import _build_siglent_v6
 
 
 # (filename, expected_model)
@@ -37,6 +40,8 @@ _CASES = [
     ("tests/files/wfm/DHO824-ch1.wfm", "DHO"),
     # Agilent / Keysight `.bin` — AG01 / AG03 / AG10
     ("tests/files/bin/agilent_1.bin", "Keysight"),
+    # Rohde & Schwarz RTP `.bin` metadata with companion `.Wfm.bin` payload
+    ("docs/vendors/rohde & schwarz/rs_file_reader-main/tests/testdata/singleChan.bin", "RohdeSchwarz"),
 ]
 
 @pytest.mark.parametrize("path, expected", _CASES)
@@ -59,6 +64,7 @@ def test_detect_model_missing_file():
         "tests/files/bin/MSO5000-A.bin",
         "tests/files/bin/DHO824-ch1.bin",
         "tests/files/bin/agilent_1.bin",
+        "docs/vendors/rohde & schwarz/rs_file_reader-main/tests/testdata/singleChan.bin",
     ],
 )
 def test_from_file_auto_matches_detected_model(path):
@@ -106,6 +112,81 @@ def test_from_url_auto_matches_detected_model(monkeypatch):
     assert auto_wave.parser_name == explicit_wave.parser_name
     assert auto_wave.header_name == explicit_wave.header_name
     assert auto_wave.basename == "DS1102E-A.wfm"
+    assert [ch.channel_number for ch in auto_wave.channels] == [
+        ch.channel_number for ch in explicit_wave.channels
+    ]
+
+
+def test_from_url_auto_matches_detected_model_for_siglent(monkeypatch, tmp_path):
+    """`from_url(auto)` should preserve enough context for Siglent `.bin` files."""
+    path = tmp_path / "synthetic_siglent_v6.bin"
+    path.write_bytes(_build_siglent_v6())
+    content = path.read_bytes()
+
+    class DummyResponse:  # pylint: disable=too-few-public-methods
+        """Minimal requests response stand-in for unit tests."""
+
+        def __init__(self, payload):
+            self.content = payload
+
+        def raise_for_status(self):
+            """Pretend the HTTP request succeeded."""
+
+    def fake_get(url, allow_redirects=True, timeout=10):
+        """Return local waveform bytes without performing network I/O."""
+        assert url == "https://example.test/synthetic_siglent_v6.bin"
+        assert allow_redirects is True
+        assert timeout == 10
+        return DummyResponse(content)
+
+    monkeypatch.setattr(wfm.requests, "get", fake_get)
+
+    auto_wave = wfm.Wfm.from_url("https://example.test/synthetic_siglent_v6.bin")
+    explicit_wave = wfm.Wfm.from_file(str(path), "Siglent")
+
+    assert auto_wave.user_name == "auto"
+    assert auto_wave.parser_name == explicit_wave.parser_name
+    assert auto_wave.header_name == explicit_wave.header_name
+    assert auto_wave.basename == "synthetic_siglent_v6.bin"
+    assert [ch.channel_number for ch in auto_wave.channels] == [
+        ch.channel_number for ch in explicit_wave.channels
+    ]
+
+
+def test_from_url_auto_matches_detected_model_for_rohde_schwarz(monkeypatch):
+    """`from_url(auto)` should fetch the companion R&S payload when needed."""
+    root = Path("docs/vendors/rohde & schwarz/rs_file_reader-main/tests/testdata")
+    metadata = (root / "singleChan.bin").read_bytes()
+    payload = (root / "singleChan.Wfm.bin").read_bytes()
+
+    class DummyResponse:  # pylint: disable=too-few-public-methods
+        """Minimal requests response stand-in for unit tests."""
+
+        def __init__(self, body):
+            self.content = body
+
+        def raise_for_status(self):
+            """Pretend the HTTP request succeeded."""
+
+    def fake_get(url, allow_redirects=True, timeout=10):
+        """Return local waveform bytes without performing network I/O."""
+        assert allow_redirects is True
+        assert timeout == 10
+        if url == "https://example.test/singleChan.bin":
+            return DummyResponse(metadata)
+        if url == "https://example.test/singleChan.Wfm.bin":
+            return DummyResponse(payload)
+        raise AssertionError(f"Unexpected URL requested: {url}")
+
+    monkeypatch.setattr(wfm.requests, "get", fake_get)
+
+    auto_wave = wfm.Wfm.from_url("https://example.test/singleChan.bin")
+    explicit_wave = wfm.Wfm.from_file(str(root / "singleChan.bin"), "RohdeSchwarz")
+
+    assert auto_wave.user_name == "auto"
+    assert auto_wave.parser_name == explicit_wave.parser_name
+    assert auto_wave.header_name == explicit_wave.header_name
+    assert auto_wave.basename == "singleChan.bin"
     assert [ch.channel_number for ch in auto_wave.channels] == [
         ch.channel_number for ch in explicit_wave.channels
     ]

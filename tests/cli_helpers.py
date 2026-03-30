@@ -1,34 +1,50 @@
 """Helpers for invoking CLI commands in integration-style tests."""
 
+import shlex
 import subprocess
+import sys
 from pathlib import Path
 
 
-def run_command(command):
-    """Run a shell command and assert that it exits successfully."""
-    result = subprocess.run(
-        command,
+def _resolve_command(command: str) -> str:
+    """Rewrite local console-script invocations to use the current interpreter."""
+    stripped = command.lstrip()
+    if stripped == "wfmconvert" or stripped.startswith("wfmconvert "):
+        suffix = stripped[len("wfmconvert") :]
+        return f"{shlex.quote(sys.executable)} -m RigolWFM.wfmconvert{suffix}"
+    return command
+
+
+def run_command_result(command):
+    """Run a shell command and return the completed process."""
+    return subprocess.run(
+        _resolve_command(command),
         shell=True,
         check=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
     )
+
+
+def run_command(command):
+    """Run a shell command and assert that it exits successfully."""
+    result = run_command_result(command)
     assert result.returncode == 0, result.stderr
 
 
 def run_command_stdout(command):
     """Run a shell command, assert success, and return normalized stdout."""
-    result = subprocess.run(
-        command,
-        shell=True,
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
+    result = run_command_result(command)
     assert result.returncode == 0, result.stderr
     return result.stdout.replace("\r\n", "\n")
+
+
+def run_command_failure(command):
+    """Run a shell command and assert that it exits with a non-zero code."""
+    result = run_command_result(command)
+    assert result.returncode != 0
+    return result
 
 
 def assert_command_matches_file(command, expected_path):

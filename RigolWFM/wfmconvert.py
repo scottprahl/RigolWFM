@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Command line utility to convert Rigol .wfm files.
+Command line utility to convert oscilloscope waveform files.
 
     Examples::
 
@@ -22,10 +22,69 @@ import subprocess
 import textwrap
 from typing import NoReturn
 
-import matplotlib.pyplot as plt
-
 import RigolWFM
 import RigolWFM.wfm
+
+
+def _build_model_aliases() -> dict[str, str]:
+    """Return case-insensitive CLI aliases mapped to canonical model names."""
+    aliases: dict[str, str] = {"AUTO": "auto"}
+
+    rigol_families = [
+        ("B", RigolWFM.wfm.DS1000B_scopes),
+        ("C", RigolWFM.wfm.DS1000C_scopes),
+        ("D", RigolWFM.wfm.DS1000D_scopes),
+        ("E", RigolWFM.wfm.DS1000E_scopes),
+        ("Z", RigolWFM.wfm.DS1000Z_scopes),
+        ("2", RigolWFM.wfm.DS2000_scopes),
+        ("4", RigolWFM.wfm.DS4000_scopes),
+        ("5", RigolWFM.wfm.DS5000_scopes),
+        ("5074", RigolWFM.wfm.MSO5074_scopes),
+        ("6", RigolWFM.wfm.DS6000_scopes),
+        ("7", RigolWFM.wfm.DS7000_scopes),
+        ("8", RigolWFM.wfm.DS8000_scopes),
+        ("DHO", RigolWFM.wfm.DHO1000_scopes),
+    ]
+    for canonical, family in rigol_families:
+        aliases[canonical.upper()] = canonical
+        for alias in family:
+            aliases[str(alias).upper()] = canonical
+
+    vendor_families = [
+        ("Keysight", RigolWFM.wfm.Keysight_scopes),
+        ("Siglent", RigolWFM.wfm.Siglent_scopes),
+        ("SiglentOld", RigolWFM.wfm.Siglent_old_scopes),
+        ("RohdeSchwarz", RigolWFM.wfm.RohdeSchwarz_scopes),
+        ("LeCroy", RigolWFM.wfm.LeCroy_scopes),
+        ("Tek", RigolWFM.wfm.Tek_scopes),
+        ("ISF", RigolWFM.wfm.ISF_scopes),
+        ("Yokogawa", RigolWFM.wfm.Yokogawa_scopes),
+    ]
+    for canonical, family in vendor_families:
+        aliases[canonical.upper()] = canonical
+        for alias in family:
+            aliases[str(alias).upper()] = canonical
+
+    return aliases
+
+
+_MODEL_ALIASES = _build_model_aliases()
+_CANONICAL_MODELS = [
+    "auto", "B", "C", "D", "E", "Z", "2", "4", "5", "5074", "6", "7", "8", "DHO",
+    "Keysight", "Siglent", "SiglentOld", "RohdeSchwarz", "LeCroy", "Tek", "ISF", "Yokogawa",
+]
+
+
+def _normalize_model_choice(value: str) -> str:
+    """Return a canonical CLI model string or raise argparse.ArgumentTypeError."""
+    canonical = _MODEL_ALIASES.get(value.upper())
+    if canonical is None:
+        raise argparse.ArgumentTypeError(
+            "unsupported model '{}'; choose one of {} or any alias listed below".format(
+                value, ", ".join(_CANONICAL_MODELS)
+            )
+        )
+    return canonical
 
 
 def _output_path(infile: str, ext: str, output_dir: str) -> str:
@@ -35,7 +94,7 @@ def _output_path(infile: str, ext: str, output_dir: str) -> str:
 
 
 def info(_args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, _infile: str) -> None:
-    """Create a string that describes content of .wfm file."""
+    """Print a text summary describing a waveform file."""
     s = scope_data.describe()
     print(s)
 
@@ -93,6 +152,8 @@ def wav(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> 
 
 def png(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
     """Save a PNG plot of the waveform."""
+    import matplotlib.pyplot as plt
+
     png_name = _output_path(infile, ".png", args.output_dir)
     if os.path.isfile(png_name) and not args.force:
         print(f"'{png_name}' exists, use --force to overwrite")
@@ -180,7 +241,7 @@ def main() -> None:
     """Parse console command line arguments."""
     parser = _WfmParser(
         prog="wfmconvert",
-        description="Convert Rigol WFM files to another format.",
+        description="Convert oscilloscope waveform files to another format.",
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=textwrap.dedent(
             """\
@@ -201,10 +262,13 @@ def main() -> None:
 
     parser.add_argument(
         "--model",
-        type=str,
+        type=_normalize_model_choice,
         default="auto",
-        choices=["auto", "B", "C", "D", "E", "Z", "2", "4", "5", "5074", "6", "7", "8", "DHO", "LeCroy", "Tek", "ISF"],
-        help="oscilloscope model (default: auto-detect from file).  See list below.",
+        metavar="MODEL",
+        help=(
+            "oscilloscope model family (default: auto-detect from file). "
+            "Canonical values include {}. Aliases listed below are also accepted."
+        ).format(", ".join(_CANONICAL_MODELS)),
     )
 
     parser.add_argument(
@@ -268,7 +332,7 @@ def main() -> None:
         help=textwrap.dedent(
             """\
         csv:    convert to a file with comma separated values
-        info:   show the various scope settings for a .wfm file
+        info:   show the various scope settings for a waveform file
         png:    save a waveform plot as a PNG image (use --dpi to set resolution)
         wav:    convert to a WAV sound format file for use with Audacity
                 or Sigrok Pulseview. If a single channel is specified then
@@ -280,7 +344,7 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "infile", type=str, nargs="+", help="the WFM file to be converted"
+        "infile", type=str, nargs="+", help="the waveform file(s) to be converted"
     )
 
     args = parser.parse_args()
@@ -320,16 +384,23 @@ def main() -> None:
             print(f"wfmconvert error: file not found: '{filename}'", file=sys.stderr)
             sys.exit(1)
 
+        except RigolWFM.wfm.Read_WFM_Error as e:
+            if isinstance(e.__cause__, FileNotFoundError):
+                print(f"wfmconvert error: file not found: '{filename}'", file=sys.stderr)
+            else:
+                print(f"wfmconvert error: could not read '{filename}': {e}", file=sys.stderr)
+            sys.exit(1)
+
         except RigolWFM.wfm.Unknown_Scope_Error as e:
             print(e, file=sys.stderr)
             sys.exit(1)
 
-        except RigolWFM.wfm.Parse_WFM_Error as e:
+        except (RigolWFM.wfm.Parse_WFM_Error, ValueError) as e:
             if args.model == "auto":
                 print(f"Could not detect or parse the scope model for '{filename}'.",
                       file=sys.stderr)
             else:
-                print(f"File contents do not follow the format for the Rigol Oscilloscope Model {args.model}.",
+                print(f"File contents do not follow the selected oscilloscope model format '{args.model}'.",
                       file=sys.stderr)
             print("To help with development, please report this error", file=sys.stderr)
             print("as an issue to https://github.com/scottprahl/RigolWFM\n", file=sys.stderr)

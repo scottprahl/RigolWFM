@@ -860,6 +860,64 @@ function bytesToAscii(bytes) {
     return text;
 }
 
+function decodeUtf8Bytes(bytes) {
+    var view = toU8(bytes);
+    if (typeof TextDecoder !== 'undefined') {
+        return new TextDecoder('utf-8').decode(view);
+    }
+    return bytesToAscii(view);
+}
+
+function lowerFilename(name) {
+    return String(name || '').toLowerCase();
+}
+
+function buildSelectedFileMap(files) {
+    var map = {};
+    for (var i = 0; i < files.length; i++) {
+        map[lowerFilename(files[i].name)] = files[i];
+    }
+    return map;
+}
+
+function shouldSkipRohdeSchwarzPayload(file, fileMap) {
+    var name = lowerFilename(file && file.name);
+    if (!/\.wfm\.bin$/i.test(name)) {
+        return false;
+    }
+    var metadataName = name.replace(/\.wfm\.bin$/i, '.bin');
+    return Object.prototype.hasOwnProperty.call(fileMap, metadataName);
+}
+
+function rohdeSchwarzPayloadLookupName(metadataName) {
+    return lowerFilename(metadataName).replace(/\.bin$/i, '.wfm.bin');
+}
+
+function looksLikeRohdeSchwarzMetadata(buffer, filename) {
+    if (!/\.bin$/i.test(filename || '') || /\.wfm\.bin$/i.test(filename || '')) {
+        return false;
+    }
+    var headBytes = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 8192));
+    var head = decodeUtf8Bytes(headBytes).replace(/^\uFEFF/, '');
+    return head.indexOf('<?xml') === 0 && head.indexOf('<Database') >= 0 && head.indexOf('SaveItemType="Data"') >= 0;
+}
+
+function readBrowserFileAsArrayBuffer(file) {
+    if (file && typeof file.arrayBuffer === 'function') {
+        return file.arrayBuffer();
+    }
+    return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            resolve(e.target.result);
+        };
+        reader.onerror = function() {
+            reject(new Error('Could not read ' + (file && file.name ? file.name : 'the selected file') + '.'));
+        };
+        reader.readAsArrayBuffer(file);
+    });
+}
+
 async function maybeInflateDeflate(bytes, expectedLength) {
     var view = toU8(bytes);
     if (!view || !view.length) {
@@ -1039,7 +1097,7 @@ function parseDhoModel(blocks, fallback) {
     return fallback;
 }
 
-async function detectAndParse(buffer, filename) {
+async function detectAndParse(buffer, filename, fileMap) {
     var b = new Uint8Array(buffer);
     var fsize = buffer.byteLength;
 
@@ -1102,6 +1160,10 @@ async function detectAndParse(buffer, filename) {
         return parseSiglentBin(buffer, siglentRevision);
     }
 
+    if (looksLikeRohdeSchwarzMetadata(buffer, filename)) {
+        return parseRohdeSchwarzBin(buffer, filename, fileMap);
+    }
+
     if (magicStr === 'RG01') {
         return u32le(12) === 128 ? parseBin70008000(buffer) : parseBin5000(buffer);
     }
@@ -1158,16 +1220,19 @@ async function detectAndParse(buffer, filename) {
         if (isfMatch) { return parseIsf(buffer); }
     }
 
-    // LeCroy .trc: "WAVEDESC" ASCII somewhere in the first 64 bytes
-    // (SCPI-prefixed files have a #N<digits> header before WAVEDESC)
+    // LeCroy .trc: "WAVEDESC" ASCII somewhere in the file.
+    // Some files include a longer SCPI / transport prefix before WAVEDESC.
     var wavDesc = [0x57, 0x41, 0x56, 0x45, 0x44, 0x45, 0x53, 0x43]; // "WAVEDESC"
     var wdOffset = -1;
-    for (var wi = 0; wi <= Math.min(56, b.length - 8); wi++) {
+    for (var wi = 0; wi <= b.length - 8; wi++) {
         var match = true;
         for (var wj = 0; wj < 8; wj++) {
             if (b[wi + wj] !== wavDesc[wj]) { match = false; break; }
         }
-        if (match) { wdOffset = wi; break; }
+        if (match && wi + 34 < b.length && (b[wi + 34] === 0 || b[wi + 34] === 1)) {
+            wdOffset = wi;
+            break;
+        }
     }
     if (wdOffset >= 0) {
         return parseLeCroy(buffer, wdOffset);
@@ -2381,6 +2446,442 @@ function parseSiglentBin(buffer, revision) {
     }
 
     throw new Error('Unsupported Siglent revision: ' + revision);
+}
+
+function rohdeSchwarzParseMetadata(buffer) {
+    if (typeof DOMParser === 'undefined') {
+        throw new Error('This browser cannot parse Rohde & Schwarz XML metadata.');
+    }
+
+    var xmlText = decodeUtf8Bytes(new Uint8Array(buffer));
+    var doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+    if (doc.getElementsByTagName('parsererror').length) {
+        throw new Error('Could not parse Rohde & Schwarz XML metadata.');
+    }
+
+    var tags = {};
+    var nodes = doc.getElementsByTagName('*');
+    for (var i = 0; i < nodes.length; i++) {
+        var name = nodes[i].getAttribute('Name');
+        if (name && !Object.prototype.hasOwnProperty.call(tags, name)) {
+            tags[name] = nodes[i];
+        }
+    }
+
+    return {
+        root: doc.documentElement,
+        tags: tags,
+    };
+}
+
+function rohdeSchwarzRequireTag(tags, key) {
+    if (!Object.prototype.hasOwnProperty.call(tags, key)) {
+        throw new Error("Rohde & Schwarz metadata is missing required tag '" + key + "'.");
+    }
+    return tags[key];
+}
+
+function rohdeSchwarzTagValue(tags, key) {
+    var tag = rohdeSchwarzRequireTag(tags, key);
+    var value = tag.getAttribute('Value');
+    if (value === null) {
+        throw new Error("Rohde & Schwarz tag '" + key + "' is missing a Value attribute.");
+    }
+    return value;
+}
+
+function rohdeSchwarzTagFloat(tags, key) {
+    var value = parseFloat(rohdeSchwarzTagValue(tags, key));
+    if (!Number.isFinite(value)) {
+        throw new Error("Rohde & Schwarz tag '" + key + "' is not numeric.");
+    }
+    return value;
+}
+
+function rohdeSchwarzTagInt(tags, key) {
+    var value = parseInt(rohdeSchwarzTagValue(tags, key), 10);
+    if (!Number.isFinite(value)) {
+        throw new Error("Rohde & Schwarz tag '" + key + "' is not an integer.");
+    }
+    return value;
+}
+
+function rohdeSchwarzStripPrefix(value, prefix) {
+    var text = String(value || '');
+    return text.indexOf(prefix) === 0 ? text.substring(prefix.length) : text;
+}
+
+function rohdeSchwarzChannelSlotFromSource(sourceName) {
+    var cleaned = rohdeSchwarzStripPrefix(sourceName, 'eRS_SIGNAL_SOURCE_').toUpperCase();
+    var match = /(?:CH|C)(\d)/.exec(cleaned);
+    if (!match) {
+        return -1;
+    }
+    var slot = parseInt(match[1], 10) - 1;
+    return slot >= 0 && slot < 4 ? slot : -1;
+}
+
+function rohdeSchwarzDisplayName(sourceName, fallbackSlot) {
+    var slot = rohdeSchwarzChannelSlotFromSource(sourceName);
+    if (slot >= 0) {
+        return 'CH' + (slot + 1);
+    }
+    var cleaned = rohdeSchwarzStripPrefix(sourceName, 'eRS_SIGNAL_SOURCE_').toUpperCase();
+    return cleaned || ('CH' + (fallbackSlot + 1));
+}
+
+function rohdeSchwarzActiveSources(tags) {
+    var multiExport = rohdeSchwarzStripPrefix(rohdeSchwarzTagValue(tags, 'MultiChannelExport'), 'eRS_ONOFF_');
+    var active = [];
+    var state;
+    var source;
+    var key;
+    var sourceName;
+    var slot;
+
+    if (multiExport === 'ON') {
+        state = rohdeSchwarzRequireTag(tags, 'MultiChannelExportState');
+        source = rohdeSchwarzRequireTag(tags, 'MultiChannelSource');
+        for (var i = 0; i < 4; i++) {
+            key = 'I_' + i;
+            if (state.getAttribute(key) !== 'eRS_ONOFF_ON') {
+                continue;
+            }
+            sourceName = source.getAttribute(key) || 'eRS_SIGNAL_SOURCE_NONE';
+            slot = rohdeSchwarzChannelSlotFromSource(sourceName);
+            if (slot < 0) {
+                continue;
+            }
+            active.push({
+                sourceName: sourceName,
+                slot: slot,
+                xmlIndex: key,
+            });
+        }
+        return active;
+    }
+
+    sourceName = rohdeSchwarzTagValue(tags, 'Source');
+    slot = rohdeSchwarzChannelSlotFromSource(sourceName);
+    if (slot < 0) {
+        slot = 0;
+    }
+    active.push({
+        sourceName: sourceName,
+        slot: slot,
+        xmlIndex: null,
+    });
+    return active;
+}
+
+function rohdeSchwarzChannelVerticalScale(tags, xmlIndex) {
+    if (xmlIndex === null) {
+        return rohdeSchwarzTagFloat(tags, 'VerticalScale');
+    }
+    var tag = rohdeSchwarzRequireTag(tags, 'MultiChannelVerticalScale');
+    var value = parseFloat(tag.getAttribute(xmlIndex));
+    if (!Number.isFinite(value)) {
+        throw new Error('Rohde & Schwarz metadata is missing channel scale for ' + xmlIndex + '.');
+    }
+    return value;
+}
+
+function rohdeSchwarzChannelVerticalOffset(tags, xmlIndex) {
+    if (xmlIndex === null) {
+        return rohdeSchwarzTagFloat(tags, 'VerticalOffset');
+    }
+    var tag = rohdeSchwarzRequireTag(tags, 'MultiChannelVerticalOffset');
+    var value = parseFloat(tag.getAttribute(xmlIndex));
+    if (!Number.isFinite(value)) {
+        throw new Error('Rohde & Schwarz metadata is missing channel offset for ' + xmlIndex + '.');
+    }
+    return value;
+}
+
+function rohdeSchwarzRawScaling(tags, xmlIndex) {
+    var quantisationLevels = rohdeSchwarzTagInt(tags, 'NofQuantisationLevels');
+    if (quantisationLevels <= 0) {
+        throw new Error('Rohde & Schwarz metadata reports a non-positive quantisation level count.');
+    }
+
+    var positionDiv;
+    var verticalScale;
+    var offset;
+    var stepFactor;
+
+    if (xmlIndex === null) {
+        positionDiv = rohdeSchwarzTagFloat(tags, 'VerticalPosition');
+        verticalScale = rohdeSchwarzTagFloat(tags, 'VerticalScale');
+        offset = rohdeSchwarzTagFloat(tags, 'VerticalOffset');
+        stepFactor = parseFloat(rohdeSchwarzRequireTag(tags, 'VerticalScale').getAttribute('StepFactor'));
+    } else {
+        var positionTag = rohdeSchwarzRequireTag(tags, 'MultiChannelVerticalPosition');
+        var scaleTag = rohdeSchwarzRequireTag(tags, 'MultiChannelVerticalScale');
+        var offsetTag = rohdeSchwarzRequireTag(tags, 'MultiChannelVerticalOffset');
+        positionDiv = parseFloat(positionTag.getAttribute(xmlIndex));
+        verticalScale = parseFloat(scaleTag.getAttribute(xmlIndex));
+        offset = parseFloat(offsetTag.getAttribute(xmlIndex));
+        stepFactor = parseFloat(scaleTag.getAttribute('StepFactor'));
+    }
+
+    if (!Number.isFinite(positionDiv) || !Number.isFinite(verticalScale) || !Number.isFinite(offset) || !Number.isFinite(stepFactor)) {
+        throw new Error('Rohde & Schwarz scaling metadata is incomplete.');
+    }
+
+    var position = positionDiv * verticalScale;
+    return {
+        factor: (stepFactor * verticalScale) / quantisationLevels,
+        offset: offset - position,
+    };
+}
+
+function rohdeSchwarzExpectedFormatCode(signalFormat) {
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_INT8BIT') {
+        return 0;
+    }
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_INT16BIT') {
+        return 1;
+    }
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_FLOAT') {
+        return 4;
+    }
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_XYDOUBLEFLOAT') {
+        return 6;
+    }
+    throw new Error('Unsupported Rohde & Schwarz SignalFormat: ' + signalFormat);
+}
+
+function rohdeSchwarzDecodeSingleAcquisition(payloadBytes, signalFormat, channelCount, hardwareRecordLength, leadingSamples, recordLength, activeSources, tags) {
+    if (recordLength <= 0) {
+        throw new Error('Rohde & Schwarz metadata reports a non-positive RecordLength.');
+    }
+    if (hardwareRecordLength <= 0) {
+        throw new Error('Rohde & Schwarz metadata reports a non-positive SignalHardwareRecordLength.');
+    }
+    if (leadingSamples < 0 || leadingSamples + recordLength > hardwareRecordLength) {
+        throw new Error('Rohde & Schwarz metadata reports an invalid LeadingSettlingSamples / RecordLength combination.');
+    }
+
+    var expectedRows = hardwareRecordLength;
+    var payload = toU8(payloadBytes);
+    var xOrigin;
+    var xStop;
+    var xIncrement;
+    var channelData;
+    var dv;
+    var i;
+    var ci;
+    var row;
+
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_FLOAT') {
+        if (payload.byteLength !== expectedRows * channelCount * 4) {
+            throw new Error(
+                'Rohde & Schwarz float payload length does not match its XML metadata.'
+            );
+        }
+        dv = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+        xOrigin = rohdeSchwarzTagFloat(tags, 'XStart');
+        xStop = rohdeSchwarzTagFloat(tags, 'XStop');
+        xIncrement = (xStop - xOrigin) / recordLength;
+        channelData = [];
+        for (ci = 0; ci < channelCount; ci++) {
+            channelData.push(new Float64Array(recordLength));
+        }
+        for (i = 0; i < recordLength; i++) {
+            row = leadingSamples + i;
+            for (ci = 0; ci < channelCount; ci++) {
+                channelData[ci][i] = dv.getFloat32((row * channelCount + ci) * 4, true);
+            }
+        }
+        return { xOrigin: xOrigin, xIncrement: xIncrement, channelData: channelData, times: null };
+    }
+
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_INT8BIT') {
+        if (payload.byteLength !== expectedRows * channelCount) {
+            throw new Error(
+                'Rohde & Schwarz int8 payload length does not match its XML metadata.'
+            );
+        }
+        dv = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+        xOrigin = rohdeSchwarzTagFloat(tags, 'XStart');
+        xStop = rohdeSchwarzTagFloat(tags, 'XStop');
+        xIncrement = (xStop - xOrigin) / recordLength;
+        channelData = [];
+        for (ci = 0; ci < channelCount; ci++) {
+            channelData.push(new Float64Array(recordLength));
+        }
+        for (ci = 0; ci < channelCount; ci++) {
+            var int8Scaling = rohdeSchwarzRawScaling(tags, activeSources[ci].xmlIndex);
+            for (i = 0; i < recordLength; i++) {
+                row = leadingSamples + i;
+                channelData[ci][i] = dv.getInt8(row * channelCount + ci) * int8Scaling.factor + int8Scaling.offset;
+            }
+        }
+        return { xOrigin: xOrigin, xIncrement: xIncrement, channelData: channelData, times: null };
+    }
+
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_INT16BIT') {
+        if (payload.byteLength !== expectedRows * channelCount * 2) {
+            throw new Error(
+                'Rohde & Schwarz int16 payload length does not match its XML metadata.'
+            );
+        }
+        dv = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+        xOrigin = rohdeSchwarzTagFloat(tags, 'XStart');
+        xStop = rohdeSchwarzTagFloat(tags, 'XStop');
+        xIncrement = (xStop - xOrigin) / recordLength;
+        channelData = [];
+        for (ci = 0; ci < channelCount; ci++) {
+            channelData.push(new Float64Array(recordLength));
+        }
+        for (ci = 0; ci < channelCount; ci++) {
+            var int16Scaling = rohdeSchwarzRawScaling(tags, activeSources[ci].xmlIndex);
+            for (i = 0; i < recordLength; i++) {
+                row = leadingSamples + i;
+                channelData[ci][i] = dv.getInt16((row * channelCount + ci) * 2, true) * int16Scaling.factor + int16Scaling.offset;
+            }
+        }
+        return { xOrigin: xOrigin, xIncrement: xIncrement, channelData: channelData, times: null };
+    }
+
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_XYDOUBLEFLOAT') {
+        var rowSize = 8 + channelCount * 4;
+        if (payload.byteLength !== expectedRows * rowSize) {
+            throw new Error(
+                'Rohde & Schwarz XYDOUBLEFLOAT payload length does not match its XML metadata.'
+            );
+        }
+        dv = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+        var times = new Float64Array(recordLength);
+        channelData = [];
+        for (ci = 0; ci < channelCount; ci++) {
+            channelData.push(new Float64Array(recordLength));
+        }
+        for (i = 0; i < recordLength; i++) {
+            row = leadingSamples + i;
+            var rowOffset = row * rowSize;
+            times[i] = dv.getFloat64(rowOffset, true);
+            for (ci = 0; ci < channelCount; ci++) {
+                channelData[ci][i] = dv.getFloat32(rowOffset + 8 + ci * 4, true);
+            }
+        }
+        xOrigin = times[0];
+        xIncrement = times.length > 1 ? times[1] - times[0] : (rohdeSchwarzTagFloat(tags, 'XStop') - rohdeSchwarzTagFloat(tags, 'XStart')) / recordLength;
+        return { xOrigin: xOrigin, xIncrement: xIncrement, channelData: channelData, times: times };
+    }
+
+    throw new Error('Unsupported Rohde & Schwarz SignalFormat: ' + signalFormat);
+}
+
+async function parseRohdeSchwarzBin(buffer, filename, fileMap) {
+    var metadata = rohdeSchwarzParseMetadata(buffer);
+    var tags = metadata.tags;
+    var signalFormat = rohdeSchwarzTagValue(tags, 'SignalFormat');
+    var traceType = rohdeSchwarzStripPrefix(rohdeSchwarzTagValue(tags, 'TraceType'), 'eRS_TRACE_TYPE_');
+    if (traceType !== 'NORMAL' && traceType !== 'AVERAGE') {
+        throw new Error('Unsupported Rohde & Schwarz TraceType: ' + traceType);
+    }
+
+    var numberOfAcquisitions = rohdeSchwarzTagInt(tags, 'NumberOfAcquisitions');
+    if (numberOfAcquisitions !== 1) {
+        throw new Error(
+            'Rohde & Schwarz multi-acquisition / history captures are not yet supported by wfmview.'
+        );
+    }
+
+    var payloadFile = fileMap ? fileMap[rohdeSchwarzPayloadLookupName(filename)] : null;
+    if (!payloadFile) {
+        throw new Error(
+            'Companion Rohde & Schwarz payload file not found. Select both ' +
+            filename + ' and its matching .Wfm.bin file together.'
+        );
+    }
+
+    var payloadBuffer = await readBrowserFileAsArrayBuffer(payloadFile);
+    var raw = new RohdeSchwarzRtpWfm.RohdeSchwarzRtpWfm(new KaitaiStream(payloadBuffer), null, null);
+    var expectedFormat = rohdeSchwarzExpectedFormatCode(signalFormat);
+    if (raw.formatCode !== expectedFormat) {
+        throw new Error(
+            'Rohde & Schwarz payload header format code does not match its XML metadata.'
+        );
+    }
+
+    var hardwareRecordLength = rohdeSchwarzTagInt(tags, 'SignalHardwareRecordLength');
+    if (raw.recordLength !== hardwareRecordLength) {
+        throw new Error(
+            'Rohde & Schwarz payload header record length does not match its XML metadata.'
+        );
+    }
+
+    var activeSources = rohdeSchwarzActiveSources(tags);
+    if (!activeSources.length) {
+        throw new Error('Rohde & Schwarz metadata does not enable any supported analog channels.');
+    }
+
+    var recordLength = rohdeSchwarzTagInt(tags, 'RecordLength');
+    var leadingSamples = rohdeSchwarzTagInt(tags, 'LeadingSettlingSamples');
+    var decoded = rohdeSchwarzDecodeSingleAcquisition(
+        raw.payload,
+        signalFormat,
+        activeSources.length,
+        hardwareRecordLength,
+        leadingSamples,
+        recordLength,
+        activeSources,
+        tags
+    );
+    var xDisplayRange = rohdeSchwarzTagFloat(tags, 'XStop') - rohdeSchwarzTagFloat(tags, 'XStart');
+    var channels = [];
+
+    for (var idx = 0; idx < activeSources.length; idx++) {
+        var source = activeSources[idx];
+        var volts = decoded.channelData[idx];
+        var times = decoded.times ? new Float64Array(decoded.times) : new Float64Array(volts.length);
+        if (!decoded.times) {
+            for (var ti = 0; ti < volts.length; ti++) {
+                times[ti] = decoded.xOrigin + ti * decoded.xIncrement;
+            }
+        }
+
+        var channelNumber = source.slot + 1;
+        var channelName = normalizedChannelName(rohdeSchwarzDisplayName(source.sourceName, source.slot), channelNumber);
+        var verticalScale = Math.abs(rohdeSchwarzChannelVerticalScale(tags, source.xmlIndex));
+        var verticalOffset = rohdeSchwarzChannelVerticalOffset(tags, source.xmlIndex);
+        var secondsPerPoint = times.length > 1 ? times[1] - times[0] : decoded.xIncrement;
+
+        channels.push({
+            name: channelName,
+            color: CH_COLORS[source.slot % CH_COLORS.length],
+            times: times,
+            volts: volts,
+            raw: proxyRawFromCalibrated(volts),
+            channelNumber: channelNumber,
+            points: volts.length,
+            coupling: 'unknown',
+            voltPerDiv: verticalScale || 1,
+            voltOffset: verticalOffset,
+            probeValue: 1,
+            inverted: false,
+            timeScale: xDisplayRange > 0 ? xDisplayRange / 10 : volts.length * secondsPerPoint / 10,
+            timeOffset: times.length ? times[0] : decoded.xOrigin,
+            secondsPerPoint: secondsPerPoint,
+        });
+    }
+
+    channels.sort(function(a, b) {
+        return a.channelNumber - b.channelNumber;
+    });
+
+    return {
+        format: 'Rohde & Schwarz BIN',
+        fileModel: 'Rohde & Schwarz',
+        serialNumber: '',
+        userModel: 'Rohde & Schwarz',
+        parserModel: 'rohde_schwarz_bin',
+        firmware: metadata.root.getAttribute('FWVersion') || 'unknown',
+        triggerInfo: null,
+        channels: channels,
+    };
 }
 
 function agilentAnalogBufferSuffix(bufferType, analogBufferCount) {
@@ -4296,7 +4797,7 @@ function resetAxisView() {
 function openFilePicker() {
     var inp = document.createElement('input');
     inp.type = 'file';
-    inp.accept = '.wfm,.bin';
+    inp.accept = '.wfm,.bin,.trc,.isf';
     inp.multiple = true;
     inp.onchange = function(e) {
         loadFiles(e.target.files);
@@ -4491,11 +4992,16 @@ function loadFiles(fileSet) {
         return;
     }
 
+    var fileMap = buildSelectedFileMap(files);
+    files = files.filter(function(file) {
+        return !shouldSkipRohdeSchwarzPayload(file, fileMap);
+    });
+
     function next(index) {
         if (index >= files.length) {
             return;
         }
-        loadFile(files[index], function() {
+        loadFile(files[index], fileMap, function() {
             next(index + 1);
         });
     }
@@ -4503,11 +5009,11 @@ function loadFiles(fileSet) {
     next(0);
 }
 
-function loadFile(file, done) {
+function loadFile(file, fileMap, done) {
     var reader = new FileReader();
     reader.onload = async function(e) {
         try {
-            addLoadedFile(await detectAndParse(e.target.result, file.name), file.name);
+            addLoadedFile(await detectAndParse(e.target.result, file.name, fileMap), file.name);
         } catch (err) {
             showError(String(err.message || err));
         }

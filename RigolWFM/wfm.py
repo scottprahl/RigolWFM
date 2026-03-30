@@ -3,8 +3,9 @@ Parse and convert oscilloscope waveform files.
 
 Supports Rigol (DS1000B/C/D/E/Z, DS2000, DS4000, DS6000, MSO5000, MSO5074,
 MSO7000/8000, DHO800/DHO1000), Agilent / Keysight (`AGxx` `.bin`), Siglent
-(`.bin` waveform revisions), Teledyne LeCroy (.trc), Tektronix (.wfm/.isf),
-and Yokogawa (.wfm) scope families via ``Wfm.from_file()``.
+(`.bin` waveform revisions), Rohde & Schwarz RTP (`.bin` + `.Wfm.bin`),
+Teledyne LeCroy (.trc), Tektronix (.wfm/.isf), and Yokogawa (.wfm) scope
+families via ``Wfm.from_file()``.
 
 Example:
     >>> import RigolWFM.wfm as wfm
@@ -22,9 +23,8 @@ import sys
 import tempfile
 import urllib.parse
 import wave
-from typing import IO, Any, Literal
+from typing import IO, TYPE_CHECKING, Any, Literal
 
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import requests  # type: ignore[import-untyped]
@@ -33,10 +33,14 @@ import RigolWFM.channel
 import RigolWFM.agilent
 import RigolWFM.isf
 import RigolWFM.lecroy
+import RigolWFM.rohde_schwarz
 import RigolWFM.rigol
 import RigolWFM.siglent
 import RigolWFM.tek
 import RigolWFM.yokogawa
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
 
 # ---------------------------------------------------------------------------
 # Non-Rigol vendor scope-family model-string lists
@@ -67,6 +71,19 @@ Siglent_old_scopes: list[str] = [
     "siglentold",
 ]
 
+# Rohde & Schwarz RTP oscilloscope exports (`.bin` metadata + `.Wfm.bin` payload)
+RohdeSchwarz_scopes: list[str] = [
+    "RohdeSchwarz",
+    "ROHDESCHWARZ",
+    "rohdeschwarz",
+    "Rohde",
+    "ROHDE",
+    "rohde",
+    "R&S",
+    "r&s",
+    "rohde_schwarz_bin",
+]
+
 # Teledyne LeCroy .trc files (LECROY_1_0 / LECROY_2_3 format)
 LeCroy_scopes: list[str] = ["LeCroy", "LECROY", "lecroy", "trc"]
 
@@ -83,6 +100,7 @@ _GENERIC_VENDOR_MODELS = {
     *(name.upper() for name in Keysight_scopes),
     *(name.upper() for name in Siglent_scopes),
     *(name.upper() for name in Siglent_old_scopes),
+    *(name.upper() for name in RohdeSchwarz_scopes),
     *(name.upper() for name in LeCroy_scopes),
     *(name.upper() for name in Tek_scopes),
     *(name.upper() for name in ISF_scopes),
@@ -165,8 +183,19 @@ def detect_model(filename: str) -> str:
     except OSError as exc:
         raise FileNotFoundError(filename) from exc
 
+    return _detect_model_from_header(hdr, fsize, filename)
+
+
+def _detect_model_from_header(hdr: bytes, fsize: int, filename_hint: str = "") -> str:
+    """Detect the oscilloscope model from a file header and filename hint."""
+    basename_hint = os.path.basename(filename_hint)
+    suffix = os.path.splitext(basename_hint)[1].lower()
+    allow_bin_like = suffix in ("", ".bin")
+    allow_wfm_like = suffix in ("", ".wfm")
+    display_name = filename_hint or "<buffer>"
+
     if len(hdr) < 4:
-        raise Parse_WFM_Error(f"File too short to detect model: {filename}")
+        raise Parse_WFM_Error(f"File too short to detect model: {display_name}")
 
     magic4 = hdr[:4]
 
@@ -183,7 +212,7 @@ def detect_model(filename: str) -> str:
         return "Z"
 
     # DHO proprietary .wfm: 02 00 00 00
-    if magic4 == bytes([0x02, 0x00, 0x00, 0x00]) and filename.lower().endswith(".wfm"):
+    if magic4 == bytes([0x02, 0x00, 0x00, 0x00]) and allow_wfm_like:
         return "DHO"
 
     # DHO .bin export: RG03
@@ -200,13 +229,22 @@ def detect_model(filename: str) -> str:
             return "Keysight"
 
     # Siglent `.bin`: documented old platform and V0.1-V6 waveform families
-    if filename.lower().endswith(".bin"):
+    if allow_bin_like:
         try:
             siglent_revision = RigolWFM.siglent.detect_revision_from_bytes(hdr, fsize)
         except ValueError:
             siglent_revision = ""
         if siglent_revision:
             return "SiglentOld" if siglent_revision == "old" else "Siglent"
+
+    # Rohde & Schwarz RTP exports: XML `.bin` metadata with companion `.Wfm.bin` payload
+    if (
+        allow_bin_like
+        and hdr.startswith(b"<?xml")
+        and b"<Database" in hdr
+        and b"SaveItemType=\"Data\"" in hdr
+    ):
+        return "RohdeSchwarz"
 
     # RG01: MSO5000, MSO5074, MSO7000, MSO8000
     if hdr[:4] == b"RG01":
@@ -281,7 +319,52 @@ def detect_model(filename: str) -> str:
     if _LECROY_MAGIC in hdr:
         return "LeCroy"
 
-    raise Parse_WFM_Error(f"Unrecognised file signature {magic4.hex()} in {filename}")
+    raise Parse_WFM_Error(f"Unrecognised file signature {magic4.hex()} in {display_name}")
+
+
+def _model_in_family(model: str, family: list[str]) -> bool:
+    """Return True when model matches one of the aliases in family."""
+    upper = model.upper()
+    return any(upper == alias.upper() for alias in family)
+
+
+def _default_download_suffix(model: str, header: bytes) -> str:
+    """Return a usable file suffix for a downloaded waveform."""
+    if _model_in_family(model, Keysight_scopes):
+        return ".bin"
+    if _model_in_family(model, Siglent_scopes) or _model_in_family(model, Siglent_old_scopes):
+        return ".bin"
+    if _model_in_family(model, RohdeSchwarz_scopes):
+        return ".bin"
+    if _model_in_family(model, LeCroy_scopes):
+        return ".trc"
+    if _model_in_family(model, ISF_scopes):
+        return ".isf"
+    if _model_in_family(model, Tek_scopes):
+        return ".wfm"
+    if _model_in_family(model, Yokogawa_scopes):
+        return ".wfm"
+    if _model_in_family(model, DHO1000_scopes):
+        return ".bin" if header.startswith(b"RG03") else ".wfm"
+    if (
+        _model_in_family(model, DS5000_scopes)
+        or _model_in_family(model, MSO5074_scopes)
+        or _model_in_family(model, DS7000_scopes)
+        or _model_in_family(model, DS8000_scopes)
+    ):
+        return ".bin"
+    return ".wfm"
+
+
+def _rohde_schwarz_payload_url(url: str) -> str:
+    """Return the companion `.Wfm.bin` URL for an RTP metadata URL."""
+    parsed = urllib.parse.urlparse(url)
+    path = parsed.path
+    if path.lower().endswith(".wfm.bin") or not path.lower().endswith(".bin"):
+        raise Parse_WFM_Error(
+            f"Cannot derive a Rohde & Schwarz companion payload URL from '{url}'"
+        )
+    return parsed._replace(path=path[:-4] + ".Wfm.bin").geturl()
 
 
 def valid_scope_list() -> str:
@@ -292,6 +375,7 @@ def valid_scope_list() -> str:
     s += ", ".join(Keysight_scopes) + "\n    "
     s += ", ".join(Siglent_scopes) + "\n    "
     s += ", ".join(Siglent_old_scopes) + "\n    "
+    s += ", ".join(RohdeSchwarz_scopes) + "\n    "
     s += ", ".join(LeCroy_scopes) + "\n    "
     s += ", ".join(Tek_scopes) + "\n    "
     s += ", ".join(ISF_scopes) + "\n"
@@ -397,6 +481,12 @@ class Wfm:
             new_wfm.header_name = w.header.model or "Siglent"
             new_wfm.serial_number = getattr(w.header, "serial_number", "")
 
+        # --- Rohde & Schwarz RTP `.bin` metadata files ---
+        elif umodel in RohdeSchwarz_scopes:
+            w = RigolWFM.rohde_schwarz.from_file(file_name)
+            new_wfm.header_name = w.header.model or "Rohde & Schwarz"
+            new_wfm.serial_number = getattr(w.header, "serial_number", "")
+
         # --- LeCroy ---
         elif umodel in LeCroy_scopes:
             w = RigolWFM.lecroy.from_file(file_name)
@@ -490,24 +580,45 @@ class Wfm:
             print(f"downloading '{url}'", file=sys.stderr)
             r = requests.get(url, allow_redirects=True, timeout=10)
             r.raise_for_status()
+            payload = r.content
+            path = urllib.parse.unquote(u.path)
+            basename = os.path.basename(path)
+            auto_model = model.upper() == "AUTO"
+            resolved_model = (
+                _detect_model_from_header(payload[:8192], len(payload), basename or path or url)
+                if auto_model
+                else model
+            )
 
-            with tempfile.NamedTemporaryFile(delete=False) as f:
-                f.write(r.content)
-                working_name = f.name
+            if not basename:
+                basename = "downloaded_waveform"
+            if not os.path.splitext(basename)[1]:
+                basename += _default_download_suffix(resolved_model, payload[:8192])
 
-            try:
-                new_wfm = cls.from_file(working_name, model, selected)
-                new_wfm.original_name = url
-                rawpath = u[2]
-                path = urllib.parse.unquote(rawpath)
-                new_wfm.basename = os.path.basename(path)
-                return new_wfm
-            except (Read_WFM_Error, Parse_WFM_Error, Unknown_Scope_Error):
-                raise
-            except Exception as e:
-                raise Parse_WFM_Error(e) from e
-            finally:
-                os.unlink(working_name)
+            with tempfile.TemporaryDirectory() as tmpdir:
+                working_name = os.path.join(tmpdir, basename)
+                with open(working_name, "wb") as handle:
+                    handle.write(payload)
+
+                if _model_in_family(resolved_model, RohdeSchwarz_scopes):
+                    payload_url = _rohde_schwarz_payload_url(url)
+                    print(f"downloading '{payload_url}'", file=sys.stderr)
+                    payload_response = requests.get(payload_url, allow_redirects=True, timeout=10)
+                    payload_response.raise_for_status()
+                    local_payload = os.path.splitext(working_name)[0] + ".Wfm.bin"
+                    with open(local_payload, "wb") as handle:
+                        handle.write(payload_response.content)
+
+                try:
+                    model_choice = "auto" if auto_model else model
+                    new_wfm = cls.from_file(working_name, model_choice, selected)
+                    new_wfm.original_name = url
+                    new_wfm.basename = os.path.basename(path) or basename
+                    return new_wfm
+                except (Read_WFM_Error, Parse_WFM_Error, Unknown_Scope_Error):
+                    raise
+                except Exception as e:
+                    raise Parse_WFM_Error(e) from e
 
         except requests.exceptions.RequestException as e:
             raise Read_WFM_Error(f"Failed to download '{url}': {e}") from e
@@ -592,8 +703,10 @@ class Wfm:
                 h_prefix = p
         return h_scale, h_prefix, v_scale, v_prefix
 
-    def plot(self) -> plt.Figure:
+    def plot(self) -> Figure:
         """Plot the data in oscilloscope style and return the Figure."""
+        import matplotlib.pyplot as plt
+
         _CH_COLORS = ["#FFFF00", "#00FFFF", "#FF00FF", "#00FF00"]
 
         h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()
@@ -640,16 +753,16 @@ class Wfm:
         s += ",Start,Increment\n"
 
         ch = data_channels[0]
-        incr = ch.time_scale / 100
-        off = -6 * ch.time_scale
+        times = data_channels[0].times
+        assert times is not None
+        incr = (times[1] - times[0]) * h_scale if len(times) > 1 else 0.0
+        off = times[0] * h_scale
         s += "%ss" % h_prefix
         for ch in data_channels:
             s += ",%s%s" % (v_prefix, ch.unit.name.upper())
         s += ",%e,%e\n" % (off, incr)
 
         n_pts = min(ch.points for ch in data_channels)
-        times = data_channels[0].times
-        assert times is not None
         for i in range(n_pts):
             s += "%.6f" % (times[i] * h_scale)
             for ch in data_channels:

@@ -14,13 +14,24 @@ name = "RigolWFM"
 authors = [
     {name = "Scott Prahl", email = "scott.prahl@oit.edu"},
 ]
-description = "Read and parse Rigol Oscilloscope WFM files"
+description = "Read, parse, and convert oscilloscope waveform files"
 readme = {file = "README.rst", content-type = "text/x-rst"}
 license = "BSD-3-Clause"
 requires-python = ">=3.10"
 dynamic = ["version"]
 keywords = [
+    "oscilloscope",
+    "waveform",
+    "parser",
+    "kaitai",
     "Rigol",
+    "Tektronix",
+    "LeCroy",
+    "Agilent",
+    "Keysight",
+    "Siglent",
+    "Yokogawa",
+    "Rohde & Schwarz",
     "wfm",
     "DS1000B",
     "DS1074B",
@@ -108,6 +119,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
@@ -130,6 +142,7 @@ dev = [
   "yamllint",
 #  "ksylint",
   "rstcheck[toml,sphinx]",
+  "black[jupyter]",
   "pylint",
   "ruff",
   "mypy",
@@ -164,6 +177,8 @@ Source = "https://github.com/scottprahl/RigolWFM"
 Tracker = "https://github.com/scottprahl/RigolWFM/issues"
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = [".git", ".venv", "__pycache__", "docs/_build", "docs/vendors"]
 filterwarnings = [
     "ignore:MSO5074 voltage values are approximate:UserWarning",
 ]
@@ -187,6 +202,7 @@ ignore-patterns = [
     "^bin7000_8000\\.py$",
     "^bindho1000\\.py$",
     "^lecroy_[0-9]_[0-9]_(be|le)\\.py$",
+    "^rohde_schwarz_.*\\.py$",
     "^siglent_.*\\.py$",
     "^tek_isf\\.py$",
     "^tek_wfm_[0-9]{3}_(be|le)\\.py$",
@@ -215,6 +231,7 @@ exclude = [
     "RigolWFM/bin7000_8000.py",
     "RigolWFM/bindho1000.py",
     "RigolWFM/lecroy_*.py",
+    "RigolWFM/rohde_schwarz_*.py",
     "RigolWFM/siglent_*.py",
     "RigolWFM/tek_isf.py",
     "RigolWFM/tek_wfm_*.py",
@@ -255,6 +272,7 @@ exclude = [
     "RigolWFM/bin[0-9].*\\.py",
     "RigolWFM/wfmdho1000\\.py",
     "RigolWFM/bindho.*\\.py",
+    "RigolWFM/rohde_schwarz_.*\\.py",
     "RigolWFM/siglent_.*\\.py",
 ]
 

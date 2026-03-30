@@ -48,7 +48,8 @@ A utility to process oscilloscope waveform files
 
 This project started as a resource for interpreting the proprietary ``.wfm``
 files created by Rigol oscilloscopes.  It now also includes parsers for
-Tektronix, LeCroy, Agilent / Keysight, Siglent, and Yokogawa waveform files.
+Tektronix, LeCroy, Agilent / Keysight, Siglent, Yokogawa, and Rohde &
+Schwarz waveform files.
 Open source tools that can parse or convert these binary oscilloscope formats
 are often balkanized: each program tends to support a single oscilloscope
 group.
@@ -90,7 +91,8 @@ files by::
 ``Wfm.from_file()`` will autodetect the file family for supported formats, so
 the same call works for Rigol ``.wfm`` / ``.bin`` files, Tektronix ``.wfm`` /
 ``.isf`` files, LeCroy ``.trc`` files, Agilent / Keysight ``AGxx`` ``.bin``
-files, supported Siglent ``.bin`` revisions, and Yokogawa ``.wfm`` files.
+files, supported Siglent ``.bin`` revisions, Yokogawa ``.wfm`` files, and
+Rohde & Schwarz RTP XML ``.bin`` files with companion ``.Wfm.bin`` payloads.
 
 
 Alternatively, ``wfmconvert`` can be used from the command line.  For example, the following should convert all the DS1000E files in the current directory to the ``.csv`` format::
@@ -105,15 +107,16 @@ If you wanted to a signal `.wav` file using the second channel waveform (for use
 
    prompt> wfmconvert --channel 2 wav *.wfm
 
-If you want to create a ``.wav`` file with channels one and four as signals (and autoscale for use with Audacity or Sigrok Pulseview)::
+If you want to create a ``.wav`` file with channels one and four as signals (using the default auto scaling for Audacity or Sigrok Pulseview)::
 
-   prompt> wfmconvert --autoscale --channel 14 wav *.wfm
+   prompt> wfmconvert --channel 14 wav *.wfm
 
 The project also includes a browser-based viewer at
 <https://scottprahl.github.io/RigolWFM/>.  The current web app supports Rigol
 ``.wfm`` / ``.bin`` files, Tektronix ``.wfm`` / ``.isf`` files, LeCroy
-``.trc`` files, Agilent / Keysight ``AGxx`` ``.bin`` files, and supported
-Siglent ``.bin`` revisions.
+``.trc`` files, Agilent / Keysight ``AGxx`` ``.bin`` files, Rohde &
+Schwarz RTP XML ``.bin`` files plus their companion ``.Wfm.bin`` payloads,
+and supported Siglent ``.bin`` revisions.
 
 Status
 ------
@@ -165,6 +168,10 @@ created by the following oscilloscopes.  Most of these work directly through
 | Agilent /          | InfiniiVision /  | ``.bin``          | supports ``AG01``/``AG03``/``AG10`` analog    |
 | Keysight           | Infiniium        |                   | captures; low-level parser preserves segments |
 |                    |                  |                   | and multi-buffer metadata                     |
++--------------------+------------------+-------------------+-----------------------------------------------+
+| Rohde & Schwarz    | RTP / RTO / RTM  | ``.bin`` +        | normalized single-acquisition analog exports; |
+| RTP export         | families         | ``.Wfm.bin``      | history / multi-acquisition captures reject   |
+|                    |                  |                   | explicitly                                    |
 +--------------------+------------------+-------------------+-----------------------------------------------+
 | Siglent            | documented       | ``.bin``          | supports documented V0.1-V6 revisions; old    |
 |                    | ``.bin``         |                   | platform files are detectable via low-level   |

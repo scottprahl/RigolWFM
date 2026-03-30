@@ -21,6 +21,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -28,7 +33,14 @@ jobs:
 
       - name: Install package and dependencies
         run: |
-          pip install -e .  # Current package in editable mode
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"  # Current package in editable mode with test deps
 
-      - name: basic test
-        run: python RigolWFM/wfmconvert.py --version
+      - name: Check default pytest discovery
+        run: pytest --collect-only -q
+
+      - name: Run test suite
+        run: pytest tests --ignore=tests/test_all_notebooks.py
+
+      - name: Run lint
+        run: ruff check .
