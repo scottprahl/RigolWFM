@@ -1,0 +1,80 @@
+<?xml version="1.0" standalone="no"?>
+<Database FWVersion="" SaveItemType="Data">
+	<Group Avail="0" Name="ReferenceCurveAttributes" NofSubGroups="0" NofProperties="75">
+		<Prop Avail="0" ValueKey="" Name="SourceType" Version="2" Value="eRS_SIGNAL_SOURCE_TYPE_SOURCE" UserValue="eRS_SIGNAL_SOURCE_TYPE_NONE"/>
+		<Prop Avail="0" ValueKey="" Name="Resolution" Value="2e-11" UserValue="0" Step="1e-11" Default="0" Min="0" Max="1e+26" StepDefault="1e-11" StepFactor="10" Resolution="0" UnitId="60" UnitName="s" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="RecordLength" Value="10000" UserValue="1000" Step="1" Default="1000" Min="0" Max="4294967295" StepDefault="1" StepFactor="10" Resolution="1" UnitId="101" UnitName="pts" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="HWRecordLength" Value="10000" UserValue="1000" Step="1" Default="1000" Min="0" Max="4294967295" StepDefault="1" StepFactor="10" Resolution="1" UnitId="101" UnitName="pts" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="TriggerOffset" Value="0" UserValue="0" Step="1.04493207941484e-10" Default="0" Min="-500" Max="500" StepDefault="1.04493207941484e-10" StepFactor="191.4" Resolution="2e-11" UnitId="60" UnitName="s" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="RescaleCenterTime" Value="1.1688e-07" UserValue="0" Step="0.01" Default="0" Min="-500" Max="500" StepDefault="0.01" StepFactor="10" Resolution="1e-12" UnitId="60" UnitName="s" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="DecimationMode" Version="2" Value="eRS_DECIMATION_MODE_SAMPLE" UserValue="eRS_DECIMATION_MODE_SAMPLE"/>
+		<Prop Avail="0" ValueKey="" Name="TraceArithmetics" Version="2" Value="eRS_TRACE_ARITHMETICS_SINGLE" UserValue="eRS_TRACE_ARITHMETICS_SINGLE"/>
+		<Prop Avail="0" ValueKey="" Name="TraceType" Version="2" Value="eRS_TRACE_TYPE_NORMAL" UserValue="eRS_TRACE_TYPE_NORMAL"/>
+		<Prop Avail="0" ValueKey="" Name="BaseUnit" Version="2" Value="eRS_UNIT_LEVEL_V" UserValue="eRS_UNIT_NONE"/>
+		<Prop Avail="0" ValueKey="" Name="BaseUnitRelative" Version="2" Value="eRS_ONOFF_OFF" UserValue="eRS_ONOFF_OFF"/>
+		<Prop Avail="0" ValueKey="" Name="Impedance" Value="50" UserValue="0" Step="1" Default="0" Min="0" Max="1000000000" StepDefault="1" StepFactor="10" Resolution="0.01" UnitId="58" UnitName="Ω" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="XStart" Value="1.688e-08" UserValue="0" Step="1e-10" Default="0" Min="-1e+26" Max="1e+26" StepDefault="1e-10" StepFactor="10" Resolution="0" UnitId="60" UnitName="s" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="XStop" Value="2.1688e-07" UserValue="0" Step="1e-10" Default="0" Min="-1e+26" Max="1e+26" StepDefault="1e-10" StepFactor="10" Resolution="0" UnitId="60" UnitName="s" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="SignalRecordLength" Value="10000" UserValue="1000" Step="1" Default="1000" Min="0" Max="4294967295" StepDefault="1" StepFactor="10" Resolution="1" UnitId="101" UnitName="pts" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="HardwareXStart" Value="1.688e-08" UserValue="0" Step="1e-10" Default="0" Min="-1e+26" Max="1e+26" StepDefault="1e-10" StepFactor="10" Resolution="0" UnitId="60" UnitName="s" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="HardwareXStop" Value="2.1688e-07" UserValue="0" Step="1e-10" Default="0" Min="-1e+26" Max="1e+26" StepDefault="1e-10" StepFactor="10" Resolution="0" UnitId="60" UnitName="s" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="SignalHardwareRecordLength" Value="10000" UserValue="1000" Step="1" Default="1000" Min="0" Max="4294967295" StepDefault="1" StepFactor="10" Resolution="1" UnitId="101" UnitName="pts" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="AdjustedResolutionBW" Value="0" UserValue="1" Step="0.1" Default="1" Min="0" Max="1e+26" StepDefault="0.1" StepFactor="10" Resolution="0" UnitId="66" UnitName="Hz" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="NoiseBandwidth" Value="0" UserValue="1" Step="0.1" Default="1" Min="0" Max="1e+26" StepDefault="0.1" StepFactor="10" Resolution="0" UnitId="66" UnitName="Hz" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="InterleavedTraceCount" Value="1" UserValue="1" Step="1" Default="1" Min="0" Max="4" StepDefault="1" StepFactor="10" Resolution="1" UnitId="81" UnitName="" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="ValueType" Version="2" Value="eRS_SIGNAL_VALUE_TYPE_COMPLETELY_FINITE_DEFINED" UserValue="eRS_SIGNAL_VALUE_TYPE_COMPLETELY_FINITE_DEFINED"/>
+		<Prop Avail="0" ValueKey="" Name="NofQuantisationLevels" Value="64768" UserValue="1" Step="0.1" Default="1" Min="0" Max="1e+26" StepDefault="0.1" StepFactor="10" Resolution="0" UnitId="81" UnitName="" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="DecimationFactor" Value="2" UserValue="1" Step="0.1" Default="1" Min="0" Max="1e+26" StepDefault="0.1" StepFactor="10" Resolution="0" UnitId="81" UnitName="" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="TOADone" Version="2" Value="eRS_ONOFF_ON" UserValue="eRS_ONOFF_ON"/>
+		<Prop Avail="0" ValueKey="" Name="ISO_TRG" Value="0" UserValue="0" Step="1" Default="0" Min="0" Max="512" StepDefault="1" StepFactor="10" Resolution="1" UnitId="81" UnitName="" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="SC_POST" Value="0" UserValue="0" Step="1" Default="0" Min="0" Max="18446744073709551615" StepDefault="1" StepFactor="10" Resolution="1" UnitId="81" UnitName="" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="SC_TRG" Value="0" UserValue="0" Step="1" Default="0" Min="0" Max="18446744073709551615" StepDefault="1" StepFactor="10" Resolution="1" UnitId="81" UnitName="" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="SignalResolution" Value="2e-11" UserValue="1" Step="0.1" Default="1" Min="0" Max="1e+26" StepDefault="0.1" StepFactor="10" Resolution="0" UnitId="81" UnitName="" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="LeadingSettlingSamples" Value="0" UserValue="1000" Step="1" Default="1000" Min="0" Max="4294967295" StepDefault="1" StepFactor="10" Resolution="1" UnitId="101" UnitName="pts" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="TimeScale" Value="2e-08" UserValue="0.05" Step="1e-12" Default="0.05" Min="2.5e-11" Max="50" StepDefault="1e-12" StepFactor="10" Resolution="1e-12" UnitId="93" UnitName="s/div" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="ReferencePoint" Value="-8.437" UserValue="50" Step="10" Default="50" Min="-1e+26" Max="1e+26" StepDefault="10" StepFactor="10" Resolution="1e-08" UnitId="51" UnitName="%" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="RescaleCenterPoint" Value="50.003" UserValue="50" Step="10" Default="50" Min="-1e+26" Max="1e+26" StepDefault="10" StepFactor="10" Resolution="1e-08" UnitId="51" UnitName="%" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="VerticalPosition" Value="0" UserValue="0" Step="0.1" Default="0" Min="-1e+26" Max="1e+26" StepDefault="0.1" StepFactor="10" Resolution="0" UnitId="99" UnitName="div" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="VerticalScale" Value="0.01" UserValue="0" Step="1e-06" Default="0" Min="0" Max="1e+26" StepDefault="1e-06" StepFactor="10" Resolution="1e-05" UnitId="28" UnitName="V/div" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="VerticalOffset" Value="0.00636" UserValue="0.00636" Step="0.000179533213644524" Default="0" Min="-1e+26" Max="1e+26" StepDefault="0.000179533213644524" StepFactor="55.7" Resolution="1e-06" UnitId="28" UnitName="V" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="BaseYStart" Value="-0.04364" UserValue="0" Step="1e-05" Default="0" Min="-1e+26" Max="1e+26" StepDefault="1e-05" StepFactor="10" Resolution="0" UnitId="28" UnitName="V" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="BaseYStop" Value="0.05636" UserValue="0" Step="1e-05" Default="0" Min="-1e+26" Max="1e+26" StepDefault="1e-05" StepFactor="10" Resolution="0" UnitId="28" UnitName="V" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="ViewUnit" Version="2" Value="eRS_UNIT_LEVEL_V" UserValue="eRS_UNIT_NONE"/>
+		<Prop Avail="0" ValueKey="" Name="ViewUnitRelative" Version="2" Value="eRS_ONOFF_OFF" UserValue="eRS_ONOFF_OFF"/>
+		<Prop Avail="0" ValueKey="" Name="ViewReferenceLevel" Value="0" UserValue="0" Step="0.1" Default="0" Min="-1e+26" Max="1e+26" StepDefault="0.1" StepFactor="10" Resolution="0.1" UnitId="81" UnitName="" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="UseInterSampleTriggerOffset" Version="2" Value="eRS_USE_INTERSAMPLE_OFFSET_AUTO" UserValue="eRS_USE_INTERSAMPLE_OFFSET_AUTO"/>
+		<Prop Avail="0" ValueKey="" Name="Source" Version="2" Value="eRS_SIGNAL_SOURCE_CH1_TR1" UserValue="eRS_SIGNAL_SOURCE_NONE"/>
+		<Prop Avail="0" ValueKey="" Name="NumericFormat" Version="2" Value="eRS_NUMERIC_FORMAT_DECIMAL" UserValue="eRS_NUMERIC_FORMAT_DECIMAL"/>
+		<Prop Avail="0" ValueKey="" Name="EnhancementMode" Version="2" Value="eRS_ENHANCEMENT_MODE_INTERPOLATED_TIME" UserValue="eRS_ENHANCEMENT_MODE_REALTIME"/>
+		<Prop Avail="0" ValueKey="" Name="InterpolationMode" Version="2" Value="eRS_INTERPOLATION_MODE_SIN_X_DIV_X" UserValue="eRS_INTERPOLATION_MODE_LINEAR"/>
+		<Prop Avail="0" ValueKey="" Name="CenterFreq" Value="0" UserValue="500" Step="1" Default="500" Min="0" Max="2000000000" StepDefault="1" StepFactor="10" Resolution="1e-05" UnitId="66" UnitName="Hz" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="FreqSpan" Value="1000" UserValue="1000" Step="100" Default="1000" Min="100" Max="2000000000" StepDefault="100" StepFactor="10" Resolution="1" UnitId="66" UnitName="Hz" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="ResolutionBW" Value="1" UserValue="1" Step="0.1" Default="1" Min="1" Max="2000000000000" StepDefault="0.1" StepFactor="10" Resolution="0.01" UnitId="66" UnitName="Hz" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="FrequencyStart" Value="0" UserValue="0" Step="1e-11" Default="0" Min="0" Max="1e+26" StepDefault="1e-11" StepFactor="10" Resolution="0" UnitId="66" UnitName="Hz" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="FrequencyStop" Value="0" UserValue="0" Step="1e-11" Default="0" Min="0" Max="1e+26" StepDefault="1e-11" StepFactor="10" Resolution="0" UnitId="66" UnitName="Hz" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="WindowType" Version="2" Value="eRS_MATH_SPECTRAL_WINDOW_TYPE_RECTANGULAR" UserValue="eRS_MATH_SPECTRAL_WINDOW_TYPE_GAUSSIAN"/>
+		<Prop Avail="0" ValueKey="" Name="GateRBWCoupling" Version="2" Value="eRS_MATH_SPECTRAL_GATE_RBW_COUPLING_KEEP_GATE" UserValue="eRS_MATH_SPECTRAL_GATE_RBW_COUPLING_KEEP_GATE"/>
+		<Prop Avail="0" ValueKey="" Name="HorizontalDivisionCount" Value="10" UserValue="10" Step="2" Default="10" Min="1" Max="20" StepDefault="2" StepFactor="10" Resolution="1" UnitId="81" UnitName="" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="VerticalDivisionCount" Value="10" UserValue="10" Step="2" Default="10" Min="1" Max="20" StepDefault="2" StepFactor="10" Resolution="1" UnitId="81" UnitName="" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="MultiChannelExport" Version="2" Value="eRS_ONOFF_ON" UserValue="eRS_ONOFF_OFF"/>
+		<Prop Avail="0" ValueKey="" Name="MultiChannelVerticalOffset" Step="1e-05" Default="0" Min="-1e+26" Max="1e+26" StepDefault="1e-05" StepFactor="10" Resolution="0" UnitId="28" UnitName="V" UnitPowerProduct="" BitGroupSize="0" Format="0" Size="4" I_0="0.00636" I_1="0" I_2="0" I_3="0"/>
+		<Prop Avail="0" ValueKey="" Name="MultiChannelVerticalPosition" Step="1e-06" Default="0" Min="0" Max="1e+26" StepDefault="1e-06" StepFactor="10" Resolution="0" UnitId="99" UnitName="div" UnitPowerProduct="" BitGroupSize="0" Format="0" Size="4" I_0="0" I_1="0" I_2="0" I_3="0"/>
+		<Prop Avail="0" ValueKey="" Name="MultiChannelVerticalScale" Step="1e-06" Default="0" Min="0" Max="1e+26" StepDefault="1e-06" StepFactor="10" Resolution="0" UnitId="28" UnitName="V" UnitPowerProduct="" BitGroupSize="0" Format="0" Size="4" I_0="0.01" I_1="0" I_2="0" I_3="0"/>
+		<Prop Avail="0" ValueKey="" Name="MultiChannelBaseYStart" Step="1e-06" Default="0" Min="0" Max="1e+26" StepDefault="1e-06" StepFactor="10" Resolution="0" UnitId="28" UnitName="V" UnitPowerProduct="" BitGroupSize="0" Format="0" Size="4" I_0="-0.04364" I_1="0" I_2="0" I_3="0"/>
+		<Prop Avail="0" ValueKey="" Name="MultiChannelBaseYStop" Step="1e-06" Default="0" Min="0" Max="1e+26" StepDefault="1e-06" StepFactor="10" Resolution="0" UnitId="28" UnitName="V" UnitPowerProduct="" BitGroupSize="0" Format="0" Size="4" I_0="0.05636" I_1="0" I_2="0" I_3="0"/>
+		<Prop Avail="0" ValueKey="" Name="MultiChannelExportState" Version="2" Size="4" I_0="eRS_ONOFF_ON" I_1="eRS_ONOFF_OFF" I_2="eRS_ONOFF_OFF" I_3="eRS_ONOFF_OFF"/>
+		<Prop Avail="0" ValueKey="" Name="MultiChannelViewUnit" Version="2" Size="4" I_0="eRS_UNIT_LEVEL_V" I_1="eRS_UNIT_NONE" I_2="eRS_UNIT_NONE" I_3="eRS_UNIT_NONE"/>
+		<Prop Avail="0" ValueKey="" Name="MultiChannelInterleavedTraceCount" Step="1" Default="1" Min="0" Max="4" StepDefault="1" StepFactor="10" Resolution="1" UnitId="81" UnitName="" UnitPowerProduct="" BitGroupSize="0" Format="0" Size="4" I_0="1" I_1="1" I_2="1" I_3="1"/>
+		<Prop Avail="0" ValueKey="" Name="MultiChannelSource" Version="2" Size="4" I_0="eRS_SIGNAL_SOURCE_CH1_TR1" I_1="eRS_SIGNAL_SOURCE_NONE" I_2="eRS_SIGNAL_SOURCE_NONE" I_3="eRS_SIGNAL_SOURCE_NONE"/>
+		<Prop Avail="0" ValueKey="" Name="FirmwareVersion" Value="5.10.1.0"/>
+		<Prop Avail="0" ValueKey="" Name="SignalFormat" Version="2" Value="eRS_SIGNAL_FORMAT_FLOAT" UserValue="eRS_SIGNAL_FORMAT_FLOAT"/>
+		<Prop Avail="0" ValueKey="" Name="Origin" Version="2" Value="eRS_EXPORT_ORIGIN_WFM_EXPORT" UserValue="eRS_EXPORT_ORIGIN_WFM_EXPORT"/>
+		<Prop Avail="0" ValueKey="" Name="ByteOrder" Version="2" Value="eRS_BYTE_ORDER_LSB_FIRST" UserValue="eRS_BYTE_ORDER_LSB_FIRST"/>
+		<Prop Avail="0" ValueKey="" Name="NumberOfAcquisitions" Value="10000" UserValue="1" Step="1" Default="1" Min="1" Max="10000000" StepDefault="1" StepFactor="10" Resolution="1" UnitId="81" UnitName="" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+		<Prop Avail="0" ValueKey="" Name="TimestampState" Version="2" Value="eRS_ONOFF_OFF" UserValue="eRS_ONOFF_OFF"/>
+		<Prop Avail="0" ValueKey="" Name="Timestamp" Value="14:50 16,618.778.497 s"/>
+		<Prop Avail="0" ValueKey="" Name="XAxisMode" Version="2" Value="eRS_LINLOG_LINEAR" UserValue="eRS_LINLOG_LINEAR"/>
+		<Prop Avail="0" ValueKey="" Name="XAxisTDRDomain" Version="2" Value="eRS_TDR_TDT_RESULT_SIGNAL_DOMAIN_TIME" UserValue="eRS_TDR_TDT_RESULT_SIGNAL_DOMAIN_TIME"/>
+		<Prop Avail="0" ValueKey="" Name="tdelay" Value="0" UserValue="0" Step="1e-06" Default="0" Min="0" Max="1e+26" StepDefault="1e-06" StepFactor="10" Resolution="0" UnitId="60" UnitName="s" UnitPowerProduct="" BitGroupSize="0" Format="0"/>
+	</Group>
+</Database>

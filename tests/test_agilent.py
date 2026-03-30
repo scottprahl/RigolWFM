@@ -14,10 +14,10 @@ import RigolWFM.wfm
 
 _ROOT = Path(__file__).resolve().parents[1]
 _BIN_DIR = _ROOT / "tests" / "files" / "bin"
-_MSOX4154A = _ROOT / "docs" / "vendors" / "wavebin-master" / "samples" / "MSOX4154A.bin"
+_MSOX4154A = _BIN_DIR / "agilent_msox4154a_01.bin"
 _skip_no_msox4154a = pytest.mark.skipif(
     not _MSOX4154A.exists(),
-    reason="wavebin MSOX4154A sample file is not present",
+    reason="Agilent MSOX4154A sample file is not present",
 )
 _WAVEFORM_HEADER = struct.Struct("<5if3d2i16s16s24s16sdI")
 _DATA_HEADER = struct.Struct("<IHHI")

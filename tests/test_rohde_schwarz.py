@@ -12,7 +12,7 @@ import RigolWFM.rohde_schwarz_rtp_wfm
 import RigolWFM.wfm
 
 _ROOT = Path(__file__).resolve().parents[1]
-_RTP_DIR = _ROOT / "docs/vendors/rohde_schwarz/rs_file_reader-main/tests/testdata"
+_RTP_DIR = _ROOT / "tests" / "files" / "rs"
 
 
 def _rtp_path(name: str) -> Path:
@@ -30,7 +30,7 @@ def _load_waveform_csv(path: Path) -> np.ndarray:
 
 def test_rohde_schwarz_rtp_low_level_header():
     """The low-level RTP payload parser should expose the 8-byte file header."""
-    path = _rtp_path("singleChan.Wfm.bin")
+    path = _rtp_path("rs_rtp_01.Wfm.bin")
 
     raw = RigolWFM.rohde_schwarz_rtp_wfm.RohdeSchwarzRtpWfm.from_file(str(path))
 
@@ -42,11 +42,11 @@ def test_rohde_schwarz_rtp_low_level_header():
 @pytest.mark.parametrize(
     "metadata_name, csv_name, expected_channels, has_time_column",
     [
-        ("singleChan.bin", "singleChan.Wfm.csv", [1], False),
-        ("multiChan.bin", "multiChan.Wfm.csv", [1, 2], False),
-        ("singleChanRaw.bin", "singleChan.Wfm.csv", [1], False),
-        ("16bit_singlechannel.bin", "16bit_singlechannel.Wfm.csv", [1], True),
-        ("16bit_multichannel.bin", "16bit_multichannel.Wfm.csv", [1, 2], True),
+        ("rs_rtp_01.bin", "rs_rtp_01.Wfm.csv", [1], False),
+        ("rs_rtp_02.bin", "rs_rtp_02.Wfm.csv", [1, 2], False),
+        ("rs_rtp_03.bin", "rs_rtp_01.Wfm.csv", [1], False),
+        ("rs_rtp_04.bin", "rs_rtp_04.Wfm.csv", [1], True),
+        ("rs_rtp_05.bin", "rs_rtp_05.Wfm.csv", [1, 2], True),
     ],
 )
 def test_rohde_schwarz_normalized_parser_matches_vendor_csv(
@@ -81,7 +81,7 @@ def test_rohde_schwarz_normalized_parser_matches_vendor_csv(
 
 def test_rohde_schwarz_autodetect_and_wfm_from_file():
     """`detect_model()` and `Wfm.from_file()` should route R&S RTP `.bin` files."""
-    path = _rtp_path("singleChan.bin")
+    path = _rtp_path("rs_rtp_01.bin")
 
     assert RigolWFM.wfm.detect_model(str(path)) == "RohdeSchwarz"
 
@@ -95,7 +95,7 @@ def test_rohde_schwarz_autodetect_and_wfm_from_file():
 
 def test_rohde_schwarz_normalized_parser_rejects_multi_acquisition_history():
     """The normalized parser should fail loudly on history / segmented captures."""
-    path = _rtp_path("aquisition_auto_1.bin")
+    path = _rtp_path("rs_rtp_history_01.bin")
 
     with pytest.raises(ValueError, match="multi-acquisition / history"):
         RigolWFM.rohde_schwarz.from_file(str(path))

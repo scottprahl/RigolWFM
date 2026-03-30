@@ -9,7 +9,8 @@ from tests.test_siglent import _build_siglent_v6
 from tests.test_tek import _build_tek_wfm
 
 _ROOT = Path(__file__).resolve().parents[1]
-_ROHDE = _ROOT / "docs" / "vendors" / "rohde_schwarz" / "rs_file_reader-main" / "tests" / "testdata" / "singleChan.bin"
+_RS_DIR = _ROOT / "tests" / "files" / "rs"
+_ROHDE = _RS_DIR / "rs_rtp_01.bin"
 
 # (filename, expected_model)
 # One representative file per detectable family.
@@ -44,7 +45,7 @@ _CASES = [
     # Agilent / Keysight `.bin` — AG01 / AG03 / AG10
     ("tests/files/bin/agilent_1.bin", "Keysight"),
     # Rohde & Schwarz RTP `.bin` metadata with companion `.Wfm.bin` payload
-    ("docs/vendors/rohde_schwarz/rs_file_reader-main/tests/testdata/singleChan.bin", "RohdeSchwarz"),
+    ("tests/files/rs/rs_rtp_01.bin", "RohdeSchwarz"),
 ]
 
 
@@ -68,7 +69,7 @@ def test_detect_model_missing_file():
         "tests/files/bin/MSO5000-A.bin",
         "tests/files/bin/DHO824-ch1.bin",
         "tests/files/bin/agilent_1.bin",
-        "docs/vendors/rohde_schwarz/rs_file_reader-main/tests/testdata/singleChan.bin",
+        "tests/files/rs/rs_rtp_01.bin",
     ],
 )
 def test_from_file_auto_matches_detected_model(path):
@@ -153,9 +154,9 @@ def test_from_url_auto_matches_detected_model_for_siglent(monkeypatch, tmp_path)
 
 def test_from_url_auto_matches_detected_model_for_rohde_schwarz(monkeypatch):
     """`from_url(auto)` should fetch the companion R&S payload when needed."""
-    root = Path("docs/vendors/rohde_schwarz/rs_file_reader-main/tests/testdata")
-    metadata = (root / "singleChan.bin").read_bytes()
-    payload = (root / "singleChan.Wfm.bin").read_bytes()
+    root = _RS_DIR
+    metadata = (root / "rs_rtp_01.bin").read_bytes()
+    payload = (root / "rs_rtp_01.Wfm.bin").read_bytes()
 
     class DummyResponse:  # pylint: disable=too-few-public-methods
         """Minimal requests response stand-in for unit tests."""
@@ -170,21 +171,21 @@ def test_from_url_auto_matches_detected_model_for_rohde_schwarz(monkeypatch):
         """Return local waveform bytes without performing network I/O."""
         assert allow_redirects is True
         assert timeout == 10
-        if url == "https://example.test/singleChan.bin":
+        if url == "https://example.test/rs_rtp_01.bin":
             return DummyResponse(metadata)
-        if url == "https://example.test/singleChan.Wfm.bin":
+        if url == "https://example.test/rs_rtp_01.Wfm.bin":
             return DummyResponse(payload)
         raise AssertionError(f"Unexpected URL requested: {url}")
 
     monkeypatch.setattr(wfm.requests, "get", fake_get)
 
-    auto_wave = wfm.Wfm.from_url("https://example.test/singleChan.bin")
-    explicit_wave = wfm.Wfm.from_file(str(root / "singleChan.bin"), "RohdeSchwarz")
+    auto_wave = wfm.Wfm.from_url("https://example.test/rs_rtp_01.bin")
+    explicit_wave = wfm.Wfm.from_file(str(root / "rs_rtp_01.bin"), "RohdeSchwarz")
 
     assert auto_wave.user_name == "auto"
     assert auto_wave.parser_name == explicit_wave.parser_name
     assert auto_wave.header_name == explicit_wave.header_name
-    assert auto_wave.basename == "singleChan.bin"
+    assert auto_wave.basename == "rs_rtp_01.bin"
     assert [ch.channel_number for ch in auto_wave.channels] == [ch.channel_number for ch in explicit_wave.channels]
 
 

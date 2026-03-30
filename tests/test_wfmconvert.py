@@ -18,9 +18,7 @@ from tests.test_yokogawa import _build_yokogawa_wfm
 
 _ROOT = Path(__file__).resolve().parents[1]
 _KEYSIGHT = _ROOT / "tests" / "files" / "bin" / "agilent_1.bin"
-_ROHDE = (
-    _ROOT / "docs" / "vendors" / "rohde_schwarz" / "rs_file_reader-main" / "tests" / "testdata" / "singleChan.bin"
-)
+_ROHDE = _ROOT / "tests" / "files" / "rs" / "rs_rtp_01.bin"
 
 
 _LEGACY_INFO = [
