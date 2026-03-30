@@ -66,7 +66,7 @@ def _build_ds6000_file(
     private_words = (11, 22, 33, 44)
 
     header = io.BytesIO()
-    header.write(b"\xA5\xA5\x38\x00")
+    header.write(b"\xa5\xa5\x38\x00")
     header.write(_padded_ascii("DS6104", 20))
     header.write(_padded_ascii("00.00.00.SP0", 20))
     header.write(struct.pack("<HHIHH", 1, 1, 0, 0, 0))

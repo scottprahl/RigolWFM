@@ -89,9 +89,7 @@ def main() -> None:
             cff_data = yaml.safe_load(f)
 
         if not isinstance(cff_data, dict):
-            raise RuntimeError(
-                "CITATION.cff does not contain a YAML mapping at top level."
-            )
+            raise RuntimeError("CITATION.cff does not contain a YAML mapping at top level.")
 
         cff_changed = False
 
@@ -125,9 +123,7 @@ def main() -> None:
                 yaml.dump(cff_data, f, sort_keys=False)
             print(f"CITATION.cff updated → version: {version}, date: {release_date}")
         else:
-            print(
-                "CITATION.cff: no change in release date, version, or preferred-citation."
-            )
+            print("CITATION.cff: no change in release date, version, or preferred-citation.")
     else:
         print("CITATION.cff not found; skipping CITATION.cff update.")
 
@@ -183,9 +179,7 @@ def main() -> None:
 
         if text != original_text:
             readme_path.write_text(text, encoding="utf-8")
-            print(
-                f"README.rst citation block updated → version: {version}, year: {year}"
-            )
+            print(f"README.rst citation block updated → version: {version}, year: {year}")
         else:
             print("README.rst citation block already up to date.")
 

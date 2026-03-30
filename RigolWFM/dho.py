@@ -27,6 +27,7 @@ adapter in `dho.py` lets the generated files stay generated, keeps the
 handwritten DHO interpretation in one place, and gives the rest of the project
 one stable DHO entry point.
 """
+
 from __future__ import annotations
 
 import struct
@@ -58,8 +59,8 @@ _DHO_ADC_MIDPOINT = 32768
 #
 # Example: DHO824-ch1 stores x_increment_raw = 500.
 #   x_increment = 500 × 8e-10 = 4×10⁻⁷ s  — confirmed by matching .bin export.
-_DHO1000_TICK_S = 1e-8   # 10 ns per tick (DHO1000 series)
-_DHO800_TICK_S  = 8e-10  # 0.8 ns per tick = 1 / 1.25 GHz (DHO800 series)
+_DHO1000_TICK_S = 1e-8  # 10 ns per tick (DHO1000 series)
+_DHO800_TICK_S = 8e-10  # 0.8 ns per tick = 1 / 1.25 GHz (DHO800 series)
 
 
 class UnitEnum(IntEnum):
@@ -232,7 +233,7 @@ def _channel_slot(ch_name: str, fallback: int) -> int:
     for prefix in ("CH", "C"):
         if name_upper.startswith(prefix):
             try:
-                n = int(name_upper[len(prefix):]) - 1
+                n = int(name_upper[len(prefix) :]) - 1
                 if 0 <= n < 4:
                     return n
             except ValueError:
@@ -262,7 +263,7 @@ def _parse_blocks(
         if block.is_terminator:
             break
 
-        raw_content = block.content_raw[:block.comp_size]
+        raw_content = block.content_raw[: block.comp_size]
         blocks.append((block, _try_decompress(raw_content), offset))
         offset += _DHO_BLOCK_HEADER_SIZE + block.len_content_raw
 
@@ -394,7 +395,7 @@ def _parse_model(blocks: list[tuple[Any, bytes, int]]) -> str:
             if idx < 0:
                 continue
             model = ""
-            for char in text[idx:idx + 20]:
+            for char in text[idx : idx + 20]:
                 if char.isprintable() and char != "\x00":
                     model += char
                 else:
@@ -465,8 +466,7 @@ def _from_wfm(file_name: str) -> DhoWaveform:
     is_dho800, cal = _extract_volt_calibration(blocks)
     if not cal:
         raise ValueError(
-            f"Could not extract voltage calibration from {file_name}. "
-            "Ensure this is a DHO series .wfm file."
+            f"Could not extract voltage calibration from {file_name}. " "Ensure this is a DHO series .wfm file."
         )
 
     _data_section = _find_data_section(data, blocks_end, is_dho800=is_dho800)
@@ -474,9 +474,7 @@ def _from_wfm(file_name: str) -> DhoWaveform:
         raise ValueError(f"Could not locate data section in {file_name}")
     n_pts, n_ch, x_origin, x_increment, data_start = _data_section
     if data_start + n_pts * n_ch * 2 > len(data):
-        raise ValueError(
-            f"Data section claims {n_pts * n_ch} samples but file is too small"
-        )
+        raise ValueError(f"Data section claims {n_pts * n_ch} samples but file is too small")
 
     obj = DhoWaveform()
     h = obj.header
@@ -493,7 +491,7 @@ def _from_wfm(file_name: str) -> DhoWaveform:
         fallback="DHO800" if is_dho800 else "DHO1000",
     )
 
-    raw_bytes = data[data_start:data_start + n_pts * n_ch * 2]
+    raw_bytes = data[data_start : data_start + n_pts * n_ch * 2]
     raw_all = np.frombuffer(raw_bytes, dtype="<u2").copy()
     h.ch = [ChannelHeader(f"CH{i + 1}", enabled=False) for i in range(4)]
 

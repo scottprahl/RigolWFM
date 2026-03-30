@@ -99,10 +99,7 @@ def _patch_u32(data, offset, value):
 
 def _expected_ds2000_time_offset(header):
     """Return the trigger-centered time offset for DS2000 captures."""
-    if (
-        header.model_number.startswith("DS2A")
-        and header.firmware_version == "00.03.00.01.03"
-    ):
+    if header.model_number.startswith("DS2A") and header.firmware_version == "00.03.00.01.03":
         return 0.0
     return header.time_offset
 
@@ -119,9 +116,7 @@ def test_ds2000_time_grid_matches_sample_period(stem):
     waveform = RigolWFM.wfm.Wfm.from_file(f"tests/files/wfm/{stem}.wfm", "2")
     for channel in waveform.channels:
         if channel.enabled:
-            assert channel.times[1] - channel.times[0] == pytest.approx(
-                channel.seconds_per_point
-            )
+            assert channel.times[1] - channel.times[0] == pytest.approx(channel.seconds_per_point)
 
 
 @pytest.mark.parametrize("stem", ["DS2000-A", "DS2000-B"])
@@ -131,9 +126,7 @@ def test_ds2000_legacy_trigger_is_centered(stem):
     for channel in waveform.channels:
         if channel.enabled:
             assert channel.time_offset == pytest.approx(0.0)
-            assert channel.times[channel.points // 2] == pytest.approx(
-                0.0, abs=channel.seconds_per_point
-            )
+            assert channel.times[channel.points // 2] == pytest.approx(0.0, abs=channel.seconds_per_point)
 
 
 def test_ds2072a_nonzero_time_offset_is_preserved():
@@ -178,7 +171,9 @@ def test_ds2000_setup_trigger_matches_scope_export(stem):
     levels = setup.trigger_levels
 
     assert int(setup.trigger_source_primary) == int(setup.trigger_source_shadow)
-    assert RigolWFM.wfm._DS2000_SOURCE_NAMES[int(setup.trigger_source_primary)] == expected["source"]  # pylint: disable=protected-access
+    assert (
+        RigolWFM.wfm._DS2000_SOURCE_NAMES[int(setup.trigger_source_primary)] == expected["source"]
+    )  # pylint: disable=protected-access
     assert setup.trigger_holdoff_ns * 1.0e-9 == pytest.approx(expected["holdoff_s"])
     assert levels.ch1_level_uv * 1.0e-6 == pytest.approx(expected["input_levels"]["CH1"])
     assert levels.ch2_level_uv * 1.0e-6 == pytest.approx(expected["input_levels"]["CH2"])
@@ -193,9 +188,7 @@ def test_ds2000_trigger_info_uses_setup_metadata(stem):
 
     assert waveform.trigger_info["mode"] == expected["mode"]
     assert waveform.trigger_info["source"] == expected["source"]
-    assert waveform.trigger_info["level"] == pytest.approx(
-        expected["input_levels"].get(expected["source"], 0.0)
-    )
+    assert waveform.trigger_info["level"] == pytest.approx(expected["input_levels"].get(expected["source"], 0.0))
 
 
 @pytest.mark.parametrize("stem", ["DS2000-A", "DS2000-B"])
@@ -236,9 +229,7 @@ def test_ds2000_windowed_data_uses_effective_length_and_offset(tmp_path):
     assert channel.points == wfm_len
     assert channel.raw[0] == original.header.raw_1[z_pt_offset]
     assert channel.times[0] == pytest.approx(expected_start)
-    assert channel.times[1] - channel.times[0] == pytest.approx(
-        original.header.seconds_per_point
-    )
+    assert channel.times[1] - channel.times[0] == pytest.approx(original.header.seconds_per_point)
 
 
 def test_ds2000_interwoven_data_uses_effective_half_windows(tmp_path):
@@ -274,6 +265,4 @@ def test_ds2000_interwoven_data_uses_effective_half_windows(tmp_path):
     assert channel.raw[0] == original.header.raw_1[z_pt_offset]
     assert channel.raw[1] == original.header.raw_2[z_pt_offset]
     assert channel.times[0] == pytest.approx(expected_start)
-    assert channel.times[1] - channel.times[0] == pytest.approx(
-        original.header.seconds_per_point
-    )
+    assert channel.times[1] - channel.times[0] == pytest.approx(original.header.seconds_per_point)

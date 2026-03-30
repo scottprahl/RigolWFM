@@ -218,7 +218,11 @@ _LOW_LEVEL_CASES = [
     ("v3", _build_siglent_v3, lambda raw: raw.ch_vert_code_per_div.entries[0] == 30),
     ("v4", _build_siglent_v4, lambda raw: int(raw.data_offset_byte) == 0x1000),
     ("v5", _build_siglent_v5, lambda raw: int(raw.version) == 5 and int(raw.wave_length) == 4),
-    ("v6", _build_siglent_v6, lambda raw: int(raw.file_header.version) == 6 and int(raw.waveforms[0].header.data_number) == 4),
+    (
+        "v6",
+        _build_siglent_v6,
+        lambda raw: int(raw.file_header.version) == 6 and int(raw.waveforms[0].header.data_number) == 4,
+    ),
 ]
 
 _NORMALIZED_CASES = [

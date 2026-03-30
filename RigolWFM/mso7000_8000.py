@@ -14,6 +14,7 @@ The 7000/8000 binary container is structurally identical to the MSO5000 one.
 Shared helper types (ChannelHeader, Header, _channel_slot, etc.) are imported
 from `RigolWFM.mso5000` rather than duplicated here.
 """
+
 from __future__ import annotations
 
 from typing import Any

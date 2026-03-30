@@ -19,6 +19,7 @@ The original is at::
 
     https://github.com/alchemyst/Dynamics-and-Control/blob/main/test_all_notebooks.py
 """
+
 import os.path
 import pathlib
 import pytest

@@ -24,6 +24,7 @@ The old-platform format is exposed at the low-level Kaitai layer but is not
 normalized here because the Siglent PDF leaves family-dependent scale
 constants ambiguous between SDS1000X and SDS2000X captures.
 """
+
 from __future__ import annotations
 
 import math
@@ -550,7 +551,12 @@ def _normalized_waveform(
 
 def _normalize_v0_1(raw: Any) -> SiglentWaveform:
     enabled = [bool(raw.ch1_on), bool(raw.ch2_on), bool(raw.ch3_on), bool(raw.ch4_on)]
-    volt_divs = [_scaled_to_si(raw.ch1_volt_div), _scaled_to_si(raw.ch2_volt_div), _scaled_to_si(raw.ch3_volt_div), _scaled_to_si(raw.ch4_volt_div)]
+    volt_divs = [
+        _scaled_to_si(raw.ch1_volt_div),
+        _scaled_to_si(raw.ch2_volt_div),
+        _scaled_to_si(raw.ch3_volt_div),
+        _scaled_to_si(raw.ch4_volt_div),
+    ]
     vert_offsets = [
         _scaled_to_si(raw.ch1_vert_offset),
         _scaled_to_si(raw.ch2_vert_offset),
@@ -577,7 +583,12 @@ def _normalize_v0_1(raw: Any) -> SiglentWaveform:
 
 def _normalize_v0_2(raw: Any) -> SiglentWaveform:
     enabled = [bool(raw.ch1_on), bool(raw.ch2_on), bool(raw.ch3_on), bool(raw.ch4_on)]
-    volt_divs = [_scaled_to_si(raw.ch1_volt_div), _scaled_to_si(raw.ch2_volt_div), _scaled_to_si(raw.ch3_volt_div), _scaled_to_si(raw.ch4_volt_div)]
+    volt_divs = [
+        _scaled_to_si(raw.ch1_volt_div),
+        _scaled_to_si(raw.ch2_volt_div),
+        _scaled_to_si(raw.ch3_volt_div),
+        _scaled_to_si(raw.ch4_volt_div),
+    ]
     vert_offsets = [
         _scaled_to_si(raw.ch1_vert_offset),
         _scaled_to_si(raw.ch2_vert_offset),
@@ -709,7 +720,12 @@ def _normalize_v4(raw: Any) -> SiglentWaveform:
 
 def _normalize_v5(raw: Any) -> SiglentWaveform:
     enabled = [bool(raw.ch1_on), bool(raw.ch2_on), bool(raw.ch3_on), bool(raw.ch4_on)]
-    volt_divs = [_scaled_to_si(raw.ch1_volt_div), _scaled_to_si(raw.ch2_volt_div), _scaled_to_si(raw.ch3_volt_div), _scaled_to_si(raw.ch4_volt_div)]
+    volt_divs = [
+        _scaled_to_si(raw.ch1_volt_div),
+        _scaled_to_si(raw.ch2_volt_div),
+        _scaled_to_si(raw.ch3_volt_div),
+        _scaled_to_si(raw.ch4_volt_div),
+    ]
     vert_offsets = [
         _scaled_to_si(raw.ch1_vert_offset),
         _scaled_to_si(raw.ch2_vert_offset),
@@ -783,14 +799,11 @@ def _normalize_v6(raw: Any) -> SiglentWaveform:
         sample_width = int(wfh.data_bytes) // int(wfh.data_number)
         if sample_width not in (1, 2, 4):
             raise ValueError(
-                "Unsupported Siglent V6.0 sample width "
-                f"({sample_width} bytes per point) for channel {slot + 1}"
+                "Unsupported Siglent V6.0 sample width " f"({sample_width} bytes per point) for channel {slot + 1}"
             )
 
         codes = _decode_integer_codes(waveform.data_raw, sample_width=sample_width, byte_order="<")
-        volts = (
-            (codes.astype(np.float64) - float(wfh.vert_origin_pos)) * float(wfh.vert_interval)
-        ).astype(np.float32)
+        volts = ((codes.astype(np.float64) - float(wfh.vert_origin_pos)) * float(wfh.vert_interval)).astype(np.float32)
         x_origin = -float(wfh.hori_origin_pos) * float(wfh.hori_interval)
         x_increment = float(wfh.hori_interval)
         raw_proxy = _raw_proxy_from_codes(codes, sample_width=sample_width)

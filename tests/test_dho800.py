@@ -27,19 +27,22 @@ import RigolWFM.wfm
 
 _FILES_DIR = Path(__file__).resolve().parent / "files"
 
-_CH1_BIN    = _FILES_DIR / "bin" / "DHO824-ch1.bin"
-_CH1_WFM    = _FILES_DIR / "wfm" / "DHO824-ch1.wfm"
-_CH12_BIN   = _FILES_DIR / "bin" / "DHO824-ch12.bin"
-_CH12_WFM   = _FILES_DIR / "wfm" / "DHO824-ch12.wfm"
+_CH1_BIN = _FILES_DIR / "bin" / "DHO824-ch1.bin"
+_CH1_WFM = _FILES_DIR / "wfm" / "DHO824-ch1.wfm"
+_CH12_BIN = _FILES_DIR / "bin" / "DHO824-ch12.bin"
+_CH12_WFM = _FILES_DIR / "wfm" / "DHO824-ch12.wfm"
 _CH1234_BIN = _FILES_DIR / "bin" / "DHO824-ch1234.bin"
 _CH1234_WFM = _FILES_DIR / "wfm" / "DHO824-ch1234.wfm"
 
-_skip_no_ch1    = pytest.mark.skipif(not (_CH1_BIN.exists() and _CH1_WFM.exists()),
-                                     reason="DHO824-ch1 files not found in tests/files/")
-_skip_no_ch12   = pytest.mark.skipif(not (_CH12_BIN.exists() and _CH12_WFM.exists()),
-                                     reason="DHO824-ch12 files not found in tests/files/")
-_skip_no_ch1234 = pytest.mark.skipif(not (_CH1234_BIN.exists() and _CH1234_WFM.exists()),
-                                     reason="DHO824-ch1234 files not found in tests/files/")
+_skip_no_ch1 = pytest.mark.skipif(
+    not (_CH1_BIN.exists() and _CH1_WFM.exists()), reason="DHO824-ch1 files not found in tests/files/"
+)
+_skip_no_ch12 = pytest.mark.skipif(
+    not (_CH12_BIN.exists() and _CH12_WFM.exists()), reason="DHO824-ch12 files not found in tests/files/"
+)
+_skip_no_ch1234 = pytest.mark.skipif(
+    not (_CH1234_BIN.exists() and _CH1234_WFM.exists()), reason="DHO824-ch1234 files not found in tests/files/"
+)
 
 _CORRELATION_THRESHOLD = 0.99
 _RMS_THRESHOLD_MV = 0.1
@@ -59,10 +62,8 @@ def _check_wfm_bin_correlation(wfm_path, bin_path, n_ch):
         vb = v_bin[:n].astype(np.float64)
         corr = float(np.corrcoef(vw, vb)[0, 1])
         rms_mv = float(np.sqrt(np.mean((vw - vb) ** 2))) * 1000
-        assert corr > _CORRELATION_THRESHOLD, \
-            f"CH{i + 1}: correlation {corr:.6f} < {_CORRELATION_THRESHOLD}"
-        assert rms_mv < _RMS_THRESHOLD_MV, \
-            f"CH{i + 1}: RMS {rms_mv:.4f} mV exceeds {_RMS_THRESHOLD_MV} mV"
+        assert corr > _CORRELATION_THRESHOLD, f"CH{i + 1}: correlation {corr:.6f} < {_CORRELATION_THRESHOLD}"
+        assert rms_mv < _RMS_THRESHOLD_MV, f"CH{i + 1}: RMS {rms_mv:.4f} mV exceeds {_RMS_THRESHOLD_MV} mV"
 
 
 def _check_wfm_bin_time_axis(wfm_path, bin_path):
@@ -78,6 +79,7 @@ def _check_wfm_bin_time_axis(wfm_path, bin_path):
 # ---------------------------------------------------------------------------
 # DHO800 .bin parser tests
 # ---------------------------------------------------------------------------
+
 
 @_skip_no_ch1
 def test_ch1_bin_cookie():
@@ -126,6 +128,7 @@ def test_ch1234_bin_all_channels():
 # ---------------------------------------------------------------------------
 # DHO800 .wfm parser tests
 # ---------------------------------------------------------------------------
+
 
 @_skip_no_ch1
 def test_ch1_wfm_parse():
@@ -211,6 +214,7 @@ def test_ch1_wfm_str_parser_name():
 # Cross-validation: WFM vs BIN voltage correlation
 # ---------------------------------------------------------------------------
 
+
 @_skip_no_ch1
 def test_ch1_wfm_bin_correlation():
     """CH1 WFM vs BIN: correlation > 0.99, RMS < 0.1 mV."""
@@ -250,6 +254,7 @@ def test_ch1234_wfm_bin_time_axis_matches():
 # ---------------------------------------------------------------------------
 # Integration tests: Wfm.from_file() round-trip
 # ---------------------------------------------------------------------------
+
 
 @_skip_no_ch1
 def test_bin_ch1_times_and_volts():

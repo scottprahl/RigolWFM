@@ -47,6 +47,7 @@ References:
     Yokogawa Electric Corporation, "Model DL850/DL850V WDF File Access
     Library User's Manual", IM B8074XP-01EN, 1st Edition, 2010.
 """
+
 from __future__ import annotations
 
 from typing import Optional

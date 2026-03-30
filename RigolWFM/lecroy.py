@@ -36,6 +36,7 @@ LECROY_2_3 calibration:
 Time axis (both versions):
   t[i] = HORIZ_OFFSET + i * HORIZ_INTERVAL   (i = 0 … WAVE_ARRAY_COUNT − 1)
 """
+
 from __future__ import annotations
 
 import io as _io
@@ -58,11 +59,11 @@ _Lecroy10Be: Any = RigolWFM.lecroy_1_0_be.Lecroy10Be  # type: ignore[attr-define
 
 _LECROY_MAGIC = b"WAVEDESC"
 _COUPLING_MAP = {
-    0: "DC",   # dc_50_ohm
+    0: "DC",  # dc_50_ohm
     1: "GND",  # ground
-    2: "DC",   # dc_1m_ohm
+    2: "DC",  # dc_1m_ohm
     3: "GND",  # ground_b
-    4: "AC",   # ac_1m_ohm
+    4: "AC",  # ac_1m_ohm
 }
 
 

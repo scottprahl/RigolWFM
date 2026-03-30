@@ -105,9 +105,7 @@ def test_ds1000z_time_grid_matches_sample_period(stem):
     waveform = RigolWFM.wfm.Wfm.from_file(f"tests/files/wfm/{stem}.wfm", "Z")
     for channel in waveform.channels:
         if channel.enabled:
-            assert channel.times[1] - channel.times[0] == pytest.approx(
-                channel.seconds_per_point
-            )
+            assert channel.times[1] - channel.times[0] == pytest.approx(channel.seconds_per_point)
 
 
 @pytest.mark.parametrize("stem", _Z_WAVEFORM_CASES)
@@ -150,11 +148,7 @@ def test_ds1000z_horizontal_normalized_table_matches_header(stem):
 def test_ds1000z_sp3_two_channel_levels_match_csv(stem, channels):
     """SP3 two-channel DS1000Z captures should match CSV DC levels."""
     waveform = RigolWFM.wfm.Wfm.from_file(f"tests/files/wfm/{stem}.wfm", "Z")
-    actual_channels = {
-        channel.channel_number: channel
-        for channel in waveform.channels
-        if channel.enabled
-    }
+    actual_channels = {channel.channel_number: channel for channel in waveform.channels if channel.enabled}
     expected_channels = _read_csv_channels(stem)
 
     for channel_number in channels:
@@ -171,11 +165,7 @@ def test_ds1000z_sp3_two_channel_levels_match_csv(stem, channels):
 def test_ds1000z_sp4_voltage_distribution_matches_csv(stem, channel_number):
     """Selected SP4 Rigol CSV fixtures should agree with the parsed voltages."""
     waveform = RigolWFM.wfm.Wfm.from_file(f"tests/files/wfm/{stem}.wfm", "Z")
-    actual_channels = {
-        channel.channel_number: channel
-        for channel in waveform.channels
-        if channel.enabled
-    }
+    actual_channels = {channel.channel_number: channel for channel in waveform.channels if channel.enabled}
     expected_channels = _read_csv_channels(stem)
 
     count = min(

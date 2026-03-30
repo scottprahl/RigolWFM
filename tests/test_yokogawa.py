@@ -20,9 +20,7 @@ def _build_yokogawa_wfm(
 ) -> bytes:
     """Build a minimal Yokogawa ASCII-header `.wfm` file."""
     header = (
-        "YOKOGAWA WFM\n"
-        f"HDR NR_PT:{len(raw_samples)},PT_O:{pt_off},XIN:{xin},"
-        f"YMU:{ymu},YOF:{yof},BIT:32,BYT:4,\n"
+        "YOKOGAWA WFM\n" f"HDR NR_PT:{len(raw_samples)},PT_O:{pt_off},XIN:{xin}," f"YMU:{ymu},YOF:{yof},BIT:32,BYT:4,\n"
     ).encode("ascii")
     payload = np.asarray(raw_samples, dtype="<f4").tobytes()
     return header + payload

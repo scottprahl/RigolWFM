@@ -33,6 +33,7 @@ Time axis
   (i = 0 is the first sample in the curve buffer; valid data starts at
    curve.first_valid_sample)
 """
+
 from __future__ import annotations
 
 import io as _io
@@ -214,7 +215,7 @@ def _parse_legacy_llwfm(data: bytes, file_name: str) -> TekWaveform:
     if start < 0:
         raise ValueError(f"File '{file_name}' does not start with a supported LLWFM header")
     offset = start + len(_LLWFM_MAGIC)
-    if offset < len(data) and data[offset:offset + 1] == b"#":
+    if offset < len(data) and data[offset : offset + 1] == b"#":
         offset += 1
 
     def read(fmt: str) -> Any:
@@ -279,13 +280,11 @@ def _parse_legacy_llwfm(data: bytes, file_name: str) -> TekWaveform:
         raise ValueError(f"Legacy Tektronix file '{file_name}' is truncated in the curve buffer")
 
     offset += preamble_bytes
-    adc = np.frombuffer(data[offset:offset + curve_bytes], dtype=">i2").astype(np.int16)
+    adc = np.frombuffer(data[offset : offset + curve_bytes], dtype=">i2").astype(np.int16)
 
-    volts = (
-        adc.astype(np.float64) * (vert_gain / (25.0 * 256.0))
-        + vert_offset
-        - vert_pos * vert_gain
-    ).astype(np.float32)
+    volts = (adc.astype(np.float64) * (vert_gain / (25.0 * 256.0)) + vert_offset - vert_pos * vert_gain).astype(
+        np.float32
+    )
 
     obj = TekWaveform()
     h = obj.header
@@ -343,10 +342,7 @@ def from_file(file_name: str) -> TekWaveform:
         is_le = False
         byte_order = ">"
     else:
-        raise ValueError(
-            f"File '{file_name}' has unrecognised byte_order field: "
-            f"0x{data[0]:02X}{data[1]:02X}"
-        )
+        raise ValueError(f"File '{file_name}' has unrecognised byte_order field: " f"0x{data[0]:02X}{data[1]:02X}")
 
     # Detect version from version_number string at offset 2 (8 bytes)
     version_str = data[2:10].split(b"\x00")[0].decode("ascii", errors="ignore").strip()
@@ -396,9 +392,7 @@ def from_file(file_name: str) -> TekWaveform:
     try:
         curve_buf = raw.curve_buffer
     except Exception as exc:
-        raise ValueError(
-            f"No waveform data in '{file_name}' (file may be truncated): {exc}"
-        ) from exc
+        raise ValueError(f"No waveform data in '{file_name}' (file may be truncated): {exc}") from exc
 
     data_start = int(curve.data_start_offset)
     data_end = int(curve.postcharge_start_offset)

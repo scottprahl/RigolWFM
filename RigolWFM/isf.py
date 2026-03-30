@@ -31,6 +31,7 @@ Envelope mode (PT_FMT = "ENV")
   adc_max[i] = adc[2*i + 1]
   t[i] = XZERO + XINCR * (2*i - PT_OFF)
 """
+
 from __future__ import annotations
 
 import io as _io
@@ -49,29 +50,41 @@ _TekIsf: Any = RigolWFM.tek_isf.TekIsf  # type: ignore[attr-defined]
 # Maps both long-form and short-form field names to a canonical key
 _FIELD_ALIASES: dict[str, str] = {
     # bytes per sample
-    "BYT_NR": "byt_nr", "BYT_N": "byt_nr",
+    "BYT_NR": "byt_nr",
+    "BYT_N": "byt_nr",
     # bytes per point — synonym used in some headers
-    "BN_FMT": "bn_fmt", "BN_F": "bn_fmt",
+    "BN_FMT": "bn_fmt",
+    "BN_F": "bn_fmt",
     # byte order
-    "BYT_OR": "byt_or", "BYT_O": "byt_or",
+    "BYT_OR": "byt_or",
+    "BYT_O": "byt_or",
     # waveform identifier / label
-    "WFID": "wfid", "WFI": "wfid",
+    "WFID": "wfid",
+    "WFI": "wfid",
     # number of points
-    "NR_PT": "nr_pt", "NR_P": "nr_pt",
+    "NR_PT": "nr_pt",
+    "NR_P": "nr_pt",
     # point format
-    "PT_FMT": "pt_fmt", "PT_F": "pt_fmt",
+    "PT_FMT": "pt_fmt",
+    "PT_F": "pt_fmt",
     # x increment (time per sample)
-    "XINCR": "xincr", "XIN": "xincr",
+    "XINCR": "xincr",
+    "XIN": "xincr",
     # x zero
-    "XZERO": "xzero", "XZE": "xzero",
+    "XZERO": "xzero",
+    "XZE": "xzero",
     # point offset
-    "PT_OFF": "pt_off", "PT_O": "pt_off",
+    "PT_OFF": "pt_off",
+    "PT_O": "pt_off",
     # y multiplier
-    "YMULT": "ymult", "YMU": "ymult",
+    "YMULT": "ymult",
+    "YMU": "ymult",
     # y offset (ADC count)
-    "YOFF": "yoff", "YOF": "yoff",
+    "YOFF": "yoff",
+    "YOF": "yoff",
     # y zero (baseline volts)
-    "YZERO": "yzero", "YZE": "yzero",
+    "YZERO": "yzero",
+    "YZE": "yzero",
     # volts per division (optional)
     "VSCALE": "vscale",
 }
@@ -133,6 +146,7 @@ def _int_field(fields: dict[str, str], key: str, default: int = 0) -> int:
 # ---------------------------------------------------------------------------
 # Normalized header objects (same shape as tek.py's Header / ChannelHeader)
 # ---------------------------------------------------------------------------
+
 
 class ChannelHeader:
     """Normalized per-channel metadata for a Tektronix ISF capture."""
@@ -247,6 +261,7 @@ class IsfWaveform:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def from_file(file_name: str) -> IsfWaveform:
     """Parse a Tektronix ISF file and normalize it for `Wfm.from_file()`.
 
@@ -347,7 +362,7 @@ def from_file(file_name: str) -> IsfWaveform:
     if byt_nr == 2:
         raw8 = (adc.astype(np.int16).view(np.uint16) >> 8).astype(np.uint8)
     else:
-        raw8 = (adc.astype(np.int8).view(np.uint8))
+        raw8 = adc.astype(np.int8).view(np.uint8)
 
     # --- Assemble normalized objects ---
     obj = IsfWaveform()

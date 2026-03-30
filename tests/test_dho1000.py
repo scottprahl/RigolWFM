@@ -23,12 +23,8 @@ _FILES_DIR = Path(__file__).resolve().parent / "files"
 _DHO1074_BIN = _FILES_DIR / "bin" / "DHO1074.bin"
 _DHO1074_WFM = _FILES_DIR / "wfm" / "DHO1074.wfm"
 
-_skip_no_bin = pytest.mark.skipif(
-    not _DHO1074_BIN.exists(), reason="DHO1074.bin not found in tests/files/bin/"
-)
-_skip_no_wfm = pytest.mark.skipif(
-    not _DHO1074_WFM.exists(), reason="DHO1074.wfm not found in tests/files/wfm/"
-)
+_skip_no_bin = pytest.mark.skipif(not _DHO1074_BIN.exists(), reason="DHO1074.bin not found in tests/files/bin/")
+_skip_no_wfm = pytest.mark.skipif(not _DHO1074_WFM.exists(), reason="DHO1074.wfm not found in tests/files/wfm/")
 _skip_no_pair = pytest.mark.skipif(
     not (_DHO1074_BIN.exists() and _DHO1074_WFM.exists()),
     reason="DHO1074.bin/.wfm pair not found in tests/files/",
@@ -38,6 +34,7 @@ _skip_no_pair = pytest.mark.skipif(
 # ---------------------------------------------------------------------------
 # DHO .bin parser tests
 # ---------------------------------------------------------------------------
+
 
 @_skip_no_bin
 def test_dho1074_bin_sample_count():
@@ -96,6 +93,7 @@ def test_dho1074_bin_str_parser_name():
 # ---------------------------------------------------------------------------
 # DHO .wfm parser tests
 # ---------------------------------------------------------------------------
+
 
 @_skip_no_wfm
 def test_dho1074_wfm_parse():
@@ -186,14 +184,13 @@ def test_dho1074_wfm_str_parser_name():
 # Cross-validation: BIN vs WFM correlation
 # ---------------------------------------------------------------------------
 
+
 @_skip_no_pair
 def test_wfm_bin_rms_error():
     """Each DHO1074 channel should match BIN to within 10 mV RMS."""
     wfm_obj = RigolWFM.dho.dho_from_file(str(_DHO1074_WFM))
     bin_obj = RigolWFM.dho.dho_from_file(str(_DHO1074_BIN))
-    for i, (wfm_v, bin_v) in enumerate(
-        zip(wfm_obj.header.channel_data, bin_obj.header.channel_data), start=1
-    ):
+    for i, (wfm_v, bin_v) in enumerate(zip(wfm_obj.header.channel_data, bin_obj.header.channel_data), start=1):
         n = min(len(wfm_v), len(bin_v))
         rms = float(np.sqrt(np.mean((wfm_v[:n].astype(np.float64) - bin_v[:n].astype(np.float64)) ** 2)))
         assert rms < 0.01, f"CH{i} RMS error {rms:.6f} V exceeds 10 mV"
@@ -204,9 +201,7 @@ def test_wfm_bin_correlation():
     """Each DHO1074 channel should correlate with BIN at r > 0.999999."""
     wfm_obj = RigolWFM.dho.dho_from_file(str(_DHO1074_WFM))
     bin_obj = RigolWFM.dho.dho_from_file(str(_DHO1074_BIN))
-    for i, (wfm_v, bin_v) in enumerate(
-        zip(wfm_obj.header.channel_data, bin_obj.header.channel_data), start=1
-    ):
+    for i, (wfm_v, bin_v) in enumerate(zip(wfm_obj.header.channel_data, bin_obj.header.channel_data), start=1):
         n = min(len(wfm_v), len(bin_v))
         corr = float(np.corrcoef(wfm_v[:n].astype(np.float64), bin_v[:n].astype(np.float64))[0, 1])
         assert corr > 0.999999, f"CH{i} correlation {corr:.9f} is too low"
@@ -217,9 +212,7 @@ def test_wfm_bin_max_error():
     """Each DHO1074 channel should stay within 10 mV sample-wise error."""
     wfm_obj = RigolWFM.dho.dho_from_file(str(_DHO1074_WFM))
     bin_obj = RigolWFM.dho.dho_from_file(str(_DHO1074_BIN))
-    for i, (wfm_v, bin_v) in enumerate(
-        zip(wfm_obj.header.channel_data, bin_obj.header.channel_data), start=1
-    ):
+    for i, (wfm_v, bin_v) in enumerate(zip(wfm_obj.header.channel_data, bin_obj.header.channel_data), start=1):
         n = min(len(wfm_v), len(bin_v))
         max_err = float(np.max(np.abs(wfm_v[:n].astype(np.float64) - bin_v[:n].astype(np.float64))))
         assert max_err < 0.01, f"CH{i} max error {max_err:.6f} V exceeds 10 mV"
@@ -228,6 +221,7 @@ def test_wfm_bin_max_error():
 # ---------------------------------------------------------------------------
 # Integration tests: Wfm.from_file() round-trip
 # ---------------------------------------------------------------------------
+
 
 @_skip_no_bin
 def test_wfm_from_file_bin():

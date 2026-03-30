@@ -15,6 +15,7 @@ or the stringification method to describe a channel::
     print(channel)
 
 """
+
 from __future__ import annotations
 
 from enum import Enum
@@ -261,17 +262,13 @@ class Channel:
         """Describe this channel."""
         s = "     Channel %d:\n" % self.channel_number
         s += "         Coupling = %8s\n" % self.coupling.rjust(7, " ")
-        s += "            Scale = %10sV/div\n" % engineering_string(
-            self.volt_per_division, 2
-        )
+        s += "            Scale = %10sV/div\n" % engineering_string(self.volt_per_division, 2)
         s += "           Offset = %10sV\n" % engineering_string(self.volt_offset, 2)
         s += "            Probe = %7gX\n" % self.probe_value
         s += "         Inverted = %8s\n\n" % self.inverted
         s += "        Time Base = %10ss/div\n" % engineering_string(self.time_scale, 3)
         s += "           Offset = %10ss\n" % engineering_string(self.time_offset, 3)
-        s += "            Delta = %10ss/point\n" % engineering_string(
-            self.seconds_per_point, 3
-        )
+        s += "            Delta = %10ss/point\n" % engineering_string(self.seconds_per_point, 3)
         s += "           Points = %8d\n\n" % self.points
 
         if self.enabled_and_selected and self.points >= 5:
@@ -452,10 +449,7 @@ class Channel:
 
     def ds2000(self, w: Any, channel_number: int) -> None:
         """Interpret waveform for the Rigol DS2000 series."""
-        self.time_offset = (
-            _ds2000_effective_time_offset(w)
-            + w.header.z_pt_offset * w.header.seconds_per_point
-        )
+        self.time_offset = _ds2000_effective_time_offset(w) + w.header.z_pt_offset * w.header.seconds_per_point
         self.time_scale = w.header.time_scale
         self.points = w.header.points
         self.firmware = w.header.firmware_version
@@ -532,10 +526,7 @@ class Channel:
 
     def ds6000(self, w: Any, channel_number: int) -> None:
         """Interpret waveform for the Rigol DS6000 series."""
-        self.time_offset = (
-            w.header.time_offset
-            + w.header.z_pt_offset * w.header.seconds_per_point
-        )
+        self.time_offset = w.header.time_offset + w.header.z_pt_offset * w.header.seconds_per_point
         self.time_scale = w.header.time_scale
         self.points = w.header.points
         self.firmware = w.header.firmware_version
@@ -612,9 +603,7 @@ class Channel:
                 raw16 = None
 
             if raw16 is None:
-                raw16 = np.clip(
-                    (self.volts * 1000 + 32768).astype(np.int32), 0, 65535
-                ).astype(np.uint16)
+                raw16 = np.clip((self.volts * 1000 + 32768).astype(np.int32), 0, 65535).astype(np.uint16)
             self.raw = (raw16 >> 8).astype(np.uint8)
             self.points = len(self.volts)
             t0 = w.header.x_origin
@@ -640,7 +629,11 @@ class Channel:
             self.raw = raw8
             self.points = len(self.volts)
             x_origins = getattr(w.header, "x_origins", None)
-            t0 = x_origins[idx] if isinstance(x_origins, list) and idx < len(x_origins) and x_origins[idx] is not None else w.header.x_origin
+            t0 = (
+                x_origins[idx]
+                if isinstance(x_origins, list) and idx < len(x_origins) and x_origins[idx] is not None
+                else w.header.x_origin
+            )
             self.times = t0 + np.arange(self.points) * w.header.x_increment
 
     def agilent(self, w: Any, channel_number: int) -> None:

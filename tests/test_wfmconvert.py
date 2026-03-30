@@ -14,27 +14,28 @@ from tests.test_lecroy import _build_trc
 from tests.test_siglent import _build_siglent_v6
 from tests.test_yokogawa import _build_yokogawa_wfm
 
-
 _ROOT = Path(__file__).resolve().parents[1]
 _KEYSIGHT = _ROOT / "tests" / "files" / "bin" / "agilent_1.bin"
-_ROHDE = _ROOT / "docs" / "vendors" / "rohde & schwarz" / "rs_file_reader-main" / "tests" / "testdata" / "singleChan.bin"
+_ROHDE = (
+    _ROOT / "docs" / "vendors" / "rohde & schwarz" / "rs_file_reader-main" / "tests" / "testdata" / "singleChan.bin"
+)
 
 
 _LEGACY_INFO = [
-    ("B",    "tests/files/wfm/DS1204B-A.wfm"),
-    ("C",    "tests/files/wfm/DS1202CA-A.wfm"),
-    ("D",    "tests/files/wfm/DS1102D-A.wfm"),
-    ("E",    "tests/files/wfm/DS1102E-A.wfm"),
-    ("Z",    "tests/files/wfm/MSO1104.wfm"),
-    ("2",    "tests/files/wfm/DS2202.wfm"),
-    ("4",    "tests/files/wfm/DS4022-A.wfm"),
+    ("B", "tests/files/wfm/DS1204B-A.wfm"),
+    ("C", "tests/files/wfm/DS1202CA-A.wfm"),
+    ("D", "tests/files/wfm/DS1102D-A.wfm"),
+    ("E", "tests/files/wfm/DS1102E-A.wfm"),
+    ("Z", "tests/files/wfm/MSO1104.wfm"),
+    ("2", "tests/files/wfm/DS2202.wfm"),
+    ("4", "tests/files/wfm/DS4022-A.wfm"),
 ]
 
 _BIN_INFO = [
-    ("5",    "tests/files/bin/MSO5000-A.bin"),
+    ("5", "tests/files/bin/MSO5000-A.bin"),
     ("5074", "tests/files/bin/MSO5074-A.bin"),
-    ("DHO",  "tests/files/bin/DHO1074.bin"),
-    ("DHO",  "tests/files/bin/DHO824-ch1.bin"),
+    ("DHO", "tests/files/bin/DHO1074.bin"),
+    ("DHO", "tests/files/bin/DHO824-ch1.bin"),
 ]
 
 
@@ -88,9 +89,7 @@ def test_wfmconvert_wav(tmp_path):
     for scope, path in _LEGACY_INFO + _BIN_INFO:
         run_command(f"wfmconvert --model {scope} --channel 1 --output-dir {tmp_path} wav {path}")
     for scope, path in _newer_family_cases(tmp_path):
-        run_command(
-            f"wfmconvert --model {scope} --channel 1 --output-dir {shlex.quote(str(tmp_path))} wav {path}"
-        )
+        run_command(f"wfmconvert --model {scope} --channel 1 --output-dir {shlex.quote(str(tmp_path))} wav {path}")
 
 
 def test_wfmconvert_vcsv(tmp_path):

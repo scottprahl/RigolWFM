@@ -11,6 +11,7 @@ arrays. Peak Detect captures can store multiple analog buffers per waveform
 header, and segmented-memory captures can repeat the same channel label for
 multiple segments.
 """
+
 from __future__ import annotations
 
 import math
@@ -189,10 +190,7 @@ def from_file(file_name: str) -> AgilentWaveform:
         for buffer in waveform.buffers:
             data_header = buffer.data_header
             buffer_type = data_header.buffer_type
-            is_digital = (
-                waveform_type == AgilentBin.WaveformTypeEnum.logic
-                or buffer_type in ignored_buffer_types
-            )
+            is_digital = waveform_type == AgilentBin.WaveformTypeEnum.logic or buffer_type in ignored_buffer_types
             if is_digital:
                 continue
 
@@ -266,9 +264,6 @@ def from_file(file_name: str) -> AgilentWaveform:
         analog_slot += 1
 
     if analog_found == 0:
-        raise ValueError(
-            "No supported analog waveform records were found in this "
-            "Agilent/Keysight capture."
-        )
+        raise ValueError("No supported analog waveform records were found in this " "Agilent/Keysight capture.")
 
     return obj

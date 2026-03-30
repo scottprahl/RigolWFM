@@ -217,6 +217,25 @@ ignore-patterns = [
 [tool.black]
 line-length = 120
 target-version = ["py310", "py311", "py312", "py313", "py314"]
+force-exclude = '''
+/(
+    RigolWFM/agilent_bin\.py
+  | RigolWFM/bin5000\.py
+  | RigolWFM/bin7000_8000\.py
+  | RigolWFM/bindho1000\.py
+  | RigolWFM/lecroy_[0-9]_[0-9]_(be|le)\.py
+  | RigolWFM/rohde_schwarz_.*\.py
+  | RigolWFM/siglent_.*\.py
+  | RigolWFM/tek_isf\.py
+  | RigolWFM/tek_wfm_[0-9]{3}_(be|le)\.py
+  | RigolWFM/wfm1000.*\.py
+  | RigolWFM/wfm2000\.py
+  | RigolWFM/wfm4000\.py
+  | RigolWFM/wfm6000\.py
+  | RigolWFM/wfmdho1000\.py
+  | RigolWFM/yokogawa_wvf\.py
+)$
+'''
 
 [tool.ruff]
 line-length = 120

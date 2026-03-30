@@ -7,7 +7,6 @@ import pytest
 from RigolWFM import wfm
 from tests.test_siglent import _build_siglent_v6
 
-
 # (filename, expected_model)
 # One representative file per detectable family.
 _CASES = [
@@ -44,6 +43,7 @@ _CASES = [
     ("docs/vendors/rohde & schwarz/rs_file_reader-main/tests/testdata/singleChan.bin", "RohdeSchwarz"),
 ]
 
+
 @pytest.mark.parametrize("path, expected", _CASES)
 def test_detect_model(path, expected):
     """detect_model() returns the correct family for representative files."""
@@ -76,9 +76,7 @@ def test_from_file_auto_matches_detected_model(path):
     assert auto_wave.user_name == "auto"
     assert auto_wave.parser_name == explicit_wave.parser_name
     assert auto_wave.header_name == explicit_wave.header_name
-    assert [ch.channel_number for ch in auto_wave.channels] == [
-        ch.channel_number for ch in explicit_wave.channels
-    ]
+    assert [ch.channel_number for ch in auto_wave.channels] == [ch.channel_number for ch in explicit_wave.channels]
 
 
 def test_from_url_auto_matches_detected_model(monkeypatch):
@@ -112,9 +110,7 @@ def test_from_url_auto_matches_detected_model(monkeypatch):
     assert auto_wave.parser_name == explicit_wave.parser_name
     assert auto_wave.header_name == explicit_wave.header_name
     assert auto_wave.basename == "DS1102E-A.wfm"
-    assert [ch.channel_number for ch in auto_wave.channels] == [
-        ch.channel_number for ch in explicit_wave.channels
-    ]
+    assert [ch.channel_number for ch in auto_wave.channels] == [ch.channel_number for ch in explicit_wave.channels]
 
 
 def test_from_url_auto_matches_detected_model_for_siglent(monkeypatch, tmp_path):
@@ -148,9 +144,7 @@ def test_from_url_auto_matches_detected_model_for_siglent(monkeypatch, tmp_path)
     assert auto_wave.parser_name == explicit_wave.parser_name
     assert auto_wave.header_name == explicit_wave.header_name
     assert auto_wave.basename == "synthetic_siglent_v6.bin"
-    assert [ch.channel_number for ch in auto_wave.channels] == [
-        ch.channel_number for ch in explicit_wave.channels
-    ]
+    assert [ch.channel_number for ch in auto_wave.channels] == [ch.channel_number for ch in explicit_wave.channels]
 
 
 def test_from_url_auto_matches_detected_model_for_rohde_schwarz(monkeypatch):
@@ -187,6 +181,4 @@ def test_from_url_auto_matches_detected_model_for_rohde_schwarz(monkeypatch):
     assert auto_wave.parser_name == explicit_wave.parser_name
     assert auto_wave.header_name == explicit_wave.header_name
     assert auto_wave.basename == "singleChan.bin"
-    assert [ch.channel_number for ch in auto_wave.channels] == [
-        ch.channel_number for ch in explicit_wave.channels
-    ]
+    assert [ch.channel_number for ch in auto_wave.channels] == [ch.channel_number for ch in explicit_wave.channels]

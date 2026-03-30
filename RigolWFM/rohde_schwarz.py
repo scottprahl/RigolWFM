@@ -8,6 +8,7 @@ schema only describes the binary payload header and bytes; this module combines
 that payload with the XML metadata and normalizes single-acquisition analog
 captures into the existing `Wfm` / `Channel` interfaces.
 """
+
 from __future__ import annotations
 
 import os
@@ -284,7 +285,10 @@ def _decode_single_acquisition(
         x_origin = _tag_float(tags, "XStart")
         x_stop = _tag_float(tags, "XStop")
         x_increment = (x_stop - x_origin) / record_length
-        channel_data = [rows[leading_samples : leading_samples + record_length, idx].astype(np.float32, copy=True) for idx in range(channel_count)]
+        channel_data = [
+            rows[leading_samples : leading_samples + record_length, idx].astype(np.float32, copy=True)
+            for idx in range(channel_count)
+        ]
         return x_origin, x_increment, channel_data
 
     if signal_format == "eRS_SIGNAL_FORMAT_INT8BIT":
@@ -336,7 +340,11 @@ def _decode_single_acquisition(
             raise ValueError("Rohde & Schwarz XYDOUBLEFLOAT payload is shorter than its requested RecordLength")
         times = window["time"].astype(np.float64, copy=True)
         x_origin = float(times[0])
-        x_increment = float(times[1] - times[0]) if len(times) > 1 else (_tag_float(tags, "XStop") - _tag_float(tags, "XStart")) / record_length
+        x_increment = (
+            float(times[1] - times[0])
+            if len(times) > 1
+            else (_tag_float(tags, "XStop") - _tag_float(tags, "XStart")) / record_length
+        )
         channel_data = [window["channels"][:, idx].astype(np.float32, copy=True) for idx in range(channel_count)]
         return x_origin, x_increment, channel_data
 

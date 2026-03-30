@@ -63,6 +63,7 @@ WAVEDESC field layout (little-endian, total 346 bytes):
      340     4  acq_vert_offset (f4)
      344     2  wave_source (u2)  0=CH1, 1=CH2, ...
 """
+
 # pylint: disable=unsubscriptable-object  # numpy NDArray subscripting triggers false positives
 
 import struct
@@ -85,7 +86,7 @@ def _build_trc(
     horiz_interval: float = 1e-6,
     horiz_offset: float = -50e-6,
     wave_source: int = 0,
-    comm_type: int = 0,   # 0=byte (int8), 1=word (int16)
+    comm_type: int = 0,  # 0=byte (int8), 1=word (int16)
     comm_order: int = 1,  # 1=LOFIRST (little-endian)
     instrument_name: str = "WAVERUNNER",
     samples: list | None = None,
@@ -118,47 +119,47 @@ def _build_trc(
     def pack_into(fmt, offset, *values):
         struct.pack_into(b + fmt[1:], wavedesc, offset, *values)
 
-    pack_into("<H", 32, comm_type)   # comm_type and comm_order are always written
+    pack_into("<H", 32, comm_type)  # comm_type and comm_order are always written
     pack_into("<H", 34, comm_order)  # with native-neutral single-byte clarity
     pack_into("<i", 36, _WAVEDESC_SIZE)
-    pack_into("<i", 40, 0)   # user_text_len
-    pack_into("<i", 44, 0)   # res_desc1
-    pack_into("<i", 48, 0)   # trigtime_array_len
-    pack_into("<i", 52, 0)   # ris_time_array_len
-    pack_into("<i", 56, 0)   # res_array1
+    pack_into("<i", 40, 0)  # user_text_len
+    pack_into("<i", 44, 0)  # res_desc1
+    pack_into("<i", 48, 0)  # trigtime_array_len
+    pack_into("<i", 52, 0)  # ris_time_array_len
+    pack_into("<i", 56, 0)  # res_array1
     pack_into("<i", 60, wave_array_1_len)
-    pack_into("<i", 64, 0)   # wave_array_2_len
-    pack_into("<i", 68, 0)   # res_array2
-    pack_into("<i", 72, 0)   # res_array3
+    pack_into("<i", 64, 0)  # wave_array_2_len
+    pack_into("<i", 68, 0)  # res_array2
+    pack_into("<i", 72, 0)  # res_array3
     wavedesc[76:92] = inst_bytes
-    pack_into("<i", 92, 1)   # instrument_number
+    pack_into("<i", 92, 1)  # instrument_number
     # trace_label at 96
     wavedesc[96:112] = b"CH1\x00" + b"\x00" * 12
     pack_into("<h", 112, 0)  # reserved1
     pack_into("<h", 114, 0)  # reserved2
-    pack_into("<i", 116, n_pts)           # wave_array_count
-    pack_into("<i", 120, n_pts)           # pnts_per_screen
-    pack_into("<i", 124, 0)              # first_valid_pnt
-    pack_into("<i", 128, n_pts - 1)      # last_valid_pnt
-    pack_into("<i", 132, 0)              # first_point
-    pack_into("<i", 136, 1)              # sparsing_factor
-    pack_into("<i", 140, 0)              # segment_index
-    pack_into("<i", 144, 1)              # subarray_count
-    pack_into("<i", 148, 1)              # sweeps_per_acq
-    pack_into("<h", 152, 0)              # points_per_pair
-    pack_into("<h", 154, 0)              # pair_offset
+    pack_into("<i", 116, n_pts)  # wave_array_count
+    pack_into("<i", 120, n_pts)  # pnts_per_screen
+    pack_into("<i", 124, 0)  # first_valid_pnt
+    pack_into("<i", 128, n_pts - 1)  # last_valid_pnt
+    pack_into("<i", 132, 0)  # first_point
+    pack_into("<i", 136, 1)  # sparsing_factor
+    pack_into("<i", 140, 0)  # segment_index
+    pack_into("<i", 144, 1)  # subarray_count
+    pack_into("<i", 148, 1)  # sweeps_per_acq
+    pack_into("<h", 152, 0)  # points_per_pair
+    pack_into("<h", 154, 0)  # pair_offset
     pack_into("<f", 156, vertical_gain)
     pack_into("<f", 160, vertical_offset)
-    pack_into("<f", 164, 1.27)           # max_value
-    pack_into("<f", 168, -1.28)          # min_value
-    pack_into("<h", 172, 8)              # nominal_bits
-    pack_into("<h", 174, 1)              # nom_subarray_count
+    pack_into("<f", 164, 1.27)  # max_value
+    pack_into("<f", 168, -1.28)  # min_value
+    pack_into("<h", 172, 8)  # nominal_bits
+    pack_into("<h", 174, 1)  # nom_subarray_count
     pack_into("<f", 176, horiz_interval)
     pack_into("<d", 180, horiz_offset)
-    pack_into("<d", 188, 0.0)            # pixel_offset
-    wavedesc[196:244] = b"V\x00" + b"\x00" * 46   # vert_unit
-    wavedesc[244:292] = b"s\x00" + b"\x00" * 46   # hor_unit
-    pack_into("<f", 292, 0.0)            # horiz_uncertainty
+    pack_into("<d", 188, 0.0)  # pixel_offset
+    wavedesc[196:244] = b"V\x00" + b"\x00" * 46  # vert_unit
+    wavedesc[244:292] = b"s\x00" + b"\x00" * 46  # hor_unit
+    pack_into("<f", 292, 0.0)  # horiz_uncertainty
     # trigger_time at 296: seconds(f8) min(u1) hr(u1) day(u1) month(u1) year(s2) unused(s2)
     pack_into("<d", 296, 0.0)
     pack_into("<B", 304, 0)
@@ -167,18 +168,18 @@ def _build_trc(
     pack_into("<B", 307, 1)
     pack_into("<h", 308, 2024)
     pack_into("<h", 310, 0)
-    pack_into("<f", 312, 0.0)            # acq_duration
-    pack_into("<H", 316, 0)              # record_type (single_sweep)
-    pack_into("<H", 318, 0)              # processing_done (no_processing)
-    pack_into("<h", 320, 0)              # reserved5
-    pack_into("<h", 322, 1)              # ris_sweeps
-    pack_into("<H", 324, 9)              # timebase (index 9 → 10 ms/div)
-    pack_into("<H", 326, 2)              # vert_coupling (dc_1m_ohm → "DC")
-    pack_into("<f", 328, 1.0)            # probe_att
-    pack_into("<H", 332, 9)              # fixed_vert_gain
-    pack_into("<H", 334, 0)              # bandwidth_limit (bw_full)
-    pack_into("<f", 336, 1.0)            # vertical_vernier
-    pack_into("<f", 340, 0.0)            # acq_vert_offset
+    pack_into("<f", 312, 0.0)  # acq_duration
+    pack_into("<H", 316, 0)  # record_type (single_sweep)
+    pack_into("<H", 318, 0)  # processing_done (no_processing)
+    pack_into("<h", 320, 0)  # reserved5
+    pack_into("<h", 322, 1)  # ris_sweeps
+    pack_into("<H", 324, 9)  # timebase (index 9 → 10 ms/div)
+    pack_into("<H", 326, 2)  # vert_coupling (dc_1m_ohm → "DC")
+    pack_into("<f", 328, 1.0)  # probe_att
+    pack_into("<H", 332, 9)  # fixed_vert_gain
+    pack_into("<H", 334, 0)  # bandwidth_limit (bw_full)
+    pack_into("<f", 336, 1.0)  # vertical_vernier
+    pack_into("<f", 340, 0.0)  # acq_vert_offset
     pack_into("<H", 344, wave_source)
 
     return bytes(wavedesc) + sample_bytes
@@ -187,6 +188,7 @@ def _build_trc(
 # ---------------------------------------------------------------------------
 # Low-level adapter tests (RigolWFM.lecroy.from_file)
 # ---------------------------------------------------------------------------
+
 
 def test_from_file_8bit(tmp_path):
     """8-bit LE .trc file: from_file() should return a LeCroyWaveform."""
@@ -330,6 +332,7 @@ def test_from_file_seconds_per_point(tmp_path):
 # Integration: Wfm.from_file() round-trip
 # ---------------------------------------------------------------------------
 
+
 def test_wfm_from_file_lecroy(tmp_path):
     """Wfm.from_file() with model='LeCroy' should return a valid Wfm object."""
     n_pts = 20
@@ -414,6 +417,7 @@ def test_wfm_from_file_lecroy_auto(tmp_path):
 # Big-endian variant tests
 # ---------------------------------------------------------------------------
 
+
 def test_from_file_big_endian_voltage(tmp_path):
     """Big-endian 8-bit .trc: voltage formula should match regardless of byte order."""
     gain = 0.01
@@ -481,6 +485,7 @@ def test_wfm_from_file_big_endian(tmp_path):
 # ---------------------------------------------------------------------------
 # SCPI prefix: files with a "#N<digits>" header before WAVEDESC
 # ---------------------------------------------------------------------------
+
 
 def _add_scpi_prefix(trc_bytes: bytes) -> bytes:
     """Wrap trc_bytes in an IEEE 488.2 block-data prefix (#9<9-digit count>)."""
@@ -599,6 +604,7 @@ def test_lecroy_1_0_autodetect():
 # ---------------------------------------------------------------------------
 # LECROY_2_3 with SCPI prefix (real files)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.skipif(not _LECROY2_TRC.exists(), reason="tests/files/trc/lecroy_2.trc not present")
 def test_lecroy_2_3_scpi_parses():

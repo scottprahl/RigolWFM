@@ -164,10 +164,10 @@ def _build_tek_wfm(
     put(76, "H", curve_buffer_off - 78)
 
     # WFM header pre-dimension fields
-    put(78, "i", 0)   # set_type = single_waveform
-    put(82, "I", 1)   # wfm_cnt
-    put(86, "Q", 1)   # acq_counter
-    put(94, "Q", 2)   # transaction_counter
+    put(78, "i", 0)  # set_type = single_waveform
+    put(82, "I", 1)  # wfm_cnt
+    put(86, "Q", 1)  # acq_counter
+    put(94, "Q", 2)  # transaction_counter
     put(102, "i", 0)  # slot_id
     put(106, "i", 0)  # is_static_flag
     put(110, "I", 1)  # wfm_update_spec_count
@@ -232,8 +232,8 @@ def _build_tek_wfm(
 
     # time_base_info blocks
     put(time_base1_off, "I", time_base_spacing)
-    put(time_base1_off + 4, "i", 1)   # sweep_sample
-    put(time_base1_off + 8, "i", 0)   # base_time
+    put(time_base1_off + 4, "i", 1)  # sweep_sample
+    put(time_base1_off + 8, "i", 0)  # base_time
     put(time_base2_off, "I", 0)
     put(time_base2_off + 4, "i", 1)
     put(time_base2_off + 8, "i", 0)
@@ -246,14 +246,14 @@ def _build_tek_wfm(
 
     # curve object
     curve_len = len(samples)
-    put(curve_off, "I", 0)                  # state_flags
-    put(curve_off + 4, "i", 0)              # checksum_type = none
-    put(curve_off + 8, "h", 0)              # checksum
-    put(curve_off + 10, "I", 0)             # precharge_start_offset
-    put(curve_off + 14, "I", 0)             # data_start_offset
-    put(curve_off + 18, "I", curve_len)     # postcharge_start_offset
-    put(curve_off + 22, "I", curve_len)     # postcharge_stop_offset
-    put(curve_off + 26, "I", curve_len)     # end_of_curve_buffer_offset
+    put(curve_off, "I", 0)  # state_flags
+    put(curve_off + 4, "i", 0)  # checksum_type = none
+    put(curve_off + 8, "h", 0)  # checksum
+    put(curve_off + 10, "I", 0)  # precharge_start_offset
+    put(curve_off + 14, "I", 0)  # data_start_offset
+    put(curve_off + 18, "I", curve_len)  # postcharge_start_offset
+    put(curve_off + 22, "I", curve_len)  # postcharge_stop_offset
+    put(curve_off + 26, "I", curve_len)  # end_of_curve_buffer_offset
 
     struct.pack_into(f"<{len(samples)}b", buf, curve_buffer_off, *samples)
 
@@ -283,22 +283,22 @@ def _build_legacy_llwfm(
     body.extend(struct.pack(">d", 1.0))
 
     # Waveform header
-    body.extend(struct.pack(">h", 0))     # acqmode
-    body.extend(struct.pack(">h", 0))     # minMaxFormat
+    body.extend(struct.pack(">h", 0))  # acqmode
+    body.extend(struct.pack(">h", 0))  # minMaxFormat
     body.extend(struct.pack(">d", record_length * horz_scale))
-    body.extend(struct.pack(">h", 565))   # vertCpl = DC
-    body.extend(struct.pack(">h", 610))   # horzUnit = seconds
+    body.extend(struct.pack(">h", 565))  # vertCpl = DC
+    body.extend(struct.pack(">h", 610))  # horzUnit = seconds
     body.extend(struct.pack(">d", horz_scale))
-    body.extend(struct.pack(">h", 609))   # vertUnit = volts
+    body.extend(struct.pack(">h", 609))  # vertUnit = volts
     body.extend(struct.pack(">d", vert_offset))
     body.extend(struct.pack(">d", vert_pos))
     body.extend(struct.pack(">d", vert_gain))
     body.extend(struct.pack(">I", record_length))
     body.extend(struct.pack(">h", trig_pos))
-    body.extend(struct.pack(">h", 1))     # header version
-    body.extend(struct.pack(">h", 1))     # sample density
-    body.extend(struct.pack(">h", 0))     # burst segment length
-    body.extend(struct.pack(">h", 0))     # source waveform
+    body.extend(struct.pack(">h", 1))  # header version
+    body.extend(struct.pack(">h", 1))  # sample density
+    body.extend(struct.pack(">h", 0))  # burst segment length
+    body.extend(struct.pack(">h", 0))  # source waveform
     body.extend(struct.pack(">3h", 0, 0, 0))
     body.extend(struct.pack(">d", 0.0))
     body.extend(struct.pack(">h", 0))
@@ -381,11 +381,7 @@ def test_legacy_llwfm_synthetic_from_file(tmp_path):
     path.write_bytes(data)
 
     waveform = RigolWFM.wfm.Wfm.from_file(str(path), "Tek", "1")
-    expected_volts = (
-        np.asarray(samples, dtype=np.float64) * (0.4 / (25.0 * 256.0))
-        + 0.1
-        - 0.5 * 0.4
-    )
+    expected_volts = np.asarray(samples, dtype=np.float64) * (0.4 / (25.0 * 256.0)) + 0.1 - 0.5 * 0.4
     expected_times = -(len(samples) * 40 / 100.0) * 2.0e-9 + np.arange(len(samples)) * 2.0e-9
 
     assert waveform.parser_name == "tek_wfm"

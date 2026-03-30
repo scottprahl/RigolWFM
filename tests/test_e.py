@@ -51,6 +51,4 @@ def test_ds1102e_time_grid_matches_sample_period(stem, _expected_points):
     waveform = RigolWFM.wfm.Wfm.from_file(f"tests/files/wfm/{stem}.wfm", "E")
     for channel in waveform.channels:
         if channel.enabled:
-            assert channel.times[1] - channel.times[0] == pytest.approx(
-                channel.seconds_per_point
-            )
+            assert channel.times[1] - channel.times[0] == pytest.approx(channel.seconds_per_point)

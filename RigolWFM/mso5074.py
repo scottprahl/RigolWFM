@@ -20,6 +20,7 @@ This adapter corrects for all of the above.  Voltage values are expressed in
 approximate volts using a default 1 V/div scale because the file contains no
 calibration coefficients.
 """
+
 from __future__ import annotations
 
 import struct
@@ -42,13 +43,13 @@ _BLOCK_OVERHEAD = 168
 # Waveform-header field offsets relative to the start of the waveform header.
 _WH_HEADER_SIZE = 0
 _WH_X_DISPLAY_RANGE = 20  # f4
-_WH_X_ORIGIN = 40          # f8
-_WH_Y_UNITS = 52           # u4
-_WH_FRAME_STRING = 88      # 24-byte ASCII string
-_WH_WAVEFORM_LABEL = 112   # 16-byte ASCII string
+_WH_X_ORIGIN = 40  # f8
+_WH_Y_UNITS = 52  # u4
+_WH_FRAME_STRING = 88  # 24-byte ASCII string
+_WH_WAVEFORM_LABEL = 112  # 16-byte ASCII string
 
 # Default voltage scale applied when no calibration data is available.
-_ADC_MIDPOINT = 127.0   # midpoint of the 8-bit unsigned ADC range
+_ADC_MIDPOINT = 127.0  # midpoint of the 8-bit unsigned ADC range
 _COUNTS_PER_VOLT = 25.0  # approximate ADC counts per volt (1 V/div, 25 cts/div)
 
 
@@ -73,14 +74,10 @@ def _parse_waveform_header(data: bytes, block_offset: int) -> dict[str, object]:
     x_origin = struct.unpack_from("<d", data, wh + _WH_X_ORIGIN)[0]
     y_units = struct.unpack_from("<I", data, wh + _WH_Y_UNITS)[0]
     frame_string = (
-        data[wh + _WH_FRAME_STRING : wh + _WH_FRAME_STRING + 24]
-        .rstrip(b"\x00")
-        .decode("ascii", errors="replace")
+        data[wh + _WH_FRAME_STRING : wh + _WH_FRAME_STRING + 24].rstrip(b"\x00").decode("ascii", errors="replace")
     )
     waveform_label = (
-        data[wh + _WH_WAVEFORM_LABEL : wh + _WH_WAVEFORM_LABEL + 16]
-        .rstrip(b"\x00")
-        .decode("ascii", errors="replace")
+        data[wh + _WH_WAVEFORM_LABEL : wh + _WH_WAVEFORM_LABEL + 16].rstrip(b"\x00").decode("ascii", errors="replace")
     )
     return {
         "header_size": header_size,

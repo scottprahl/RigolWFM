@@ -50,12 +50,7 @@ def run_command_failure(command):
 def assert_command_matches_file(command, expected_path):
     """Assert that command stdout matches the checked-in expected text."""
     actual = run_command_stdout(command).rstrip("\n")
-    expected = (
-        Path(expected_path)
-        .read_text(encoding="utf-8")
-        .replace("\r\n", "\n")
-        .rstrip("\n")
-    )
+    expected = Path(expected_path).read_text(encoding="utf-8").replace("\r\n", "\n").rstrip("\n")
     assert actual == expected
 
 

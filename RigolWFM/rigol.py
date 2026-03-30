@@ -8,6 +8,7 @@ Rigol families.
 
 Non-Rigol vendors (LeCroy, Tektronix) are handled directly in ``wfm.py``.
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -127,9 +128,18 @@ DS8000_scopes: list[str] = ["8", "8000", "MSO8000"]
 
 # DHO800/DHO1000 series (.bin and .wfm - format detected by file extension)
 DHO1000_scopes: list[str] = [
-    "DHO", "DHO800", "DHO1000",
-    "DHO804", "DHO812", "DHO814", "DHO824",
-    "DHO1072", "DHO1074", "DHO1102", "DHO1202", "DHO1204",
+    "DHO",
+    "DHO800",
+    "DHO1000",
+    "DHO804",
+    "DHO812",
+    "DHO814",
+    "DHO824",
+    "DHO1072",
+    "DHO1074",
+    "DHO1102",
+    "DHO1202",
+    "DHO1204",
 ]
 
 # Flat list of every Rigol model string, used by detect_model() and valid_scope_list()
@@ -156,7 +166,10 @@ ALL_RIGOL_SCOPES: list[list[str]] = [
 _SWEEP_NAMES: dict[int, str] = {0: "AUTO", 1: "NORMAL", 2: "SINGLE"}
 _COUPLING_NAMES: dict[int, str] = {0: "DC", 1: "LF", 2: "HF", 3: "AC"}
 _DS2000_SOURCE_NAMES: dict[int, str] = {
-    0: "CH1", 1: "CH2", 2: "EXT", 3: "AC LINE",
+    0: "CH1",
+    1: "CH2",
+    2: "EXT",
+    3: "AC LINE",
     **{4 + i: "D%d" % i for i in range(16)},
 }
 _DS2000_TRIGGER_MODE_NAMES: dict[int, str] = {
@@ -229,11 +242,7 @@ def _decode_ds4000_trigger(waveform: Any) -> dict:
     modern_levels = getattr(setup, "modern_trigger_levels", None)
     modern_mode = getattr(setup, "modern_trigger_mode", None)
     modern_source = getattr(setup, "modern_trigger_source", None)
-    if (
-        modern_levels is not None
-        and hasattr(modern_mode, "name")
-        and hasattr(modern_source, "name")
-    ):
+    if modern_levels is not None and hasattr(modern_mode, "name") and hasattr(modern_source, "name"):
         input_levels = _scaled_ds4000_trigger_levels(modern_levels, probe_values)
         source = modern_source.name.upper()  # type: ignore[union-attr]
         info: dict[str, Any] = {
@@ -302,6 +311,7 @@ def _decode_ds2000_trigger(waveform: Any) -> dict:
 # Backward-compatible wrapper
 # ---------------------------------------------------------------------------
 
+
 def dho_from_file(file_name: str) -> RigolWFM.dho.DhoWaveform:
     """Backward-compatible wrapper around `RigolWFM.dho.from_file()`."""
     return RigolWFM.dho.from_file(file_name)
@@ -310,6 +320,7 @@ def dho_from_file(file_name: str) -> RigolWFM.dho.DhoWaveform:
 # ---------------------------------------------------------------------------
 # Unified Rigol parser dispatch
 # ---------------------------------------------------------------------------
+
 
 def parse_file(
     umodel: str,

@@ -52,8 +52,7 @@ def test_wfmview_javascript_is_syntax_valid(path: Path):
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
 def test_wfmview_rohde_schwarz_helpers_execute_under_node():
     """Selected R&S helper functions should execute correctly in a stubbed DOM."""
-    script = textwrap.dedent(
-        f"""
+    script = textwrap.dedent(f"""
         const fs = require('fs');
         const vm = require('vm');
 
@@ -158,7 +157,6 @@ def test_wfmview_rohde_schwarz_helpers_execute_under_node():
         if (looksLikeRohdeSchwarzMetadata(xml.buffer, 'singleChan.Wfm.bin')) {{
             throw new Error('Payload files must not be treated as metadata.');
         }}
-        """
-    )
+        """)
 
     subprocess.run(["node", "-e", script], check=True, text=True)

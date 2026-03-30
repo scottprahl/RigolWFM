@@ -14,6 +14,7 @@ Example:
     >>> print(description)
 
 """
+
 from __future__ import annotations
 
 import os
@@ -135,6 +136,7 @@ _ISF_MAGIC = b":CURV"  # matches both ":CURV #" and ":CURVE #"
 # Exceptions
 # ---------------------------------------------------------------------------
 
+
 class Read_WFM_Error(Exception):
     """Generic Read Error."""
 
@@ -162,6 +164,7 @@ class Channel_Not_In_WFM_Error(Exception):
 # ---------------------------------------------------------------------------
 # Autodetect and utility functions
 # ---------------------------------------------------------------------------
+
 
 def detect_model(filename: str) -> str:
     """Detect the oscilloscope model from a waveform file's binary signature.
@@ -238,12 +241,7 @@ def _detect_model_from_header(hdr: bytes, fsize: int, filename_hint: str = "") -
             return "SiglentOld" if siglent_revision == "old" else "Siglent"
 
     # Rohde & Schwarz RTP exports: XML `.bin` metadata with companion `.Wfm.bin` payload
-    if (
-        allow_bin_like
-        and hdr.startswith(b"<?xml")
-        and b"<Database" in hdr
-        and b"SaveItemType=\"Data\"" in hdr
-    ):
+    if allow_bin_like and hdr.startswith(b"<?xml") and b"<Database" in hdr and b'SaveItemType="Data"' in hdr:
         return "RohdeSchwarz"
 
     # RG01: MSO5000, MSO5074, MSO7000, MSO8000
@@ -308,7 +306,7 @@ def _detect_model_from_header(hdr: bytes, fsize: int, filename_hint: str = "") -
         return "Tek"
 
     # Tektronix .wfm: byte_order word at 0 (0x0F0F LE or 0xF0F0 BE), version "WFM#" at offset 2
-    if (hdr[0] in (0x0F, 0xF0) and hdr[1] in (0x0F, 0xF0) and hdr[2:6] == _TEK_MAGIC):
+    if hdr[0] in (0x0F, 0xF0) and hdr[1] in (0x0F, 0xF0) and hdr[2:6] == _TEK_MAGIC:
         return "Tek"
 
     # Tektronix .isf: ASCII header containing ":CURV " or ":CURVE " followed by '#'
@@ -361,9 +359,7 @@ def _rohde_schwarz_payload_url(url: str) -> str:
     parsed = urllib.parse.urlparse(url)
     path = parsed.path
     if path.lower().endswith(".wfm.bin") or not path.lower().endswith(".bin"):
-        raise Parse_WFM_Error(
-            f"Cannot derive a Rohde & Schwarz companion payload URL from '{url}'"
-        )
+        raise Parse_WFM_Error(f"Cannot derive a Rohde & Schwarz companion payload URL from '{url}'")
     return parsed._replace(path=path[:-4] + ".Wfm.bin").geturl()
 
 
@@ -406,6 +402,7 @@ def dho_from_file(file_name: str) -> Any:
 # ---------------------------------------------------------------------------
 # Main Wfm class
 # ---------------------------------------------------------------------------
+
 
 class Wfm:
     """Class with parsed data from a waveform file."""
@@ -528,8 +525,7 @@ class Wfm:
             and user_family not in file_family
         ):
             print(
-                f"Warning: file reports model '{new_wfm.header_name}' "
-                f"but scope type '{model}' was specified.",
+                f"Warning: file reports model '{new_wfm.header_name}' " f"but scope type '{model}' was specified.",
                 file=sys.stderr,
             )
 
@@ -665,14 +661,10 @@ class Wfm:
                     s += "        Mode     = alt\n"
                     if "trigger1" in self.trigger_info:
                         s += "\n        Trigger 1:\n"
-                        s += RigolWFM.rigol.describe_trigger_block(
-                            self.trigger_info["trigger1"], indent="            "
-                        )
+                        s += RigolWFM.rigol.describe_trigger_block(self.trigger_info["trigger1"], indent="            ")
                     if "trigger2" in self.trigger_info:
                         s += "\n        Trigger 2:\n"
-                        s += RigolWFM.rigol.describe_trigger_block(
-                            self.trigger_info["trigger2"], indent="            "
-                        )
+                        s += RigolWFM.rigol.describe_trigger_block(self.trigger_info["trigger2"], indent="            ")
                 else:
                     s += RigolWFM.rigol.describe_trigger_block(self.trigger_info)
             show_ch_label = _source_ch_num is None
@@ -831,9 +823,7 @@ class Wfm:
                 None,
             )
             if ch is None:
-                raise ValueError(
-                    f"Channel {num} is not available or not enabled/selected in this waveform."
-                )
+                raise ValueError(f"Channel {num} is not available or not enabled/selected in this waveform.")
             channels.append(ch)
 
         def _scale_channel(ch: Any) -> npt.NDArray[np.int16]:
@@ -860,8 +850,7 @@ class Wfm:
             frames[1::2] = scaled[1][:n_pts]
 
         _MAX_WAV_U32 = 2**32 - 1
-        sample_rate = int(min(round(1.0 / channels[0].seconds_per_point),
-                              _MAX_WAV_U32 // (n_channels * 2)))
+        sample_rate = int(min(round(1.0 / channels[0].seconds_per_point), _MAX_WAV_U32 // (n_channels * 2)))
 
         wavef = wave.Wave_write(filename)  # type: ignore[arg-type]
         try:

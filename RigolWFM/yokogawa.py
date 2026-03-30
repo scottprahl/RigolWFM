@@ -26,6 +26,7 @@ The MATLAB implementation reads the binary payload as 32-bit floats.  This
 adapter mirrors that behavior and currently supports only ``BIT=32`` and
 ``BYT=4`` captures.
 """
+
 from __future__ import annotations
 
 from typing import Optional

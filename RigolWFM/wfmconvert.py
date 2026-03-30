@@ -11,6 +11,7 @@ Command line utility to convert oscilloscope waveform files.
 
         prompt> wfmconvert wav DS1102E-A.wfm
 """
+
 from __future__ import annotations
 
 import re
@@ -70,8 +71,28 @@ def _build_model_aliases() -> dict[str, str]:
 
 _MODEL_ALIASES = _build_model_aliases()
 _CANONICAL_MODELS = [
-    "auto", "B", "C", "D", "E", "Z", "2", "4", "5", "5074", "6", "7", "8", "DHO",
-    "Keysight", "Siglent", "SiglentOld", "RohdeSchwarz", "LeCroy", "Tek", "ISF", "Yokogawa",
+    "auto",
+    "B",
+    "C",
+    "D",
+    "E",
+    "Z",
+    "2",
+    "4",
+    "5",
+    "5074",
+    "6",
+    "7",
+    "8",
+    "DHO",
+    "Keysight",
+    "Siglent",
+    "SiglentOld",
+    "RohdeSchwarz",
+    "LeCroy",
+    "Tek",
+    "ISF",
+    "Yokogawa",
 ]
 
 
@@ -212,9 +233,7 @@ def sigrok(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) 
         return False
 
     if p.returncode != 0:
-        print(
-            f"sigrok-cli returned non-zero exit code: {p.returncode}", file=sys.stderr
-        )
+        print(f"sigrok-cli returned non-zero exit code: {p.returncode}", file=sys.stderr)
         print(
             "See https://sigrok.org/wiki/Sigrok-cli for more information.",
             file=sys.stderr,
@@ -229,11 +248,14 @@ class _WfmParser(argparse.ArgumentParser):
 
     def error(self, message: str) -> NoReturn:
         if "argument action: invalid choice" in message:
-            self.exit(2, (
-                "wfmconvert error: missing action verb.\n"
-                "Example: wfmconvert info DS1102E.wfm\n"
-                "Run 'wfmconvert --help' for more information.\n"
-            ))
+            self.exit(
+                2,
+                (
+                    "wfmconvert error: missing action verb.\n"
+                    "Example: wfmconvert info DS1102E.wfm\n"
+                    "Run 'wfmconvert --help' for more information.\n"
+                ),
+            )
         super().error(message)
 
 
@@ -243,8 +265,7 @@ def main() -> None:
         prog="wfmconvert",
         description="Convert oscilloscope waveform files to another format.",
         formatter_class=argparse.RawTextHelpFormatter,
-        epilog=textwrap.dedent(
-            """\
+        epilog=textwrap.dedent("""\
         examples:
             wfmconvert info DS1102E.wfm
             wfmconvert csv DS1102E.wfm
@@ -255,9 +276,7 @@ def main() -> None:
             wfmconvert --channel 3 --scale scope wav DS1102E.wfm
             wfmconvert --channel 12 wav DS1102E.wfm
             wfmconvert --model C info DS1042C-A.wfm
-        """
-        )
-        + RigolWFM.wfm.valid_scope_list(),
+        """) + RigolWFM.wfm.valid_scope_list(),
     )
 
     parser.add_argument(
@@ -296,28 +315,24 @@ def main() -> None:
         "--scale",
         choices=["auto", "scope"],
         default="auto",
-        help=textwrap.dedent(
-            """\
+        help=textwrap.dedent("""\
         voltage scaling for WAV output (default: auto).
           auto:  signal min/max → ±32767.  Waveform shape is preserved;
                  set Vpeak on the LTspice WAV source to the actual peak voltage.
           scope: scope ±(4×V/div) range → ±32767.  Zero volts stays at zero;
                  set Vpeak = 4×V/div in LTspice.
-        """
-        ),
+        """),
     )
 
     parser.add_argument(
         "--channel",
         type=str,
         default="1234",
-        help=textwrap.dedent(
-            """\
+        help=textwrap.dedent("""\
         select channel(s) to process.  `--channel 1` outputs only contents of
         the first channel.  `--channel 34` outputs contents of channels 3 and 4.
         The default is `--channel 1234`.
-        """
-        ),
+        """),
     )
 
     parser.add_argument(
@@ -329,8 +344,7 @@ def main() -> None:
     parser.add_argument(
         dest="action",
         choices=["csv", "info", "png", "wav", "vcsv", "sigrok"],
-        help=textwrap.dedent(
-            """\
+        help=textwrap.dedent("""\
         csv:    convert to a file with comma separated values
         info:   show the various scope settings for a waveform file
         png:    save a waveform plot as a PNG image (use --dpi to set resolution)
@@ -339,13 +353,10 @@ def main() -> None:
                 the .wav file can be used with LTspice.
         vcsv:   convert to a file with comma separated values with raw voltages
         sigrok: convert to a sigrok file
-        """
-        ),
+        """),
     )
 
-    parser.add_argument(
-        "infile", type=str, nargs="+", help="the waveform file(s) to be converted"
-    )
+    parser.add_argument("infile", type=str, nargs="+", help="the waveform file(s) to be converted")
 
     args = parser.parse_args()
 
@@ -362,9 +373,7 @@ def main() -> None:
     if len(selected) == 0:
         print("\nwfmconvert error")
         print("No valid channels were passed after --channel")
-        print(
-            "Channels are identified by number and must be a combination of 1, 2, 3, or 4"
-        )
+        print("Channels are identified by number and must be a combination of 1, 2, 3, or 4")
         print(f'You used "--channel {args.channel}"')
         sys.exit(1)
 
@@ -397,11 +406,12 @@ def main() -> None:
 
         except (RigolWFM.wfm.Parse_WFM_Error, ValueError) as e:
             if args.model == "auto":
-                print(f"Could not detect or parse the scope model for '{filename}'.",
-                      file=sys.stderr)
+                print(f"Could not detect or parse the scope model for '{filename}'.", file=sys.stderr)
             else:
-                print(f"File contents do not follow the selected oscilloscope model format '{args.model}'.",
-                      file=sys.stderr)
+                print(
+                    f"File contents do not follow the selected oscilloscope model format '{args.model}'.",
+                    file=sys.stderr,
+                )
             print("To help with development, please report this error", file=sys.stderr)
             print("as an issue to https://github.com/scottprahl/RigolWFM\n", file=sys.stderr)
             print(e, file=sys.stderr)

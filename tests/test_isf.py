@@ -27,10 +27,10 @@ def _build_isf(
     curve = np.asarray(samples, dtype=dtype).tobytes()
 
     header = (
-        f':WFMP:BYT_N 2;BIT_N 16;BN_F RI;BYT_O {byt_or};'
+        f":WFMP:BYT_N 2;BIT_N 16;BN_F RI;BYT_O {byt_or};"
         f'WFI "{wfid}";NR_P {len(samples)};PT_F Y;XIN {xincr};'
-        f'XZE {xzero};PT_O {pt_off};YMU {ymult};YOF {yoff};'
-        f'YZE {yzero};:CURV '
+        f"XZE {xzero};PT_O {pt_off};YMU {ymult};YOF {yoff};"
+        f"YZE {yzero};:CURV "
     ).encode("ascii")
     count = str(len(curve)).encode("ascii")
     return header + b"#" + str(len(count)).encode("ascii") + count + curve

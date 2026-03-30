@@ -53,9 +53,7 @@ def test_ds4000_time_grid_matches_sample_period(stem):
     waveform = RigolWFM.wfm.Wfm.from_file(f"tests/files/wfm/{stem}.wfm", "4")
     for channel in waveform.channels:
         if channel.enabled:
-            assert channel.times[1] - channel.times[0] == pytest.approx(
-                channel.seconds_per_point
-            )
+            assert channel.times[1] - channel.times[0] == pytest.approx(channel.seconds_per_point)
 
 
 @pytest.mark.parametrize("stem", _DS4024_SIDE_CAR_CASES)

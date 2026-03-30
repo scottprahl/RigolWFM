@@ -12,10 +12,11 @@ from tests.test_lecroy import _build_trc
 from tests.test_siglent import _build_siglent_v6
 from tests.test_yokogawa import _build_yokogawa_wfm
 
-
 _ROOT = Path(__file__).resolve().parents[1]
 _KEYSIGHT = _ROOT / "tests" / "files" / "bin" / "agilent_1.bin"
-_ROHDE = _ROOT / "docs" / "vendors" / "rohde & schwarz" / "rs_file_reader-main" / "tests" / "testdata" / "singleChan.bin"
+_ROHDE = (
+    _ROOT / "docs" / "vendors" / "rohde & schwarz" / "rs_file_reader-main" / "tests" / "testdata" / "singleChan.bin"
+)
 
 
 def _quote(path: Path | str) -> str:

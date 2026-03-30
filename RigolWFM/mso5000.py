@@ -10,6 +10,7 @@ the shipped MSO5000 example files. Logic-analyzer records are detected and
 rejected explicitly for now because the current repo has no matching fixtures to
 validate their layout.
 """
+
 from __future__ import annotations
 
 from enum import IntEnum
@@ -270,8 +271,7 @@ def from_file(file_name: str) -> Mso5000Waveform:
             header.model = _model_from_frame(wfm_header.frame_string)
         elif len(data) != header.n_pts:
             raise ValueError(
-                "MSO5000 analog channels have mismatched point counts. "
-                f"Expected {header.n_pts}, found {len(data)}."
+                "MSO5000 analog channels have mismatched point counts. " f"Expected {header.n_pts}, found {len(data)}."
             )
 
         unit_code = getattr(wfm_header.y_units, "value", int(wfm_header.y_units))
