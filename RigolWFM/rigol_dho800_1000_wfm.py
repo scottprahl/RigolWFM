@@ -13,19 +13,22 @@ class RigolDho8001000Wfm(KaitaiStruct):
     """Proprietary waveform format used by Rigol DHO800/DHO1000 series
     oscilloscopes (reverse-engineered from DHO1074 and DHO824 captures).
     
-    File layout:
+    File layout::
+    
       [File Header:      24 bytes  - partially unknown]
       [Metadata blocks:  variable  - 12-byte header + zlib-compressed content each]
       [Zero padding:     variable  - null bytes between block region and data]
       [Data section:     variable  - 40-byte header + uint16 ADC samples]
     
-    ---- Metadata blocks ----
+    Metadata blocks
+    ---------------
     Each block has a 12-byte header (six u16 LE fields) followed by len_content_raw
     bytes of content.  When comp_size < decomp_size the content bytes
     [0 .. comp_size-1] are zlib-compressed; the remainder is zero padding.
     Blocks are read until a terminator block where len_content_raw == 0.
     
-    Key blocks (identified by block_id and block_type):
+    Key blocks (identified by block_id and block_type)::
+    
       block_id=1..4, block_type=9  (~88-96 bytes decompressed)
         Offset  1..8  - int64 LE - voltage scale numerator
         scale = i64 / 750_000_000_000
@@ -36,23 +39,28 @@ class RigolDho8001000Wfm(KaitaiStruct):
         Offset 36..39 - int32 LE - CH1 voltage centre x 1e8
         Legacy fallback for older single-channel captures.
     
-    ---- Voltage calibration ----
+    Voltage calibration
+    -------------------
+    Per-channel voltage conversion is::
+    
       scale    = i64_channel / 750_000_000_000
       v_center = i64_channel / 1e8
       offset   = -v_center - scale * 32768
       volts[i] = scale * raw_uint16[i] + offset
     
-    ---- Data section ----
+    Data section
+    ------------
     The data section starts after the zero-padding region that follows the
     last metadata block.  Its offset cannot be determined statically; a
     sequential scan for the first non-zero byte is required.
     
-    Data section header (40 bytes):
+    Data section header (40 bytes)::
+    
       offset+ 0:  u64 LE  - raw total sample count across all enabled channels.
-                             DHO1000 firmware stores a value slightly larger than
-                             the true total (~+64 samples); n_ch is recovered via
-                             round(n_pts_u64 / n_pts_per_channel) rather than
-                             exact division.
+                   DHO1000 firmware stores a value slightly larger than the true
+                   total (~+64 samples); n_ch is recovered via
+                   round(n_pts_u64 / n_pts_per_channel) rather than exact
+                   division.
       offset+ 8:  8 bytes - capture marker (opaque)
       offset+16:  u32 LE  - x_increment in ADC ticks (see below)
       offset+20:  u32 LE  - unknown (observed: 77)
@@ -62,15 +70,17 @@ class RigolDho8001000Wfm(KaitaiStruct):
       offset+36:  u32 LE  - unknown (observed: 120 for single-channel, 0 for multi)
       offset+40:  uint16 LE samples begin (n_pts_per_channel × n_channels × 2 bytes)
     
-    ---- Time axis ----
+    Time axis
+    ---------
     The x_increment field stores the sampling interval as an integer count of
-    ADC clock ticks.  The tick duration is a fixed hardware property:
+    ADC clock ticks.  The tick duration is a fixed hardware property::
     
       DHO800  (e.g. DHO824):  0.8 ns / tick  — one cycle of the 1.25 GSa/s ADC
       DHO1000 (e.g. DHO1074): 10 ns / tick   — one cycle of a 100 MHz reference clock
     
     x_origin is not stored explicitly.  For the common case of a centered
-    trigger (trigger at 50% of the capture window, which is the scope default):
+    trigger (trigger at 50% of the capture window, which is the scope default)::
+    
       x_origin = -(n_pts_per_channel / 2) * x_increment
       t[i]     =  x_origin + i * x_increment
     

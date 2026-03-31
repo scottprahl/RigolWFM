@@ -35,17 +35,19 @@ class YokogawaDlWeWvf(KaitaiStruct):
     
     Sequential file mode
     --------------------
-    Long captures are split across numbered files sharing the same header:
+    Long captures are split across numbered files sharing the same header::
+    
       <name>.wvf        — first segment (seriesNo = 0)
       <name>_2.wvf      — second segment (seriesNo = 1)
       <name>_3.wvf      — third segment, etc.
+    
     All segments use the same companion <name>.hdr.
     
     Companion .hdr file — common information (ComInfo)
     ---------------------------------------------------
     The .hdr file is an ASCII key/value text file.  The WVF File Access API
     exposes these fields via ComInfo.  Both the .hdr key name and the API
-    structure field name are shown where they differ.
+    structure field name are shown where they differ::
     
       .hdr key          API field           Description
       -----------       -----------------   ------------------------------------------
@@ -59,7 +61,8 @@ class YokogawaDlWeWvf(KaitaiStruct):
       Date              Date                Recording date (YYYY/MM/DD)
       Time              Time                Recording time (HH:MM:SS)
     
-    Global .hdr section ($PublicInfo):
+    Global .hdr section ($PublicInfo)::
+    
       FormatVersion   Version string (e.g. "1.11")
       Model           Oscilloscope model string (e.g. "WE7000", "DL1600")
       Endian          "Big" = big-endian (Motorola 68000 CPU)
@@ -70,12 +73,13 @@ class YokogawaDlWeWvf(KaitaiStruct):
       DataOffset      Leading unused bytes at the start of the .wvf file;
                       the first sample byte is at this file offset.
     
-    Per-group section ($Group<N>, one section per group, N = 1, 2, ...):
+    Per-group section ($Group<N>, one section per group, N = 1, 2, ...)::
+    
       TraceNumber     Number of traces in this group
       BlockNumber     Number of time blocks captured in this group
     
     Per-trace entries in .hdr (all on one line, space-separated, one value per
-    trace; API per-channel structure is ChInfo[]):
+    trace; API per-channel structure is ChInfo[])::
     
       .hdr key        API field     Description
       ----------      ----------    -----------------------------------------------
@@ -97,7 +101,8 @@ class YokogawaDlWeWvf(KaitaiStruct):
       Time/Time<N>    (Time)        Recording time per block (HH:MM:SS)
     
     Additional per-channel AcqInfo fields exposed by the API (not all appear in
-    every .hdr file):
+    every .hdr file)::
+    
       startBit        First valid bit position in each sample word
       effectiveBit    Number of effective ADC bits
       trigActive      Trigger active flag
@@ -110,7 +115,7 @@ class YokogawaDlWeWvf(KaitaiStruct):
     VDataType codes  (.hdr string)
     ------------------------------
     Each trace entry in the .hdr carries a code describing its binary sample
-    format.  This is the string that appears in the VDataType field:
+    format.  This is the string that appears in the VDataType field::
     
       IS<n>   Signed integer,   n bytes per sample  (IS1=int8, IS2=int16, IS4=int32)
       IU<n>   Unsigned integer, n bytes per sample  (IU1=uint8, IU2=uint16, IU4=uint32)
@@ -121,7 +126,8 @@ class YokogawaDlWeWvf(KaitaiStruct):
     
     WVF File Access API dataForm codes  (numeric, used by mexWeDPDataRead etc.)
     ---------------------------------------------------------------------------
-    When reading data via the API, the caller requests a conversion format:
+    When reading data via the API, the caller requests a conversion format::
+    
       1  = WE_UBYTE   unsigned 8-bit integer
       17 = WE_SWORD   signed 16-bit integer
       33 = WE_SLONG   signed 32-bit integer
@@ -136,20 +142,23 @@ class YokogawaDlWeWvf(KaitaiStruct):
     After the DataOffset-byte preamble the samples are laid out in one of two
     orders depending on the .hdr DataFormat field.
     
-    Block numbering convention:
+    Block numbering convention::
+    
       The WVF File Access API uses 0-origin block numbers (blockNo = 0 is the
       first block).  The offset formulas below use 1-based indices (b = 1..B[g])
       to match the MATLAB reference implementation; subtract 1 when translating
       API blockNo values.
     
-    Let:
+    Let::
+    
       G     = total number of groups
       T[g]  = number of traces in group g   (g = 1..G)
       B[g]  = number of blocks in group g
       S[g,t] = BlockSize (samples/block) for trace t in group g
       W[g,t] = VDataType byte-width for trace t in group g
     
-    TRACE format  (DataFormat = "TRACE"):
+    TRACE format  (DataFormat = "TRACE")::
+    
       All blocks of a given trace are stored contiguously; traces ordered by group:
     
       for g = 1..G:
@@ -157,13 +166,15 @@ class YokogawaDlWeWvf(KaitaiStruct):
           for b = 1..B[g]:
             S[g,t] × W[g,t]  raw bytes
     
-      Byte offset of (group g, trace t, block b):
+      Byte offset of (group g, trace t, block b)::
+    
         DataOffset
         + sum_{g'<g} sum_{t'=1}^{T[g']}  S[g',t'] × B[g'] × W[g',t']
         + sum_{t'<t}  S[g,t'] × B[g] × W[g,t']
         + (b-1) × S[g,t] × W[g,t]
     
-    BLOCK format  (DataFormat = "BLOCK"):
+    BLOCK format  (DataFormat = "BLOCK")::
+    
       All traces within a block are stored contiguously; blocks ordered by group:
     
       for g = 1..G:
@@ -171,7 +182,8 @@ class YokogawaDlWeWvf(KaitaiStruct):
           for t = 1..T[g]:
             S[g,t] × W[g,t]  raw bytes
     
-      Byte offset of (group g, trace t, block b):
+      Byte offset of (group g, trace t, block b)::
+    
         DataOffset
         + sum_{g'<g} sum_{b'=1}^{B[g']} sum_{t'=1}^{T[g']}  S[g',t'] × W[g',t']
         + sum_{b'<b} sum_{t'=1}^{T[g]}  S[g,t'] × W[g,t']
@@ -179,17 +191,24 @@ class YokogawaDlWeWvf(KaitaiStruct):
     
     Voltage calibration
     --------------------
+    
+    ::
+    
       volts[i] = VOffset + VResolution * raw[i]
                = ScaleB  + ScaleA      * raw[i]      (API field names)
     
     Time axis
     ---------
-      t[i] = HOffset + HResolution * i   (i = 0 .. BlockSize-1, 0-based Python)
+    
+    ::
+    
+      t[i] = HOffset + HResolution * i      (i = 0 .. BlockSize-1, 0-based Python)
       t[i] = HOffset + HResolution * (i-1)  (i = 1 .. BlockSize, 1-based MATLAB)
     
     Endianness
     ----------
-    The Endian field in the .hdr controls byte order for all multi-byte samples:
+    The Endian field in the .hdr controls byte order for all multi-byte samples::
+    
       "Big"  — big-endian (Motorola 68000 byte order; older DL series)
       "Ltl"  — little-endian (Intel x86 byte order; newer DL/WE series)
     
@@ -202,11 +221,12 @@ class YokogawaDlWeWvf(KaitaiStruct):
     
     References
     ----------
-    Yokogawa Electric Corporation, "Model 707713 WVF File Access Toolkit for
+    
+    - Yokogawa Electric Corporation, "Model 707713 WVF File Access Toolkit for
       MATLAB User's Manual", IM 707713-61E, 1st Edition, July 2003.
-    Erik Benkler, "wvfread v1.7", Physikalisch-Technische Bundesanstalt, 2011.
-    Yokogawa Technical Information TI 7000-21 E, 1998 (3rd edition).
-    Yokogawa DL 1640 User Manual, Appendix 3.
+    - Erik Benkler, "wvfread v1.7", Physikalisch-Technische Bundesanstalt, 2011.
+    - Yokogawa Technical Information TI 7000-21 E, 1998 (3rd edition).
+    - Yokogawa DL 1640 User Manual, Appendix 3.
     
     Sources used for this KSY binary format: the Yokogawa references listed
     above, especially the WVF File Access Toolkit documentation in

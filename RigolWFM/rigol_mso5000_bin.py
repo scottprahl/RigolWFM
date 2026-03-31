@@ -13,15 +13,18 @@ class RigolMso5000Bin(KaitaiStruct):
     """Binary waveform export used by Rigol MSO5000 scopes.
     
     This schema is based on:
+    
       - example files in `docs/sources/rigol_mso5000-main/waveform_bin/examples`
       - `docs/sources/matlab/importRigolBinMSO5000.m`
       - `docs/sources/rigol_mso5000-main/waveform_bin/Rigol_MSO5000_Waveform_bin.bt`
     
-    File layout:
+    File layout::
+    
       [File Header:      12 bytes]
-    for each exported waveform:
-      [Waveform Header: 140 bytes]
-      [Data Header:      12 bytes]
+    
+      for each exported waveform:
+        [Waveform Header: 140 bytes]
+        [Data Header:      12 bytes]
         [Sample Data:      buffer_size bytes]
     
     The shipped examples only exercise analog float32 buffers. Logic-analyzer

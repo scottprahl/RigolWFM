@@ -13,10 +13,12 @@ class Rigol70008000Bin(KaitaiStruct):
     """Binary waveform export used by Rigol MSO7000/DS7000 and MSO8000 scopes.
     
     This schema follows the "Binary Data Format (.bin)" tables in:
+    
       - `docs/manuals/Rigol MSO7000 Series User Manual.pdf`
       - `docs/manuals/MSO8000 Series Digital.pdf`
     
-    Documented layout:
+    Documented layout::
+    
       [File Header:      12 bytes]
       for each exported waveform:
         [Waveform Header: 128 bytes]

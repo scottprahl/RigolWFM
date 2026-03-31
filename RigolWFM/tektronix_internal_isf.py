@@ -19,13 +19,13 @@ class TektronixInternalIsf(KaitaiStruct):
     --------------
     The file consists of a variable-length ASCII text header immediately
     followed by a SCPI definite-length binary block containing the raw ADC
-    samples.
+    samples::
     
       <text_header> '#' <n_digits> <byte_count_str> <curve_data>
     
     The text header is a sequence of semicolon-delimited key/value pairs.  No
     fixed layout exists — fields may appear in any order and optional fields may
-    be absent.  Field names exist in two variants:
+    be absent.  Field names exist in two variants::
     
       Long form (older firmware):   BYT_NR, BIT_NR, ENCDG, BN_FMT, BYT_OR,
                                     WFID, NR_PT, PT_FMT, XUNIT, XINCR, PT_OFF,
@@ -41,7 +41,7 @@ class TektronixInternalIsf(KaitaiStruct):
     
     The SCPI definite-length binary block starts with the hash character '#'
     that immediately follows the last semicolon/header pair.  Because '#' does
-    not otherwise appear in the header, it uniquely marks the boundary.
+    not otherwise appear in the header, it uniquely marks the boundary::
     
       '#' consumed as terminator of header_text
       n_digits      — 1 ASCII digit: the count of decimal digits that follow
@@ -61,23 +61,30 @@ class TektronixInternalIsf(KaitaiStruct):
     
     Sample data types
     -----------------
-    BYT_NR / BYT_N = 1: signed 8-bit integers  (int8)
-    BYT_NR / BYT_N = 2: signed 16-bit integers (int16)
+    The raw sample encodings are::
     
-    BN_FMT / BN_F values:
+      BYT_NR / BYT_N = 1: signed 8-bit integers  (int8)
+      BYT_NR / BYT_N = 2: signed 16-bit integers (int16)
+    
+    BN_FMT / BN_F values::
+    
       RI — signed (two's complement) integer (most common)
       RP — unsigned (positive) integer
     
     Voltage reconstruction
     ----------------------
+    Analog samples are converted with::
+    
       volts[i] = YZERO + YMULT * (adc[i] - YOFF)
     
     Time axis
     ---------
-    For PT_FMT / PT_F = "Y" (normal single-value):
+    For PT_FMT / PT_F = "Y" (normal single-value)::
+    
       t[i] = XZERO + XINCR * (i - PT_OFF)    (i = 0 … NR_PT-1)
     
-    For PT_FMT / PT_F = "ENV" (envelope min/max pairs, NR_PT is even):
+    For PT_FMT / PT_F = "ENV" (envelope min/max pairs, NR_PT is even)::
+    
       sample_count = NR_PT / 2
       t[i] = XZERO + XINCR * (2*i - PT_OFF)  (i = 0 … sample_count-1)
       adc_min[i] = adc[2*i]
@@ -85,7 +92,8 @@ class TektronixInternalIsf(KaitaiStruct):
     
     References
     ----------
-    Tektronix Programmer Manuals:
+    Tektronix Programmer Manuals::
+    
       TDS 340A / 360 / 380 (070-9442-02)
       TDS3000/B/C Series (071-0381-03)
       TDS5000B/6000/7000 Series

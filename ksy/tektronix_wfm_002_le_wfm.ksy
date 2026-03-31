@@ -21,14 +21,19 @@ doc: |
   downstream time-base, update-spec, and curve offsets are correct for both
   WFM#002 and WFM#003 files.
 
-  Endianness detection: byte_order at offset 0 is 0x0F0F for little-endian (Intel).
-  Version string at offset 2 is "WFM#002" or "WFM#003".
+  Endianness and version detection::
 
-  Voltage reconstruction (explicit dimension 1):
+    byte_order at offset 0 is 0x0F0F for little-endian (Intel).
+    version_number at offset 2 is "WFM#002" or "WFM#003".
+
+  Voltage reconstruction (explicit dimension 1)::
+
     volts[i] = exp_dim1.dim_scale * adc[i] + exp_dim1.dim_offset
 
-  Time axis (implicit dimension 1):
+  Time axis (implicit dimension 1)::
+
     t[i] = imp_dim1.dim_offset + i * imp_dim1.dim_scale
+
   where i = 0 corresponds to the first sample in the curve buffer.
 
   Reference: Tektronix "Reference Waveform File Format" (001-1378-03), version notes.

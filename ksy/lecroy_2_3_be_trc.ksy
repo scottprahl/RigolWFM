@@ -11,7 +11,8 @@ doc: |
   indicating HIFIRST (big-endian) byte order.  Use lecroy_2_3_le for
   little-endian files (byte 34 == 1).
 
-  File layout:
+  File layout::
+
     [WAVEDESC block:   346 bytes  — main waveform descriptor (WAVE_DESCRIPTOR field)]
     [USERTEXT block:   variable  — optional free-form text (USER_TEXT bytes; 0 if absent)]
     [TRIGTIME array:   variable  — segment trigger times for sequence acquisitions]
@@ -24,20 +25,25 @@ doc: |
   transferred via SCPI may carry a short numeric prefix before WAVEDESC; those
   files are not supported directly by this parser.
 
-  Endianness detection (performed by the caller before selecting this parser):
+  Endianness detection (performed by the caller before selecting this parser)::
+
     COMM_ORDER is a u2 at offset 34.  Because COMM_ORDER can only be 0 or 1,
     the low byte at offset 34 is unambiguous in both byte orders:
       byte 34 == 0  →  HIFIRST (big-endian,    use lecroy_2_3_be)
       byte 34 == 1  →  LOFIRST (little-endian, use lecroy_2_3_le)
 
-  Voltage reconstruction (single sweep):
+  Voltage reconstruction (single sweep)::
+
     volts[i] = VERTICAL_GAIN * adc[i] - VERTICAL_OFFSET
+
   where adc[i] is signed 8-bit (COMM_TYPE == byte) or signed 16-bit (COMM_TYPE == word).
 
-  Time axis:
+  Time axis::
+
     t[i] = HORIZ_OFFSET + i * HORIZ_INTERVAL   (i = 0 … WAVE_ARRAY_COUNT − 1)
 
-  For sequence acquisitions (SUBARRAY_COUNT > 1), the time axis for segment k is:
+  For sequence acquisitions (SUBARRAY_COUNT > 1), the time axis for segment k is::
+
     t[k,i] = (trigtime_array[k].trigger_time + trigtime_array[k].trigger_offset)
              + i * HORIZ_INTERVAL
 

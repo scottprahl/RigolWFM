@@ -39,7 +39,7 @@ def test_wfmview_index_mentions_rtp_and_loads_rs_parser():
     """The viewer index should advertise and load the R&S RTP support path."""
     text = _INDEX.read_text(encoding="utf-8")
     assert "Rohde &amp; Schwarz RTP .bin" in text
-    assert '<script defer src="./RohdeSchwarzRtpWfm.js"></script>' in text
+    assert '<script defer src="./RohdeSchwarzRtpWfmBin.js"></script>' in text
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")

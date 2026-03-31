@@ -14,6 +14,7 @@ class Lecroy10BeTrc(KaitaiStruct):
     
     This older format has a 320-byte WAVEDESC (vs 346 bytes in LECROY_2_3) with a different
     field layout.  Key differences from LECROY_2_3:
+    
       - wave_array_1_len is at offset 48 (not 60)
       - instrument_name is at offset 56 (not 76)
       - wave_array_count is at offset 92 (not 116)
@@ -21,14 +22,18 @@ class Lecroy10BeTrc(KaitaiStruct):
       - wave_source at offset 296 is 1-indexed (1=CH1, 2=CH2, …)
       - No ris_time_array field
     
-    Endianness detection (performed by the caller before selecting this parser):
+    Endianness detection (performed by the caller before selecting this parser)::
+    
       COMM_ORDER is a u2 at offset 34.  byte 34 == 0 → HIFIRST (big-endian, use lecroy_1_0_be).
     
-    Voltage reconstruction:
+    Voltage reconstruction::
+    
       volts[i] = vertical_gain * adc[i] - acq_vert_offset
+    
     where adc[i] is signed 8-bit (COMM_TYPE == byte) or signed 16-bit (COMM_TYPE == word).
     
-    Time axis:
+    Time axis::
+    
       t[i] = horiz_offset + i * horiz_interval   (i = 0 … wave_array_count − 1)
     
     Sources used for this KSY binary format: `docs/vendors/lecroy/LeCroyWaveformTemplate_1_0.txt`,

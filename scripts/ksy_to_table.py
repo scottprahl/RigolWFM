@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
-"""Render Kaitai Struct `.ksy` schemas as Markdown or reStructuredText tables."""
+"""Render Kaitai Struct `.ksy` schemas as reStructuredText summary pages."""
 
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 import textwrap
 from pathlib import Path
@@ -27,22 +26,14 @@ def _compact_text(value: Any) -> str:
         return ", ".join(part for item in value if (part := _compact_text(item)))
     if isinstance(value, dict):
         return ", ".join(f"{key}={_compact_text(item)}" for key, item in value.items())
-    return re.sub(r"\s+", " ", str(value).strip())
+    return " ".join(str(value).split())
 
 
-def _heading(text: str, level: int, fmt: str) -> str:
-    """Render a Markdown or reStructuredText heading."""
-    if fmt == "markdown":
-        return f"{'#' * level} {text}"
-
+def _heading(text: str, level: int) -> str:
+    """Render a reStructuredText heading."""
     adornments = {1: "=", 2: "-", 3: "~"}
     underline = adornments.get(level, "^") * len(text)
     return f"{text}\n{underline}"
-
-
-def _markdown_cell(value: str) -> str:
-    """Escape a Markdown table cell."""
-    return value.replace("|", r"\|")
 
 
 def _rst_cell(value: str) -> str:
@@ -64,18 +55,6 @@ def _wrap_lines(value: str, header: str) -> list[str]:
     }
     width = max_widths.get(header, 60)
     return textwrap.wrap(value, width=width, break_long_words=False, break_on_hyphens=False) or [""]
-
-
-def _render_markdown_table(headers: list[str], rows: list[list[str]]) -> str:
-    """Render a pipe table for Markdown."""
-    lines = [
-        "| " + " | ".join(_markdown_cell(header) for header in headers) + " |",
-        "| " + " | ".join("---" for _ in headers) + " |",
-    ]
-    for row in rows:
-        wrapped = ["<br>".join(_wrap_lines(cell, headers[idx])) for idx, cell in enumerate(row)]
-        lines.append("| " + " | ".join(_markdown_cell(cell) for cell in wrapped) + " |")
-    return "\n".join(lines)
 
 
 def _render_rst_table(headers: list[str], rows: list[list[str]]) -> str:
@@ -111,14 +90,42 @@ def _render_rst_table(headers: list[str], rows: list[list[str]]) -> str:
         lines.extend([*render_row(row), border("-")])
     return "\n".join(lines)
 
-
-def _render_table(headers: list[str], rows: list[list[str]], fmt: str) -> str:
-    """Render a table in the requested output format."""
+def _render_table(headers: list[str], rows: list[list[str]]) -> str:
+    """Render a grid table in reStructuredText."""
     if not rows:
         return ""
-    if fmt == "markdown":
-        return _render_markdown_table(headers, rows)
     return _render_rst_table(headers, rows)
+
+
+def _rst_doc(value: Any) -> str:
+    """Return a doc block suitable for direct inclusion in reStructuredText."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        lines = value.strip().splitlines()
+        normalized: list[str] = []
+        in_literal_block = False
+        for index, line in enumerate(lines):
+            current = line.rstrip()
+            stripped = current.strip()
+            indent = len(current) - len(current.lstrip())
+
+            if in_literal_block and stripped and indent == 0:
+                if normalized and normalized[-1] != "":
+                    normalized.append("")
+                in_literal_block = False
+
+            if stripped.startswith(("- ", "* ")) and normalized and normalized[-1] != "":
+                normalized.append("")
+
+            normalized.append(current)
+            if current.endswith("::"):
+                next_line = lines[index + 1] if index + 1 < len(lines) else ""
+                if next_line.strip():
+                    normalized.append("")
+                in_literal_block = True
+        return "\n".join(normalized).strip()
+    return _compact_text(value)
 
 
 def _entry_type(entry: dict[str, Any], *, default: str = "") -> str:
@@ -204,39 +211,37 @@ def _enum_rows(entries: dict[Any, Any]) -> list[list[str]]:
     return [[_compact_text(value), _compact_text(name)] for value, name in entries.items()]
 
 
-def _append_section(parts: list[str], title: str, level: int, body: str, fmt: str, description: str = "") -> None:
+def _append_section(parts: list[str], title: str, level: int, body: str, description: str = "") -> None:
     """Append a heading and optional description for a non-empty body."""
     if not body:
         return
-    parts.append(_heading(title, level, fmt))
+    parts.append(_heading(title, level))
     if description:
         parts.append(description)
     parts.append(body)
 
 
-def render_schema(schema: dict[str, Any], source: Path, fmt: str) -> str:
-    """Render an already-loaded schema to Markdown or reStructuredText."""
+def render_schema(schema: dict[str, Any], source: Path) -> str:
+    """Render an already-loaded schema to reStructuredText."""
     meta = schema.get("meta", {})
     title = _compact_text(meta.get("title") or meta.get("id") or source.name)
 
-    parts = [_heading(title, 1, fmt)]
-    source_markup = f"`{source}`" if fmt == "markdown" else f"``{source}``"
-    parts.append(f"Source: {source_markup}")
+    parts = [_heading(title, 1)]
+    parts.append(f"Source: ``{source}``")
 
-    schema_doc = _compact_text(schema.get("doc"))
+    schema_doc = _rst_doc(schema.get("doc"))
     if schema_doc:
         parts.append(schema_doc)
 
     metadata_rows = [[_compact_text(key), _compact_text(value)] for key, value in meta.items()]
-    _append_section(parts, "Metadata", 2, _render_table(["Key", "Value"], metadata_rows, fmt), fmt)
+    _append_section(parts, "Metadata", 2, _render_table(["Key", "Value"], metadata_rows))
 
     params = schema.get("params", [])
     _append_section(
         parts,
         "Parameters",
         2,
-        _render_table(["Field", "Type", "Details", "Description"], _field_rows(params), fmt),
-        fmt,
+        _render_table(["Field", "Type", "Details", "Description"], _field_rows(params)),
     )
 
     seq = schema.get("seq", [])
@@ -244,8 +249,7 @@ def render_schema(schema: dict[str, Any], source: Path, fmt: str) -> str:
         parts,
         "Top-Level Sequence",
         2,
-        _render_table(["Field", "Type", "Details", "Description"], _field_rows(seq), fmt),
-        fmt,
+        _render_table(["Field", "Type", "Details", "Description"], _field_rows(seq)),
     )
 
     instances = schema.get("instances", {})
@@ -253,12 +257,11 @@ def render_schema(schema: dict[str, Any], source: Path, fmt: str) -> str:
         parts,
         "Top-Level Instances",
         2,
-        _render_table(["Instance", "Type", "Details", "Description"], _instance_rows(instances), fmt),
-        fmt,
+        _render_table(["Instance", "Type", "Details", "Description"], _instance_rows(instances)),
     )
 
     for type_name, type_def in schema.get("types", {}).items():
-        parts.append(_heading(f"Type: {type_name}", 2, fmt))
+        parts.append(_heading(f"Type: {type_name}", 2))
         type_doc = _compact_text(type_def.get("doc"))
         if type_doc:
             parts.append(type_doc)
@@ -266,15 +269,13 @@ def render_schema(schema: dict[str, Any], source: Path, fmt: str) -> str:
             parts,
             "Parameters",
             3,
-            _render_table(["Field", "Type", "Details", "Description"], _field_rows(type_def.get("params", [])), fmt),
-            fmt,
+            _render_table(["Field", "Type", "Details", "Description"], _field_rows(type_def.get("params", []))),
         )
         _append_section(
             parts,
             "Sequence",
             3,
-            _render_table(["Field", "Type", "Details", "Description"], _field_rows(type_def.get("seq", [])), fmt),
-            fmt,
+            _render_table(["Field", "Type", "Details", "Description"], _field_rows(type_def.get("seq", []))),
         )
         _append_section(
             parts,
@@ -283,9 +284,7 @@ def render_schema(schema: dict[str, Any], source: Path, fmt: str) -> str:
             _render_table(
                 ["Instance", "Type", "Details", "Description"],
                 _instance_rows(type_def.get("instances", {})),
-                fmt,
             ),
-            fmt,
         )
 
     for enum_name, enum_values in schema.get("enums", {}).items():
@@ -293,8 +292,7 @@ def render_schema(schema: dict[str, Any], source: Path, fmt: str) -> str:
             parts,
             f"Enum: {enum_name}",
             2,
-            _render_table(["Value", "Name"], _enum_rows(enum_values), fmt),
-            fmt,
+            _render_table(["Value", "Name"], _enum_rows(enum_values)),
         )
 
     return "\n\n".join(parts) + "\n"
@@ -304,12 +302,6 @@ def build_parser() -> argparse.ArgumentParser:
     """Create the CLI argument parser."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("schema", type=Path, help="Path to the `.ksy` file to summarize.")
-    parser.add_argument(
-        "--format",
-        choices=("markdown", "rst"),
-        default="markdown",
-        help="Output format for the generated tables.",
-    )
     parser.add_argument("-o", "--output", type=Path, help="Optional output file. Defaults to standard output.")
     return parser
 
@@ -325,7 +317,7 @@ def main(argv: list[str] | None = None) -> int:
     if not isinstance(schema, dict):
         raise SystemExit(f"{schema_path} does not contain a top-level YAML mapping.")
 
-    rendered = render_schema(schema, schema_path, args.format)
+    rendered = render_schema(schema, schema_path)
     if args.output is not None:
         args.output.write_text(rendered, encoding="utf-8")
     else:

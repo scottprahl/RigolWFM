@@ -120,7 +120,7 @@ $(TABLES_DIR):
 	@mkdir -p "$(TABLES_DIR)"
 
 $(TABLES_DIR)/%_table.rst: ksy/%.ksy | $(TABLES_DIR)
-	@$(RUN_DOCS) python scripts/ksy_to_table.py --format rst --output "$@" "$<"
+	@$(RUN_DOCS) python scripts/ksy_to_table.py --output "$@" "$<"
 
 .PHONY: tables
 tables: | $(TABLES_DIR)

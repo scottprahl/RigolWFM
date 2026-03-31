@@ -17,7 +17,7 @@ class AgilentAgxxBin(KaitaiStruct):
     `AG01` / `AG03` / `AG10` container family written by several
     Agilent / Keysight oscilloscopes.
     
-    File layout:
+    File layout::
       [File Header: 12 bytes for AG01 / AG10, 16 bytes for AG03]
       for each exported waveform:
         [Waveform Header: usually 140 bytes]

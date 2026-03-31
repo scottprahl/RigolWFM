@@ -21,23 +21,24 @@ def _run_script(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_markdown_output_includes_types_and_enums():
-    """Markdown output should summarize metadata, root fields, types, and enums."""
-    result = _run_script("--format", "markdown", "ksy/agilent_agxx_bin.ksy")
+def test_rst_output_preserves_schema_doc_and_includes_types_and_enums():
+    """RST output should keep the top-level schema doc and summarize types/enums."""
+    result = _run_script("ksy/agilent_agxx_bin.ksy")
 
     assert result.returncode == 0, result.stderr
-    assert "# Agilent / Keysight AGxx Binary Format" in result.stdout
-    assert "## Metadata" in result.stdout
-    assert "## Top-Level Sequence" in result.stdout
-    assert "| file_header | file_header |" in result.stdout
-    assert "## Type: waveform_header" in result.stdout
-    assert "## Enum: unit_enum" in result.stdout
+    assert "Agilent / Keysight AGxx Binary Format" in result.stdout
+    assert "Metadata" in result.stdout
+    assert "Top-Level Sequence" in result.stdout
+    assert "File layout::" in result.stdout
+    assert "Sources used for this KSY binary format:" in result.stdout
+    assert "Type: waveform_header" in result.stdout
+    assert "Enum: unit_enum" in result.stdout
     assert "repeat-expr=file_header.n_waveforms" in result.stdout
 
 
 def test_rst_output_includes_parameters_and_size_eos():
     """reStructuredText output should render top-level params and size-eos fields."""
-    result = _run_script("--format", "rst", "ksy/yokogawa_dl_we_wvf.ksy")
+    result = _run_script("ksy/yokogawa_dl_we_wvf.ksy")
 
     assert result.returncode == 0, result.stderr
     assert "Yokogawa" in result.stdout
@@ -49,10 +50,8 @@ def test_rst_output_includes_parameters_and_size_eos():
 
 def test_script_can_write_output_file(tmp_path: Path):
     """The CLI should support writing rendered output to a file."""
-    output_path = tmp_path / "rohde.md"
+    output_path = tmp_path / "rohde.rst"
     result = _run_script(
-        "--format",
-        "markdown",
         "--output",
         str(output_path),
         "ksy/rohde_schwarz_rtp_wfm_bin.ksy",

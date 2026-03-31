@@ -13,14 +13,14 @@ doc: |
   and the downstream wrapper rejects them explicitly instead of treating them
   as calibrated volt samples.
 
-  File layout:
+  File layout::
     [File Header:      16 bytes]
     for each waveform (channel):
       [Waveform Header: 140 bytes]
       [Data Header:      16 bytes]
       [Sample Data:      buffer_size bytes - float32 LE, volts]
 
-  Time axis reconstruction used by the current parser:
+  Time axis reconstruction used by the current parser::
     t[i] = -x_origin + i * x_increment
 
   The manual describes X Origin as the x-value of the first data point.
