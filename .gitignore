@@ -22,6 +22,7 @@ docs/old/
 docs/vendors/
 RigolWFM.egg-info/
 RigolWFM/__pycache__/
+RigolWFM/.ipynb_checkpoints/
 uv.lock
 
 wfm/DS1054Z-C-original.csv
