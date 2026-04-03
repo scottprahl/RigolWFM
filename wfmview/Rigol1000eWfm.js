@@ -11,6 +11,18 @@
 })(typeof self !== 'undefined' ? self : this, function (Rigol1000eWfm_, KaitaiStream) {
 /**
  * Rigol DS1102E scope .wmf format abstracted from a python script
+ * 
+ * Sources used for this KSY binary format were a PDF document titled,
+ * "DS1000E/D WFM structure instruction" written by Rigol and the Github repository
+ * <https://github.com/mabl/pyRigolWFM>.
+ * 
+ * Tested file formats: real repo fixtures `DS1102E-A.wfm` through
+ * `DS1102E-G.wfm`, `DS1052E.wfm`, and `DS1000E-A.wfm` through
+ * `DS1000E-D.wfm`.
+ * 
+ * Oscilloscope models this format may apply to: DS1000E family models
+ * currently listed by the library, including `DS1102E`, `DS1052E`, and closely
+ * related DS1000E-series scopes.
  */
 
 var Rigol1000eWfm = (function() {

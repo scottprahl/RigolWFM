@@ -10,9 +10,18 @@
   }
 })(typeof self !== 'undefined' ? self : this, function (Rigol1000bWfm_, KaitaiStream) {
 /**
- * This was put together based on an excel header list of unknown provenance.
- * It has been tested with a handful of different files.  The offset to the
- * data seems correct but the channel coupling is untested.
+ * Sources used for this KSY binary format: a legacy Excel header list of
+ * unknown provenance, reverse-engineering from
+ * checked-in `DS1204B` captures, and comparison against the closely related
+ * DS1000E family documentation.
+ * 
+ * Tested file formats: real repo fixtures `DS1204B-A.wfm` through
+ * `DS1204B-E.wfm`, with matching snapshot/info regressions.  Channel coupling
+ * is untested.
+ * 
+ * Oscilloscope models this format may apply to: DS1000B family models
+ * currently listed by the library, including `DS1074B`, `DS1104B`, `DS1204B`,
+ * and other DS1000B-series scopes that share this layout.
  */
 
 var Rigol1000bWfm = (function() {

@@ -34,6 +34,10 @@
    :target: https://pypi.org/project/RigolWFM/
    :alt: Downloads
 
+.. |view| image:: https://img.shields.io/badge/view-scope_file-68CA66
+   :target: https://scottprahl.github.io/RigolWFM/
+   :alt: Oscilloscope Web Viewer
+
 RigolWFM
 =========
 
@@ -46,13 +50,15 @@ A utility to process oscilloscope waveform files
 
 |license-badge| |test-badge| |docs-badge| |downloads-badge|
 
+|view|
+
 This project started as a resource for interpreting the proprietary ``.wfm``
 files created by Rigol oscilloscopes.  It now also includes parsers for
 Tektronix, LeCroy, Agilent / Keysight, Siglent, Yokogawa, and Rohde &
 Schwarz waveform files.
 Open source tools that can parse or convert these binary oscilloscope formats
 are often balkanized: each program tends to support a single oscilloscope
-group.
+group.  I have gathered a bunch together here.
 
 This project leverages the domain specific language at
 <https://doc.kaitai.io> to describe binary files.  Once a format has been
@@ -81,10 +87,7 @@ files by::
    import matplotlib.pyplot as plt
    from RigolWFM import Wfm
 
-   filename = 'example.wfm'
-   scope = 'DS1000E'
-
-   w = Wfm.from_file(filename)
+   w = Wfm.from_file("example.wfm")
    w.plot()
    plt.show()
 

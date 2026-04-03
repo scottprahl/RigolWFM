@@ -11,6 +11,20 @@
 })(typeof self !== 'undefined' ? self : this, function (Rigol1000zWfm_, KaitaiStream) {
 /**
  * Rigol DS1000Z scope .wmf file format.
+ * 
+ * Sources used for this KSY binary format. An document titled 
+ * "DS1000Z Waveform Storage Structure" and the Github repository
+ * <https://github.com/michal-szkutnik/pyRigolWfm1000Z>,
+ * 
+ * Tested file formats: real repo fixtures `DS1202Z-E.wfm`, `DS1054Z-A.wfm`
+ * through `DS1054Z-D.wfm`, `DS1074Z-A.wfm` through `DS1074Z-C.wfm`,
+ * `MSO1104.wfm`, and the two-channel SP3 fixtures
+ * `DS1054Z-ch1SquareCH2Uart.wfm` and `DS1054Z-ch1SquareCH4Uart.wfm`.
+ * 
+ * Oscilloscope models this format may apply to: DS1000Z family models
+ * currently listed by the library, including `DS1202Z`, `DS1054Z`, `MSO1054Z`,
+ * `DS1074Z`, `MSO1074Z`, `DS1074Z-S`, `DS1104Z`, `MSO1104Z`, and
+ * `DS1104Z-S`.
  */
 
 var Rigol1000zWfm = (function() {

@@ -15,27 +15,37 @@
  * Applies to: TDS6000/B/C, TDS/CSA7000/B, and similar instruments with Intel
  * (PC-based) acquisition systems that produce WFM#001 files.
  * 
- * For WFM#002 files (TDS5000B), use tek_wfm_002_le/be.  For WFM#003 files
- * (DPO7000, DPO70000, DSA70000), use tek_wfm_002_le/be with caution — the
- * critical calibration fields (dim_scale, dim_offset) are identical in layout
- * but point_density in user-view sections is f8 instead of u4, shifting fields
- * that follow it.
+ * Endianness detection (performed by caller before selecting this parser)::
  * 
- * Endianness detection (performed by caller before selecting this parser):
  *   byte_order at offset 0 is 0x0F0F for little-endian (Intel);
  *   0xF0F0 for big-endian (PPC) — use tek_wfm_001_le in that case.
  * 
- * Version detection: version_number at offset 2 is "WFM#001" for this parser.
+ * Version detection::
  * 
- * Voltage reconstruction (explicit dimension 1):
+ *   version_number at offset 2 is "WFM#001" for this parser.
+ * 
+ * Voltage reconstruction (explicit dimension 1)::
+ * 
  *   volts[i] = exp_dim1.dim_scale * adc[i] + exp_dim1.dim_offset
  * 
- * Time axis (implicit dimension 1):
+ * Time axis (implicit dimension 1)::
+ * 
  *   t[i] = imp_dim1.dim_offset + i * imp_dim1.dim_scale
+ * 
  * where i = 0 corresponds to the first sample in the curve buffer.
  * Valid user data starts at curve.data_start_offset bytes into the buffer.
  * 
- * Reference: Tektronix "Reference Waveform File Format" (001-1378-03).
+ * Sources used for this KSY binary format: Tektronix "Reference Waveform File Format" 
+ * (001-1378-03).
+ * 
+ * Tested file formats: no checked-in `WFM#001` big-endian fixture currently
+ * exercises this exact schema; current Tek regression tests cover synthetic
+ * `WFM#002`, `WFM#003`, and legacy `LLWFM` files, so this variant is
+ * document-backed rather than fixture-backed today.
+ * 
+ * Oscilloscope models this format may apply to: Tektronix `TDS6000` / `B` /
+ * `C`, `TDS/CSA7000` / `B`, and similar PPC-based instruments that write
+ * big-endian `WFM#001` files.
  */
 
 var TektronixWfm001BeWfm = (function() {

@@ -16,27 +16,38 @@
  * WFM#002 applies to: TDS5000B Series.
  * WFM#003 applies to: DPO7000, DPO70000, DSA70000 Series.
  * 
- * Difference from WFM#001: a 2-byte summary_frame_type field is inserted at
- * offset 0x9a (154) between num_acquired_fast_frames and pix_map_display_format,
- * shifting all subsequent fields by 2 bytes.
- * 
  * WFM#003 additional difference: point_density in the user-view sections of each
  * dimension (exp_dim1, exp_dim2, imp_dim1, imp_dim2) changes from u4 (4 bytes) to
  * f8 (8 bytes).  This parser handles that layout difference explicitly, so the
  * downstream time-base, update-spec, and curve offsets are correct for both
  * WFM#002 and WFM#003 files.
  * 
- * Endianness detection: byte_order at offset 0 is 0xF0F0 for big-endian (PPC).
- * Version string at offset 2 is "WFM#002" or "WFM#003".
+ * Endianness and version detection::
  * 
- * Voltage reconstruction (explicit dimension 1):
+ *   byte_order at offset 0 is 0xF0F0 for big-endian (PPC).
+ *   version_number at offset 2 is "WFM#002" or "WFM#003".
+ * 
+ * Voltage reconstruction (explicit dimension 1)::
+ * 
  *   volts[i] = exp_dim1.dim_scale * adc[i] + exp_dim1.dim_offset
  * 
- * Time axis (implicit dimension 1):
+ * Time axis (implicit dimension 1)::
+ * 
  *   t[i] = imp_dim1.dim_offset + i * imp_dim1.dim_scale
+ * 
  * where i = 0 corresponds to the first sample in the curve buffer.
  * 
- * Reference: Tektronix "Reference Waveform File Format" (001-1378-03), version notes.
+ * Sources used for this KSY binary format: Tektronix "Reference Waveform File Format" 
+ * (001-1378-03).
+ * 
+ * Tested file formats: no checked-in big-endian `WFM#002` / `WFM#003` fixture
+ * currently exercises this exact schema; the little-endian sibling is covered
+ * by synthetic `WFM#002` / `WFM#003` regressions and this variant is the
+ * byte-swapped counterpart from the same Tektronix reference manual.
+ * 
+ * Oscilloscope models this format may apply to: big-endian Tektronix scopes
+ * that write `WFM#002` or `WFM#003`, especially older PPC-based variants of
+ * the `TDS5000B`, `DPO7000`, `DPO70000`, and `DSA70000` families.
  */
 
 var TektronixWfm002BeWfm = (function() {

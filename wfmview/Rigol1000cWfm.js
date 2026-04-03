@@ -16,6 +16,18 @@
  * 16-byte padding block before the sample data when byte 0 is 0xA5, and
  * volt_per_division includes the probe_value factor (DS1000D/E firmware stores
  * scale_measured already probe-corrected).
+ * 
+ * Sources used for this KSY binary format: a C program from
+ * <https://nsweb.tn.tudelft.nl/~gsteele/rigol2dat/>, and a pascal program from
+ * <https://sourceforge.net/projects/wfmreader> as well as some reverse-engineering from the
+ * checked-in `DS1042C-A.wfm` and `DS1202CA-A.wfm` captures and comparison against
+ * the closely related DS1000D/E layout.
+ * 
+ * Tested file formats: real repo fixtures `DS1042C-A.wfm` and `DS1202CA-A.wfm`.
+ * 
+ * Oscilloscope models this format may apply to: DS1000C / DS1000CD /
+ * DS1000MD / DS1000M family captures, including `DS1302CA`, `DS1202CA`,
+ * `DS1102CA`, `DS1062CA`, and `DS1042C`.
  */
 
 var Rigol1000cWfm = (function() {

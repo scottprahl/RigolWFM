@@ -14,6 +14,7 @@
  * 
  * This older format has a 320-byte WAVEDESC (vs 346 bytes in LECROY_2_3) with a different
  * field layout.  Key differences from LECROY_2_3:
+ * 
  *   - wave_array_1_len is at offset 48 (not 60)
  *   - instrument_name is at offset 56 (not 76)
  *   - wave_array_count is at offset 92 (not 116)
@@ -21,15 +22,34 @@
  *   - wave_source at offset 296 is 1-indexed (1=CH1, 2=CH2, …)
  *   - No ris_time_array field
  * 
- * Endianness detection (performed by the caller before selecting this parser):
+ * Endianness detection (performed by the caller before selecting this parser)::
+ * 
  *   COMM_ORDER is a u2 at offset 34.  byte 34 == 1 → LOFIRST (little-endian).
  * 
- * Voltage reconstruction:
+ * Voltage reconstruction::
+ * 
  *   volts[i] = vertical_gain * adc[i] - acq_vert_offset
+ * 
  * where adc[i] is signed 8-bit (COMM_TYPE == byte) or signed 16-bit (COMM_TYPE == word).
  * 
- * Time axis:
+ * Time axis::
+ * 
  *   t[i] = horiz_offset + i * horiz_interval   (i = 0 … wave_array_count − 1)
+ * 
+ * Primary source used for this KSY binary format
+ * <https://github.com/jonathanschilling/LeCroy7200A/blob/master/template.txt>.  The
+ * Github repos <https://github.com/jonathanschilling/LeCroy7200A> and
+ * <https://github.com/dgua/lecroy> were used for verification.
+ * 
+ * Tested file formats: synthetic little-endian `LECROY_1_0` files with both
+ * 8-bit and 16-bit sample payloads, plus the checked-in real
+ * `trace1.000` through `trace4.000` fixtures used for parse, scaling, time-axis,
+ * and autodetect coverage.
+ * 
+ * Oscilloscope models this format may apply to: Teledyne LeCroy oscilloscopes
+ * that write the `LECROY_1_0` template, including older 7200-series /
+ * WaveRunner-era instruments and related scopes that store `.trc` or `.000`
+ * waveform files in little-endian form.
  */
 
 var Lecroy10LeTrc = (function() {
