@@ -1,7 +1,5 @@
 """Smoke tests for the browser-side `wfmview` assets."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 import re

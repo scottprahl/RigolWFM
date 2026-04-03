@@ -15,8 +15,6 @@ Shared helper types (ChannelHeader, Header, _channel_slot, etc.) are imported
 from `RigolWFM.mso5000` rather than duplicated here.
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 import numpy as np

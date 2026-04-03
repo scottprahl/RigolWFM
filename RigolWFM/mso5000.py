@@ -11,8 +11,6 @@ rejected explicitly for now because the current repo has no matching fixtures to
 validate their layout.
 """
 
-from __future__ import annotations
-
 from enum import IntEnum
 from typing import Any, Optional
 

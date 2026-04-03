@@ -25,8 +25,6 @@ normalized here because the Siglent PDF leaves family-dependent scale
 constants ambiguous between SDS1000X and SDS2000X captures.
 """
 
-from __future__ import annotations
-
 import math
 import os
 import struct

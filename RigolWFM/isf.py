@@ -32,8 +32,6 @@ Envelope mode (PT_FMT = "ENV")
   t[i] = XZERO + XINCR * (2*i - PT_OFF)
 """
 
-from __future__ import annotations
-
 import io as _io
 import re
 from typing import Any, Optional

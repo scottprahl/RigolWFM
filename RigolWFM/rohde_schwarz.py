@@ -9,8 +9,6 @@ that payload with the XML metadata and normalizes single-acquisition analog
 captures into the existing `Wfm` / `Channel` interfaces.
 """
 
-from __future__ import annotations
-
 import os
 import re
 import xml.etree.ElementTree as ET

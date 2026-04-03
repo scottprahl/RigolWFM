@@ -9,8 +9,6 @@ Rigol families.
 Non-Rigol vendors (LeCroy, Tektronix) are handled directly in ``wfm.py``.
 """
 
-from __future__ import annotations
-
 from typing import Any, Optional
 
 import RigolWFM.channel

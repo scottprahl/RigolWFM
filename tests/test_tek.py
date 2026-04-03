@@ -1,7 +1,5 @@
 """Tests for Tektronix WFM parsing, including WFM#003 layout handling."""
 
-from __future__ import annotations
-
 import io
 import struct
 

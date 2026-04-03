@@ -1,7 +1,5 @@
 """Integration checks for `wfmconvert` sigrok export."""
 
-from __future__ import annotations
-
 from pathlib import Path
 import tempfile
 import shlex

@@ -1,7 +1,5 @@
 """Tests for Siglent waveform binary parsing."""
 
-from __future__ import annotations
-
 import struct
 
 import numpy as np

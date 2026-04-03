@@ -12,8 +12,6 @@ Command line utility to convert oscilloscope waveform files.
         prompt> wfmconvert wav DS1102E-A.wfm
 """
 
-from __future__ import annotations
-
 import re
 import os
 import sys

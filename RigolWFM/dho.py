@@ -28,8 +28,6 @@ handwritten DHO interpretation in one place, and gives the rest of the project
 one stable DHO entry point.
 """
 
-from __future__ import annotations
-
 import struct
 import zlib
 from enum import IntEnum

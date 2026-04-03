@@ -35,8 +35,6 @@ where ``i = 0`` is the first sample in the curve buffer and valid user data
 starts at ``curve.first_valid_sample``.
 """
 
-from __future__ import annotations
-
 import io as _io
 import struct as _struct
 from typing import Any, Optional

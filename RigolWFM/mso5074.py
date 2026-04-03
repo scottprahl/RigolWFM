@@ -21,8 +21,6 @@ approximate volts using a default 1 V/div scale because the file contains no
 calibration coefficients.
 """
 
-from __future__ import annotations
-
 import struct
 import warnings
 import numpy as np

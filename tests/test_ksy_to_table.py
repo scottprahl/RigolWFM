@@ -1,7 +1,5 @@
 """Tests for the `scripts/ksy_to_table.py` helper."""
 
-from __future__ import annotations
-
 import subprocess
 import sys
 from pathlib import Path

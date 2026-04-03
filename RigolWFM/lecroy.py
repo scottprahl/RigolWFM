@@ -37,8 +37,6 @@ Time axis (both versions):
   t[i] = HORIZ_OFFSET + i * HORIZ_INTERVAL   (i = 0 … WAVE_ARRAY_COUNT − 1)
 """
 
-from __future__ import annotations
-
 import io as _io
 from typing import Any, Optional
 

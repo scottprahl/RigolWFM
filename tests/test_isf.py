@@ -1,7 +1,5 @@
 """Tests for Tektronix ISF parsing and metadata normalization."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 import numpy as np

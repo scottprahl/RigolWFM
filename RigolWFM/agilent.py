@@ -12,8 +12,6 @@ header, and segmented-memory captures can repeat the same channel label for
 multiple segments.
 """
 
-from __future__ import annotations
-
 import math
 from typing import Any, Optional
 
