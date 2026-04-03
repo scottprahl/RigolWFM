@@ -13,10 +13,12 @@
  * Binary waveform export used by Rigol MSO7000/DS7000 and MSO8000 scopes.
  * 
  * This schema follows the "Binary Data Format (.bin)" tables in:
+ * 
  *   - `docs/manuals/Rigol MSO7000 Series User Manual.pdf`
  *   - `docs/manuals/MSO8000 Series Digital.pdf`
  * 
- * Documented layout:
+ * Documented layout::
+ * 
  *   [File Header:      12 bytes]
  *   for each exported waveform:
  *     [Waveform Header: 128 bytes]
@@ -25,6 +27,18 @@
  * 
  * The manuals document analog, logic, and math records in the same container.
  * The handwritten adapter currently normalizes analog float32 buffers only.
+ * 
+ * Sources used for this KSY binary format: the Rigol "Binary Data Format
+ * (.bin)" tables in `Rigol MSO7000 Series User Manual.pdf` plus the
+ * checked-in synthetic regression builder in `tests/test_7_8.py`.
+ * 
+ * Tested file formats: synthetic `MSO7034` and `MSO8204` analog float32 `.bin`
+ * captures generated in `tests/test_7_8.py`, plus a negative regression that
+ * confirms logic-record rejection.
+ * 
+ * Oscilloscope models this format may apply to: Rigol `DS7000` / `MSO7000`
+ * and `MSO8000` family scopes that emit the documented float32 `.bin` export,
+ * including the synthetic reference models `MSO7034` and `MSO8204`.
  */
 
 var Rigol70008000Bin = (function() {

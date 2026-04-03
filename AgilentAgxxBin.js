@@ -17,7 +17,7 @@
  * `AG01` / `AG03` / `AG10` container family written by several
  * Agilent / Keysight oscilloscopes.
  * 
- * File layout:
+ * File layout::
  *   [File Header: 12 bytes for AG01 / AG10, 16 bytes for AG03]
  *   for each exported waveform:
  *     [Waveform Header: usually 140 bytes]
@@ -28,6 +28,24 @@
  * Normal analog waveforms are float32. Peak Detect acquisitions can store
  * separate minimum and maximum float32 buffers for a single waveform header.
  * Logic-style records use byte-oriented buffers.
+ * 
+ * Sources used for this KSY binary format: `Agilent InfiniiVision
+ * 6000 Series Oscilloscopes` and `Agilent InfiniiVision 2000 X-Series
+ * Oscilloscopes` as well as GitHub repositories 
+ * <https://github.com/shotaizu/agilent-oscilloscope-bin-parser>,
+ * <https://github.com/AntonBryansky/ImportAgilentBin>,
+ * <https://github.com/yodalee/keysightBin>, and
+ * <https://github.com/FaustinCarter/agilent_read_binary>
+ * 
+ * Tested file formats: `agilent_1.bin` through `agilent_5.bin`
+ * and `agilent_msox4154a_01.bin`; all checked-in real samples are `AG10`
+ * captures, and the regression builders additionally exercise multi-buffer and
+ * per-channel-timing edge cases within the same `AG10` container layout.
+ * 
+ * Oscilloscope models this format may apply to: confirmed `DSO-X 1102G` and
+ * `MSO-X 4154A` captures, plus other Agilent / Keysight 6000 Series and
+ * InfiniiVision 2000/3000/4000/X instruments that export `AG01`, `AG03`, or
+ * `AG10` `.bin` files.
  */
 
 var AgilentAgxxBin = (function() {

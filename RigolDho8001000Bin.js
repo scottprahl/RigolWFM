@@ -19,19 +19,32 @@
  * and the downstream wrapper rejects them explicitly instead of treating them
  * as calibrated volt samples.
  * 
- * File layout:
+ * File layout::
  *   [File Header:      16 bytes]
  *   for each waveform (channel):
  *     [Waveform Header: 140 bytes]
  *     [Data Header:      16 bytes]
  *     [Sample Data:      buffer_size bytes - float32 LE, volts]
  * 
- * Time axis reconstruction used by the current parser:
+ * Time axis reconstruction used by the current parser::
  *   t[i] = -x_origin + i * x_increment
  * 
  * The manual describes X Origin as the x-value of the first data point.
  * Empirically, the analog captures used by this repo behave as if x_origin
  * stores a positive pre-trigger distance, so downstream code negates it.
+ * 
+ * Sources used for this KSY binary format: the official DHO1000 User Guide
+ * section 19.2.4 (Tables 19.1-19.4) plus comparison against checked-in
+ * `DHO1074.bin`, `DHO824-ch1.bin`, `DHO824-ch12.bin`, and `DHO824-ch1234.bin`
+ * captures.
+ * 
+ * Tested file formats: real repo fixtures `DHO1074.bin`, `DHO824-ch1.bin`,
+ * `DHO824-ch12.bin`, and `DHO824-ch1234.bin`, covering one-, two-, and
+ * four-channel analog float32 exports.
+ * 
+ * Oscilloscope models this format may apply to: `DHO804`, `DHO812`, `DHO814`,
+ * `DHO824`, `DHO1072`, `DHO1074`, `DHO1102`, `DHO1202`, and related
+ * `DHO800` / `DHO1000` family scopes that write the documented `.bin` export.
  */
 
 var RigolDho8001000Bin = (function() {

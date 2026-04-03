@@ -9,6 +9,21 @@
     factory(root.Rigol2000Wfm || (root.Rigol2000Wfm = {}), root.KaitaiStream);
   }
 })(typeof self !== 'undefined' ? self : this, function (Rigol2000Wfm_, KaitaiStream) {
+/**
+ * Rigol DS2000 / MSO2000 waveform file format.
+ * 
+ * Sources used for this KSY binary format: a document titled "WFM save format: Secretary Bird"
+ * 
+ * Tested file formats: real repo fixtures `DS2000-A.wfm`, `DS2000-B.wfm`, and
+ * `DS2072A-1.wfm` through `DS2072A-9.wfm`, plus small header-window mutation
+ * regressions built from those files.
+ * 
+ * Oscilloscope models this format may apply to: DS2000 family models c
+ * `DS2072A`, `DS2102A`, `MSO2102A`,
+ * `MSO2102A-S`, `DS2202A`, `MSO2202A`, `MSO2202A-S`, `DS2302A`, `MSO2302A`,
+ * and `MSO2302A-S`.
+ */
+
 var Rigol2000Wfm = (function() {
   Rigol2000Wfm.AcquisitionEnum = Object.freeze({
     NORMAL: 0,

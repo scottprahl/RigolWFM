@@ -15,6 +15,17 @@
  * This revision is documented for later SDS1002X-E firmware and keeps the
  * analog waveform data at offset 0x800 while moving the channel and timing
  * metadata into a different fixed layout.
+ * 
+ * Sources used for this KSY binary format:
+ * `docs/vendors/siglent/siglent-binaries.pdf` plus the synthetic regression
+ * builder in `tests/test_siglent.py`.
+ * 
+ * Tested file formats: the synthetic `Binary Format V5.0` fixture in
+ * `tests/test_siglent.py`, exercised through revision detection, low-level
+ * Kaitai parsing, and normalized waveform loading.
+ * 
+ * Oscilloscope models this format may apply to: later `SDS1002X-E` firmware and
+ * other Siglent instruments that write `Binary Format V5.0`.
  */
 
 var SiglentV5Bin = (function() {

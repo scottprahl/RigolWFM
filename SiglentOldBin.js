@@ -16,6 +16,18 @@
  * The file does not include an explicit format-version field or instrument
  * model identifier, so the surrounding Python adapter is responsible for any
  * remaining family-specific interpretation.
+ * 
+ * Sources used for this KSY binary format:
+ * `docs/vendors/siglent/siglent-binaries.pdf` plus the adapter notes in
+ * `RigolWFM/siglent.py`.
+ * 
+ * Tested file formats: the synthetic old-platform fixture built in
+ * `tests/test_siglent.py`, exercised through revision detection and low-level
+ * parsing only.
+ * 
+ * Oscilloscope models this format may apply to: older Siglent `SDS1000X` and
+ * `SDS2000X` families that the vendor PDF documents as using the "Binary Format
+ * in Old Platform" layout.
  */
 
 var SiglentOldBin = (function() {

@@ -15,6 +15,18 @@
  * V4.0 increases the header size to 4 KiB, adds a data-offset field, and
  * expands the analog channel metadata to support up to eight channels plus
  * additional memory/zoom parameters.
+ * 
+ * Sources used for this KSY binary format:
+ * `docs/vendors/siglent/siglent-binaries.pdf` plus the synthetic regression
+ * builder in `tests/test_siglent.py`.
+ * 
+ * Tested file formats: the synthetic `Binary Format V4.0` fixture in
+ * `tests/test_siglent.py`, exercised through revision detection, low-level
+ * Kaitai parsing, and normalized waveform loading.
+ * 
+ * Oscilloscope models this format may apply to: Siglent instruments that write
+ * `Binary Format V4.0`; the checked-in tests do not yet narrow this revision to
+ * a smaller verified model list.
  */
 
 var SiglentV4Bin = (function() {

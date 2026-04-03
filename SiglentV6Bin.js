@@ -15,6 +15,19 @@
  * V6.0 stores a top-level file header followed by one or more waveform records.
  * Each waveform contains a fixed shared header, optional extension bytes, an
  * optional additional-information block, and then the sample payload.
+ * 
+ * Sources used for this KSY binary format:
+ * `docs/vendors/siglent/siglent-binaries.pdf` plus the synthetic regression
+ * builder in `tests/test_siglent.py`.
+ * 
+ * Tested file formats: the synthetic `Binary Format V6.0` fixture in
+ * `tests/test_siglent.py`, exercised through revision detection, low-level
+ * Kaitai parsing, and normalized waveform loading with an `SDS1002X-E` module
+ * string.
+ * 
+ * Oscilloscope models this format may apply to: `SDS1002X-E` is the checked-in
+ * reference model, and other Siglent instruments that write `Binary Format
+ * V6.0` may share this layout.
  */
 
 var SiglentV6Bin = (function() {

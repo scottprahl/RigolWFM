@@ -15,6 +15,18 @@
  * This revision predates the explicit top-level version field used by later
  * layouts. It stores four analog channels with 16-byte value/unit structures
  * and places waveform samples after a large fixed metadata block.
+ * 
+ * Sources used for this KSY binary format:
+ * `docs/vendors/siglent/siglent-binaries.pdf` plus the synthetic regression
+ * builder in `tests/test_siglent.py`.
+ * 
+ * Tested file formats: the synthetic `Binary Format V0.1` fixture in
+ * `tests/test_siglent.py`, exercised through revision detection, low-level
+ * Kaitai parsing, and normalized waveform loading.
+ * 
+ * Oscilloscope models this format may apply to: Siglent instruments that write
+ * `Binary Format V0.1`; the checked-in tests do not yet narrow this revision to
+ * a smaller verified model list.
  */
 
 var SiglentV01Bin = (function() {

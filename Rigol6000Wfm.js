@@ -9,6 +9,20 @@
     factory(root.Rigol6000Wfm || (root.Rigol6000Wfm = {}), root.KaitaiStream);
   }
 })(typeof self !== 'undefined' ? self : this, function (Rigol6000Wfm_, KaitaiStream) {
+/**
+ * Rigol DS6000 waveform file format.
+ * 
+ * Sources used for this KSY binary format: document titled "WFM save format: FFalcon/Goshawk"
+ * 
+ * Tested file formats: synthetic DS6000 files generated in `tests/test_6.py`,
+ * including normal two-channel captures and a zero-offset / missing-channel
+ * case; no checked-in real DS6000 fixture is present yet.
+ * 
+ * Oscilloscope models this format may apply to: DS6000 family models currently
+ * listed by the library, including `DS6062`, `DS6064`, `DS6102`, and
+ * `DS6104`.
+ */
+
 var Rigol6000Wfm = (function() {
   Rigol6000Wfm.AcquisitionEnum = Object.freeze({
     NORMAL: 0,
