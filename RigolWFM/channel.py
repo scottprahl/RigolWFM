@@ -17,13 +17,10 @@ or the stringification method to describe a channel::
 """
 
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import Any, Optional
 
 import numpy as np
 import numpy.typing as npt
-
-if TYPE_CHECKING:
-    from typing import Any
 
 __all__ = ["UnitEnum", "Channel", "best_scale", "engineering_string"]
 
