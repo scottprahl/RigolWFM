@@ -1,19 +1,13 @@
 meta:
   id: siglent_old_bin
-  title: Siglent Old-Platform Binary Format
+  title: Siglent Old-Platform BIN File Format
   file-extension: bin
   endian: le
 doc: |
-  Binary waveform layout documented by Siglent as "Binary Format in Old
-  Platform". This revision is used by older SDS1000X / SDS2000X families.
+  This revision is used by older SDS1000X / SDS2000X families.
 
-  The file does not include an explicit format-version field or instrument
-  model identifier, so the surrounding Python adapter is responsible for any
-  remaining family-specific interpretation.
-
-  Sources used for this KSY binary format:
-  `docs/vendors/siglent/siglent-binaries.pdf` plus the adapter notes in
-  `RigolWFM/siglent.py`.
+  Sources used for this KSY binary format: The binary waveform layout documented by 
+  Siglent as "How to Extract Data from the Binary File of SIGLENT Oscilloscope". 
 
   Tested file formats: the synthetic old-platform fixture built in
   `tests/test_siglent.py`, exercised through revision detection and low-level

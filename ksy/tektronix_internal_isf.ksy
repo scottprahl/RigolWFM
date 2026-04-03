@@ -1,6 +1,6 @@
 meta:
   id: tektronix_internal_isf
-  title: Tektronix ISF Binary Format
+  title: Tektronix ISF File Format
   file-extension: isf
   encoding: ASCII
   endian: le

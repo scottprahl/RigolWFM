@@ -1,6 +1,6 @@
 meta:
   id: tektronix_wfm_002_be_wfm
-  title: Tektronix WFM002/WFM003 Binary Format (Big-Endian)
+  title: Tektronix WFM 002/3 File Format (Big-Endian)
   file-extension: wfm
   endian: be
 
@@ -10,10 +10,6 @@ doc: |
 
   WFM#002 applies to: TDS5000B Series.
   WFM#003 applies to: DPO7000, DPO70000, DSA70000 Series.
-
-  Difference from WFM#001: a 2-byte summary_frame_type field is inserted at
-  offset 0x9a (154) between num_acquired_fast_frames and pix_map_display_format,
-  shifting all subsequent fields by 2 bytes.
 
   WFM#003 additional difference: point_density in the user-view sections of each
   dimension (exp_dim1, exp_dim2, imp_dim1, imp_dim2) changes from u4 (4 bytes) to
@@ -36,11 +32,8 @@ doc: |
 
   where i = 0 corresponds to the first sample in the curve buffer.
 
-  Reference: Tektronix "Reference Waveform File Format" (001-1378-03), version notes.
-
-  Sources used for this KSY binary format:
-  `docs/vendors/tektronix/tek_docs.pdf`, the version-difference notes captured
-  in this schema, and the shared Tektronix adapter logic in this repository.
+  Sources used for this KSY binary format: Tektronix "Reference Waveform File Format" 
+  (001-1378-03).
 
   Tested file formats: no checked-in big-endian `WFM#002` / `WFM#003` fixture
   currently exercises this exact schema; the little-endian sibling is covered
