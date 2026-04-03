@@ -4,6 +4,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "ksy_to_table.py"
 
@@ -19,12 +21,23 @@ def _run_script(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _schema_title(schema_path: str) -> str:
+    """Return the current `meta.title` from a checked-in `.ksy` file."""
+    raw = yaml.safe_load((ROOT / schema_path).read_text(encoding="utf-8"))
+    assert isinstance(raw, dict)
+    meta = raw.get("meta", {})
+    assert isinstance(meta, dict)
+    title = meta.get("title")
+    assert isinstance(title, str)
+    return title
+
+
 def test_rst_output_preserves_schema_doc_and_includes_types_and_enums():
     """RST output should keep the top-level schema doc and summarize types/enums."""
     result = _run_script("ksy/agilent_agxx_bin.ksy")
 
     assert result.returncode == 0, result.stderr
-    assert "Agilent / Keysight AGxx Binary Format" in result.stdout
+    assert _schema_title("ksy/agilent_agxx_bin.ksy") in result.stdout
     assert "Metadata" in result.stdout
     assert "Top-Level Sequence" in result.stdout
     assert "File layout::" in result.stdout
@@ -57,4 +70,4 @@ def test_script_can_write_output_file(tmp_path: Path):
 
     assert result.returncode == 0, result.stderr
     assert output_path.exists()
-    assert "Rohde & Schwarz RTP WFM.BIN Binary Format" in output_path.read_text(encoding="utf-8")
+    assert _schema_title("ksy/rohde_schwarz_rtp_wfm_bin.ksy") in output_path.read_text(encoding="utf-8")

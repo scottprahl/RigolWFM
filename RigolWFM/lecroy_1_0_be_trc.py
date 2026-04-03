@@ -36,9 +36,10 @@ class Lecroy10BeTrc(KaitaiStruct):
     
       t[i] = horiz_offset + i * horiz_interval   (i = 0 … wave_array_count − 1)
     
-    Sources used for this KSY binary format: `docs/vendors/lecroy/LeCroyWaveformTemplate_1_0.txt`,
-    the checked-in LeCroy adapter logic, and comparison against the repo's real
-    `trace*.000` fixtures for the sibling `LECROY_1_0` layout.
+    Primary source used for this KSY binary format
+    <https://github.com/jonathanschilling/LeCroy7200A/blob/master/template.txt>.  The
+    Github repos <https://github.com/jonathanschilling/LeCroy7200A> and
+    <https://github.com/dgua/lecroy> were used for verification.
     
     Tested file formats: synthetic big-endian `LECROY_1_0` files with both
     8-bit and 16-bit sample payloads and known calibration values; the checked-in

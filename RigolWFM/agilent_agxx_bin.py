@@ -29,13 +29,15 @@ class AgilentAgxxBin(KaitaiStruct):
     separate minimum and maximum float32 buffers for a single waveform header.
     Logic-style records use byte-oriented buffers.
     
-    Sources used for this KSY binary format: checked-in vendor reference code in
-    `docs/vendors/agilent` and `docs/vendors/wavebin-master`, plus the Agilent
-    6000 Series and InfiniiVision 2000 manuals in
-    `docs/vendors/agilent/Agilent Technologies 6000 Series 248586.pdf` and
-    `docs/vendors/agilent/agilent_InfiniiVision_2000.pdf`.
+    Sources used for this KSY binary format: `Agilent InfiniiVision
+    6000 Series Oscilloscopes` and `Agilent InfiniiVision 2000 X-Series
+    Oscilloscopes` as well as GitHub repositories 
+    <https://github.com/shotaizu/agilent-oscilloscope-bin-parser>,
+    <https://github.com/AntonBryansky/ImportAgilentBin>,
+    <https://github.com/yodalee/keysightBin>, and
+    <https://github.com/FaustinCarter/agilent_read_binary>
     
-    Tested file formats: repo fixtures `agilent_1.bin` through `agilent_5.bin`
+    Tested file formats: `agilent_1.bin` through `agilent_5.bin`
     and `agilent_msox4154a_01.bin`; all checked-in real samples are `AG10`
     captures, and the regression builders additionally exercise multi-buffer and
     per-channel-timing edge cases within the same `AG10` container layout.

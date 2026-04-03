@@ -29,8 +29,7 @@ class Rigol70008000Bin(KaitaiStruct):
     The handwritten adapter currently normalizes analog float32 buffers only.
     
     Sources used for this KSY binary format: the Rigol "Binary Data Format
-    (.bin)" tables in `docs/vendors/lecroy/manuals/Rigol MSO7000 Series User Manual.pdf`
-    and `docs/vendors/lecroy/manuals/MSO8000 Series Digital.pdf`, plus the
+    (.bin)" tables in `Rigol MSO7000 Series User Manual.pdf` plus the
     checked-in synthetic regression builder in `tests/test_7_8.py`.
     
     Tested file formats: synthetic `MSO7034` and `MSO8204` analog float32 `.bin`

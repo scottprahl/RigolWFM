@@ -12,9 +12,9 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
 class Rigol1000eWfm(KaitaiStruct):
     """Rigol DS1102E scope .wmf format abstracted from a python script
     
-    Sources used for this KSY binary format:
-    `docs/vendors/rigol/WFM format - DS1000E.pdf`, the older project parser, and
-    checked-in `DS1102E`, `DS1052E`, and `DS1000E` captures.
+    Sources used for this KSY binary format were a PDF document titled,
+    "DS1000E/D WFM structure instruction" written by Rigol and the Github repository
+    <https://github.com/mabl/pyRigolWFM>.
     
     Tested file formats: real repo fixtures `DS1102E-A.wfm` through
     `DS1102E-G.wfm`, `DS1052E.wfm`, and `DS1000E-A.wfm` through

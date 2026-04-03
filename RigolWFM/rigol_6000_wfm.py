@@ -12,10 +12,7 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
 class Rigol6000Wfm(KaitaiStruct):
     """Rigol DS6000 waveform file format.
     
-    Sources used for this KSY binary format:
-    `docs/vendors/rigol/WFM format - DS6000.pdf` and the synthetic regression
-    builder in `tests/test_6.py` that encodes the documented offsets, channel
-    tables, and tail fields.
+    Sources used for this KSY binary format: document titled "WFM save format: FFalcon/Goshawk"
     
     Tested file formats: synthetic DS6000 files generated in `tests/test_6.py`,
     including normal two-channel captures and a zero-offset / missing-channel

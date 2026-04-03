@@ -17,10 +17,11 @@ class Rigol1000cWfm(KaitaiStruct):
     volt_per_division includes the probe_value factor (DS1000D/E firmware stores
     scale_measured already probe-corrected).
     
-    Sources used for this KSY binary format: reverse-engineering from the
-    checked-in `DS1042C-A.wfm` and `DS1202CA-A.wfm` captures, comparison against
-    the closely related DS1000D/E layout, and the existing project parser
-    behavior.
+    Sources used for this KSY binary format: a C program from
+    <https://nsweb.tn.tudelft.nl/~gsteele/rigol2dat/>, and a pascal program from
+    <https://sourceforge.net/projects/wfmreader> as well as some reverse-engineering from the
+    checked-in `DS1042C-A.wfm` and `DS1202CA-A.wfm` captures and comparison against
+    the closely related DS1000D/E layout.
     
     Tested file formats: real repo fixtures `DS1042C-A.wfm` and `DS1202CA-A.wfm`.
     

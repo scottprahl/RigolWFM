@@ -53,9 +53,9 @@ class Lecroy23LeTrc(KaitaiStruct):
                + i * HORIZ_INTERVAL
     
     Sources used for this KSY binary format:
-    `docs/vendors/lecroy/LeCroyWaveformTemplate_2_3.pdf`,
-    `docs/vendors/lecroy/LeCroyWaveformTemplate_2_2.pdf`, the checked-in LeCroy
-    adapter logic, and the repo's real `LECROY_2_3` fixtures.
+    `docs/vendors/lecroy/LeCroyWaveformTemplate_2_3.pdf`.  Github repos: 
+    <https://github.com/bennomeier/leCroyParser>, and 
+    <https://github.com/lobis/lecroy-scope> were used for verification.
     
     Tested file formats: synthetic little-endian `LECROY_2_3` files with 8-bit
     and 16-bit sample payloads, SCPI-prefixed fixtures, and long-prefix
