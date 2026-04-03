@@ -1,6 +1,6 @@
 meta:
   id: agilent_agxx_bin
-  title: Agilent / Keysight AGxx Binary Format
+  title: Agilent / Keysight AGxx File Format
   file-extension: bin
   endian: le
 doc: |

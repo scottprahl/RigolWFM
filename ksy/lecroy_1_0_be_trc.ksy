@@ -1,6 +1,6 @@
 meta:
   id: lecroy_1_0_be_trc
-  title: LeCroy 1.0 TRC Binary Format (Big-Endian)
+  title: LeCroy 1.0 TRC File Format (Big-Endian)
   file-extension: trc
   endian: be
 

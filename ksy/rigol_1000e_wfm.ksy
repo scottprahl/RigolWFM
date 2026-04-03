@@ -1,6 +1,6 @@
 meta:
   id: rigol_1000e_wfm
-  title: Rigol 1000E Binary Format
+  title: Rigol 1000E WFM File Format
   file-extension: wfm
   endian: le
 

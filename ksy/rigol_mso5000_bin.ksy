@@ -1,6 +1,6 @@
 meta:
   id: rigol_mso5000_bin
-  title: Rigol MSO5000 Binary Format
+  title: Rigol MSO5000 BIN File Format
   file-extension: bin
   endian: le
 doc: |

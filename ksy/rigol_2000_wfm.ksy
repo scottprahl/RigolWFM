@@ -1,23 +1,20 @@
 meta:
   id: rigol_2000_wfm
-  title: Rigol 2000 Binary Format
+  title: Rigol 2000 WFM File Format
   file-extension: wfm
   endian: le
 
 doc: |
   Rigol DS2000 / MSO2000 waveform file format.
 
-  Sources used for this KSY binary format:
-  `docs/vendors/rigol/WFM format - DS2000.pdf`, checked-in `DS2000` and
-  `DS2072A` captures, and their `.txt` sidecars for trigger metadata and other
-  header cross-checks.
+  Sources used for this KSY binary format: a document titled "WFM save format: Secretary Bird"
 
   Tested file formats: real repo fixtures `DS2000-A.wfm`, `DS2000-B.wfm`, and
   `DS2072A-1.wfm` through `DS2072A-9.wfm`, plus small header-window mutation
   regressions built from those files.
 
-  Oscilloscope models this format may apply to: DS2000 family models currently
-  listed by the library, including `DS2072A`, `DS2102A`, `MSO2102A`,
+  Oscilloscope models this format may apply to: DS2000 family models c
+  `DS2072A`, `DS2102A`, `MSO2102A`,
   `MSO2102A-S`, `DS2202A`, `MSO2202A`, `MSO2202A-S`, `DS2302A`, `MSO2302A`,
   and `MSO2302A-S`.
 

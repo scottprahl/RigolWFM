@@ -1,6 +1,6 @@
 meta:
   id: lecroy_2_3_le_trc
-  title: LeCroy 2.3 TRC Binary Format (Little-Endian)
+  title: LeCroy 2.3 TRC File Format (Little-Endian)
   file-extension: trc
   endian: le
 

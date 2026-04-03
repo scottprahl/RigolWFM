@@ -1,6 +1,6 @@
 meta:
   id: rigol_dho800_1000_wfm
-  title: Rigol DHO800/DHO1000 WFM Binary Format
+  title: Rigol DHO800/DHO1000 WFM File Format
   file-extension: wfm
   endian: le
 doc: |
