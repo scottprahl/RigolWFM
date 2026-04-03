@@ -22,7 +22,7 @@ import sys
 import tempfile
 import urllib.parse
 import wave
-from typing import IO, TYPE_CHECKING, Any, Literal
+from typing import IO, Any, Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -39,9 +39,6 @@ import RigolWFM.siglent
 import RigolWFM.tek
 import RigolWFM.yokogawa
 import RigolWFM.yokogawa_hdr
-
-if TYPE_CHECKING:
-    from matplotlib.figure import Figure
 
 # ---------------------------------------------------------------------------
 # Non-Rigol vendor scope-family model-string lists
@@ -457,7 +454,7 @@ class Wfm:
         self.trigger_info: dict = {}
 
     @classmethod
-    def from_file(cls, file_name: str, model: str = "auto", selected: str = "1234") -> Wfm:
+    def from_file(cls, file_name: str, model: str = "auto", selected: str = "1234") -> "Wfm":
         """
         Create Wfm object from a file.
 
@@ -577,7 +574,7 @@ class Wfm:
         return new_wfm
 
     @classmethod
-    def from_url(cls, url: str, model: str = "auto", selected: str = "1234") -> Wfm:
+    def from_url(cls, url: str, model: str = "auto", selected: str = "1234") -> "Wfm":
         """
         Return a waveform object given a URL.
 
@@ -722,7 +719,7 @@ class Wfm:
                 h_prefix = p
         return h_scale, h_prefix, v_scale, v_prefix
 
-    def plot(self) -> Figure:
+    def plot(self) -> "Figure":
         """Plot the data in oscilloscope style and return the Figure."""
         _CH_COLORS = ["#FFFF00", "#00FFFF", "#FF00FF", "#00FF00"]
 
