@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rigol WFM Viewer</title>
+<title>RigolWFM Viewer</title>
 <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -56,8 +56,8 @@
     <div class="display-area" id="display-area">
       <div id="drop-zone">
         <div class="dz-icon">&#11123;</div>
-        <div class="dz-main">Drop one or more Rigol .wfm or .bin files here</div>
-        <div class="dz-hint">DS1000B/C/E/Z &nbsp;&middot;&nbsp; DS2000 &nbsp;&middot;&nbsp; DS4000 &nbsp;&middot;&nbsp; MSO5000/7000/8000 &nbsp;&middot;&nbsp; DHO</div>
+        <div class="dz-main">Drop one or more waveform files here</div>
+        <div class="dz-hint">Rigol DS/MSO/DHO &nbsp;&middot;&nbsp; Agilent / Keysight .bin &nbsp;&middot;&nbsp; Rohde &amp; Schwarz RTP .bin &nbsp;&middot;&nbsp; Siglent .bin &nbsp;&middot;&nbsp; LeCroy .trc &nbsp;&middot;&nbsp; Tektronix .wfm/.isf &nbsp;&middot;&nbsp; Yokogawa .hdr+.wvf</div>
       </div>
       <canvas id="scope"></canvas>
       <div id="zoom-rect"></div>
@@ -120,16 +120,37 @@
 </div>
 
 <script defer src="https://cdn.jsdelivr.net/npm/kaitai-struct/KaitaiStream.js"></script>
-<script defer src="./Wfm1000b.js"></script>
-<script defer src="./Wfm1000c.js"></script>
-<script defer src="./Wfm1000e.js"></script>
-<script defer src="./Wfm1000z.js"></script>
-<script defer src="./Wfm2000.js"></script>
-<script defer src="./Wfm4000.js"></script>
-<script defer src="./Wfmdho1000.js"></script>
-<script defer src="./Bin5000.js"></script>
-<script defer src="./Bin70008000.js"></script>
-<script defer src="./Bindho1000.js"></script>
+<script defer src="./Rigol1000bWfm.js"></script>
+<script defer src="./Rigol1000cWfm.js"></script>
+<script defer src="./Rigol1000eWfm.js"></script>
+<script defer src="./Rigol1000zWfm.js"></script>
+<script defer src="./Rigol2000Wfm.js"></script>
+<script defer src="./Rigol4000Wfm.js"></script>
+<script defer src="./Rigol6000Wfm.js"></script>
+<script defer src="./RigolDho8001000Wfm.js"></script>
+<script defer src="./RigolMso5000Bin.js"></script>
+<script defer src="./Rigol70008000Bin.js"></script>
+<script defer src="./RigolDho8001000Bin.js"></script>
+<script defer src="./AgilentAgxxBin.js"></script>
+<script defer src="./RohdeSchwarzRtpWfmBin.js"></script>
+<script defer src="./SiglentOldBin.js"></script>
+<script defer src="./SiglentV01Bin.js"></script>
+<script defer src="./SiglentV02Bin.js"></script>
+<script defer src="./SiglentV1Bin.js"></script>
+<script defer src="./SiglentV2Bin.js"></script>
+<script defer src="./SiglentV3Bin.js"></script>
+<script defer src="./SiglentV4Bin.js"></script>
+<script defer src="./SiglentV5Bin.js"></script>
+<script defer src="./SiglentV6Bin.js"></script>
+<script defer src="./Lecroy23LeTrc.js"></script>
+<script defer src="./Lecroy23BeTrc.js"></script>
+<script defer src="./Lecroy10LeTrc.js"></script>
+<script defer src="./Lecroy10BeTrc.js"></script>
+<script defer src="./TektronixWfm001LeWfm.js"></script>
+<script defer src="./TektronixWfm001BeWfm.js"></script>
+<script defer src="./TektronixWfm002LeWfm.js"></script>
+<script defer src="./TektronixWfm002BeWfm.js"></script>
+<script defer src="./TektronixInternalIsf.js"></script>
 <script defer src="./app.js"></script>
 </body>
 </html>

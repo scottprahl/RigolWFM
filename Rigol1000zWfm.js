@@ -6,15 +6,15 @@
   } else if (typeof exports === 'object' && exports !== null && typeof exports.nodeType !== 'number') {
     factory(exports, require('kaitai-struct/KaitaiStream'));
   } else {
-    factory(root.Wfm1000z || (root.Wfm1000z = {}), root.KaitaiStream);
+    factory(root.Rigol1000zWfm || (root.Rigol1000zWfm = {}), root.KaitaiStream);
   }
-})(typeof self !== 'undefined' ? self : this, function (Wfm1000z_, KaitaiStream) {
+})(typeof self !== 'undefined' ? self : this, function (Rigol1000zWfm_, KaitaiStream) {
 /**
  * Rigol DS1000Z scope .wmf file format.
  */
 
-var Wfm1000z = (function() {
-  Wfm1000z.AcquistionEnum = Object.freeze({
+var Rigol1000zWfm = (function() {
+  Rigol1000zWfm.AcquistionEnum = Object.freeze({
     NORMAL: 0,
     PEAK: 1,
     AVERAGE: 2,
@@ -26,7 +26,7 @@ var Wfm1000z = (function() {
     3: "HIGH_RESOLUTION",
   });
 
-  Wfm1000z.BandwidthEnum = Object.freeze({
+  Rigol1000zWfm.BandwidthEnum = Object.freeze({
     MHZ_20: 0,
     NO_LIMIT: 1,
 
@@ -34,7 +34,7 @@ var Wfm1000z = (function() {
     1: "NO_LIMIT",
   });
 
-  Wfm1000z.CouplingEnum = Object.freeze({
+  Rigol1000zWfm.CouplingEnum = Object.freeze({
     DC: 0,
     AC: 1,
     GND: 2,
@@ -44,7 +44,7 @@ var Wfm1000z = (function() {
     2: "GND",
   });
 
-  Wfm1000z.ProbeEnum = Object.freeze({
+  Rigol1000zWfm.ProbeEnum = Object.freeze({
     X0_01: 0,
     X0_02: 1,
     X0_05: 2,
@@ -80,7 +80,7 @@ var Wfm1000z = (function() {
     15: "X1000",
   });
 
-  Wfm1000z.TimeModeEnum = Object.freeze({
+  Rigol1000zWfm.TimeModeEnum = Object.freeze({
     YT: 0,
     XY: 1,
     ROLL: 2,
@@ -90,7 +90,7 @@ var Wfm1000z = (function() {
     2: "ROLL",
   });
 
-  Wfm1000z.UnitEnum = Object.freeze({
+  Rigol1000zWfm.UnitEnum = Object.freeze({
     W: 0,
     A: 1,
     V: 2,
@@ -102,17 +102,17 @@ var Wfm1000z = (function() {
     3: "U",
   });
 
-  function Wfm1000z(_io, _parent, _root) {
+  function Rigol1000zWfm(_io, _parent, _root) {
     this._io = _io;
     this._parent = _parent;
     this._root = _root || this;
 
     this._read();
   }
-  Wfm1000z.prototype._read = function() {
+  Rigol1000zWfm.prototype._read = function() {
   }
 
-  var ChannelHead = Wfm1000z.ChannelHead = (function() {
+  var ChannelHead = Rigol1000zWfm.ChannelHead = (function() {
     function ChannelHead(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -153,7 +153,7 @@ var Wfm1000z = (function() {
       get: function() {
         if (this._m_probeValue !== undefined)
           return this._m_probeValue;
-        this._m_probeValue = (this.probeRatio == Wfm1000z.ProbeEnum.X0_01 ? 0.01 : (this.probeRatio == Wfm1000z.ProbeEnum.X0_02 ? 0.02 : (this.probeRatio == Wfm1000z.ProbeEnum.X0_05 ? 0.05 : (this.probeRatio == Wfm1000z.ProbeEnum.X0_1 ? 0.1 : (this.probeRatio == Wfm1000z.ProbeEnum.X0_2 ? 0.2 : (this.probeRatio == Wfm1000z.ProbeEnum.X0_5 ? 0.5 : (this.probeRatio == Wfm1000z.ProbeEnum.X1 ? 1.0 : (this.probeRatio == Wfm1000z.ProbeEnum.X2 ? 2.0 : (this.probeRatio == Wfm1000z.ProbeEnum.X5 ? 5.0 : (this.probeRatio == Wfm1000z.ProbeEnum.X10 ? 10.0 : (this.probeRatio == Wfm1000z.ProbeEnum.X20 ? 20.0 : (this.probeRatio == Wfm1000z.ProbeEnum.X50 ? 50.0 : (this.probeRatio == Wfm1000z.ProbeEnum.X100 ? 100.0 : (this.probeRatio == Wfm1000z.ProbeEnum.X200 ? 200.0 : (this.probeRatio == Wfm1000z.ProbeEnum.X500 ? 500.0 : 1000.0)))))))))))))));
+        this._m_probeValue = (this.probeRatio == Rigol1000zWfm.ProbeEnum.X0_01 ? 0.01 : (this.probeRatio == Rigol1000zWfm.ProbeEnum.X0_02 ? 0.02 : (this.probeRatio == Rigol1000zWfm.ProbeEnum.X0_05 ? 0.05 : (this.probeRatio == Rigol1000zWfm.ProbeEnum.X0_1 ? 0.1 : (this.probeRatio == Rigol1000zWfm.ProbeEnum.X0_2 ? 0.2 : (this.probeRatio == Rigol1000zWfm.ProbeEnum.X0_5 ? 0.5 : (this.probeRatio == Rigol1000zWfm.ProbeEnum.X1 ? 1.0 : (this.probeRatio == Rigol1000zWfm.ProbeEnum.X2 ? 2.0 : (this.probeRatio == Rigol1000zWfm.ProbeEnum.X5 ? 5.0 : (this.probeRatio == Rigol1000zWfm.ProbeEnum.X10 ? 10.0 : (this.probeRatio == Rigol1000zWfm.ProbeEnum.X20 ? 20.0 : (this.probeRatio == Rigol1000zWfm.ProbeEnum.X50 ? 50.0 : (this.probeRatio == Rigol1000zWfm.ProbeEnum.X100 ? 100.0 : (this.probeRatio == Rigol1000zWfm.ProbeEnum.X200 ? 200.0 : (this.probeRatio == Rigol1000zWfm.ProbeEnum.X500 ? 500.0 : 1000.0)))))))))))))));
         return this._m_probeValue;
       }
     });
@@ -234,7 +234,7 @@ var Wfm1000z = (function() {
     return ChannelHead;
   })();
 
-  var ChannelSubhead = Wfm1000z.ChannelSubhead = (function() {
+  var ChannelSubhead = Rigol1000zWfm.ChannelSubhead = (function() {
     function ChannelSubhead(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -261,7 +261,7 @@ var Wfm1000z = (function() {
     return ChannelSubhead;
   })();
 
-  var FileHeader = Wfm1000z.FileHeader = (function() {
+  var FileHeader = Rigol1000zWfm.FileHeader = (function() {
     function FileHeader(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -304,7 +304,7 @@ var Wfm1000z = (function() {
    * calibration data.
    */
 
-  var HorizontalBlock = Wfm1000z.HorizontalBlock = (function() {
+  var HorizontalBlock = Rigol1000zWfm.HorizontalBlock = (function() {
     function HorizontalBlock(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -341,7 +341,7 @@ var Wfm1000z = (function() {
     return HorizontalBlock;
   })();
 
-  var NormalizedChannelTable = Wfm1000z.NormalizedChannelTable = (function() {
+  var NormalizedChannelTable = Rigol1000zWfm.NormalizedChannelTable = (function() {
     function NormalizedChannelTable(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -367,7 +367,7 @@ var Wfm1000z = (function() {
     return NormalizedChannelTable;
   })();
 
-  var RawData = Wfm1000z.RawData = (function() {
+  var RawData = Rigol1000zWfm.RawData = (function() {
     function RawData(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -382,7 +382,7 @@ var Wfm1000z = (function() {
     return RawData;
   })();
 
-  var WfmHeader = Wfm1000z.WfmHeader = (function() {
+  var WfmHeader = Rigol1000zWfm.WfmHeader = (function() {
     function WfmHeader(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -533,7 +533,7 @@ var Wfm1000z = (function() {
 
     return WfmHeader;
   })();
-  Object.defineProperty(Wfm1000z.prototype, 'data', {
+  Object.defineProperty(Rigol1000zWfm.prototype, 'data', {
     get: function() {
       if (this._m_data !== undefined)
         return this._m_data;
@@ -544,7 +544,7 @@ var Wfm1000z = (function() {
       return this._m_data;
     }
   });
-  Object.defineProperty(Wfm1000z.prototype, 'header', {
+  Object.defineProperty(Rigol1000zWfm.prototype, 'header', {
     get: function() {
       if (this._m_header !== undefined)
         return this._m_header;
@@ -555,7 +555,7 @@ var Wfm1000z = (function() {
       return this._m_header;
     }
   });
-  Object.defineProperty(Wfm1000z.prototype, 'horizontal', {
+  Object.defineProperty(Rigol1000zWfm.prototype, 'horizontal', {
     get: function() {
       if (this._m_horizontal !== undefined)
         return this._m_horizontal;
@@ -568,7 +568,7 @@ var Wfm1000z = (function() {
       return this._m_horizontal;
     }
   });
-  Object.defineProperty(Wfm1000z.prototype, 'preheader', {
+  Object.defineProperty(Rigol1000zWfm.prototype, 'preheader', {
     get: function() {
       if (this._m_preheader !== undefined)
         return this._m_preheader;
@@ -580,7 +580,7 @@ var Wfm1000z = (function() {
     }
   });
 
-  return Wfm1000z;
+  return Rigol1000zWfm;
 })();
-Wfm1000z_.Wfm1000z = Wfm1000z;
+Rigol1000zWfm_.Rigol1000zWfm = Rigol1000zWfm;
 });

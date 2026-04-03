@@ -6,11 +6,11 @@
   } else if (typeof exports === 'object' && exports !== null && typeof exports.nodeType !== 'number') {
     factory(exports, require('kaitai-struct/KaitaiStream'));
   } else {
-    factory(root.Wfm4000 || (root.Wfm4000 = {}), root.KaitaiStream);
+    factory(root.Rigol4000Wfm || (root.Rigol4000Wfm = {}), root.KaitaiStream);
   }
-})(typeof self !== 'undefined' ? self : this, function (Wfm4000_, KaitaiStream) {
-var Wfm4000 = (function() {
-  Wfm4000.AcquisitionEnum = Object.freeze({
+})(typeof self !== 'undefined' ? self : this, function (Rigol4000Wfm_, KaitaiStream) {
+var Rigol4000Wfm = (function() {
+  Rigol4000Wfm.AcquisitionEnum = Object.freeze({
     NORMAL: 0,
     AVERAGE: 1,
     PEAK: 2,
@@ -22,7 +22,7 @@ var Wfm4000 = (function() {
     3: "HIGH_RESOLUTION",
   });
 
-  Wfm4000.BandwidthEnum = Object.freeze({
+  Rigol4000Wfm.BandwidthEnum = Object.freeze({
     NO_LIMIT: 0,
     MHZ_20: 1,
     MHZ_100: 2,
@@ -36,7 +36,7 @@ var Wfm4000 = (function() {
     4: "MHZ_250",
   });
 
-  Wfm4000.CouplingEnum = Object.freeze({
+  Rigol4000Wfm.CouplingEnum = Object.freeze({
     DC: 0,
     AC: 1,
     GND: 2,
@@ -46,7 +46,7 @@ var Wfm4000 = (function() {
     2: "GND",
   });
 
-  Wfm4000.FilterEnum = Object.freeze({
+  Rigol4000Wfm.FilterEnum = Object.freeze({
     LOW_PASS: 0,
     HIGH_PASS: 1,
     BAND_PASS: 2,
@@ -58,7 +58,7 @@ var Wfm4000 = (function() {
     3: "BAND_REJECT",
   });
 
-  Wfm4000.ImpedanceEnum = Object.freeze({
+  Rigol4000Wfm.ImpedanceEnum = Object.freeze({
     OHM_50: 0,
     OHM_1MEG: 1,
 
@@ -66,7 +66,7 @@ var Wfm4000 = (function() {
     1: "OHM_1MEG",
   });
 
-  Wfm4000.MemDepthEnum = Object.freeze({
+  Rigol4000Wfm.MemDepthEnum = Object.freeze({
     AUTO: 0,
     P_7K: 1,
     P_70K: 2,
@@ -92,7 +92,7 @@ var Wfm4000 = (function() {
     10: "P_140M",
   });
 
-  Wfm4000.ProbeEnum = Object.freeze({
+  Rigol4000Wfm.ProbeEnum = Object.freeze({
     SINGLE: 0,
     DIFF: 1,
 
@@ -100,7 +100,7 @@ var Wfm4000 = (function() {
     1: "DIFF",
   });
 
-  Wfm4000.ProbeRatioEnum = Object.freeze({
+  Rigol4000Wfm.ProbeRatioEnum = Object.freeze({
     X0_01: 0,
     X0_02: 1,
     X0_05: 2,
@@ -136,7 +136,7 @@ var Wfm4000 = (function() {
     15: "X1000",
   });
 
-  Wfm4000.ProbeTypeEnum = Object.freeze({
+  Rigol4000Wfm.ProbeTypeEnum = Object.freeze({
     NORMAL_TYPE: 0,
     DIFFERENTIAL: 1,
 
@@ -144,7 +144,7 @@ var Wfm4000 = (function() {
     1: "DIFFERENTIAL",
   });
 
-  Wfm4000.TimeEnum = Object.freeze({
+  Rigol4000Wfm.TimeEnum = Object.freeze({
     YT: 0,
     XY: 1,
     ROLL: 2,
@@ -154,7 +154,29 @@ var Wfm4000 = (function() {
     2: "ROLL",
   });
 
-  Wfm4000.UnitEnum = Object.freeze({
+  Rigol4000Wfm.TriggerModeEnum = Object.freeze({
+    EDGE: 3,
+    VIDEO: 4,
+
+    3: "EDGE",
+    4: "VIDEO",
+  });
+
+  Rigol4000Wfm.TriggerSourceEnum = Object.freeze({
+    CH1: 1,
+    CH2: 2,
+    CH3: 3,
+    CH4: 4,
+    EXT: 5,
+
+    1: "CH1",
+    2: "CH2",
+    3: "CH3",
+    4: "CH4",
+    5: "EXT",
+  });
+
+  Rigol4000Wfm.UnitEnum = Object.freeze({
     W: 0,
     A: 1,
     V: 2,
@@ -166,17 +188,17 @@ var Wfm4000 = (function() {
     3: "U",
   });
 
-  function Wfm4000(_io, _parent, _root) {
+  function Rigol4000Wfm(_io, _parent, _root) {
     this._io = _io;
     this._parent = _parent;
     this._root = _root || this;
 
     this._read();
   }
-  Wfm4000.prototype._read = function() {
+  Rigol4000Wfm.prototype._read = function() {
   }
 
-  var ChannelHeader = Wfm4000.ChannelHeader = (function() {
+  var ChannelHeader = Rigol4000Wfm.ChannelHeader = (function() {
     function ChannelHeader(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -222,7 +244,7 @@ var Wfm4000 = (function() {
       get: function() {
         if (this._m_probeValue !== undefined)
           return this._m_probeValue;
-        this._m_probeValue = (this.probeRatio == Wfm4000.ProbeRatioEnum.X0_01 ? 0.01 : (this.probeRatio == Wfm4000.ProbeRatioEnum.X0_02 ? 0.02 : (this.probeRatio == Wfm4000.ProbeRatioEnum.X0_05 ? 0.05 : (this.probeRatio == Wfm4000.ProbeRatioEnum.X0_1 ? 0.1 : (this.probeRatio == Wfm4000.ProbeRatioEnum.X0_2 ? 0.2 : (this.probeRatio == Wfm4000.ProbeRatioEnum.X0_5 ? 0.5 : (this.probeRatio == Wfm4000.ProbeRatioEnum.X1 ? 1.0 : (this.probeRatio == Wfm4000.ProbeRatioEnum.X2 ? 2.0 : (this.probeRatio == Wfm4000.ProbeRatioEnum.X5 ? 5.0 : (this.probeRatio == Wfm4000.ProbeRatioEnum.X10 ? 10.0 : (this.probeRatio == Wfm4000.ProbeRatioEnum.X20 ? 20.0 : (this.probeRatio == Wfm4000.ProbeRatioEnum.X50 ? 50.0 : (this.probeRatio == Wfm4000.ProbeRatioEnum.X100 ? 100.0 : (this.probeRatio == Wfm4000.ProbeRatioEnum.X200 ? 200.0 : (this.probeRatio == Wfm4000.ProbeRatioEnum.X500 ? 500.0 : 1000.0)))))))))))))));
+        this._m_probeValue = (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X0_01 ? 0.01 : (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X0_02 ? 0.02 : (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X0_05 ? 0.05 : (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X0_1 ? 0.1 : (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X0_2 ? 0.2 : (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X0_5 ? 0.5 : (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X1 ? 1.0 : (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X2 ? 2.0 : (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X5 ? 5.0 : (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X10 ? 10.0 : (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X20 ? 20.0 : (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X50 ? 50.0 : (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X100 ? 100.0 : (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X200 ? 200.0 : (this.probeRatio == Rigol4000Wfm.ProbeRatioEnum.X500 ? 500.0 : 1000.0)))))))))))))));
         return this._m_probeValue;
       }
     });
@@ -246,7 +268,7 @@ var Wfm4000 = (function() {
     return ChannelHeader;
   })();
 
-  var ChannelMask = Wfm4000.ChannelMask = (function() {
+  var ChannelMask = Rigol4000Wfm.ChannelMask = (function() {
     function ChannelMask(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -265,7 +287,7 @@ var Wfm4000 = (function() {
     return ChannelMask;
   })();
 
-  var Header = Wfm4000.Header = (function() {
+  var Header = Rigol4000Wfm.Header = (function() {
     function Header(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -328,6 +350,14 @@ var Wfm4000 = (function() {
       this.unknown60 = this._io.readBytes(27);
       this.time = new TimeHeader(this._io, this, this._root);
     }
+    Object.defineProperty(Header.prototype, 'dataStart', {
+      get: function() {
+        if (this._m_dataStart !== undefined)
+          return this._m_dataStart;
+        this._m_dataStart = (this.position.channel1 != 0 ? this.position.channel1 : (this.position.channel2 != 0 ? this.position.channel2 : (this.position.channel3 != 0 ? this.position.channel3 : this.position.channel4)));
+        return this._m_dataStart;
+      }
+    });
     Object.defineProperty(Header.prototype, 'lenRaw1', {
       get: function() {
         if (this._m_lenRaw1 !== undefined)
@@ -432,11 +462,32 @@ var Wfm4000 = (function() {
         return this._m_secondsPerPoint;
       }
     });
+    Object.defineProperty(Header.prototype, 'serialNumber', {
+      get: function() {
+        if (this._m_serialNumber !== undefined)
+          return this._m_serialNumber;
+        this._m_serialNumber = this.modelNumber;
+        return this._m_serialNumber;
+      }
+    });
+    Object.defineProperty(Header.prototype, 'setup', {
+      get: function() {
+        if (this._m_setup !== undefined)
+          return this._m_setup;
+        var _pos = this._io.pos;
+        this._io.seek(597);
+        this._raw__m_setup = this._io.readBytes(this.dataStart - 597);
+        var _io__raw__m_setup = new KaitaiStream(this._raw__m_setup);
+        this._m_setup = new SetupBlock(_io__raw__m_setup, this, this._root);
+        this._io.seek(_pos);
+        return this._m_setup;
+      }
+    });
     Object.defineProperty(Header.prototype, 'timeOffset', {
       get: function() {
         if (this._m_timeOffset !== undefined)
           return this._m_timeOffset;
-        this._m_timeOffset = 1.0E-12 * this.time.offsetPerDivPs;
+        this._m_timeOffset = 1.0E-12 * this.time.actualOffsetPs;
         return this._m_timeOffset;
       }
     });
@@ -468,7 +519,7 @@ var Wfm4000 = (function() {
     return Header;
   })();
 
-  var PositionType = Wfm4000.PositionType = (function() {
+  var PositionType = Rigol4000Wfm.PositionType = (function() {
     function PositionType(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -486,7 +537,73 @@ var Wfm4000 = (function() {
     return PositionType;
   })();
 
-  var TimeHeader = Wfm4000.TimeHeader = (function() {
+  var SetupBlock = Rigol4000Wfm.SetupBlock = (function() {
+    function SetupBlock(_io, _parent, _root) {
+      this._io = _io;
+      this._parent = _parent;
+      this._root = _root;
+
+      this._read();
+    }
+    SetupBlock.prototype._read = function() {
+    }
+    Object.defineProperty(SetupBlock.prototype, 'legacyTriggerLevels', {
+      get: function() {
+        if (this._m_legacyTriggerLevels !== undefined)
+          return this._m_legacyTriggerLevels;
+        if (this._io.size >= 558) {
+          var _pos = this._io.pos;
+          this._io.seek(538);
+          this._m_legacyTriggerLevels = new TriggerLevelBlock(this._io, this, this._root);
+          this._io.seek(_pos);
+        }
+        return this._m_legacyTriggerLevels;
+      }
+    });
+    Object.defineProperty(SetupBlock.prototype, 'modernTriggerLevels', {
+      get: function() {
+        if (this._m_modernTriggerLevels !== undefined)
+          return this._m_modernTriggerLevels;
+        if (this._io.size >= 606) {
+          var _pos = this._io.pos;
+          this._io.seek(586);
+          this._m_modernTriggerLevels = new TriggerLevelBlock(this._io, this, this._root);
+          this._io.seek(_pos);
+        }
+        return this._m_modernTriggerLevels;
+      }
+    });
+    Object.defineProperty(SetupBlock.prototype, 'modernTriggerMode', {
+      get: function() {
+        if (this._m_modernTriggerMode !== undefined)
+          return this._m_modernTriggerMode;
+        if (this._io.size >= 611) {
+          var _pos = this._io.pos;
+          this._io.seek(610);
+          this._m_modernTriggerMode = this._io.readU1();
+          this._io.seek(_pos);
+        }
+        return this._m_modernTriggerMode;
+      }
+    });
+    Object.defineProperty(SetupBlock.prototype, 'modernTriggerSource', {
+      get: function() {
+        if (this._m_modernTriggerSource !== undefined)
+          return this._m_modernTriggerSource;
+        if (this._io.size >= 624) {
+          var _pos = this._io.pos;
+          this._io.seek(623);
+          this._m_modernTriggerSource = this._io.readU1();
+          this._io.seek(_pos);
+        }
+        return this._m_modernTriggerSource;
+      }
+    });
+
+    return SetupBlock;
+  })();
+
+  var TimeHeader = Rigol4000Wfm.TimeHeader = (function() {
     function TimeHeader(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -501,7 +618,8 @@ var Wfm4000 = (function() {
       this.timePerDivPs = this._io.readU4le();
       this.unknown3a = this._io.readBytes(4);
       this.offsetPerDivPs = this._io.readU8le();
-      this.unknown4 = this._io.readBytes(16);
+      this.unknown4Head = this._io.readBytes(8);
+      this.actualOffsetPs = this._io.readS8le();
       this.offsetPs = this._io.readU8le();
       this.unknown5 = this._io.readBytes(16);
       this.unknown6 = this._io.readU2le();
@@ -510,7 +628,26 @@ var Wfm4000 = (function() {
 
     return TimeHeader;
   })();
-  Object.defineProperty(Wfm4000.prototype, 'header', {
+
+  var TriggerLevelBlock = Rigol4000Wfm.TriggerLevelBlock = (function() {
+    function TriggerLevelBlock(_io, _parent, _root) {
+      this._io = _io;
+      this._parent = _parent;
+      this._root = _root;
+
+      this._read();
+    }
+    TriggerLevelBlock.prototype._read = function() {
+      this.ch1LevelUv = this._io.readS4le();
+      this.ch2LevelUv = this._io.readS4le();
+      this.ch3LevelUv = this._io.readS4le();
+      this.ch4LevelUv = this._io.readS4le();
+      this.extLevelUv = this._io.readS4le();
+    }
+
+    return TriggerLevelBlock;
+  })();
+  Object.defineProperty(Rigol4000Wfm.prototype, 'header', {
     get: function() {
       if (this._m_header !== undefined)
         return this._m_header;
@@ -522,7 +659,7 @@ var Wfm4000 = (function() {
     }
   });
 
-  return Wfm4000;
+  return Rigol4000Wfm;
 })();
-Wfm4000_.Wfm4000 = Wfm4000;
+Rigol4000Wfm_.Rigol4000Wfm = Rigol4000Wfm;
 });

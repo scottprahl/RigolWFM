@@ -172,7 +172,101 @@ function ds2000SourceName(value) {
     if (value >= 4 && value < 20) {
         return 'D' + (value - 4);
     }
-    return String(value);
+    return '';
+}
+
+function ds2000TriggerModeName(value) {
+    if (value === 30) {
+        return 'Edge';
+    }
+    return '';
+}
+
+function decode2000Trigger(h) {
+    var setup = h.setup;
+    if (!setup || !setup.triggerLevels) {
+        return null;
+    }
+
+    var inputLevels = {
+        CH1: setup.triggerLevels.ch1LevelUv * 1e-6,
+        CH2: setup.triggerLevels.ch2LevelUv * 1e-6,
+        EXT: setup.triggerLevels.extLevelUv * 1e-6,
+    };
+    var hasMeaningfulSetup = setup.triggerHoldoffNs !== 0 ||
+        inputLevels.CH1 !== 0 || inputLevels.CH2 !== 0 || inputLevels.EXT !== 0;
+    if (!hasMeaningfulSetup) {
+        return null;
+    }
+
+    var info = {
+        inputLevels: inputLevels,
+    };
+
+    if (setup.triggerSourcePrimary === setup.triggerSourceShadow) {
+        var source = ds2000SourceName(setup.triggerSourcePrimary);
+        if (source) {
+            info.source = source;
+            if (Object.prototype.hasOwnProperty.call(inputLevels, source)) {
+                info.level = inputLevels[source];
+            }
+        }
+    }
+
+    var mode = ds2000TriggerModeName(setup.triggerModeCode);
+    if (mode) {
+        info.mode = mode;
+    }
+
+    return info;
+}
+
+function scaled4000TriggerLevels(levelBlock, probeValues) {
+    return {
+        CH1: levelBlock.ch1LevelUv * 1e-6 * probeValues[0],
+        CH2: levelBlock.ch2LevelUv * 1e-6 * probeValues[1],
+        CH3: levelBlock.ch3LevelUv * 1e-6 * probeValues[2],
+        CH4: levelBlock.ch4LevelUv * 1e-6 * probeValues[3],
+        EXT: levelBlock.extLevelUv * 1e-6,
+    };
+}
+
+function decode4000Trigger(h) {
+    var setup = h.setup;
+    if (!setup) {
+        return null;
+    }
+
+    var probeValues = h.ch.map(function(ch) {
+        return ch.probeValue || 1;
+    });
+
+    if (
+        setup.modernTriggerLevels &&
+        Object.prototype.hasOwnProperty.call(Rigol4000Wfm.Rigol4000Wfm.TriggerModeEnum, setup.modernTriggerMode) &&
+        Object.prototype.hasOwnProperty.call(Rigol4000Wfm.Rigol4000Wfm.TriggerSourceEnum, setup.modernTriggerSource)
+    ) {
+        var inputLevels = scaled4000TriggerLevels(setup.modernTriggerLevels, probeValues);
+        var source = enumName(Rigol4000Wfm.Rigol4000Wfm.TriggerSourceEnum, setup.modernTriggerSource).toUpperCase();
+        var info = {
+            mode: enumName(Rigol4000Wfm.Rigol4000Wfm.TriggerModeEnum, setup.modernTriggerMode).toLowerCase(),
+            source: source,
+            inputLevels: inputLevels,
+        };
+        if (Object.prototype.hasOwnProperty.call(inputLevels, source)) {
+            info.level = inputLevels[source];
+        }
+        info.mode = info.mode.charAt(0).toUpperCase() + info.mode.slice(1);
+        return info;
+    }
+
+    if (setup.legacyTriggerLevels) {
+        return {
+            inputLevels: scaled4000TriggerLevels(setup.legacyTriggerLevels, probeValues),
+        };
+    }
+
+    return null;
 }
 
 function modelFromFrameString(frameString, fallback) {
@@ -180,6 +274,19 @@ function modelFromFrameString(frameString, fallback) {
         return frameString.split(':', 1)[0];
     }
     return frameString || fallback;
+}
+
+function splitFrameString(frameString) {
+    if (frameString && frameString.indexOf(':') >= 0) {
+        return {
+            model: frameString.split(':', 1)[0].trim(),
+            serial: frameString.substring(frameString.indexOf(':') + 1).trim(),
+        };
+    }
+    return {
+        model: (frameString || '').trim(),
+        serial: '',
+    };
 }
 
 function dhoFamilyLabel(model, fallback) {
@@ -194,8 +301,29 @@ function dhoFamilyLabel(model, fallback) {
 }
 
 function channelNumberFromName(name, fallback) {
-    var match = /^CH\s*([1-4])$/i.exec(name || '');
-    return match ? parseInt(match[1], 10) : fallback;
+    var text = String(name || '').trim();
+    var match = /^CH\s*([1-4])$/i.exec(text);
+    if (match) {
+        return parseInt(match[1], 10);
+    }
+    if (/^[1-4]$/.test(text)) {
+        return parseInt(text, 10);
+    }
+    return fallback;
+}
+
+function normalizedChannelName(name, fallbackNumber) {
+    var text = String(name || '').trim();
+    if (!text) {
+        return 'CH' + fallbackNumber;
+    }
+    if (/^[1-4]$/.test(text)) {
+        return 'CH' + text;
+    }
+    if (/^CH\s*[1-4]$/i.test(text)) {
+        return text.toUpperCase().replace(/\s+/g, '');
+    }
+    return text;
 }
 
 function proxyRawFromCalibrated(values) {
@@ -241,6 +369,288 @@ function proxyRawFromDhoVolts(values) {
         out[i] = raw16 >> 8;
     }
     return out;
+}
+
+function siglentU16le(bytes, offset) {
+    if (offset + 1 >= bytes.length) {
+        return 0;
+    }
+    return (bytes[offset] | (bytes[offset + 1] << 8)) >>> 0;
+}
+
+function siglentU32le(bytes, offset) {
+    if (offset + 3 >= bytes.length) {
+        return 0;
+    }
+    return (bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24)) >>> 0;
+}
+
+function siglentF64le(bytes, offset) {
+    if (offset + 7 >= bytes.length) {
+        return NaN;
+    }
+    return new DataView(bytes.buffer, bytes.byteOffset + offset, 8).getFloat64(0, true);
+}
+
+function siglentAsciiSlice(bytes, start, stop) {
+    var end = Math.min(stop, bytes.length);
+    var out = '';
+    for (var i = start; i < end && bytes[i]; i++) {
+        out += String.fromCharCode(bytes[i]);
+    }
+    return out.trim();
+}
+
+function siglentAllFlags(bytes, offsets) {
+    for (var i = 0; i < offsets.length; i++) {
+        var value = siglentU32le(bytes, offsets[i]);
+        if (value !== 0 && value !== 1) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function siglentLooksLikeScaled16(bytes, offset) {
+    if (offset + 16 > bytes.length) {
+        return false;
+    }
+    var value = siglentF64le(bytes, offset);
+    var magnitude = siglentU32le(bytes, offset + 8);
+    var unit = siglentU32le(bytes, offset + 12);
+    return Number.isFinite(value) && Math.abs(value) < 1e300 && magnitude >= 0 && magnitude <= 16 && unit >= 0 && unit <= 23;
+}
+
+function siglentLooksLikeDataWithUnit(bytes, offset) {
+    if (offset + 40 > bytes.length) {
+        return false;
+    }
+    var value = siglentF64le(bytes, offset);
+    var magnitude = siglentU32le(bytes, offset + 8);
+    var basicUnit = siglentU32le(bytes, offset + 12);
+    return Number.isFinite(value) && Math.abs(value) < 1e300 && magnitude >= 0 && magnitude <= 16 && basicUnit >= 0 && basicUnit <= 12;
+}
+
+function siglentMinPayloadOk(fileSize, dataOffset, enabledCount, points, sampleWidth) {
+    if (enabledCount <= 0 || points <= 0 || sampleWidth <= 0) {
+        return false;
+    }
+    return fileSize >= dataOffset + enabledCount * points * sampleWidth;
+}
+
+function siglentLooksLikeV6(bytes, fileSize) {
+    if (fileSize < 108 || bytes.length < 108 || siglentU32le(bytes, 0) !== 6) {
+        return false;
+    }
+    var headerBytes = siglentU16le(bytes, 4);
+    var waveNumber = siglentU32le(bytes, 0x68);
+    var module = siglentAsciiSlice(bytes, 0x08, 0x28);
+    return headerBytes >= 108 && waveNumber > 0 && Boolean(module);
+}
+
+function siglentLooksLikeV5(bytes, fileSize) {
+    var enabled = 0;
+    if (bytes.length >= 0x7A) {
+        enabled += siglentU32le(bytes, 0x76);
+    }
+    if (bytes.length >= 0xF4) {
+        enabled += siglentU32le(bytes, 0xF0);
+    }
+    if (bytes.length >= 0x198) {
+        enabled += siglentU32le(bytes, 0x194);
+    }
+    if (bytes.length >= 0x23C) {
+        enabled += siglentU32le(bytes, 0x238);
+    }
+    return (
+        bytes.length >= 0x1BA2 &&
+        siglentU32le(bytes, 0x00) === 5 &&
+        siglentLooksLikeScaled16(bytes, 0x1B68) &&
+        siglentLooksLikeScaled16(bytes, 0x1B78) &&
+        siglentU32le(bytes, 0x1B88) > 0 &&
+        siglentMinPayloadOk(fileSize, 0x800, enabled, siglentU32le(bytes, 0x1B88), 1)
+    );
+}
+
+function siglentLooksLikeV4(bytes, fileSize) {
+    if (bytes.length < 0x280 || siglentU32le(bytes, 0x00) !== 4) {
+        return false;
+    }
+    var enabled = siglentU32le(bytes, 0x08) + siglentU32le(bytes, 0x0C) + siglentU32le(bytes, 0x10) + siglentU32le(bytes, 0x14);
+    var dataOffset = siglentU32le(bytes, 0x04);
+    var points = siglentU32le(bytes, 0x1EC);
+    return (
+        dataOffset >= 0x1000 &&
+        siglentAllFlags(bytes, [0x08, 0x0C, 0x10, 0x14]) &&
+        siglentLooksLikeDataWithUnit(bytes, 0x19C) &&
+        siglentLooksLikeDataWithUnit(bytes, 0x1F0) &&
+        (bytes[0x264] === 0 || bytes[0x264] === 1) &&
+        (bytes[0x265] === 0 || bytes[0x265] === 1) &&
+        siglentMinPayloadOk(fileSize, dataOffset, enabled, points, bytes[0x264] === 0 ? 1 : 2)
+    );
+}
+
+function siglentLooksLikeV3(bytes, fileSize) {
+    if (bytes.length < 0x280 || siglentU32le(bytes, 0x00) !== 3) {
+        return false;
+    }
+    var enabled = siglentU32le(bytes, 0x04) + siglentU32le(bytes, 0x08) + siglentU32le(bytes, 0x0C) + siglentU32le(bytes, 0x10);
+    var points = siglentU32le(bytes, 0x1E8);
+    var sampleWidth = bytes[0x260] === 0 ? 1 : 2;
+    return (
+        siglentAllFlags(bytes, [0x04, 0x08, 0x0C, 0x10]) &&
+        siglentLooksLikeDataWithUnit(bytes, 0x198) &&
+        siglentLooksLikeDataWithUnit(bytes, 0x1EC) &&
+        (bytes[0x260] === 0 || bytes[0x260] === 1) &&
+        (bytes[0x261] === 0 || bytes[0x261] === 1) &&
+        siglentU32le(bytes, 0x268) >= 1 &&
+        siglentU32le(bytes, 0x268) <= 20 &&
+        siglentMinPayloadOk(fileSize, 0x800, enabled, points, sampleWidth)
+    );
+}
+
+function siglentLooksLikeV2(bytes, fileSize) {
+    if (bytes.length < 0x261 || siglentU32le(bytes, 0x00) !== 2) {
+        return false;
+    }
+    var enabled = siglentU32le(bytes, 0x04) + siglentU32le(bytes, 0x08) + siglentU32le(bytes, 0x0C) + siglentU32le(bytes, 0x10);
+    var points = siglentU32le(bytes, 0x1E8);
+    var sampleWidth = bytes[0x260] === 0 ? 1 : 2;
+    return (
+        siglentAllFlags(bytes, [0x04, 0x08, 0x0C, 0x10]) &&
+        siglentLooksLikeDataWithUnit(bytes, 0x198) &&
+        siglentLooksLikeDataWithUnit(bytes, 0x1EC) &&
+        (bytes[0x260] === 0 || bytes[0x260] === 1) &&
+        siglentMinPayloadOk(fileSize, 0x800, enabled, points, sampleWidth)
+    );
+}
+
+function siglentLooksLikeV1(bytes, fileSize) {
+    if (bytes.length < 0x11C) {
+        return false;
+    }
+    var enabled = siglentU32le(bytes, 0x00) + siglentU32le(bytes, 0x04) + siglentU32le(bytes, 0x08) + siglentU32le(bytes, 0x0C);
+    var points = siglentU32le(bytes, 0xF4);
+    return (
+        siglentAllFlags(bytes, [0x00, 0x04, 0x08, 0x0C]) &&
+        siglentLooksLikeScaled16(bytes, 0xD4) &&
+        siglentLooksLikeScaled16(bytes, 0xF8) &&
+        siglentMinPayloadOk(fileSize, 0x800, enabled, points, 1)
+    );
+}
+
+function siglentLooksLikeV02(bytes, fileSize) {
+    if (bytes.length < 0xDEC) {
+        return false;
+    }
+    var enabled = siglentU32le(bytes, 0x44) + siglentU32le(bytes, 0xE8) + siglentU32le(bytes, 0x18C) + siglentU32le(bytes, 0x230);
+    var points = siglentU32le(bytes, 0xDD8);
+    return (
+        siglentAllFlags(bytes, [0x44, 0xE8, 0x18C, 0x230]) &&
+        siglentLooksLikeScaled16(bytes, 0xDB8) &&
+        siglentLooksLikeScaled16(bytes, 0xDDC) &&
+        siglentMinPayloadOk(fileSize, 0x932C, enabled, points, 1)
+    );
+}
+
+function siglentLooksLikeV01(bytes, fileSize) {
+    if (bytes.length < 0xAB8) {
+        return false;
+    }
+    var enabled = siglentU32le(bytes, 0x44) + siglentU32le(bytes, 0xC0) + siglentU32le(bytes, 0x13C) + siglentU32le(bytes, 0x1B8);
+    var points = siglentU32le(bytes, 0xAA4);
+    return (
+        siglentAllFlags(bytes, [0x44, 0xC0, 0x13C, 0x1B8]) &&
+        siglentLooksLikeScaled16(bytes, 0xA84) &&
+        siglentLooksLikeScaled16(bytes, 0xAA8) &&
+        siglentMinPayloadOk(fileSize, 0x8A60, enabled, points, 1)
+    );
+}
+
+function siglentLooksLikeOldPlatform(bytes, fileSize) {
+    if (bytes.length < 0x254) {
+        return false;
+    }
+    var enabled = siglentU32le(bytes, 0x100) + siglentU32le(bytes, 0x104) + siglentU32le(bytes, 0x108) + siglentU32le(bytes, 0x10C);
+    if (enabled <= 0 || fileSize <= 0x1470) {
+        return false;
+    }
+    var timeDivIndex = siglentU32le(bytes, 0x248);
+    return siglentAllFlags(bytes, [0x100, 0x104, 0x108, 0x10C]) && timeDivIndex <= 32;
+}
+
+function detectSiglentRevision(buffer, filename) {
+    if (!/\.bin$/i.test(filename || '')) {
+        return '';
+    }
+    var bytes = new Uint8Array(buffer);
+    var fileSize = bytes.length;
+    if (siglentLooksLikeV6(bytes, fileSize)) {
+        return 'v6';
+    }
+    if (siglentLooksLikeV5(bytes, fileSize)) {
+        return 'v5';
+    }
+    if (siglentLooksLikeV4(bytes, fileSize)) {
+        return 'v4';
+    }
+    if (siglentLooksLikeV3(bytes, fileSize)) {
+        return 'v3';
+    }
+    if (siglentLooksLikeV2(bytes, fileSize)) {
+        return 'v2';
+    }
+    if (siglentLooksLikeV1(bytes, fileSize)) {
+        return 'v1';
+    }
+    if (siglentLooksLikeV02(bytes, fileSize)) {
+        return 'v0_2';
+    }
+    if (siglentLooksLikeV01(bytes, fileSize)) {
+        return 'v0_1';
+    }
+    if (siglentLooksLikeOldPlatform(bytes, fileSize)) {
+        return 'old';
+    }
+    return '';
+}
+
+function siglentScaledToSi(node) {
+    return node.value * Math.pow(10, 3 * (node.magnitude - 8));
+}
+
+function siglentEstimateVoltPerDiv(vMin, vMax, fallback) {
+    if (Number.isFinite(fallback) && fallback > 0) {
+        return Math.abs(fallback);
+    }
+    if (!Number.isFinite(vMin) || !Number.isFinite(vMax) || vMax <= vMin) {
+        return 1;
+    }
+    return Math.max((vMax - vMin) / 8, 1e-3);
+}
+
+function siglentDecodeUnsignedCode(view, index, sampleWidth, littleEndian) {
+    var offset = index * sampleWidth;
+    if (sampleWidth === 1) {
+        return view.getUint8(offset);
+    }
+    if (sampleWidth === 2) {
+        return view.getUint16(offset, littleEndian);
+    }
+    if (sampleWidth === 4) {
+        return view.getUint32(offset, littleEndian);
+    }
+    throw new Error('Unsupported Siglent sample width: ' + sampleWidth + ' bytes');
+}
+
+function siglentRawByteFromCode(code, sampleWidth) {
+    if (sampleWidth === 1) {
+        return code & 0xFF;
+    }
+    if (sampleWidth === 2) {
+        return (code >>> 8) & 0xFF;
+    }
+    return (code >>> 24) & 0xFF;
 }
 
 function describeTriggerBlock(triggerInfo, indent) {
@@ -377,6 +787,9 @@ function channelInfoText(ch, stats) {
 function buildInfoHeaderText(result, filename) {
     var s = '    General:\n';
     s += '        File Model   = ' + (result.fileModel || result.format) + '\n';
+    if (result.serialNumber) {
+        s += '        Serial Number = ' + result.serialNumber + '\n';
+    }
     s += '        User Model   = ' + (result.userModel || 'auto') + '\n';
     s += '        Parser Model = ' + (result.parserModel || 'browser') + '\n';
     s += '        Firmware     = ' + (result.firmware || 'unknown') + '\n';
@@ -447,6 +860,64 @@ function bytesToAscii(bytes) {
     return text;
 }
 
+function decodeUtf8Bytes(bytes) {
+    var view = toU8(bytes);
+    if (typeof TextDecoder !== 'undefined') {
+        return new TextDecoder('utf-8').decode(view);
+    }
+    return bytesToAscii(view);
+}
+
+function lowerFilename(name) {
+    return String(name || '').toLowerCase();
+}
+
+function buildSelectedFileMap(files) {
+    var map = {};
+    for (var i = 0; i < files.length; i++) {
+        map[lowerFilename(files[i].name)] = files[i];
+    }
+    return map;
+}
+
+function shouldSkipRohdeSchwarzPayload(file, fileMap) {
+    var name = lowerFilename(file && file.name);
+    if (!/\.wfm\.bin$/i.test(name)) {
+        return false;
+    }
+    var metadataName = name.replace(/\.wfm\.bin$/i, '.bin');
+    return Object.prototype.hasOwnProperty.call(fileMap, metadataName);
+}
+
+function rohdeSchwarzPayloadLookupName(metadataName) {
+    return lowerFilename(metadataName).replace(/\.bin$/i, '.wfm.bin');
+}
+
+function looksLikeRohdeSchwarzMetadata(buffer, filename) {
+    if (!/\.bin$/i.test(filename || '') || /\.wfm\.bin$/i.test(filename || '')) {
+        return false;
+    }
+    var headBytes = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 8192));
+    var head = decodeUtf8Bytes(headBytes).replace(/^\uFEFF/, '');
+    return head.indexOf('<?xml') === 0 && head.indexOf('<Database') >= 0 && head.indexOf('SaveItemType="Data"') >= 0;
+}
+
+function readBrowserFileAsArrayBuffer(file) {
+    if (file && typeof file.arrayBuffer === 'function') {
+        return file.arrayBuffer();
+    }
+    return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            resolve(e.target.result);
+        };
+        reader.onerror = function() {
+            reject(new Error('Could not read ' + (file && file.name ? file.name : 'the selected file') + '.'));
+        };
+        reader.readAsArrayBuffer(file);
+    });
+}
+
 async function maybeInflateDeflate(bytes, expectedLength) {
     var view = toU8(bytes);
     if (!view || !view.length) {
@@ -474,7 +945,7 @@ function parseDhoPayload(ctor, content) {
 }
 
 async function parseDhoBlocks(buffer) {
-    var parsed = new Wfmdho1000.Wfmdho1000(new KaitaiStream(buffer), null, null);
+    var parsed = new RigolDho8001000Wfm.RigolDho8001000Wfm(new KaitaiStream(buffer), null, null);
     var blocks = [];
     var offset = DHO_FILE_HEADER_SIZE;
 
@@ -493,7 +964,7 @@ async function parseDhoBlocks(buffer) {
 }
 
 function extractDhoVoltCalibration(blocks) {
-    var blockTypes = Wfmdho1000.Wfmdho1000.BlockTypeEnum;
+    var blockTypes = RigolDho8001000Wfm.RigolDho8001000Wfm.BlockTypeEnum;
     var isDho800 = blocks.some(function(entry) {
         return entry.block.blockType === blockTypes.DHO800_CHANNEL_PARAMS &&
             entry.block.blockId >= 1 && entry.block.blockId <= 4;
@@ -506,7 +977,7 @@ function extractDhoVoltCalibration(blocks) {
         blocks.forEach(function(entry) {
             if (entry.block.blockType === blockTypes.DHO800_CHANNEL_PARAMS &&
                 entry.block.blockId >= 1 && entry.block.blockId <= 4) {
-                var params = parseDhoPayload(Wfmdho1000.Wfmdho1000.Dho800ChannelParams, entry.content);
+                var params = parseDhoPayload(RigolDho8001000Wfm.RigolDho8001000Wfm.Dho800ChannelParams, entry.content);
                 cal[entry.block.blockId] = {
                     scale: params.scale,
                     vCenter: params.vCenter,
@@ -520,7 +991,7 @@ function extractDhoVoltCalibration(blocks) {
     blocks.forEach(function(entry) {
         if (entry.block.blockType === blockTypes.CHANNEL_PARAMS &&
             entry.block.blockId >= 1 && entry.block.blockId <= 4) {
-            var params = parseDhoPayload(Wfmdho1000.Wfmdho1000.Dho1000ChannelParams, entry.content);
+            var params = parseDhoPayload(RigolDho8001000Wfm.RigolDho8001000Wfm.Dho1000ChannelParams, entry.content);
             cal[entry.block.blockId] = {
                 scale: params.scale,
                 vCenter: params.vCenter,
@@ -530,7 +1001,7 @@ function extractDhoVoltCalibration(blocks) {
                 scale1 = params.scale;
             }
         } else if (entry.block.blockType === blockTypes.SETTINGS) {
-            settingsCenter = parseDhoPayload(Wfmdho1000.Wfmdho1000.SettingsBlock, entry.content).vCenter;
+            settingsCenter = parseDhoPayload(RigolDho8001000Wfm.RigolDho8001000Wfm.SettingsBlock, entry.content).vCenter;
         }
     });
 
@@ -626,7 +1097,7 @@ function parseDhoModel(blocks, fallback) {
     return fallback;
 }
 
-async function detectAndParse(buffer, filename) {
+async function detectAndParse(buffer, filename, fileMap) {
     var b = new Uint8Array(buffer);
     var fsize = buffer.byteLength;
 
@@ -661,7 +1132,13 @@ async function detectAndParse(buffer, filename) {
         return parseZ(buffer);
     }
 
-    if (b0 === 0x02 && b1 === 0x00 && b2 === 0x00 && b3 === 0x00) {
+    if (
+        b0 === 0x02 &&
+        b1 === 0x00 &&
+        b2 === 0x00 &&
+        b3 === 0x00 &&
+        /\.wfm$/i.test(filename || '')
+    ) {
         return parseDhoWfm(buffer);
     }
 
@@ -669,6 +1146,22 @@ async function detectAndParse(buffer, filename) {
 
     if (magicStr === 'RG03') {
         return parseDhoBin(buffer);
+    }
+
+    if (magicStr.substring(0, 2) === 'AG') {
+        var agVersion = magicStr.substring(2, 4);
+        if (agVersion === '01' || agVersion === '03' || agVersion === '10') {
+            return parseAgilentBin(buffer);
+        }
+    }
+
+    var siglentRevision = detectSiglentRevision(buffer, filename);
+    if (siglentRevision) {
+        return parseSiglentBin(buffer, siglentRevision);
+    }
+
+    if (looksLikeRohdeSchwarzMetadata(buffer, filename)) {
+        return parseRohdeSchwarzBin(buffer, filename, fileMap);
     }
 
     if (magicStr === 'RG01') {
@@ -681,7 +1174,7 @@ async function detectAndParse(buffer, filename) {
             return parse4000(buffer);
         }
         if (modelStr.indexOf('DS6') === 0 || modelStr.indexOf('MSO6') === 0) {
-            throw new Error('DS6000 format is not yet supported by this viewer.');
+            return parse6000(buffer);
         }
         return parse2000(buffer);
     }
@@ -709,11 +1202,430 @@ async function detectAndParse(buffer, filename) {
         return parseE(buffer);
     }
 
+    // Tektronix .wfm: byte_order word at 0 (0x0F0F LE or 0xF0F0 BE), "WFM#" at offset 2
+    if ((b[0] === 0x0F && b[1] === 0x0F) || (b[0] === 0xF0 && b[1] === 0xF0)) {
+        if (b.length > 5 && b[2] === 0x57 && b[3] === 0x46 && b[4] === 0x4D && b[5] === 0x23) {
+            return parseTek(buffer);
+        }
+    }
+
+    // Tektronix .isf: ASCII text header containing ":CURV" somewhere in first 512 bytes
+    // (both ":CURV #" and ":CURVE #" share this prefix)
+    var isfMagic = [0x3A, 0x43, 0x55, 0x52, 0x56]; // ":CURV"
+    for (var ii = 0; ii <= Math.min(507, b.length - 5); ii++) {
+        var isfMatch = true;
+        for (var ij = 0; ij < 5; ij++) {
+            if (b[ii + ij] !== isfMagic[ij]) { isfMatch = false; break; }
+        }
+        if (isfMatch) { return parseIsf(buffer); }
+    }
+
+    // LeCroy .trc: "WAVEDESC" ASCII somewhere in the file.
+    // Some files include a longer SCPI / transport prefix before WAVEDESC.
+    var wavDesc = [0x57, 0x41, 0x56, 0x45, 0x44, 0x45, 0x53, 0x43]; // "WAVEDESC"
+    var wdOffset = -1;
+    for (var wi = 0; wi <= b.length - 8; wi++) {
+        var match = true;
+        for (var wj = 0; wj < 8; wj++) {
+            if (b[wi + wj] !== wavDesc[wj]) { match = false; break; }
+        }
+        if (match && wi + 34 < b.length && (b[wi + 34] === 0 || b[wi + 34] === 1)) {
+            wdOffset = wi;
+            break;
+        }
+    }
+    if (wdOffset >= 0) {
+        return parseLeCroy(buffer, wdOffset);
+    }
+
+    if (looksLikeYokogawaHdr(buffer, filename)) {
+        return parseYokogawaHdrWvf(buffer, filename, fileMap);
+    }
+
     throw new Error((filename || 'This file') + ' is not a supported file type.');
 }
 
+function parseLeCroy(buffer, wavedescOffset) {
+    // Slice to WAVEDESC so the parser sees offset 0 = start of WAVEDESC
+    var offset = wavedescOffset || 0;
+    var payload = buffer.slice(offset);
+    var b = new Uint8Array(payload);
+
+    // Byte 34 of WAVEDESC is the low byte of COMM_ORDER: 1 = LOFIRST (LE), 0 = HIFIRST (BE)
+    var isLe = b[34] === 1;
+
+    // Bytes 16–31 of WAVEDESC contain the null-terminated template name
+    var templateStr = '';
+    for (var ti = 0; ti < 16 && b[16 + ti]; ti++) {
+        templateStr += String.fromCharCode(b[16 + ti]);
+    }
+    var isV1 = templateStr.trim() === 'LECROY_1_0';
+
+    var w = isV1
+        ? (isLe
+            ? new Lecroy10LeTrc.Lecroy10LeTrc(new KaitaiStream(payload), null, null)
+            : new Lecroy10BeTrc.Lecroy10BeTrc(new KaitaiStream(payload), null, null))
+        : (isLe
+            ? new Lecroy23LeTrc.Lecroy23LeTrc(new KaitaiStream(payload), null, null)
+            : new Lecroy23BeTrc.Lecroy23BeTrc(new KaitaiStream(payload), null, null));
+
+    var wd = w.wavedesc;
+    var n = wd.waveArrayCount;
+    var vertGain = wd.verticalGain;
+    // LECROY_1_0 uses acqVertOffset; LECROY_2_3 uses verticalOffset
+    var vertOffset = isV1 ? wd.acqVertOffset : wd.verticalOffset;
+    var horizInterval = wd.horizInterval;
+    var horizOffset = wd.horizOffset;
+    var maxVal = wd.maxValue;
+    var minVal = wd.minValue;
+    var is16bit = wd.is16bit;
+
+    // Decode instrument name (null-terminated bytes)
+    var instBytes = wd.instrumentName;
+    var instName = '';
+    for (var i = 0; i < instBytes.length && instBytes[i]; i++) {
+        instName += String.fromCharCode(instBytes[i]);
+    }
+    instName = instName.trim() || 'LeCroy';
+
+    // WAVE_SOURCE: LECROY_1_0 is 1-indexed s2; LECROY_2_3 is 0-indexed IntEnum
+    var waveSource = typeof wd.waveSource === 'object' ? wd.waveSource.value : wd.waveSource;
+    var slot;
+    if (isV1) {
+        slot = Math.max(0, Math.min(3, waveSource - 1)); // 1-indexed → 0-based
+    } else {
+        slot = (waveSource >= 0 && waveSource <= 3) ? waveSource : 0;
+    }
+    var chName = 'CH' + (slot + 1);
+
+    // Coupling
+    var couplingVal = typeof wd.vertCoupling === 'object' ? wd.vertCoupling.value : wd.vertCoupling;
+    var couplingMap = { 0: 'DC', 1: 'GND', 2: 'DC', 3: 'GND', 4: 'AC' };
+    var coupling = couplingMap[couplingVal] || 'DC';
+
+    var probeAtt = wd.probeAtt || 1.0;
+
+    // Decode ADC samples
+    var rawBytes = w.waveArray1;
+    var adc = new Float64Array(n);
+    if (is16bit) {
+        var view = new DataView(rawBytes.buffer, rawBytes.byteOffset, rawBytes.byteLength);
+        for (var j = 0; j < n && j * 2 + 1 < rawBytes.length; j++) {
+            adc[j] = view.getInt16(j * 2, isLe);
+        }
+    } else {
+        var adcLen = Math.min(n, rawBytes.length);
+        for (var k = 0; k < adcLen; k++) {
+            // int8 from uint8
+            adc[k] = rawBytes[k] < 128 ? rawBytes[k] : rawBytes[k] - 256;
+        }
+    }
+    if (adc.length > n) {
+        adc = adc.subarray(0, n);
+    }
+
+    // Calibrate voltage and build time axis
+    var times = new Float64Array(n);
+    var volts = new Float64Array(n);
+    for (var m = 0; m < n; m++) {
+        times[m] = horizOffset + m * horizInterval;
+        volts[m] = vertGain * adc[m] - vertOffset;
+    }
+
+    // max/min_value are ADC counts; convert to volts-per-div
+    var voltPerDiv = (maxVal !== minVal) ? (maxVal - minVal) * Math.abs(vertGain) / 8.0 : 1.0;
+
+    // Build proxy raw (uint8) from calibrated volts
+    var raw = proxyRawFromCalibrated(volts);
+
+    return {
+        format: 'LeCroy TRC',
+        fileModel: instName,
+        userModel: 'LeCroy',
+        parserModel: isV1 ? 'lecroy_1_0' : 'lecroy_2_3',
+        firmware: 'unknown',
+        triggerInfo: null,
+        channels: [{
+            name: chName,
+            color: CH_COLORS[slot % CH_COLORS.length],
+            times: times,
+            volts: volts,
+            raw: raw,
+            channelNumber: slot + 1,
+            points: n,
+            coupling: coupling,
+            voltPerDiv: voltPerDiv,
+            voltOffset: vertOffset,
+            probeValue: probeAtt,
+            inverted: false,
+            timeScale: n > 0 ? n * horizInterval / 10.0 : 1e-3,
+            timeOffset: horizOffset,
+            secondsPerPoint: horizInterval,
+        }],
+    };
+}
+
+function parseTek(buffer) {
+    var b = new Uint8Array(buffer);
+
+    // Endianness: bytes 0-1 are 0x0F,0x0F (LE) or 0xF0,0xF0 (BE)
+    var isLe = (b[0] === 0x0F && b[1] === 0x0F);
+
+    // Version: bytes 2-8 contain "WFM#001" or "WFM#002"/"WFM#003"
+    var versionStr = '';
+    for (var vi = 0; vi < 7 && b[2 + vi]; vi++) {
+        versionStr += String.fromCharCode(b[2 + vi]);
+    }
+    var isV1 = versionStr.trim() === 'WFM#001';
+
+    var stream = new KaitaiStream(buffer);
+    var w = isV1
+        ? (isLe ? new TektronixWfm001LeWfm.TektronixWfm001LeWfm(stream, null, null)
+                : new TektronixWfm001BeWfm.TektronixWfm001BeWfm(stream, null, null))
+        : (isLe ? new TektronixWfm002LeWfm.TektronixWfm002LeWfm(stream, null, null)
+                : new TektronixWfm002BeWfm.TektronixWfm002BeWfm(stream, null, null));
+
+    var sfi = w.staticFileInfo;
+    var hdr = w.wfmHeader;
+    var exp1 = hdr.expDim1;
+    var imp1 = hdr.impDim1;
+    var curveObj = hdr.curve;
+
+    // Waveform label → model identifier
+    var labelBytes = sfi.waveformLabel;
+    var label = '';
+    for (var li = 0; li < labelBytes.length && labelBytes[li]; li++) {
+        label += String.fromCharCode(labelBytes[li]);
+    }
+    label = label.trim() || 'Tektronix';
+
+    // Number of valid samples
+    var nPts = curveObj.numValidSamples;
+    if (nPts <= 0) {
+        nPts = imp1.dimSize;
+    }
+
+    // Curve buffer and data slice
+    var curveBuffer = w.curveBuffer;
+    var dataStart = curveObj.dataStartOffset;
+    var dataEnd = curveObj.postchargeStartOffset;
+    var bytesPerPoint = sfi.numBytesPerPoint || 2;
+    if (dataEnd <= dataStart) {
+        dataEnd = dataStart + nPts * bytesPerPoint;
+    }
+    var rawSlice = curveBuffer.slice(dataStart, dataEnd);
+
+    // Format code for ADC decoding
+    var fmtCode = typeof exp1.format === 'object' ? exp1.format.value : exp1.format;
+
+    // Decode ADC samples using DataView for correct endianness and width
+    var dv = new DataView(rawSlice.buffer, rawSlice.byteOffset, rawSlice.byteLength);
+    var adc = new Float64Array(nPts);
+    for (var ai = 0; ai < nPts; ai++) {
+        var val = 0;
+        switch (fmtCode) {
+            case 0: if (ai * 2 + 1 < rawSlice.length) val = dv.getInt16(ai * 2, isLe); break;   // int16
+            case 1: if (ai * 4 + 3 < rawSlice.length) val = dv.getInt32(ai * 4, isLe); break;   // int32
+            case 2: if (ai * 4 + 3 < rawSlice.length) val = dv.getUint32(ai * 4, isLe); break;  // uint32
+            case 4: if (ai * 4 + 3 < rawSlice.length) val = dv.getFloat32(ai * 4, isLe); break; // fp32
+            case 5: if (ai * 8 + 7 < rawSlice.length) val = dv.getFloat64(ai * 8, isLe); break; // fp64
+            case 6: if (ai < rawSlice.length) val = rawSlice[ai]; break;                          // uint8
+            case 7: if (ai < rawSlice.length) val = rawSlice[ai] < 128 ? rawSlice[ai] : rawSlice[ai] - 256; break; // int8
+            default: if (ai * 2 + 1 < rawSlice.length) val = dv.getInt16(ai * 2, isLe); break;
+        }
+        adc[ai] = val;
+    }
+
+    // Calibrate voltage: volts = dimScale * adc + dimOffset
+    var dimScale = exp1.dimScale;
+    var dimOffset = exp1.dimOffset;
+    var volts = new Float64Array(nPts);
+    for (var ci = 0; ci < nPts; ci++) {
+        volts[ci] = dimScale * adc[ci] + dimOffset;
+    }
+
+    // Volt per division from user_scale, or fallback
+    var userScale = exp1.userScale;
+    var voltPerDiv = (userScale !== 0) ? userScale : Math.abs(dimScale) * 25;
+
+    // Time axis: t[i] = t0 + i * tScale (t0 = dim_offset + first_valid_sample * dim_scale)
+    var tScale = imp1.dimScale;
+    var t0 = imp1.dimOffset + curveObj.firstValidSample * tScale;
+    var times = new Float64Array(nPts);
+    for (var ti2 = 0; ti2 < nPts; ti2++) {
+        times[ti2] = t0 + ti2 * tScale;
+    }
+
+    var raw = proxyRawFromCalibrated(volts);
+    var parserModel = isV1 ? 'tek_wfm_001' : 'tek_wfm_002';
+
+    return {
+        format: 'Tektronix WFM',
+        fileModel: label,
+        userModel: 'Tektronix',
+        parserModel: parserModel,
+        firmware: 'unknown',
+        triggerInfo: null,
+        channels: [{
+            name: 'CH1',
+            color: CH_COLORS[0],
+            times: times,
+            volts: volts,
+            raw: raw,
+            channelNumber: 1,
+            points: nPts,
+            coupling: 'DC',
+            voltPerDiv: voltPerDiv,
+            voltOffset: dimOffset,
+            probeValue: 1.0,
+            inverted: false,
+            timeScale: nPts > 0 ? nPts * tScale / 10.0 : 1e-3,
+            timeOffset: t0,
+            secondsPerPoint: tScale,
+        }],
+    };
+}
+
+function parseIsf(buffer) {
+    var w = new TektronixInternalIsf.TektronixInternalIsf(new KaitaiStream(buffer), null, null);
+    var headerText = w.headerText;
+    var curveData = w.curveData;
+
+    // Parse semicolon-delimited key VALUE pairs; strip optional :WFMP: prefix
+    var fields = {};
+    var aliases = {
+        'BYT_NR': 'byt_nr', 'BYT_N': 'byt_nr',
+        'BYT_OR': 'byt_or', 'BYT_O': 'byt_or',
+        'NR_PT': 'nr_pt', 'NR_P': 'nr_pt',
+        'PT_FMT': 'pt_fmt', 'PT_F': 'pt_fmt',
+        'WFID': 'wfid', 'WFI': 'wfid',
+        'XINCR': 'xincr', 'XIN': 'xincr',
+        'XZERO': 'xzero', 'XZE': 'xzero',
+        'PT_OFF': 'pt_off', 'PT_O': 'pt_off',
+        'YMULT': 'ymult', 'YMU': 'ymult',
+        'YOFF': 'yoff', 'YOF': 'yoff',
+        'YZERO': 'yzero', 'YZE': 'yzero',
+        'VSCALE': 'vscale',
+    };
+    var frags = headerText.split(';');
+    for (var fi = 0; fi < frags.length; fi++) {
+        var frag = frags[fi].trim();
+        if (!frag) { continue; }
+        // Strip :WORD: SCPI prefix
+        frag = frag.replace(/^:[A-Z]+:/, '');
+        var sp = frag.indexOf(' ');
+        if (sp < 0) { continue; }
+        var keyRaw = frag.substring(0, sp).toUpperCase();
+        var val = frag.substring(sp + 1).trim().replace(/^"|"$/g, '');
+        var canonical = aliases[keyRaw];
+        if (canonical !== undefined) { fields[canonical] = val; }
+    }
+
+    var bytNr = fields['byt_nr'] ? parseInt(fields['byt_nr']) : 2;
+    var bytOr = (fields['byt_or'] || 'MSB').toUpperCase();
+    var isBe = (bytOr === 'MSB');
+    var nrPt = fields['nr_pt'] ? parseInt(fields['nr_pt']) : 0;
+    var ptFmt = (fields['pt_fmt'] || 'Y').toUpperCase();
+    var isEnv = (ptFmt === 'ENV');
+    var xincr = fields['xincr'] ? parseFloat(fields['xincr']) : 1e-6;
+    var xzero = fields['xzero'] ? parseFloat(fields['xzero']) : 0.0;
+    var ptOff = fields['pt_off'] ? parseFloat(fields['pt_off']) : 0.0;
+    var ymult = fields['ymult'] ? parseFloat(fields['ymult']) : 1.0;
+    var yoff  = fields['yoff']  ? parseFloat(fields['yoff'])  : 0.0;
+    var yzero = fields['yzero'] ? parseFloat(fields['yzero']) : 0.0;
+    var vscale = fields['vscale'] ? parseFloat(fields['vscale']) : 0.0;
+    var wfid = fields['wfid'] || '';
+
+    // Trim trailing CR/LF (not null bytes — they are valid sample data)
+    var dataEnd = curveData.length;
+    while (dataEnd > 0 && (curveData[dataEnd - 1] === 0x0A || curveData[dataEnd - 1] === 0x0D)) {
+        dataEnd--;
+    }
+    var dataBytes = curveData.buffer.slice(curveData.byteOffset, curveData.byteOffset + dataEnd);
+    var dv = new DataView(dataBytes);
+
+    // Decode ADC samples (int16 or int8, big- or little-endian)
+    var bytesPerSample = (bytNr === 1) ? 1 : 2;
+    var totalSamples = Math.floor(dataEnd / bytesPerSample);
+    var nPts = isEnv ? Math.floor(totalSamples / 2) : totalSamples;
+    if (nrPt > 0 && nPts > nrPt) { nPts = nrPt; }
+
+    var adc = new Float64Array(nPts);
+    if (isEnv) {
+        // Average of min/max pairs
+        for (var ai = 0; ai < nPts; ai++) {
+            var vMin, vMax;
+            if (bytesPerSample === 2) {
+                vMin = dv.getInt16(ai * 4,     !isBe);
+                vMax = dv.getInt16(ai * 4 + 2, !isBe);
+            } else {
+                vMin = dv.getInt8(ai * 2);
+                vMax = dv.getInt8(ai * 2 + 1);
+            }
+            adc[ai] = (vMin + vMax) / 2.0;
+        }
+    } else {
+        for (var ai2 = 0; ai2 < nPts; ai2++) {
+            if (bytesPerSample === 2) {
+                adc[ai2] = dv.getInt16(ai2 * 2, !isBe);
+            } else {
+                adc[ai2] = dv.getInt8(ai2);
+            }
+        }
+    }
+
+    // Calibrate: volts = yzero + ymult * (adc - yoff)
+    var volts = new Float64Array(nPts);
+    for (var ci = 0; ci < nPts; ci++) {
+        volts[ci] = yzero + ymult * (adc[ci] - yoff);
+    }
+
+    // Time axis
+    var tStep = isEnv ? xincr * 2 : xincr;
+    var t0 = isEnv ? (xzero + (0 * 2 - ptOff) * xincr) : (xzero - ptOff * xincr);
+    var times = new Float64Array(nPts);
+    for (var ti3 = 0; ti3 < nPts; ti3++) {
+        times[ti3] = t0 + ti3 * tStep;
+    }
+
+    // Volts per division
+    var voltPerDiv = (vscale !== 0) ? Math.abs(vscale) : (Math.abs(ymult) * 32.0);
+
+    // Instrument label from WFID (first comma-delimited token)
+    var commaIdx = wfid.indexOf(',');
+    var fileModel = commaIdx >= 0 ? wfid.substring(0, commaIdx).trim() : (wfid || 'Tektronix ISF');
+
+    var raw = proxyRawFromCalibrated(volts);
+
+    return {
+        format: 'Tektronix ISF',
+        fileModel: fileModel,
+        userModel: 'Tektronix ISF',
+        parserModel: 'tek_isf',
+        firmware: 'unknown',
+        triggerInfo: null,
+        channels: [{
+            name: 'CH1',
+            color: CH_COLORS[0],
+            times: times,
+            volts: volts,
+            raw: raw,
+            channelNumber: 1,
+            points: nPts,
+            coupling: 'DC',
+            voltPerDiv: voltPerDiv,
+            voltOffset: 0,
+            probeValue: 1.0,
+            inverted: false,
+            timeScale: nPts > 0 ? nPts * tStep / 10.0 : 1e-3,
+            timeOffset: t0,
+            secondsPerPoint: tStep,
+        }],
+    };
+}
+
 function parseB(buffer) {
-    var w = new Wfm1000b.Wfm1000b(new KaitaiStream(buffer), null, null);
+    var w = new Rigol1000bWfm.Rigol1000bWfm(new KaitaiStream(buffer), null, null);
     var h = w.header;
     var channels = [];
     var spp = h.secondsPerPoint;
@@ -771,21 +1683,21 @@ function parseB(buffer) {
         parserModel: 'wfm1000b',
         firmware: 'unknown',
         triggerInfo: {
-            mode: enumName(Wfm1000b.Wfm1000b.TriggerModeEnum, h.triggerMode).toLowerCase(),
-            source: enumName(Wfm1000b.Wfm1000b.TriggerSourceEnum, h.triggerSource).toUpperCase(),
+            mode: enumName(Rigol1000bWfm.Rigol1000bWfm.TriggerModeEnum, h.triggerMode).toLowerCase(),
+            source: enumName(Rigol1000bWfm.Rigol1000bWfm.TriggerSourceEnum, h.triggerSource).toUpperCase(),
         },
         channels: channels,
     };
 }
 
 function parseE(buffer) {
-    var w = new Wfm1000e.Wfm1000e(new KaitaiStream(buffer), null, null);
+    var w = new Rigol1000eWfm.Rigol1000eWfm(new KaitaiStream(buffer), null, null);
     var h = w.header;
     var channels = [];
     function triggerHeaderInfo(th) {
         return {
-            mode: enumName(Wfm1000e.Wfm1000e.TriggerModeEnum, th.mode).toLowerCase(),
-            source: enumName(Wfm1000e.Wfm1000e.SourceEnum, th.source).toUpperCase(),
+            mode: enumName(Rigol1000eWfm.Rigol1000eWfm.TriggerModeEnum, th.mode).toLowerCase(),
+            source: enumName(Rigol1000eWfm.Rigol1000eWfm.SourceEnum, th.source).toUpperCase(),
             level: th.level,
             sweep: sweepName(th.sweep),
             coupling: triggerCouplingName(th.coupling),
@@ -830,7 +1742,7 @@ function parseE(buffer) {
             secondsPerPoint: spp,
         });
     }
-    var triggerMode = enumName(Wfm1000e.Wfm1000e.TriggerModeEnum, h.triggerMode).toLowerCase();
+    var triggerMode = enumName(Rigol1000eWfm.Rigol1000eWfm.TriggerModeEnum, h.triggerMode).toLowerCase();
     var triggerInfo = triggerMode === 'alt' ? {
         mode: 'alt',
         trigger1: triggerHeaderInfo(h.trigger1),
@@ -851,7 +1763,7 @@ function parseE(buffer) {
 }
 
 function parseC(buffer) {
-    var w = new Wfm1000c.Wfm1000c(new KaitaiStream(buffer), null, null);
+    var w = new Rigol1000cWfm.Rigol1000cWfm(new KaitaiStream(buffer), null, null);
     var h = w.header;
     var channels = [];
     var spp = h.secondsPerPoint;
@@ -901,15 +1813,15 @@ function parseC(buffer) {
         parserModel: 'wfm1000c',
         firmware: 'unknown',
         triggerInfo: {
-            mode: enumName(Wfm1000c.Wfm1000c.TriggerModeEnum, h.triggerMode).toLowerCase(),
-            source: enumName(Wfm1000c.Wfm1000c.TriggerSourceEnum, h.triggerSource).toUpperCase(),
+            mode: enumName(Rigol1000cWfm.Rigol1000cWfm.TriggerModeEnum, h.triggerMode).toLowerCase(),
+            source: enumName(Rigol1000cWfm.Rigol1000cWfm.TriggerSourceEnum, h.triggerSource).toUpperCase(),
         },
         channels: channels,
     };
 }
 
 function parseZ(buffer) {
-    var w = new Wfm1000z.Wfm1000z(new KaitaiStream(buffer), null, null);
+    var w = new Rigol1000zWfm.Rigol1000zWfm(new KaitaiStream(buffer), null, null);
     var h = w.header;
     var all = toU8(w.data.raw);
     var spp = h.secondsPerPoint;
@@ -955,7 +1867,7 @@ function parseZ(buffer) {
             raw: raw,
             channelNumber: ci + 1,
             points: points,
-            coupling: enumName(Wfm1000z.Wfm1000z.CouplingEnum, chh.coupling).toUpperCase(),
+            coupling: enumName(Rigol1000zWfm.Rigol1000zWfm.CouplingEnum, chh.coupling).toUpperCase(),
             voltPerDiv: chh.voltPerDivision,
             voltOffset: chh.voltOffset,
             probeValue: chh.probeValue,
@@ -976,12 +1888,25 @@ function parseZ(buffer) {
     };
 }
 
+function effective2000TimeOffset(h) {
+    var modelNumber = h.modelNumber || '';
+    var firmwareVersion = h.firmwareVersion || '';
+
+    // Older DS2A captures store a nonzero time offset even though the
+    // saved screenshot shows the trigger marker centered.
+    if (modelNumber.indexOf('DS2A') === 0 && firmwareVersion === '00.03.00.01.03') {
+        return 0;
+    }
+
+    return h.timeOffset;
+}
+
 function parse2000(buffer) {
-    var w = new Wfm2000.Wfm2000(new KaitaiStream(buffer), null, null);
+    var w = new Rigol2000Wfm.Rigol2000Wfm(new KaitaiStream(buffer), null, null);
     var h = w.header;
     var channels = [];
     var spp = h.secondsPerPoint;
-    var adjTOff = h.timeOffset + h.zPtOffset * spp;
+    var adjTOff = effective2000TimeOffset(h) + h.zPtOffset * spp;
     var start = adjTOff - h.storageDepth * spp / 2;
     var rawArrays = [h.raw1, h.raw2, h.raw3, h.raw4];
     for (var ci = 0; ci < 4; ci++) {
@@ -1008,7 +1933,7 @@ function parse2000(buffer) {
             raw: raw,
             channelNumber: ci + 1,
             points: n,
-            coupling: enumName(Wfm2000.Wfm2000.CouplingEnum, chh.coupling).toUpperCase(),
+            coupling: enumName(Rigol2000Wfm.Rigol2000Wfm.CouplingEnum, chh.coupling).toUpperCase(),
             voltPerDiv: chh.voltPerDivision,
             voltOffset: chh.voltOffset,
             probeValue: chh.probeValue || 1,
@@ -1021,16 +1946,17 @@ function parse2000(buffer) {
     return {
         format: 'DS2000',
         fileModel: 'DS2000',
+        serialNumber: h.serialNumber || h.modelNumber || '',
         userModel: '2',
         parserModel: 'wfm2000',
         firmware: h.firmwareVersion || 'unknown',
-        triggerInfo: { source: ds2000SourceName(h.triggerSource) },
+        triggerInfo: decode2000Trigger(h),
         channels: channels,
     };
 }
 
 function parse4000(buffer) {
-    var w = new Wfm4000.Wfm4000(new KaitaiStream(buffer), null, null);
+    var w = new Rigol4000Wfm.Rigol4000Wfm(new KaitaiStream(buffer), null, null);
     var h = w.header;
     var channels = [];
     var spp = h.secondsPerPoint;
@@ -1060,7 +1986,7 @@ function parse4000(buffer) {
             raw: raw,
             channelNumber: ci + 1,
             points: n,
-            coupling: enumName(Wfm4000.Wfm4000.CouplingEnum, h.ch[ci].coupling).toUpperCase(),
+            coupling: enumName(Rigol4000Wfm.Rigol4000Wfm.CouplingEnum, h.ch[ci].coupling).toUpperCase(),
             voltPerDiv: h.ch[ci].voltPerDivision,
             voltOffset: h.ch[ci].voltOffset,
             probeValue: h.ch[ci].probeValue || 1,
@@ -1072,9 +1998,63 @@ function parse4000(buffer) {
     }
     return {
         format: 'DS4000',
-        fileModel: h.modelNumber || 'DS4000',
+        fileModel: 'DS4000',
+        serialNumber: h.serialNumber || h.modelNumber || '',
         userModel: '4',
         parserModel: 'wfm4000',
+        firmware: h.firmwareVersion || 'unknown',
+        triggerInfo: decode4000Trigger(h),
+        channels: channels,
+    };
+}
+
+function parse6000(buffer) {
+    var w = new Rigol6000Wfm.Rigol6000Wfm(new KaitaiStream(buffer), null, null);
+    var h = w.header;
+    var channels = [];
+    var spp = h.secondsPerPoint;
+    var start = h.timeOffset;
+    var enFlags = [h.enabled.channel1, h.enabled.channel2, h.enabled.channel3, h.enabled.channel4];
+    var rawArrays = [h.raw1, h.raw2, h.raw3, h.raw4];
+    for (var ci = 0; ci < 4; ci++) {
+        if (!enFlags[ci]) {
+            continue;
+        }
+        var raw = toU8(rawArrays[ci]);
+        if (!raw || raw.length === 0) {
+            continue;
+        }
+        var n = raw.length;
+        var times = new Float64Array(n);
+        var volts = new Float64Array(n);
+        for (var i = 0; i < n; i++) {
+            times[i] = start + i * spp;
+            volts[i] = -h.ch[ci].voltScale * (127 - raw[i]) - h.ch[ci].voltOffset;
+        }
+        channels.push({
+            name: 'CH' + (ci + 1),
+            color: CH_COLORS[ci],
+            times: times,
+            volts: volts,
+            raw: raw,
+            channelNumber: ci + 1,
+            points: n,
+            coupling: enumName(Rigol6000Wfm.Rigol6000Wfm.CouplingEnum, h.ch[ci].coupling).toUpperCase(),
+            voltPerDiv: h.ch[ci].voltPerDivision,
+            voltOffset: h.ch[ci].voltOffset,
+            probeValue: h.ch[ci].probeValue || 1,
+            inverted: h.ch[ci].inverted || false,
+            timeScale: h.timeScale,
+            timeOffset: h.timeOffset,
+            secondsPerPoint: spp,
+        });
+    }
+    return {
+        format: 'DS6000',
+        fileModel: h.modelNumber || 'DS6000',
+        serialNumber: h.modelNumber || '',
+        userModel: '6',
+        parserModel: 'wfm6000',
         firmware: h.firmwareVersion || 'unknown',
         triggerInfo: null,
         channels: channels,
@@ -1143,11 +2123,966 @@ function parseBinWaveforms(w, format, userModel, parserModel) {
 }
 
 function parseBin5000(buffer) {
-    return parseBinWaveforms(new Bin5000.Bin5000(new KaitaiStream(buffer), null, null), 'MSO5000', '5', 'bin5000');
+    return parseBinWaveforms(
+        new RigolMso5000Bin.RigolMso5000Bin(new KaitaiStream(buffer), null, null),
+        'MSO5000',
+        '5',
+        'bin5000'
+    );
 }
 
 function parseBin70008000(buffer) {
-    return parseBinWaveforms(new Bin70008000.Bin70008000(new KaitaiStream(buffer), null, null), 'MSO7000/8000', '7', 'bin7000_8000');
+    return parseBinWaveforms(
+        new Rigol70008000Bin.Rigol70008000Bin(new KaitaiStream(buffer), null, null),
+        'MSO7000/8000',
+        '7',
+        'bin7000_8000'
+    );
+}
+
+function buildSiglentFixedHeaderResult(options) {
+    var payload = options.payload;
+    var enabled = options.enabled;
+    var waveLength = options.waveLength;
+    var sampleRate = options.sampleRate;
+    var sampleWidth = options.sampleWidth || 1;
+    var littleEndian = options.littleEndian !== false;
+    var analogCount = 0;
+    var channels = [];
+    var sampleBytes = waveLength * sampleWidth;
+    var centerCode = Math.pow(2, 8 * sampleWidth - 1);
+    var xIncrement = 1 / sampleRate;
+    var timeScale = waveLength > 0 ? waveLength * xIncrement / 10 : 1e-3;
+
+    if (!(sampleRate > 0)) {
+        throw new Error('Siglent ' + options.revision + ' file reports a non-positive sample rate.');
+    }
+    if (!(waveLength > 0)) {
+        throw new Error('Siglent ' + options.revision + ' file reports a non-positive waveform length.');
+    }
+
+    for (var countIndex = 0; countIndex < Math.min(4, enabled.length); countIndex++) {
+        if (enabled[countIndex]) {
+            analogCount += 1;
+        }
+    }
+    if (!analogCount) {
+        throw new Error('Siglent ' + options.revision + ' file does not enable any of the first four analog channels.');
+    }
+    if (payload.length < analogCount * sampleBytes) {
+        throw new Error(
+            'Siglent ' + options.revision + ' payload is too short for ' +
+            analogCount + ' enabled analog channel(s).'
+        );
+    }
+
+    var offset = 0;
+    for (var slot = 0; slot < Math.min(4, enabled.length); slot++) {
+        if (!enabled[slot]) {
+            continue;
+        }
+
+        var chunk = payload.subarray(offset, offset + sampleBytes);
+        var view = new DataView(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+        var times = new Float64Array(waveLength);
+        var volts = new Float64Array(waveLength);
+        var raw = new Uint8Array(waveLength);
+        var vMin = Infinity;
+        var vMax = -Infinity;
+        var codePerDiv = options.codePerDivs[slot];
+        var scale = options.voltDivs[slot] / codePerDiv;
+        var voltOffset = options.vertOffsets[slot];
+
+        if (!(codePerDiv > 0)) {
+            throw new Error('Siglent ' + options.revision + ' channel ' + (slot + 1) + ' has a non-positive code-per-division value.');
+        }
+
+        for (var i = 0; i < waveLength; i++) {
+            var code = siglentDecodeUnsignedCode(view, i, sampleWidth, littleEndian);
+            var voltage = (code - centerCode) * scale + voltOffset;
+            var time = options.xOrigin + i * xIncrement;
+            volts[i] = voltage;
+            times[i] = time;
+            raw[i] = siglentRawByteFromCode(code, sampleWidth);
+            if (voltage < vMin) {
+                vMin = voltage;
+            }
+            if (voltage > vMax) {
+                vMax = voltage;
+            }
+        }
+
+        channels.push({
+            name: 'CH' + (slot + 1),
+            color: CH_COLORS[slot % CH_COLORS.length],
+            times: times,
+            volts: volts,
+            raw: raw,
+            channelNumber: slot + 1,
+            points: waveLength,
+            coupling: 'DC',
+            voltPerDiv: siglentEstimateVoltPerDiv(vMin, vMax, options.voltDivs[slot]),
+            voltOffset: voltOffset,
+            probeValue: options.probes[slot] || 1,
+            inverted: false,
+            timeScale: timeScale,
+            timeOffset: options.xOrigin,
+            secondsPerPoint: xIncrement,
+        });
+
+        offset += sampleBytes;
+    }
+
+    return {
+        format: 'Siglent BIN',
+        fileModel: options.model,
+        serialNumber: options.serialNumber || '',
+        userModel: 'Siglent',
+        parserModel: 'siglent_bin',
+        firmware: options.firmware || options.revision || 'unknown',
+        triggerInfo: null,
+        channels: channels,
+    };
+}
+
+function siglentV6Slot(header) {
+    var index = header.channelIndex;
+    if (index >= 1 && index <= 4) {
+        return index - 1;
+    }
+    if (index >= 0 && index < 4) {
+        return index;
+    }
+    var label = String(header.label || '').trim().toUpperCase();
+    if (/^CH\s*[1-4]$/.test(label)) {
+        return parseInt(label.replace(/\D+/g, ''), 10) - 1;
+    }
+    return -1;
+}
+
+function parseSiglentBin(buffer, revision) {
+    if (revision === 'old') {
+        throw new Error(
+            'Siglent old-platform files are detected, but wfmview does not normalize them yet ' +
+            'because the vendor documentation leaves their family-specific scaling ambiguous.'
+        );
+    }
+
+    if (revision === 'v0_1') {
+        var v01 = new SiglentV01Bin.SiglentV01Bin(new KaitaiStream(buffer), null, null);
+        return buildSiglentFixedHeaderResult({
+            revision: 'V0.1',
+            model: 'Siglent V0.1',
+            payload: v01.waveData,
+            enabled: [Boolean(v01.ch1On), Boolean(v01.ch2On), Boolean(v01.ch3On), Boolean(v01.ch4On)],
+            voltDivs: [
+                siglentScaledToSi(v01.ch1VoltDiv),
+                siglentScaledToSi(v01.ch2VoltDiv),
+                siglentScaledToSi(v01.ch3VoltDiv),
+                siglentScaledToSi(v01.ch4VoltDiv),
+            ],
+            vertOffsets: [
+                siglentScaledToSi(v01.ch1VertOffset),
+                siglentScaledToSi(v01.ch2VertOffset),
+                siglentScaledToSi(v01.ch3VertOffset),
+                siglentScaledToSi(v01.ch4VertOffset),
+            ],
+            probes: [1, 1, 1, 1],
+            waveLength: v01.waveLength,
+            sampleRate: siglentScaledToSi(v01.sampleRate),
+            xOrigin: -(siglentScaledToSi(v01.timeDiv) * 14 / 2),
+            codePerDivs: [25, 25, 25, 25],
+        });
+    }
+
+    if (revision === 'v0_2') {
+        var v02 = new SiglentV02Bin.SiglentV02Bin(new KaitaiStream(buffer), null, null);
+        return buildSiglentFixedHeaderResult({
+            revision: 'V0.2',
+            model: 'Siglent V0.2',
+            payload: v02.waveData,
+            enabled: [Boolean(v02.ch1On), Boolean(v02.ch2On), Boolean(v02.ch3On), Boolean(v02.ch4On)],
+            voltDivs: [
+                siglentScaledToSi(v02.ch1VoltDiv),
+                siglentScaledToSi(v02.ch2VoltDiv),
+                siglentScaledToSi(v02.ch3VoltDiv),
+                siglentScaledToSi(v02.ch4VoltDiv),
+            ],
+            vertOffsets: [
+                siglentScaledToSi(v02.ch1VertOffset),
+                siglentScaledToSi(v02.ch2VertOffset),
+                siglentScaledToSi(v02.ch3VertOffset),
+                siglentScaledToSi(v02.ch4VertOffset),
+            ],
+            probes: [1, 1, 1, 1],
+            waveLength: v02.waveLength,
+            sampleRate: siglentScaledToSi(v02.sampleRate),
+            xOrigin: -(siglentScaledToSi(v02.timeDiv) * 14 / 2),
+            codePerDivs: [25, 25, 25, 25],
+        });
+    }
+
+    if (revision === 'v1') {
+        var v1 = new SiglentV1Bin.SiglentV1Bin(new KaitaiStream(buffer), null, null);
+        return buildSiglentFixedHeaderResult({
+            revision: 'V1.0',
+            model: 'Siglent V1.0',
+            payload: v1.waveData,
+            enabled: v1.chOn.entries.map(Boolean),
+            voltDivs: v1.chVoltDiv.entries.map(siglentScaledToSi),
+            vertOffsets: v1.chVertOffset.entries.map(siglentScaledToSi),
+            probes: [1, 1, 1, 1],
+            waveLength: v1.waveLength,
+            sampleRate: siglentScaledToSi(v1.sampleRate),
+            xOrigin: -(siglentScaledToSi(v1.timeDiv) * 14 / 2),
+            codePerDivs: [25, 25, 25, 25],
+        });
+    }
+
+    if (revision === 'v2') {
+        var v2 = new SiglentV2Bin.SiglentV2Bin(new KaitaiStream(buffer), null, null);
+        return buildSiglentFixedHeaderResult({
+            revision: 'V2.0',
+            model: 'Siglent V2.0',
+            payload: v2.waveData,
+            enabled: v2.chOn.entries.map(Boolean),
+            voltDivs: v2.chVoltDiv.entries.map(siglentScaledToSi),
+            vertOffsets: v2.chVertOffset.entries.map(siglentScaledToSi),
+            probes: v2.chProbe.entries.slice(),
+            waveLength: v2.waveLength,
+            sampleRate: siglentScaledToSi(v2.sampleRate),
+            xOrigin: -(siglentScaledToSi(v2.timeDiv) * 14 / 2),
+            codePerDivs: [25, 25, 25, 25],
+            sampleWidth: v2.dataWidth === 0 ? 1 : 2,
+        });
+    }
+
+    if (revision === 'v3') {
+        var v3 = new SiglentV3Bin.SiglentV3Bin(new KaitaiStream(buffer), null, null);
+        return buildSiglentFixedHeaderResult({
+            revision: 'V3.0',
+            model: 'Siglent V3.0',
+            payload: v3.waveData,
+            enabled: v3.chOn.entries.map(Boolean),
+            voltDivs: v3.chVoltDiv.entries.map(siglentScaledToSi),
+            vertOffsets: v3.chVertOffset.entries.map(siglentScaledToSi),
+            probes: v3.chProbe.entries.slice(),
+            waveLength: v3.waveLength,
+            sampleRate: siglentScaledToSi(v3.sampleRate),
+            xOrigin: -(siglentScaledToSi(v3.timeDiv) * v3.horiDivNum / 2) - siglentScaledToSi(v3.timeDelay),
+            codePerDivs: v3.chVertCodePerDiv.entries.slice(),
+            sampleWidth: v3.dataWidth === 0 ? 1 : 2,
+            littleEndian: v3.byteOrder === 0,
+        });
+    }
+
+    if (revision === 'v4') {
+        var v4 = new SiglentV4Bin.SiglentV4Bin(new KaitaiStream(buffer), null, null);
+        return buildSiglentFixedHeaderResult({
+            revision: 'V4.0',
+            model: 'Siglent V4.0',
+            payload: v4.waveData,
+            enabled: v4.chOn14.entries.map(Boolean),
+            voltDivs: v4.chVoltDiv14.entries.map(siglentScaledToSi),
+            vertOffsets: v4.chVertOffset14.entries.map(siglentScaledToSi),
+            probes: v4.chProbe14.entries.slice(),
+            waveLength: v4.waveLength,
+            sampleRate: siglentScaledToSi(v4.sampleRate),
+            xOrigin: -(siglentScaledToSi(v4.timeDiv) * v4.horiDivNum / 2) - siglentScaledToSi(v4.timeDelay),
+            codePerDivs: v4.chVertCodePerDiv14.entries.slice(),
+            sampleWidth: v4.dataWidth === 0 ? 1 : 2,
+            littleEndian: v4.byteOrder === 0,
+        });
+    }
+
+    if (revision === 'v5') {
+        var v5 = new SiglentV5Bin.SiglentV5Bin(new KaitaiStream(buffer), null, null);
+        return buildSiglentFixedHeaderResult({
+            revision: 'V5.0',
+            model: 'Siglent V5.0',
+            payload: v5.waveData,
+            enabled: [Boolean(v5.ch1On), Boolean(v5.ch2On), Boolean(v5.ch3On), Boolean(v5.ch4On)],
+            voltDivs: [
+                siglentScaledToSi(v5.ch1VoltDiv),
+                siglentScaledToSi(v5.ch2VoltDiv),
+                siglentScaledToSi(v5.ch3VoltDiv),
+                siglentScaledToSi(v5.ch4VoltDiv),
+            ],
+            vertOffsets: [
+                siglentScaledToSi(v5.ch1VertOffset),
+                siglentScaledToSi(v5.ch2VertOffset),
+                siglentScaledToSi(v5.ch3VertOffset),
+                siglentScaledToSi(v5.ch4VertOffset),
+            ],
+            probes: [1, 1, 1, 1],
+            waveLength: v5.waveLength,
+            sampleRate: siglentScaledToSi(v5.sampleRate),
+            xOrigin: -(siglentScaledToSi(v5.timeDiv) * 14 / 2),
+            codePerDivs: [25, 25, 25, 25],
+        });
+    }
+
+    if (revision === 'v6') {
+        var v6 = new SiglentV6Bin.SiglentV6Bin(new KaitaiStream(buffer), null, null);
+        var channels = [];
+        var seen = {};
+
+        for (var wi = 0; wi < v6.waveforms.length; wi++) {
+            var waveform = v6.waveforms[wi];
+            var wh = waveform.header;
+            var slot = siglentV6Slot(wh);
+            if (slot < 0 || wh.dataNumber <= 0) {
+                continue;
+            }
+            if (wh.dataBytes % wh.dataNumber !== 0) {
+                throw new Error('Siglent V6.0 waveform byte count does not divide evenly by its point count.');
+            }
+
+            var sampleWidth = wh.dataBytes / wh.dataNumber;
+            if (sampleWidth !== 1 && sampleWidth !== 2 && sampleWidth !== 4) {
+                throw new Error('Unsupported Siglent V6.0 sample width (' + sampleWidth + ' bytes per point).');
+            }
+
+            var times = new Float64Array(wh.dataNumber);
+            var volts = new Float64Array(wh.dataNumber);
+            var raw = new Uint8Array(wh.dataNumber);
+            var view = new DataView(waveform.dataRaw.buffer, waveform.dataRaw.byteOffset, waveform.dataRaw.byteLength);
+            var xOrigin = -wh.horiOriginPos * wh.horiInterval;
+            var vMin = Infinity;
+            var vMax = -Infinity;
+
+            for (var i = 0; i < wh.dataNumber; i++) {
+                var code = siglentDecodeUnsignedCode(view, i, sampleWidth, true);
+                var voltage = (code - wh.vertOriginPos) * wh.vertInterval;
+                volts[i] = voltage;
+                times[i] = xOrigin + i * wh.horiInterval;
+                raw[i] = siglentRawByteFromCode(code, sampleWidth);
+                if (voltage < vMin) {
+                    vMin = voltage;
+                }
+                if (voltage > vMax) {
+                    vMax = voltage;
+                }
+            }
+
+            var channelNumber = slot + 1;
+            var baseName = normalizedChannelName(wh.label, channelNumber);
+            seen[channelNumber] = (seen[channelNumber] || 0) + 1;
+            var name = seen[channelNumber] > 1 ? (baseName + ' #' + seen[channelNumber]) : baseName;
+
+            channels.push({
+                name: name,
+                color: CH_COLORS[slot % CH_COLORS.length],
+                times: times,
+                volts: volts,
+                raw: raw,
+                channelNumber: channelNumber,
+                points: wh.dataNumber,
+                coupling: 'DC',
+                voltPerDiv: siglentEstimateVoltPerDiv(vMin, vMax, Math.abs(wh.vertScale)),
+                voltOffset: 0,
+                probeValue: 1,
+                inverted: false,
+                timeScale: wh.dataNumber > 0 ? wh.dataNumber * wh.horiInterval / 10 : 1e-3,
+                timeOffset: xOrigin,
+                secondsPerPoint: wh.horiInterval,
+            });
+        }
+
+        if (!channels.length) {
+            throw new Error('No supported analog waveform records were found in this Siglent V6.0 capture.');
+        }
+
+        channels.sort(function(a, b) {
+            if (a.channelNumber !== b.channelNumber) {
+                return a.channelNumber - b.channelNumber;
+            }
+            return a.name.localeCompare(b.name);
+        });
+
+        return {
+            format: 'Siglent BIN',
+            fileModel: v6.fileHeader.module || 'Siglent',
+            serialNumber: v6.fileHeader.serial || '',
+            userModel: 'Siglent',
+            parserModel: 'siglent_bin',
+            firmware: v6.fileHeader.softwareVersion || 'V6.0',
+            triggerInfo: null,
+            channels: channels,
+        };
+    }
+
+    throw new Error('Unsupported Siglent revision: ' + revision);
+}
+
+function rohdeSchwarzParseMetadata(buffer) {
+    if (typeof DOMParser === 'undefined') {
+        throw new Error('This browser cannot parse Rohde & Schwarz XML metadata.');
+    }
+
+    var xmlText = decodeUtf8Bytes(new Uint8Array(buffer));
+    var doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+    if (doc.getElementsByTagName('parsererror').length) {
+        throw new Error('Could not parse Rohde & Schwarz XML metadata.');
+    }
+
+    var tags = {};
+    var nodes = doc.getElementsByTagName('*');
+    for (var i = 0; i < nodes.length; i++) {
+        var name = nodes[i].getAttribute('Name');
+        if (name && !Object.prototype.hasOwnProperty.call(tags, name)) {
+            tags[name] = nodes[i];
+        }
+    }
+
+    return {
+        root: doc.documentElement,
+        tags: tags,
+    };
+}
+
+function rohdeSchwarzRequireTag(tags, key) {
+    if (!Object.prototype.hasOwnProperty.call(tags, key)) {
+        throw new Error("Rohde & Schwarz metadata is missing required tag '" + key + "'.");
+    }
+    return tags[key];
+}
+
+function rohdeSchwarzTagValue(tags, key) {
+    var tag = rohdeSchwarzRequireTag(tags, key);
+    var value = tag.getAttribute('Value');
+    if (value === null) {
+        throw new Error("Rohde & Schwarz tag '" + key + "' is missing a Value attribute.");
+    }
+    return value;
+}
+
+function rohdeSchwarzTagFloat(tags, key) {
+    var value = parseFloat(rohdeSchwarzTagValue(tags, key));
+    if (!Number.isFinite(value)) {
+        throw new Error("Rohde & Schwarz tag '" + key + "' is not numeric.");
+    }
+    return value;
+}
+
+function rohdeSchwarzTagInt(tags, key) {
+    var value = parseInt(rohdeSchwarzTagValue(tags, key), 10);
+    if (!Number.isFinite(value)) {
+        throw new Error("Rohde & Schwarz tag '" + key + "' is not an integer.");
+    }
+    return value;
+}
+
+function rohdeSchwarzStripPrefix(value, prefix) {
+    var text = String(value || '');
+    return text.indexOf(prefix) === 0 ? text.substring(prefix.length) : text;
+}
+
+function rohdeSchwarzChannelSlotFromSource(sourceName) {
+    var cleaned = rohdeSchwarzStripPrefix(sourceName, 'eRS_SIGNAL_SOURCE_').toUpperCase();
+    var match = /(?:CH|C)(\d)/.exec(cleaned);
+    if (!match) {
+        return -1;
+    }
+    var slot = parseInt(match[1], 10) - 1;
+    return slot >= 0 && slot < 4 ? slot : -1;
+}
+
+function rohdeSchwarzDisplayName(sourceName, fallbackSlot) {
+    var slot = rohdeSchwarzChannelSlotFromSource(sourceName);
+    if (slot >= 0) {
+        return 'CH' + (slot + 1);
+    }
+    var cleaned = rohdeSchwarzStripPrefix(sourceName, 'eRS_SIGNAL_SOURCE_').toUpperCase();
+    return cleaned || ('CH' + (fallbackSlot + 1));
+}
+
+function rohdeSchwarzActiveSources(tags) {
+    var multiExport = rohdeSchwarzStripPrefix(rohdeSchwarzTagValue(tags, 'MultiChannelExport'), 'eRS_ONOFF_');
+    var active = [];
+    var state;
+    var source;
+    var key;
+    var sourceName;
+    var slot;
+
+    if (multiExport === 'ON') {
+        state = rohdeSchwarzRequireTag(tags, 'MultiChannelExportState');
+        source = rohdeSchwarzRequireTag(tags, 'MultiChannelSource');
+        for (var i = 0; i < 4; i++) {
+            key = 'I_' + i;
+            if (state.getAttribute(key) !== 'eRS_ONOFF_ON') {
+                continue;
+            }
+            sourceName = source.getAttribute(key) || 'eRS_SIGNAL_SOURCE_NONE';
+            slot = rohdeSchwarzChannelSlotFromSource(sourceName);
+            if (slot < 0) {
+                continue;
+            }
+            active.push({
+                sourceName: sourceName,
+                slot: slot,
+                xmlIndex: key,
+            });
+        }
+        return active;
+    }
+
+    sourceName = rohdeSchwarzTagValue(tags, 'Source');
+    slot = rohdeSchwarzChannelSlotFromSource(sourceName);
+    if (slot < 0) {
+        slot = 0;
+    }
+    active.push({
+        sourceName: sourceName,
+        slot: slot,
+        xmlIndex: null,
+    });
+    return active;
+}
+
+function rohdeSchwarzChannelVerticalScale(tags, xmlIndex) {
+    if (xmlIndex === null) {
+        return rohdeSchwarzTagFloat(tags, 'VerticalScale');
+    }
+    var tag = rohdeSchwarzRequireTag(tags, 'MultiChannelVerticalScale');
+    var value = parseFloat(tag.getAttribute(xmlIndex));
+    if (!Number.isFinite(value)) {
+        throw new Error('Rohde & Schwarz metadata is missing channel scale for ' + xmlIndex + '.');
+    }
+    return value;
+}
+
+function rohdeSchwarzChannelVerticalOffset(tags, xmlIndex) {
+    if (xmlIndex === null) {
+        return rohdeSchwarzTagFloat(tags, 'VerticalOffset');
+    }
+    var tag = rohdeSchwarzRequireTag(tags, 'MultiChannelVerticalOffset');
+    var value = parseFloat(tag.getAttribute(xmlIndex));
+    if (!Number.isFinite(value)) {
+        throw new Error('Rohde & Schwarz metadata is missing channel offset for ' + xmlIndex + '.');
+    }
+    return value;
+}
+
+function rohdeSchwarzRawScaling(tags, xmlIndex) {
+    var quantisationLevels = rohdeSchwarzTagInt(tags, 'NofQuantisationLevels');
+    if (quantisationLevels <= 0) {
+        throw new Error('Rohde & Schwarz metadata reports a non-positive quantisation level count.');
+    }
+
+    var positionDiv;
+    var verticalScale;
+    var offset;
+    var stepFactor;
+
+    if (xmlIndex === null) {
+        positionDiv = rohdeSchwarzTagFloat(tags, 'VerticalPosition');
+        verticalScale = rohdeSchwarzTagFloat(tags, 'VerticalScale');
+        offset = rohdeSchwarzTagFloat(tags, 'VerticalOffset');
+        stepFactor = parseFloat(rohdeSchwarzRequireTag(tags, 'VerticalScale').getAttribute('StepFactor'));
+    } else {
+        var positionTag = rohdeSchwarzRequireTag(tags, 'MultiChannelVerticalPosition');
+        var scaleTag = rohdeSchwarzRequireTag(tags, 'MultiChannelVerticalScale');
+        var offsetTag = rohdeSchwarzRequireTag(tags, 'MultiChannelVerticalOffset');
+        positionDiv = parseFloat(positionTag.getAttribute(xmlIndex));
+        verticalScale = parseFloat(scaleTag.getAttribute(xmlIndex));
+        offset = parseFloat(offsetTag.getAttribute(xmlIndex));
+        stepFactor = parseFloat(scaleTag.getAttribute('StepFactor'));
+    }
+
+    if (!Number.isFinite(positionDiv) || !Number.isFinite(verticalScale) || !Number.isFinite(offset) || !Number.isFinite(stepFactor)) {
+        throw new Error('Rohde & Schwarz scaling metadata is incomplete.');
+    }
+
+    var position = positionDiv * verticalScale;
+    return {
+        factor: (stepFactor * verticalScale) / quantisationLevels,
+        offset: offset - position,
+    };
+}
+
+function rohdeSchwarzExpectedFormatCode(signalFormat) {
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_INT8BIT') {
+        return 0;
+    }
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_INT16BIT') {
+        return 1;
+    }
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_FLOAT') {
+        return 4;
+    }
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_XYDOUBLEFLOAT') {
+        return 6;
+    }
+    throw new Error('Unsupported Rohde & Schwarz SignalFormat: ' + signalFormat);
+}
+
+function rohdeSchwarzDecodeSingleAcquisition(payloadBytes, signalFormat, channelCount, hardwareRecordLength, leadingSamples, recordLength, activeSources, tags) {
+    if (recordLength <= 0) {
+        throw new Error('Rohde & Schwarz metadata reports a non-positive RecordLength.');
+    }
+    if (hardwareRecordLength <= 0) {
+        throw new Error('Rohde & Schwarz metadata reports a non-positive SignalHardwareRecordLength.');
+    }
+    if (leadingSamples < 0 || leadingSamples + recordLength > hardwareRecordLength) {
+        throw new Error('Rohde & Schwarz metadata reports an invalid LeadingSettlingSamples / RecordLength combination.');
+    }
+
+    var expectedRows = hardwareRecordLength;
+    var payload = toU8(payloadBytes);
+    var xOrigin;
+    var xStop;
+    var xIncrement;
+    var channelData;
+    var dv;
+    var i;
+    var ci;
+    var row;
+
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_FLOAT') {
+        if (payload.byteLength !== expectedRows * channelCount * 4) {
+            throw new Error(
+                'Rohde & Schwarz float payload length does not match its XML metadata.'
+            );
+        }
+        dv = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+        xOrigin = rohdeSchwarzTagFloat(tags, 'XStart');
+        xStop = rohdeSchwarzTagFloat(tags, 'XStop');
+        xIncrement = (xStop - xOrigin) / recordLength;
+        channelData = [];
+        for (ci = 0; ci < channelCount; ci++) {
+            channelData.push(new Float64Array(recordLength));
+        }
+        for (i = 0; i < recordLength; i++) {
+            row = leadingSamples + i;
+            for (ci = 0; ci < channelCount; ci++) {
+                channelData[ci][i] = dv.getFloat32((row * channelCount + ci) * 4, true);
+            }
+        }
+        return { xOrigin: xOrigin, xIncrement: xIncrement, channelData: channelData, times: null };
+    }
+
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_INT8BIT') {
+        if (payload.byteLength !== expectedRows * channelCount) {
+            throw new Error(
+                'Rohde & Schwarz int8 payload length does not match its XML metadata.'
+            );
+        }
+        dv = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+        xOrigin = rohdeSchwarzTagFloat(tags, 'XStart');
+        xStop = rohdeSchwarzTagFloat(tags, 'XStop');
+        xIncrement = (xStop - xOrigin) / recordLength;
+        channelData = [];
+        for (ci = 0; ci < channelCount; ci++) {
+            channelData.push(new Float64Array(recordLength));
+        }
+        for (ci = 0; ci < channelCount; ci++) {
+            var int8Scaling = rohdeSchwarzRawScaling(tags, activeSources[ci].xmlIndex);
+            for (i = 0; i < recordLength; i++) {
+                row = leadingSamples + i;
+                channelData[ci][i] = dv.getInt8(row * channelCount + ci) * int8Scaling.factor + int8Scaling.offset;
+            }
+        }
+        return { xOrigin: xOrigin, xIncrement: xIncrement, channelData: channelData, times: null };
+    }
+
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_INT16BIT') {
+        if (payload.byteLength !== expectedRows * channelCount * 2) {
+            throw new Error(
+                'Rohde & Schwarz int16 payload length does not match its XML metadata.'
+            );
+        }
+        dv = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+        xOrigin = rohdeSchwarzTagFloat(tags, 'XStart');
+        xStop = rohdeSchwarzTagFloat(tags, 'XStop');
+        xIncrement = (xStop - xOrigin) / recordLength;
+        channelData = [];
+        for (ci = 0; ci < channelCount; ci++) {
+            channelData.push(new Float64Array(recordLength));
+        }
+        for (ci = 0; ci < channelCount; ci++) {
+            var int16Scaling = rohdeSchwarzRawScaling(tags, activeSources[ci].xmlIndex);
+            for (i = 0; i < recordLength; i++) {
+                row = leadingSamples + i;
+                channelData[ci][i] = dv.getInt16((row * channelCount + ci) * 2, true) * int16Scaling.factor + int16Scaling.offset;
+            }
+        }
+        return { xOrigin: xOrigin, xIncrement: xIncrement, channelData: channelData, times: null };
+    }
+
+    if (signalFormat === 'eRS_SIGNAL_FORMAT_XYDOUBLEFLOAT') {
+        var rowSize = 8 + channelCount * 4;
+        if (payload.byteLength !== expectedRows * rowSize) {
+            throw new Error(
+                'Rohde & Schwarz XYDOUBLEFLOAT payload length does not match its XML metadata.'
+            );
+        }
+        dv = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+        var times = new Float64Array(recordLength);
+        channelData = [];
+        for (ci = 0; ci < channelCount; ci++) {
+            channelData.push(new Float64Array(recordLength));
+        }
+        for (i = 0; i < recordLength; i++) {
+            row = leadingSamples + i;
+            var rowOffset = row * rowSize;
+            times[i] = dv.getFloat64(rowOffset, true);
+            for (ci = 0; ci < channelCount; ci++) {
+                channelData[ci][i] = dv.getFloat32(rowOffset + 8 + ci * 4, true);
+            }
+        }
+        xOrigin = times[0];
+        xIncrement = times.length > 1 ? times[1] - times[0] : (rohdeSchwarzTagFloat(tags, 'XStop') - rohdeSchwarzTagFloat(tags, 'XStart')) / recordLength;
+        return { xOrigin: xOrigin, xIncrement: xIncrement, channelData: channelData, times: times };
+    }
+
+    throw new Error('Unsupported Rohde & Schwarz SignalFormat: ' + signalFormat);
+}
+
+async function parseRohdeSchwarzBin(buffer, filename, fileMap) {
+    var metadata = rohdeSchwarzParseMetadata(buffer);
+    var tags = metadata.tags;
+    var signalFormat = rohdeSchwarzTagValue(tags, 'SignalFormat');
+    var traceType = rohdeSchwarzStripPrefix(rohdeSchwarzTagValue(tags, 'TraceType'), 'eRS_TRACE_TYPE_');
+    if (traceType !== 'NORMAL' && traceType !== 'AVERAGE') {
+        throw new Error('Unsupported Rohde & Schwarz TraceType: ' + traceType);
+    }
+
+    var numberOfAcquisitions = rohdeSchwarzTagInt(tags, 'NumberOfAcquisitions');
+    if (numberOfAcquisitions !== 1) {
+        throw new Error(
+            'Rohde & Schwarz multi-acquisition / history captures are not yet supported by wfmview.'
+        );
+    }
+
+    var payloadFile = fileMap ? fileMap[rohdeSchwarzPayloadLookupName(filename)] : null;
+    if (!payloadFile) {
+        throw new Error(
+            'Companion Rohde & Schwarz payload file not found. Select both ' +
+            filename + ' and its matching .Wfm.bin file together.'
+        );
+    }
+
+    var payloadBuffer = await readBrowserFileAsArrayBuffer(payloadFile);
+    var raw = new RohdeSchwarzRtpWfmBin.RohdeSchwarzRtpWfmBin(new KaitaiStream(payloadBuffer), null, null);
+    var expectedFormat = rohdeSchwarzExpectedFormatCode(signalFormat);
+    if (raw.formatCode !== expectedFormat) {
+        throw new Error(
+            'Rohde & Schwarz payload header format code does not match its XML metadata.'
+        );
+    }
+
+    var hardwareRecordLength = rohdeSchwarzTagInt(tags, 'SignalHardwareRecordLength');
+    if (raw.recordLength !== hardwareRecordLength) {
+        throw new Error(
+            'Rohde & Schwarz payload header record length does not match its XML metadata.'
+        );
+    }
+
+    var activeSources = rohdeSchwarzActiveSources(tags);
+    if (!activeSources.length) {
+        throw new Error('Rohde & Schwarz metadata does not enable any supported analog channels.');
+    }
+
+    var recordLength = rohdeSchwarzTagInt(tags, 'RecordLength');
+    var leadingSamples = rohdeSchwarzTagInt(tags, 'LeadingSettlingSamples');
+    var decoded = rohdeSchwarzDecodeSingleAcquisition(
+        raw.payload,
+        signalFormat,
+        activeSources.length,
+        hardwareRecordLength,
+        leadingSamples,
+        recordLength,
+        activeSources,
+        tags
+    );
+    var xDisplayRange = rohdeSchwarzTagFloat(tags, 'XStop') - rohdeSchwarzTagFloat(tags, 'XStart');
+    var channels = [];
+
+    for (var idx = 0; idx < activeSources.length; idx++) {
+        var source = activeSources[idx];
+        var volts = decoded.channelData[idx];
+        var times = decoded.times ? new Float64Array(decoded.times) : new Float64Array(volts.length);
+        if (!decoded.times) {
+            for (var ti = 0; ti < volts.length; ti++) {
+                times[ti] = decoded.xOrigin + ti * decoded.xIncrement;
+            }
+        }
+
+        var channelNumber = source.slot + 1;
+        var channelName = normalizedChannelName(rohdeSchwarzDisplayName(source.sourceName, source.slot), channelNumber);
+        var verticalScale = Math.abs(rohdeSchwarzChannelVerticalScale(tags, source.xmlIndex));
+        var verticalOffset = rohdeSchwarzChannelVerticalOffset(tags, source.xmlIndex);
+        var secondsPerPoint = times.length > 1 ? times[1] - times[0] : decoded.xIncrement;
+
+        channels.push({
+            name: channelName,
+            color: CH_COLORS[source.slot % CH_COLORS.length],
+            times: times,
+            volts: volts,
+            raw: proxyRawFromCalibrated(volts),
+            channelNumber: channelNumber,
+            points: volts.length,
+            coupling: 'unknown',
+            voltPerDiv: verticalScale || 1,
+            voltOffset: verticalOffset,
+            probeValue: 1,
+            inverted: false,
+            timeScale: xDisplayRange > 0 ? xDisplayRange / 10 : volts.length * secondsPerPoint / 10,
+            timeOffset: times.length ? times[0] : decoded.xOrigin,
+            secondsPerPoint: secondsPerPoint,
+        });
+    }
+
+    channels.sort(function(a, b) {
+        return a.channelNumber - b.channelNumber;
+    });
+
+    return {
+        format: 'Rohde & Schwarz BIN',
+        fileModel: 'Rohde & Schwarz',
+        serialNumber: '',
+        userModel: 'Rohde & Schwarz',
+        parserModel: 'rohde_schwarz_bin',
+        firmware: metadata.root.getAttribute('FWVersion') || 'unknown',
+        triggerInfo: null,
+        channels: channels,
+    };
+}
+
+function agilentAnalogBufferSuffix(bufferType, analogBufferCount) {
+    if (analogBufferCount <= 1 && bufferType === 1) {
+        return '';
+    }
+    if (bufferType === 2) {
+        return ' max';
+    }
+    if (bufferType === 3) {
+        return ' min';
+    }
+    if (bufferType === 1) {
+        return ' data';
+    }
+    return ' buffer';
+}
+
+function parseAgilentBin(buffer) {
+    var w = new AgilentAgxxBin.AgilentAgxxBin(new KaitaiStream(buffer), null, null);
+    var channels = [];
+    var fileModel = 'Keysight';
+    var serialNumber = '';
+
+    for (var wi = 0; wi < w.waveforms.length; wi++) {
+        var wfm = w.waveforms[wi];
+        var wh = wfm.wfmHeader;
+        var waveformType = wh.waveformType;
+        var analogBuffers = [];
+
+        for (var bi = 0; bi < wfm.buffers.length; bi++) {
+            var candidate = wfm.buffers[bi];
+            var candidateHeader = candidate.dataHeader;
+            var candidateType = candidateHeader.bufferType;
+
+            if (waveformType === 6 || candidateType === 5 || candidateType === 6) {
+                continue;
+            }
+            if (candidateType === 4) {
+                continue;
+            }
+            if (candidateHeader.bytesPerPoint !== 4 || candidateType < 1 || candidateType > 3) {
+                throw new Error(
+                    'Unsupported Agilent/Keysight waveform buffer ' +
+                    '(bufferType=' + candidateType + ', bytesPerPoint=' + candidateHeader.bytesPerPoint + ').'
+                );
+            }
+            analogBuffers.push(candidate);
+        }
+
+        if (!analogBuffers.length) {
+            continue;
+        }
+
+        var frameParts = splitFrameString(wh.frameString);
+        if (frameParts.model) {
+            fileModel = frameParts.model;
+        }
+        if (frameParts.serial) {
+            serialNumber = frameParts.serial;
+        }
+
+        var fallbackChannel = channels.length + 1;
+        var channelNumber = channelNumberFromName(wh.waveformLabel, fallbackChannel);
+        var normalizedName = normalizedChannelName(wh.waveformLabel, channelNumber);
+        var segmentSuffix = '';
+        var absoluteOrigin = wh.xOrigin;
+        if (wh.segmentIndex || Math.abs(wh.timeTag) > 1e-15) {
+            segmentSuffix = ' S' + (wh.segmentIndex || '?');
+            absoluteOrigin += wh.timeTag;
+        }
+
+        for (bi = 0; bi < analogBuffers.length; bi++) {
+            var analogBuffer = analogBuffers[bi];
+            var bufferHeader = analogBuffer.dataHeader;
+            var bufferType = bufferHeader.bufferType;
+            var dataRaw = analogBuffer.dataRaw;
+            var n = wh.nPts;
+            var dv = new DataView(dataRaw.buffer, dataRaw.byteOffset, dataRaw.byteLength);
+            var times = new Float64Array(n);
+            var volts = new Float64Array(n);
+            var vMin = Infinity;
+            var vMax = -Infinity;
+
+            for (var i = 0; i < n; i++) {
+                times[i] = absoluteOrigin + i * wh.xIncrement;
+                var v = dv.getFloat32(i * 4, true);
+                volts[i] = v;
+                if (v < vMin) {
+                    vMin = v;
+                }
+                if (v > vMax) {
+                    vMax = v;
+                }
+            }
+
+            channels.push({
+                name: normalizedName + segmentSuffix + agilentAnalogBufferSuffix(bufferType, analogBuffers.length),
+                color: CH_COLORS[(channelNumber - 1) % CH_COLORS.length],
+                times: times,
+                volts: volts,
+                raw: proxyRawFromCalibrated(volts),
+                channelNumber: channelNumber,
+                points: n,
+                coupling: 'unknown',
+                voltPerDiv: vMax > vMin ? (vMax - vMin) / 8 : 1,
+                voltOffset: 0,
+                probeValue: 1,
+                inverted: false,
+                timeScale: wh.xDisplayRange > 0 ? wh.xDisplayRange / 10 : n * wh.xIncrement / 10,
+                timeOffset: absoluteOrigin,
+                secondsPerPoint: wh.xIncrement,
+            });
+        }
+    }
+
+    if (!channels.length) {
+        throw new Error('No supported analog waveform records were found in this Agilent/Keysight capture.');
+    }
+
+    channels.sort(function(a, b) {
+        return a.channelNumber - b.channelNumber;
+    });
+
+    return {
+        format: 'Agilent / Keysight BIN',
+        fileModel: fileModel,
+        serialNumber: serialNumber,
+        userModel: 'Keysight',
+        parserModel: 'agilent_bin',
+        firmware: 'unknown',
+        triggerInfo: null,
+        channels: channels,
+    };
 }
 
 async function parseDhoWfm(buffer) {
@@ -1231,7 +3166,7 @@ async function parseDhoWfm(buffer) {
 }
 
 function parseDhoBin(buffer) {
-    var w = new Bindho1000.Bindho1000(new KaitaiStream(buffer), null, null);
+    var w = new RigolDho8001000Bin.RigolDho8001000Bin(new KaitaiStream(buffer), null, null);
     var channels = [];
     var fileModel = 'DHO1000';
     for (var wi = 0; wi < w.waveforms.length; wi++) {
@@ -2929,7 +4864,7 @@ function resetAxisView() {
 function openFilePicker() {
     var inp = document.createElement('input');
     inp.type = 'file';
-    inp.accept = '.wfm,.bin';
+    inp.accept = '.wfm,.bin,.trc,.isf';
     inp.multiple = true;
     inp.onchange = function(e) {
         loadFiles(e.target.files);
@@ -3118,17 +5053,339 @@ fileList.addEventListener('input', function(e) {
     }
 });
 
+// ---------------------------------------------------------------------------
+// Yokogawa .hdr + .wvf two-file format
+// ---------------------------------------------------------------------------
+
+function shouldSkipYokogawaWvf(file, fileMap) {
+    var name = lowerFilename(file && file.name);
+    if (!/\.wvf$/i.test(name)) {
+        return false;
+    }
+    var hdrName = name.replace(/\.wvf$/i, '.hdr');
+    return Object.prototype.hasOwnProperty.call(fileMap, hdrName);
+}
+
+function looksLikeYokogawaHdr(buffer, filename) {
+    if (!/\.hdr$/i.test(filename || '')) {
+        return false;
+    }
+    var headBytes = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 512));
+    var head = decodeUtf8Bytes(headBytes);
+    return head.indexOf('$PublicInfo') >= 0;
+}
+
+function yokogawaHdrSplitSections(text) {
+    var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    var publicInfo = {};
+    var groups = [];
+    var current = null;
+
+    for (var li = 0; li < lines.length; li++) {
+        var line = lines[li];
+        var stripped = line.trim();
+        if (!stripped) { continue; }
+
+        if (stripped === '$PublicInfo') {
+            current = publicInfo;
+        } else if (/^\$Group\d+$/.test(stripped)) {
+            current = {};
+            groups.push(current);
+        } else if (stripped.charAt(0) === '$') {
+            current = null;
+        } else if (current !== null) {
+            var spIdx = stripped.search(/\s/);
+            var key = spIdx < 0 ? stripped : stripped.substring(0, spIdx);
+            var val = spIdx < 0 ? '' : stripped.substring(spIdx + 1).trim();
+            if (!Object.prototype.hasOwnProperty.call(current, key)) {
+                current[key] = { line: line, val: val };
+            }
+        }
+    }
+    return { publicInfo: publicInfo, groups: groups };
+}
+
+function yokogawaHdrReq(sec, key) {
+    if (!Object.prototype.hasOwnProperty.call(sec, key)) {
+        throw new Error('Yokogawa .hdr missing required field: ' + key);
+    }
+    return sec[key].val;
+}
+
+function yokogawaHdrOpt(sec, key) {
+    return Object.prototype.hasOwnProperty.call(sec, key) ? sec[key].val : null;
+}
+
+function yokogawaHdrOptLine(sec, key) {
+    return Object.prototype.hasOwnProperty.call(sec, key) ? sec[key].line : null;
+}
+
+function yokogawaVdtypeColPositions(vdtypeLine) {
+    var positions = [];
+    var re = /[IFBifb]\w*/g;
+    var m;
+    while ((m = re.exec(vdtypeLine)) !== null) {
+        positions.push(m.index);
+    }
+    return positions;
+}
+
+function yokogawaColAlignedValues(line, colPositions, nTraces) {
+    var result = [];
+    var tokenMap = {};
+    if (line) {
+        var re = /\S+/g;
+        var m;
+        while ((m = re.exec(line)) !== null) {
+            tokenMap[m.index] = m[0];
+        }
+    }
+    for (var ti = 0; ti < nTraces; ti++) {
+        var col = ti < colPositions.length ? colPositions[ti] : -1;
+        result.push(col >= 0 && Object.prototype.hasOwnProperty.call(tokenMap, col) ? tokenMap[col] : null);
+    }
+    return result;
+}
+
+function yokogawaParseHdrText(text) {
+    var sections = yokogawaHdrSplitSections(text);
+    var pub = sections.publicInfo;
+    var grpRaws = sections.groups;
+
+    var info = {
+        model:             yokogawaHdrReq(pub, 'Model'),
+        endian:            yokogawaHdrReq(pub, 'Endian'),
+        dataFormat:        yokogawaHdrReq(pub, 'DataFormat'),
+        dataOffset:        parseInt(yokogawaHdrReq(pub, 'DataOffset'), 10) || 0,
+        groups:            [],
+    };
+
+    for (var gi = 0; gi < grpRaws.length; gi++) {
+        var gd = grpRaws[gi];
+        var nTraces = parseInt(yokogawaHdrReq(gd, 'TraceNumber'), 10);
+        var nBlocks = parseInt(yokogawaHdrReq(gd, 'BlockNumber'), 10);
+
+        var traceNames   = yokogawaHdrReq(gd, 'TraceName').split(/\s+/);
+        var blockSizes   = yokogawaHdrReq(gd, 'BlockSize').split(/\s+/).map(Number);
+        var vResolutions = yokogawaHdrReq(gd, 'VResolution').split(/\s+/).map(parseFloat);
+        var vOffsets     = yokogawaHdrReq(gd, 'VOffset').split(/\s+/).map(parseFloat);
+        var hResolutions = yokogawaHdrReq(gd, 'HResolution').split(/\s+/).map(parseFloat);
+        var hOffsets     = yokogawaHdrReq(gd, 'HOffset').split(/\s+/).map(parseFloat);
+
+        // VDataType: parse codes and record column positions for alignment
+        var vdtypeEntry = gd['VDataType'];
+        if (!vdtypeEntry) {
+            throw new Error('Yokogawa .hdr Group' + (gi + 1) + ' missing VDataType');
+        }
+        var vdtypeLine = vdtypeEntry.line;
+        var colPos = yokogawaVdtypeColPositions(vdtypeLine);
+        var vdtypeToks = vdtypeEntry.val.split(/\s+/);
+
+        // Column-aligned VUnit and VIllegalData
+        var vUnits    = yokogawaColAlignedValues(yokogawaHdrOptLine(gd, 'VUnit'), colPos, nTraces);
+        var vIllegals = yokogawaColAlignedValues(yokogawaHdrOptLine(gd, 'VIllegalData'), colPos, nTraces);
+
+        var traces = [];
+        for (var ti = 0; ti < nTraces; ti++) {
+            var vdtCode = ti < vdtypeToks.length ? vdtypeToks[ti] : 'IS2';
+            var byteNum = 2;
+            var isSigned = true;
+            var isFloat = false;
+            var isLogic = false;
+            var k = vdtCode.charAt(0).toUpperCase();
+            var sub = vdtCode.charAt(1).toUpperCase();
+            if (k === 'I' || k === 'F') {
+                byteNum = parseInt(vdtCode.substring(2), 10) || 2;
+                isSigned = sub === 'S';
+                isFloat = k === 'F';
+            } else if (k === 'B') {
+                byteNum = parseInt(vdtCode.substring(1), 10) || 2;
+                isLogic = true;
+                isSigned = false;
+            }
+
+            var vIllegalRaw = vIllegals[ti] ? parseInt(vIllegals[ti], 10) : null;
+
+            traces.push({
+                name:        ti < traceNames.length ? traceNames[ti] : ('CH' + (ti + 1)),
+                blockSize:   ti < blockSizes.length ? blockSizes[ti] : 0,
+                vResolution: ti < vResolutions.length ? vResolutions[ti] : 1.0,
+                vOffset:     ti < vOffsets.length ? vOffsets[ti] : 0.0,
+                vUnit:       (vUnits[ti] && vUnits[ti] !== 'VUnit') ? vUnits[ti] : 'V',
+                hResolution: ti < hResolutions.length ? hResolutions[ti] : 1e-9,
+                hOffset:     ti < hOffsets.length ? hOffsets[ti] : 0.0,
+                byteNum:     byteNum,
+                isSigned:    isSigned,
+                isFloat:     isFloat,
+                isLogic:     isLogic,
+                vIllegal:    isNaN(vIllegalRaw) ? null : vIllegalRaw,
+            });
+        }
+
+        info.groups.push({ traceNumber: nTraces, blockNumber: nBlocks, traces: traces });
+    }
+
+    return info;
+}
+
+function yokogawaWvfByteOffset(hdr, tgtG, tgtT, tgtB) {
+    var fmt = (hdr.dataFormat || 'TRACE').toUpperCase();
+    var off = hdr.dataOffset || 0;
+    var groups = hdr.groups;
+
+    if (fmt === 'TRACE') {
+        for (var g = 0; g < groups.length; g++) {
+            var grp = groups[g];
+            var nb = grp.blockNumber;
+            for (var t = 0; t < grp.traces.length; t++) {
+                var tr = grp.traces[t];
+                var w = tr.byteNum;
+                var s = tr.blockSize;
+                if (g === tgtG && t === tgtT) {
+                    return off + tgtB * s * w;
+                }
+                off += s * nb * w;
+            }
+        }
+    } else { // BLOCK
+        for (var bg = 0; bg < groups.length; bg++) {
+            var bgrp = groups[bg];
+            var bnb = bgrp.blockNumber;
+            for (var bb = 0; bb < bnb; bb++) {
+                for (var bt = 0; bt < bgrp.traces.length; bt++) {
+                    var btr = bgrp.traces[bt];
+                    if (bg === tgtG && bt === tgtT && bb === tgtB) {
+                        return off;
+                    }
+                    off += btr.blockSize * btr.byteNum;
+                }
+            }
+        }
+    }
+    throw new Error('Yokogawa .wvf: (group=' + tgtG + ', trace=' + tgtT + ', block=' + tgtB + ') not found.');
+}
+
+async function parseYokogawaHdrWvf(buffer, filename, fileMap) {
+    var hdrText = decodeUtf8Bytes(new Uint8Array(buffer));
+    var hdr = yokogawaParseHdrText(hdrText);
+
+    var wvfName = lowerFilename(filename).replace(/\.hdr$/i, '.wvf');
+    var wvfFile = fileMap ? fileMap[wvfName] : null;
+    if (!wvfFile) {
+        throw new Error(
+            'Companion .wvf file not found for ' + filename + '. ' +
+            'Drop both the .hdr and .wvf files together.'
+        );
+    }
+    var wvfBuffer = await readBrowserFileAsArrayBuffer(wvfFile);
+    return yokogawaExtractChannels(hdr, wvfBuffer, filename);
+}
+
+function yokogawaExtractChannels(hdr, wvfBuffer, filename) {
+    var isLe = hdr.endian.toUpperCase() !== 'BIG';
+    var channels = [];
+
+    for (var g = 0; g < hdr.groups.length; g++) {
+        var grp = hdr.groups[g];
+        // Show only the last (most recent) history block for each trace
+        var bShow = grp.blockNumber - 1;
+
+        for (var t = 0; t < grp.traces.length; t++) {
+            var tr = grp.traces[t];
+            var n = tr.blockSize;
+            if (n <= 0) { continue; }
+
+            var byteOff = yokogawaWvfByteOffset(hdr, g, t, bShow);
+            var byteLen = n * tr.byteNum;
+            if (byteOff + byteLen > wvfBuffer.byteLength) {
+                throw new Error(
+                    'Yokogawa .wvf: trace ' + tr.name + ' data extends beyond end of file.'
+                );
+            }
+
+            var view = new DataView(wvfBuffer, byteOff, byteLen);
+            var volts = new Float64Array(n);
+            var times = new Float64Array(n);
+            var vr = tr.vResolution;
+            var vo = tr.vOffset;
+            var hr = tr.hResolution;
+            var ho = tr.hOffset;
+            var ill = tr.vIllegal;
+
+            for (var i = 0; i < n; i++) {
+                times[i] = ho + hr * i;
+                var raw;
+                if (tr.isFloat) {
+                    raw = tr.byteNum === 4
+                        ? view.getFloat32(i * tr.byteNum, isLe)
+                        : view.getFloat64(i * tr.byteNum, isLe);
+                    volts[i] = raw * vr + vo;
+                } else {
+                    raw = tr.byteNum === 1
+                        ? (tr.isSigned ? view.getInt8(i)         : view.getUint8(i))
+                        : tr.byteNum === 2
+                            ? (tr.isSigned ? view.getInt16(i * 2, isLe) : view.getUint16(i * 2, isLe))
+                            : (tr.isSigned ? view.getInt32(i * 4, isLe) : view.getUint32(i * 4, isLe));
+                    if (ill !== null && raw === ill) {
+                        volts[i] = NaN;
+                    } else {
+                        volts[i] = raw * vr + vo;
+                    }
+                }
+            }
+
+            var slot = channels.length;
+            var voltPerDiv = (tr.vResolution * 32768) / 5.0;
+            channels.push({
+                name:           tr.name,
+                color:          CH_COLORS[slot % CH_COLORS.length],
+                times:          times,
+                volts:          volts,
+                raw:            proxyRawFromCalibrated(volts),
+                channelNumber:  t + 1,
+                points:         n,
+                coupling:       'DC',
+                voltPerDiv:     voltPerDiv || 1.0,
+                voltOffset:     tr.vOffset,
+                probeValue:     1.0,
+                inverted:       false,
+                timeScale:      n > 1 ? (times[n - 1] - times[0]) / 10.0 : 1e-3,
+                timeOffset:     ho,
+                secondsPerPoint: hr,
+            });
+        }
+    }
+
+    return {
+        format:       'Yokogawa WVF',
+        fileModel:    hdr.model || 'Yokogawa',
+        userModel:    'Yokogawa',
+        parserModel:  'yokogawa_wvf',
+        firmware:     'unknown',
+        triggerInfo:  null,
+        channels:     channels,
+    };
+}
+
+// ---------------------------------------------------------------------------
+
 function loadFiles(fileSet) {
     var files = Array.prototype.slice.call(fileSet || []);
     if (!files.length) {
         return;
     }
 
+    var fileMap = buildSelectedFileMap(files);
+    files = files.filter(function(file) {
+        return !shouldSkipRohdeSchwarzPayload(file, fileMap)
+            && !shouldSkipYokogawaWvf(file, fileMap);
+    });
+
     function next(index) {
         if (index >= files.length) {
             return;
         }
-        loadFile(files[index], function() {
+        loadFile(files[index], fileMap, function() {
             next(index + 1);
         });
     }
@@ -3136,11 +5393,11 @@ function loadFiles(fileSet) {
     next(0);
 }
 
-function loadFile(file, done) {
+function loadFile(file, fileMap, done) {
     var reader = new FileReader();
     reader.onload = async function(e) {
         try {
-            addLoadedFile(await detectAndParse(e.target.result, file.name), file.name);
+            addLoadedFile(await detectAndParse(e.target.result, file.name, fileMap), file.name);
         } catch (err) {
             showError(String(err.message || err));
         }

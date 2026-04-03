@@ -6,18 +6,20 @@
   } else if (typeof exports === 'object' && exports !== null && typeof exports.nodeType !== 'number') {
     factory(exports, require('kaitai-struct/KaitaiStream'));
   } else {
-    factory(root.Wfm1000d || (root.Wfm1000d = {}), root.KaitaiStream);
+    factory(root.Rigol1000cWfm || (root.Rigol1000cWfm = {}), root.KaitaiStream);
   }
-})(typeof self !== 'undefined' ? self : this, function (Wfm1000d_, KaitaiStream) {
+})(typeof self !== 'undefined' ? self : this, function (Rigol1000cWfm_, KaitaiStream) {
 /**
- * Rigol DS1102D .wmf format abstracted from a Matlab script with the addition
- * of a few fields found in a Pascal program.  Neither program really examines
- * the header closely (meaning that they skip 26 bytes).
- * @see The Matlab script is from https://www.mathworks.com/matlabcentral/fileexchange/18999-read-binary-rigol-waveforms The Pascal program is from https://sourceforge.net/projects/wfmreader/
+ * Waveform format for DS1000C/CD/MD/M series scopes.  Related to but distinct
+ * from DS1000D/E: the magic byte at offset 0 is 0xA1 (versus 0xA5 for DS1000D),
+ * data starts at offset 256 (versus 276 for DS1000D/E), there is an optional
+ * 16-byte padding block before the sample data when byte 0 is 0xA5, and
+ * volt_per_division includes the probe_value factor (DS1000D/E firmware stores
+ * scale_measured already probe-corrected).
  */
 
-var Wfm1000d = (function() {
-  Wfm1000d.MachineModeEnum = Object.freeze({
+var Rigol1000cWfm = (function() {
+  Rigol1000cWfm.MachineModeEnum = Object.freeze({
     DS1000B: 0,
     DS1000C: 1,
     DS1000E: 2,
@@ -35,51 +37,7 @@ var Wfm1000d = (function() {
     6: "DS6000",
   });
 
-  Wfm1000d.SourceEnum = Object.freeze({
-    CH1: 0,
-    CH2: 1,
-    EXT: 2,
-    AC_LINE: 3,
-    D0: 4,
-    D1: 5,
-    D2: 6,
-    D3: 7,
-    D4: 8,
-    D5: 9,
-    D6: 10,
-    D7: 11,
-    D8: 12,
-    D9: 13,
-    D10: 14,
-    D11: 15,
-    D12: 16,
-    D13: 17,
-    D14: 18,
-    D15: 19,
-
-    0: "CH1",
-    1: "CH2",
-    2: "EXT",
-    3: "AC_LINE",
-    4: "D0",
-    5: "D1",
-    6: "D2",
-    7: "D3",
-    8: "D4",
-    9: "D5",
-    10: "D6",
-    11: "D7",
-    12: "D8",
-    13: "D9",
-    14: "D10",
-    15: "D11",
-    16: "D12",
-    17: "D13",
-    18: "D14",
-    19: "D15",
-  });
-
-  Wfm1000d.TriggerModeEnum = Object.freeze({
+  Rigol1000cWfm.TriggerModeEnum = Object.freeze({
     EDGE: 0,
     PULSE: 1,
     SLOPE: 2,
@@ -97,7 +55,23 @@ var Wfm1000d = (function() {
     6: "DURATION",
   });
 
-  Wfm1000d.UnitEnum = Object.freeze({
+  Rigol1000cWfm.TriggerSourceEnum = Object.freeze({
+    CH1: 0,
+    CH2: 1,
+    EXT: 2,
+    EXT5: 3,
+    AC_LINE: 5,
+    DIG_CH: 7,
+
+    0: "CH1",
+    1: "CH2",
+    2: "EXT",
+    3: "EXT5",
+    5: "AC_LINE",
+    7: "DIG_CH",
+  });
+
+  Rigol1000cWfm.UnitEnum = Object.freeze({
     W: 0,
     A: 1,
     V: 2,
@@ -109,17 +83,17 @@ var Wfm1000d = (function() {
     3: "U",
   });
 
-  function Wfm1000d(_io, _parent, _root) {
+  function Rigol1000cWfm(_io, _parent, _root) {
     this._io = _io;
     this._parent = _parent;
     this._root = _root || this;
 
     this._read();
   }
-  Wfm1000d.prototype._read = function() {
+  Rigol1000cWfm.prototype._read = function() {
   }
 
-  var ChannelHeader = Wfm1000d.ChannelHeader = (function() {
+  var ChannelHeader = Rigol1000cWfm.ChannelHeader = (function() {
     function ChannelHeader(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -177,7 +151,7 @@ var Wfm1000d = (function() {
       get: function() {
         if (this._m_unit !== undefined)
           return this._m_unit;
-        this._m_unit = Wfm1000d.UnitEnum.V;
+        this._m_unit = Rigol1000cWfm.UnitEnum.V;
         return this._m_unit;
       }
     });
@@ -193,7 +167,7 @@ var Wfm1000d = (function() {
       get: function() {
         if (this._m_voltPerDivision !== undefined)
           return this._m_voltPerDivision;
-        this._m_voltPerDivision = (this.inverted ? -0.0000010 * this.scaleMeasured : 0.0000010 * this.scaleMeasured);
+        this._m_voltPerDivision = (this.inverted ? (-0.0000010 * this.scaleMeasured) * this.probeValue : (0.0000010 * this.scaleMeasured) * this.probeValue);
         return this._m_voltPerDivision;
       }
     });
@@ -209,7 +183,7 @@ var Wfm1000d = (function() {
     return ChannelHeader;
   })();
 
-  var Header = Wfm1000d.Header = (function() {
+  var Header = Rigol1000cWfm.Header = (function() {
     function Header(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -218,9 +192,10 @@ var Wfm1000d = (function() {
       this._read();
     }
     Header.prototype._read = function() {
-      this.magic = this._io.readBytes(4);
-      if (!((KaitaiStream.byteArrayCompare(this.magic, new Uint8Array([165, 165, 0, 0])) == 0))) {
-        throw new KaitaiStream.ValidationNotEqualError(new Uint8Array([165, 165, 0, 0]), this.magic, this._io, "/types/header/seq/0");
+      this.byte1 = this._io.readU1();
+      this.magic = this._io.readBytes(3);
+      if (!((KaitaiStream.byteArrayCompare(this.magic, new Uint8Array([165, 0, 0])) == 0))) {
+        throw new KaitaiStream.ValidationNotEqualError(new Uint8Array([165, 0, 0]), this.magic, this._io, "/types/header/seq/1");
       }
       this.unknown1 = [];
       for (var i = 0; i < 6; i++) {
@@ -242,8 +217,8 @@ var Wfm1000d = (function() {
       }
       this.unknown4 = this._io.readU2le();
       this.triggerMode = this._io.readU1();
-      this.trigger1 = new TriggerHeader(this._io, this, this._root);
-      this.trigger2 = new TriggerHeader(this._io, this, this._root);
+      this.unknown6 = this._io.readU1();
+      this.triggerSource = this._io.readU1();
     }
     Object.defineProperty(Header.prototype, 'secondsPerPoint', {
       get: function() {
@@ -257,7 +232,7 @@ var Wfm1000d = (function() {
     return Header;
   })();
 
-  var RawData = Wfm1000d.RawData = (function() {
+  var RawData = Rigol1000cWfm.RawData = (function() {
     function RawData(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -266,6 +241,9 @@ var Wfm1000d = (function() {
       this._read();
     }
     RawData.prototype._read = function() {
+      if (this._root.header.byte1 == 165) {
+        this.unused55 = this._io.readBytes(16);
+      }
       if (this._root.header.ch[0].enabled) {
         this.ch1 = this._io.readBytes(this._root.header.points);
       }
@@ -276,60 +254,18 @@ var Wfm1000d = (function() {
 
     return RawData;
   })();
-
-  var TriggerHeader = Wfm1000d.TriggerHeader = (function() {
-    function TriggerHeader(_io, _parent, _root) {
-      this._io = _io;
-      this._parent = _parent;
-      this._root = _root;
-
-      this._read();
-    }
-    TriggerHeader.prototype._read = function() {
-      this.mode = this._io.readU1();
-      this.source = this._io.readU1();
-      this.coupling = this._io.readU1();
-      this.sweep = this._io.readU1();
-      this.padding1 = this._io.readBytes(1);
-      if (!((KaitaiStream.byteArrayCompare(this.padding1, new Uint8Array([0])) == 0))) {
-        throw new KaitaiStream.ValidationNotEqualError(new Uint8Array([0]), this.padding1, this._io, "/types/trigger_header/seq/4");
-      }
-      this.sens = this._io.readF4le();
-      this.holdoff = this._io.readF4le();
-      this.level = this._io.readF4le();
-      this.direct = this._io.readU1();
-      this.pulseType = this._io.readU1();
-      this.padding2 = this._io.readBytes(2);
-      if (!((KaitaiStream.byteArrayCompare(this.padding2, new Uint8Array([0, 0])) == 0))) {
-        throw new KaitaiStream.ValidationNotEqualError(new Uint8Array([0, 0]), this.padding2, this._io, "/types/trigger_header/seq/10");
-      }
-      this.pulseWidth = this._io.readF4le();
-      this.slopeType = this._io.readU1();
-      this.padding3 = this._io.readBytes(3);
-      if (!((KaitaiStream.byteArrayCompare(this.padding3, new Uint8Array([0, 0, 0])) == 0))) {
-        throw new KaitaiStream.ValidationNotEqualError(new Uint8Array([0, 0, 0]), this.padding3, this._io, "/types/trigger_header/seq/13");
-      }
-      this.lower = this._io.readF4le();
-      this.slopeWidth = this._io.readF4le();
-      this.videoPol = this._io.readU1();
-      this.videoSync = this._io.readU1();
-      this.videoStd = this._io.readU1();
-    }
-
-    return TriggerHeader;
-  })();
-  Object.defineProperty(Wfm1000d.prototype, 'data', {
+  Object.defineProperty(Rigol1000cWfm.prototype, 'data', {
     get: function() {
       if (this._m_data !== undefined)
         return this._m_data;
       var _pos = this._io.pos;
-      this._io.seek(272);
+      this._io.seek(256);
       this._m_data = new RawData(this._io, this, this._root);
       this._io.seek(_pos);
       return this._m_data;
     }
   });
-  Object.defineProperty(Wfm1000d.prototype, 'header', {
+  Object.defineProperty(Rigol1000cWfm.prototype, 'header', {
     get: function() {
       if (this._m_header !== undefined)
         return this._m_header;
@@ -341,7 +277,7 @@ var Wfm1000d = (function() {
     }
   });
 
-  return Wfm1000d;
+  return Rigol1000cWfm;
 })();
-Wfm1000d_.Wfm1000d = Wfm1000d;
+Rigol1000cWfm_.Rigol1000cWfm = Rigol1000cWfm;
 });

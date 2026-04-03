@@ -6,20 +6,17 @@
   } else if (typeof exports === 'object' && exports !== null && typeof exports.nodeType !== 'number') {
     factory(exports, require('kaitai-struct/KaitaiStream'));
   } else {
-    factory(root.Wfm1000c || (root.Wfm1000c = {}), root.KaitaiStream);
+    factory(root.Rigol1000bWfm || (root.Rigol1000bWfm = {}), root.KaitaiStream);
   }
-})(typeof self !== 'undefined' ? self : this, function (Wfm1000c_, KaitaiStream) {
+})(typeof self !== 'undefined' ? self : this, function (Rigol1000bWfm_, KaitaiStream) {
 /**
- * Waveform format for DS1000C/CD/MD/M series scopes.  Related to but distinct
- * from DS1000D: the magic byte at offset 0 is 0xA1 (versus 0xA5 for DS1000D),
- * data starts at offset 256 (versus 276 for DS1000D), there is an optional
- * 16-byte padding block before the sample data when byte 0 is 0xA5, and
- * volt_per_division includes the probe_value factor (DS1000D firmware stores
- * scale_measured already probe-corrected).
+ * This was put together based on an excel header list of unknown provenance.
+ * It has been tested with a handful of different files.  The offset to the
+ * data seems correct but the channel coupling is untested.
  */
 
-var Wfm1000c = (function() {
-  Wfm1000c.MachineModeEnum = Object.freeze({
+var Rigol1000bWfm = (function() {
+  Rigol1000bWfm.MachineModeEnum = Object.freeze({
     DS1000B: 0,
     DS1000C: 1,
     DS1000E: 2,
@@ -37,7 +34,7 @@ var Wfm1000c = (function() {
     6: "DS6000",
   });
 
-  Wfm1000c.TriggerModeEnum = Object.freeze({
+  Rigol1000bWfm.TriggerModeEnum = Object.freeze({
     EDGE: 0,
     PULSE: 1,
     SLOPE: 2,
@@ -55,7 +52,7 @@ var Wfm1000c = (function() {
     6: "DURATION",
   });
 
-  Wfm1000c.TriggerSourceEnum = Object.freeze({
+  Rigol1000bWfm.TriggerSourceEnum = Object.freeze({
     CH1: 0,
     CH2: 1,
     EXT: 2,
@@ -71,7 +68,7 @@ var Wfm1000c = (function() {
     7: "DIG_CH",
   });
 
-  Wfm1000c.UnitEnum = Object.freeze({
+  Rigol1000bWfm.UnitEnum = Object.freeze({
     W: 0,
     A: 1,
     V: 2,
@@ -83,17 +80,17 @@ var Wfm1000c = (function() {
     3: "U",
   });
 
-  function Wfm1000c(_io, _parent, _root) {
+  function Rigol1000bWfm(_io, _parent, _root) {
     this._io = _io;
     this._parent = _parent;
     this._root = _root || this;
 
     this._read();
   }
-  Wfm1000c.prototype._read = function() {
+  Rigol1000bWfm.prototype._read = function() {
   }
 
-  var ChannelHeader = Wfm1000c.ChannelHeader = (function() {
+  var ChannelHeader = Rigol1000bWfm.ChannelHeader = (function() {
     function ChannelHeader(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -104,16 +101,16 @@ var Wfm1000c = (function() {
     ChannelHeader.prototype._read = function() {
       this.scaleDisplay = this._io.readS4le();
       this.shiftDisplay = this._io.readS2le();
-      this.unknown1 = this._io.readU1();
-      this.unknown2 = this._io.readU1();
+      this.unknown1 = this._io.readBytes(2);
       this.probeValue = this._io.readF4le();
+      this.probeType = this._io.readS1();
       this.invertDispVal = this._io.readU1();
       this.enabledVal = this._io.readU1();
       this.invertMVal = this._io.readU1();
-      this.unknown3 = this._io.readU1();
       this.scaleMeasured = this._io.readS4le();
       this.shiftMeasured = this._io.readS2le();
-      this.unknown3a = this._io.readU2le();
+      this.timeDelayed = this._io.readU1();
+      this.unknown2 = this._io.readBytes(1);
     }
     Object.defineProperty(ChannelHeader.prototype, 'enabled', {
       get: function() {
@@ -151,7 +148,7 @@ var Wfm1000c = (function() {
       get: function() {
         if (this._m_unit !== undefined)
           return this._m_unit;
-        this._m_unit = Wfm1000c.UnitEnum.V;
+        this._m_unit = Rigol1000bWfm.UnitEnum.V;
         return this._m_unit;
       }
     });
@@ -183,7 +180,7 @@ var Wfm1000c = (function() {
     return ChannelHeader;
   })();
 
-  var Header = Wfm1000c.Header = (function() {
+  var Header = Rigol1000bWfm.Header = (function() {
     function Header(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -192,34 +189,125 @@ var Wfm1000c = (function() {
       this._read();
     }
     Header.prototype._read = function() {
-      this.byte1 = this._io.readU1();
-      this.magic = this._io.readBytes(3);
-      if (!((KaitaiStream.byteArrayCompare(this.magic, new Uint8Array([165, 0, 0])) == 0))) {
-        throw new KaitaiStream.ValidationNotEqualError(new Uint8Array([165, 0, 0]), this.magic, this._io, "/types/header/seq/1");
+      this.magic = this._io.readBytes(4);
+      if (!((KaitaiStream.byteArrayCompare(this.magic, new Uint8Array([165, 165, 164, 1])) == 0))) {
+        throw new KaitaiStream.ValidationNotEqualError(new Uint8Array([165, 165, 164, 1]), this.magic, this._io, "/types/header/seq/0");
       }
-      this.unknown1 = [];
-      for (var i = 0; i < 6; i++) {
-        this.unknown1.push(this._io.readU4le());
-      }
+      this.scopetype = KaitaiStream.bytesToStr(KaitaiStream.bytesTerminate(this._io.readBytes(8), 0, false), "UTF-8");
+      this.unknown1 = this._io.readBytes(44);
+      this.adcmode = this._io.readU1();
+      this.unknown2 = this._io.readBytes(3);
       this.points = this._io.readU4le();
       this.activeChannel = this._io.readU1();
-      this.unknown2a = this._io.readBytes(3);
+      this.unknown3 = this._io.readBytes(3);
       this.ch = [];
-      for (var i = 0; i < 2; i++) {
+      for (var i = 0; i < 4; i++) {
         this.ch.push(new ChannelHeader(this._io, this, this._root));
       }
       this.timeScale = this._io.readU8le();
       this.timeOffset = this._io.readS8le();
       this.sampleRateHz = this._io.readF4le();
-      this.unknown3 = [];
-      for (var i = 0; i < 9; i++) {
-        this.unknown3.push(this._io.readU4le());
+      this.timeScaleStop = this._io.readU8le();
+      this.timeScaleOffset = this._io.readS8le();
+      this.unknown4 = [];
+      for (var i = 0; i < 4; i++) {
+        this.unknown4.push(this._io.readU4le());
       }
-      this.unknown4 = this._io.readU2le();
+      this.couplingCh12 = this._io.readU1();
+      this.couplingCh34 = this._io.readU1();
+      this.unknown5 = this._io.readBytes(4);
       this.triggerMode = this._io.readU1();
       this.unknown6 = this._io.readU1();
       this.triggerSource = this._io.readU1();
     }
+    Object.defineProperty(Header.prototype, 'ch1', {
+      get: function() {
+        if (this._m_ch1 !== undefined)
+          return this._m_ch1;
+        if (this.ch[0].enabled) {
+          var io = this._root._io;
+          var _pos = io.pos;
+          io.seek(420);
+          this._m_ch1 = io.readBytes(this.lenCh1);
+          io.seek(_pos);
+        }
+        return this._m_ch1;
+      }
+    });
+    Object.defineProperty(Header.prototype, 'ch2', {
+      get: function() {
+        if (this._m_ch2 !== undefined)
+          return this._m_ch2;
+        if (this.ch[1].enabled) {
+          var io = this._root._io;
+          var _pos = io.pos;
+          io.seek(420 + this._root.header.points);
+          this._m_ch2 = io.readBytes(this.lenCh2);
+          io.seek(_pos);
+        }
+        return this._m_ch2;
+      }
+    });
+    Object.defineProperty(Header.prototype, 'ch3', {
+      get: function() {
+        if (this._m_ch3 !== undefined)
+          return this._m_ch3;
+        if (this.ch[2].enabled) {
+          var io = this._root._io;
+          var _pos = io.pos;
+          io.seek(420 + this._root.header.points * 2);
+          this._m_ch3 = io.readBytes(this.lenCh3);
+          io.seek(_pos);
+        }
+        return this._m_ch3;
+      }
+    });
+    Object.defineProperty(Header.prototype, 'ch4', {
+      get: function() {
+        if (this._m_ch4 !== undefined)
+          return this._m_ch4;
+        if (this.ch[3].enabled) {
+          var io = this._root._io;
+          var _pos = io.pos;
+          io.seek(420 + this._root.header.points * 3);
+          this._m_ch4 = io.readBytes(this.lenCh4);
+          io.seek(_pos);
+        }
+        return this._m_ch4;
+      }
+    });
+    Object.defineProperty(Header.prototype, 'lenCh1', {
+      get: function() {
+        if (this._m_lenCh1 !== undefined)
+          return this._m_lenCh1;
+        this._m_lenCh1 = (this.ch[0].enabled ? this.points : 0);
+        return this._m_lenCh1;
+      }
+    });
+    Object.defineProperty(Header.prototype, 'lenCh2', {
+      get: function() {
+        if (this._m_lenCh2 !== undefined)
+          return this._m_lenCh2;
+        this._m_lenCh2 = (this.ch[1].enabled ? this.points : 0);
+        return this._m_lenCh2;
+      }
+    });
+    Object.defineProperty(Header.prototype, 'lenCh3', {
+      get: function() {
+        if (this._m_lenCh3 !== undefined)
+          return this._m_lenCh3;
+        this._m_lenCh3 = (this.ch[2].enabled ? this.points : 0);
+        return this._m_lenCh3;
+      }
+    });
+    Object.defineProperty(Header.prototype, 'lenCh4', {
+      get: function() {
+        if (this._m_lenCh4 !== undefined)
+          return this._m_lenCh4;
+        this._m_lenCh4 = (this.ch[3].enabled ? this.points : 0);
+        return this._m_lenCh4;
+      }
+    });
     Object.defineProperty(Header.prototype, 'secondsPerPoint', {
       get: function() {
         if (this._m_secondsPerPoint !== undefined)
@@ -231,41 +319,7 @@ var Wfm1000c = (function() {
 
     return Header;
   })();
-
-  var RawData = Wfm1000c.RawData = (function() {
-    function RawData(_io, _parent, _root) {
-      this._io = _io;
-      this._parent = _parent;
-      this._root = _root;
-
-      this._read();
-    }
-    RawData.prototype._read = function() {
-      if (this._root.header.byte1 == 165) {
-        this.unused55 = this._io.readBytes(16);
-      }
-      if (this._root.header.ch[0].enabled) {
-        this.ch1 = this._io.readBytes(this._root.header.points);
-      }
-      if (this._root.header.ch[1].enabled) {
-        this.ch2 = this._io.readBytes(this._root.header.points);
-      }
-    }
-
-    return RawData;
-  })();
-  Object.defineProperty(Wfm1000c.prototype, 'data', {
-    get: function() {
-      if (this._m_data !== undefined)
-        return this._m_data;
-      var _pos = this._io.pos;
-      this._io.seek(256);
-      this._m_data = new RawData(this._io, this, this._root);
-      this._io.seek(_pos);
-      return this._m_data;
-    }
-  });
-  Object.defineProperty(Wfm1000c.prototype, 'header', {
+  Object.defineProperty(Rigol1000bWfm.prototype, 'header', {
     get: function() {
       if (this._m_header !== undefined)
         return this._m_header;
@@ -277,7 +331,7 @@ var Wfm1000c = (function() {
     }
   });
 
-  return Wfm1000c;
+  return Rigol1000bWfm;
 })();
-Wfm1000c_.Wfm1000c = Wfm1000c;
+Rigol1000bWfm_.Rigol1000bWfm = Rigol1000bWfm;
 });

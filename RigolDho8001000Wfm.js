@@ -6,9 +6,9 @@
   } else if (typeof exports === 'object' && exports !== null && typeof exports.nodeType !== 'number') {
     factory(exports, require('kaitai-struct/KaitaiStream'));
   } else {
-    factory(root.Wfmdho1000 || (root.Wfmdho1000 = {}), root.KaitaiStream);
+    factory(root.RigolDho8001000Wfm || (root.RigolDho8001000Wfm = {}), root.KaitaiStream);
   }
-})(typeof self !== 'undefined' ? self : this, function (Wfmdho1000_, KaitaiStream) {
+})(typeof self !== 'undefined' ? self : this, function (RigolDho8001000Wfm_, KaitaiStream) {
 /**
  * Proprietary waveform format used by Rigol DHO800/DHO1000 series
  * oscilloscopes (reverse-engineered from DHO1074 and DHO824 captures).
@@ -83,8 +83,8 @@
  * be expressed as fixed-offset KSY instances.
  */
 
-var Wfmdho1000 = (function() {
-  Wfmdho1000.BlockTypeEnum = Object.freeze({
+var RigolDho8001000Wfm = (function() {
+  RigolDho8001000Wfm.BlockTypeEnum = Object.freeze({
     DHO800_CHANNEL_PARAMS: 5,
     SETTINGS: 6,
     CHANNEL_PARAMS: 9,
@@ -94,14 +94,14 @@ var Wfmdho1000 = (function() {
     9: "CHANNEL_PARAMS",
   });
 
-  function Wfmdho1000(_io, _parent, _root) {
+  function RigolDho8001000Wfm(_io, _parent, _root) {
     this._io = _io;
     this._parent = _parent;
     this._root = _root || this;
 
     this._read();
   }
-  Wfmdho1000.prototype._read = function() {
+  RigolDho8001000Wfm.prototype._read = function() {
     this.fileHeader = new FileHeader(this._io, this, this._root);
     this.blocks = [];
     var i = 0;
@@ -117,7 +117,7 @@ var Wfmdho1000 = (function() {
    * signals the end of the metadata region.
    */
 
-  var Block = Wfmdho1000.Block = (function() {
+  var Block = RigolDho8001000Wfm.Block = (function() {
     function Block(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -144,7 +144,7 @@ var Wfmdho1000 = (function() {
       get: function() {
         if (this._m_isChannelParams !== undefined)
           return this._m_isChannelParams;
-        this._m_isChannelParams =  ((this.blockType == Wfmdho1000.BlockTypeEnum.CHANNEL_PARAMS) && (this.blockId >= 1) && (this.blockId <= 4)) ;
+        this._m_isChannelParams =  ((this.blockType == RigolDho8001000Wfm.BlockTypeEnum.CHANNEL_PARAMS) && (this.blockId >= 1) && (this.blockId <= 4)) ;
         return this._m_isChannelParams;
       }
     });
@@ -158,7 +158,7 @@ var Wfmdho1000 = (function() {
       get: function() {
         if (this._m_isSettings !== undefined)
           return this._m_isSettings;
-        this._m_isSettings = this.blockType == Wfmdho1000.BlockTypeEnum.SETTINGS;
+        this._m_isSettings = this.blockType == RigolDho8001000Wfm.BlockTypeEnum.SETTINGS;
         return this._m_isSettings;
       }
     });
@@ -220,7 +220,7 @@ var Wfmdho1000 = (function() {
    * opposite sign from the sample reconstruction offset.
    */
 
-  var Dho1000ChannelParams = Wfmdho1000.Dho1000ChannelParams = (function() {
+  var Dho1000ChannelParams = RigolDho8001000Wfm.Dho1000ChannelParams = (function() {
     function Dho1000ChannelParams(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -268,7 +268,7 @@ var Wfmdho1000 = (function() {
    * The stored center value is negated and scaled in 1e-9 volt units.
    */
 
-  var Dho800ChannelParams = Wfmdho1000.Dho800ChannelParams = (function() {
+  var Dho800ChannelParams = RigolDho8001000Wfm.Dho800ChannelParams = (function() {
     function Dho800ChannelParams(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -316,7 +316,7 @@ var Wfmdho1000 = (function() {
    * treated as opaque.
    */
 
-  var FileHeader = Wfmdho1000.FileHeader = (function() {
+  var FileHeader = RigolDho8001000Wfm.FileHeader = (function() {
     function FileHeader(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -340,7 +340,7 @@ var Wfmdho1000 = (function() {
    * Older single-channel captures expose only the CH1 vertical center here.
    */
 
-  var SettingsBlock = Wfmdho1000.SettingsBlock = (function() {
+  var SettingsBlock = RigolDho8001000Wfm.SettingsBlock = (function() {
     function SettingsBlock(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -369,7 +369,7 @@ var Wfmdho1000 = (function() {
    * Metadata blocks terminated by an all-zero block header.
    */
 
-  return Wfmdho1000;
+  return RigolDho8001000Wfm;
 })();
-Wfmdho1000_.Wfmdho1000 = Wfmdho1000;
+RigolDho8001000Wfm_.RigolDho8001000Wfm = RigolDho8001000Wfm;
 });

@@ -6,9 +6,9 @@
   } else if (typeof exports === 'object' && exports !== null && typeof exports.nodeType !== 'number') {
     factory(exports, require('kaitai-struct/KaitaiStream'));
   } else {
-    factory(root.Bin70008000 || (root.Bin70008000 = {}), root.KaitaiStream);
+    factory(root.Rigol70008000Bin || (root.Rigol70008000Bin = {}), root.KaitaiStream);
   }
-})(typeof self !== 'undefined' ? self : this, function (Bin70008000_, KaitaiStream) {
+})(typeof self !== 'undefined' ? self : this, function (Rigol70008000Bin_, KaitaiStream) {
 /**
  * Binary waveform export used by Rigol MSO7000/DS7000 and MSO8000 scopes.
  * 
@@ -27,8 +27,8 @@
  * The handwritten adapter currently normalizes analog float32 buffers only.
  */
 
-var Bin70008000 = (function() {
-  Bin70008000.BufferTypeEnum = Object.freeze({
+var Rigol70008000Bin = (function() {
+  Rigol70008000Bin.BufferTypeEnum = Object.freeze({
     UNKNOWN: 0,
     NORMAL_FLOAT32: 1,
     MAXIMUM_FLOAT32: 2,
@@ -46,7 +46,7 @@ var Bin70008000 = (function() {
     6: "DIGITAL_U8",
   });
 
-  Bin70008000.UnitEnum = Object.freeze({
+  Rigol70008000Bin.UnitEnum = Object.freeze({
     UNKNOWN: 0,
     V: 1,
     S: 2,
@@ -64,7 +64,7 @@ var Bin70008000 = (function() {
     6: "HZ",
   });
 
-  Bin70008000.WaveformTypeEnum = Object.freeze({
+  Rigol70008000Bin.WaveformTypeEnum = Object.freeze({
     UNKNOWN: 0,
     NORMAL: 1,
     PEAK_DETECT: 2,
@@ -82,14 +82,14 @@ var Bin70008000 = (function() {
     6: "LOGIC",
   });
 
-  function Bin70008000(_io, _parent, _root) {
+  function Rigol70008000Bin(_io, _parent, _root) {
     this._io = _io;
     this._parent = _parent;
     this._root = _root || this;
 
     this._read();
   }
-  Bin70008000.prototype._read = function() {
+  Rigol70008000Bin.prototype._read = function() {
     this.fileHeader = new FileHeader(this._io, this, this._root);
     this.waveforms = [];
     for (var i = 0; i < this.fileHeader.nWaveforms; i++) {
@@ -97,7 +97,7 @@ var Bin70008000 = (function() {
     }
   }
 
-  var DataHeader = Bin70008000.DataHeader = (function() {
+  var DataHeader = Rigol70008000Bin.DataHeader = (function() {
     function DataHeader(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -115,7 +115,7 @@ var Bin70008000 = (function() {
     return DataHeader;
   })();
 
-  var FileHeader = Bin70008000.FileHeader = (function() {
+  var FileHeader = Rigol70008000Bin.FileHeader = (function() {
     function FileHeader(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -136,7 +136,7 @@ var Bin70008000 = (function() {
     return FileHeader;
   })();
 
-  var Waveform = Bin70008000.Waveform = (function() {
+  var Waveform = Rigol70008000Bin.Waveform = (function() {
     function Waveform(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -153,7 +153,7 @@ var Bin70008000 = (function() {
     return Waveform;
   })();
 
-  var WaveformHeader = Bin70008000.WaveformHeader = (function() {
+  var WaveformHeader = Rigol70008000Bin.WaveformHeader = (function() {
     function WaveformHeader(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -182,7 +182,7 @@ var Bin70008000 = (function() {
     return WaveformHeader;
   })();
 
-  return Bin70008000;
+  return Rigol70008000Bin;
 })();
-Bin70008000_.Bin70008000 = Bin70008000;
+Rigol70008000Bin_.Rigol70008000Bin = Rigol70008000Bin;
 });

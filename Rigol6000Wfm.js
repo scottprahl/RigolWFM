@@ -6,11 +6,11 @@
   } else if (typeof exports === 'object' && exports !== null && typeof exports.nodeType !== 'number') {
     factory(exports, require('kaitai-struct/KaitaiStream'));
   } else {
-    factory(root.Wfm6000 || (root.Wfm6000 = {}), root.KaitaiStream);
+    factory(root.Rigol6000Wfm || (root.Rigol6000Wfm = {}), root.KaitaiStream);
   }
-})(typeof self !== 'undefined' ? self : this, function (Wfm6000_, KaitaiStream) {
-var Wfm6000 = (function() {
-  Wfm6000.AcquisitionEnum = Object.freeze({
+})(typeof self !== 'undefined' ? self : this, function (Rigol6000Wfm_, KaitaiStream) {
+var Rigol6000Wfm = (function() {
+  Rigol6000Wfm.AcquisitionEnum = Object.freeze({
     NORMAL: 0,
     AVERAGE: 1,
     PEAK: 2,
@@ -22,7 +22,7 @@ var Wfm6000 = (function() {
     3: "HIGH_RESOLUTION",
   });
 
-  Wfm6000.BandwidthEnum = Object.freeze({
+  Rigol6000Wfm.BandwidthEnum = Object.freeze({
     NO_LIMIT: 0,
     MHZ_20: 1,
     MHZ_100: 2,
@@ -36,7 +36,7 @@ var Wfm6000 = (function() {
     4: "MHZ_250",
   });
 
-  Wfm6000.CouplingEnum = Object.freeze({
+  Rigol6000Wfm.CouplingEnum = Object.freeze({
     DC: 0,
     AC: 1,
     GND: 2,
@@ -46,7 +46,7 @@ var Wfm6000 = (function() {
     2: "GND",
   });
 
-  Wfm6000.FilterEnum = Object.freeze({
+  Rigol6000Wfm.FilterEnum = Object.freeze({
     LOW_PASS: 0,
     HIGH_PASS: 1,
     BAND_PASS: 2,
@@ -58,7 +58,7 @@ var Wfm6000 = (function() {
     3: "BAND_REJECT",
   });
 
-  Wfm6000.ImpedanceEnum = Object.freeze({
+  Rigol6000Wfm.ImpedanceEnum = Object.freeze({
     OHM_50: 0,
     OHM_1MEG: 1,
 
@@ -66,7 +66,7 @@ var Wfm6000 = (function() {
     1: "OHM_1MEG",
   });
 
-  Wfm6000.ProbeEnum = Object.freeze({
+  Rigol6000Wfm.ProbeEnum = Object.freeze({
     SINGLE: 0,
     DIFF: 1,
 
@@ -74,7 +74,7 @@ var Wfm6000 = (function() {
     1: "DIFF",
   });
 
-  Wfm6000.ProbeRatioEnum = Object.freeze({
+  Rigol6000Wfm.ProbeRatioEnum = Object.freeze({
     X0_01: 0,
     X0_02: 1,
     X0_05: 2,
@@ -110,7 +110,7 @@ var Wfm6000 = (function() {
     15: "X1000",
   });
 
-  Wfm6000.ProbeTypeEnum = Object.freeze({
+  Rigol6000Wfm.ProbeTypeEnum = Object.freeze({
     NORMAL_TYPE: 0,
     DIFFERENTIAL: 1,
 
@@ -118,7 +118,7 @@ var Wfm6000 = (function() {
     1: "DIFFERENTIAL",
   });
 
-  Wfm6000.TimeEnum = Object.freeze({
+  Rigol6000Wfm.TimeEnum = Object.freeze({
     YT: 0,
     XY: 1,
     ROLL: 2,
@@ -128,7 +128,7 @@ var Wfm6000 = (function() {
     2: "ROLL",
   });
 
-  Wfm6000.UnitEnum = Object.freeze({
+  Rigol6000Wfm.UnitEnum = Object.freeze({
     W: 0,
     A: 1,
     V: 2,
@@ -140,17 +140,17 @@ var Wfm6000 = (function() {
     3: "U",
   });
 
-  function Wfm6000(_io, _parent, _root) {
+  function Rigol6000Wfm(_io, _parent, _root) {
     this._io = _io;
     this._parent = _parent;
     this._root = _root || this;
 
     this._read();
   }
-  Wfm6000.prototype._read = function() {
+  Rigol6000Wfm.prototype._read = function() {
   }
 
-  var ChannelHeader = Wfm6000.ChannelHeader = (function() {
+  var ChannelHeader = Rigol6000Wfm.ChannelHeader = (function() {
     function ChannelHeader(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -196,7 +196,7 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_probeValue !== undefined)
           return this._m_probeValue;
-        this._m_probeValue = (this.probeRatio == Wfm6000.ProbeRatioEnum.X0_01 ? 0.01 : (this.probeRatio == Wfm6000.ProbeRatioEnum.X0_02 ? 0.02 : (this.probeRatio == Wfm6000.ProbeRatioEnum.X0_05 ? 0.05 : (this.probeRatio == Wfm6000.ProbeRatioEnum.X0_1 ? 0.1 : (this.probeRatio == Wfm6000.ProbeRatioEnum.X0_2 ? 0.2 : (this.probeRatio == Wfm6000.ProbeRatioEnum.X0_5 ? 0.5 : (this.probeRatio == Wfm6000.ProbeRatioEnum.X1 ? 1.0 : (this.probeRatio == Wfm6000.ProbeRatioEnum.X2 ? 2.0 : (this.probeRatio == Wfm6000.ProbeRatioEnum.X5 ? 5.0 : (this.probeRatio == Wfm6000.ProbeRatioEnum.X10 ? 10.0 : (this.probeRatio == Wfm6000.ProbeRatioEnum.X20 ? 20.0 : (this.probeRatio == Wfm6000.ProbeRatioEnum.X50 ? 50.0 : (this.probeRatio == Wfm6000.ProbeRatioEnum.X100 ? 100.0 : (this.probeRatio == Wfm6000.ProbeRatioEnum.X200 ? 200.0 : (this.probeRatio == Wfm6000.ProbeRatioEnum.X500 ? 500.0 : 1000.0)))))))))))))));
+        this._m_probeValue = (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X0_01 ? 0.01 : (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X0_02 ? 0.02 : (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X0_05 ? 0.05 : (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X0_1 ? 0.1 : (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X0_2 ? 0.2 : (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X0_5 ? 0.5 : (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X1 ? 1.0 : (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X2 ? 2.0 : (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X5 ? 5.0 : (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X10 ? 10.0 : (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X20 ? 20.0 : (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X50 ? 50.0 : (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X100 ? 100.0 : (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X200 ? 200.0 : (this.probeRatio == Rigol6000Wfm.ProbeRatioEnum.X500 ? 500.0 : 1000.0)))))))))))))));
         return this._m_probeValue;
       }
     });
@@ -220,7 +220,7 @@ var Wfm6000 = (function() {
     return ChannelHeader;
   })();
 
-  var ChannelMask = Wfm6000.ChannelMask = (function() {
+  var ChannelMask = Rigol6000Wfm.ChannelMask = (function() {
     function ChannelMask(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -229,17 +229,45 @@ var Wfm6000 = (function() {
       this._read();
     }
     ChannelMask.prototype._read = function() {
-      this.unused = this._io.readBitsIntBe(4);
-      this.channel4 = this._io.readBitsIntBe(1) != 0;
-      this.channel3 = this._io.readBitsIntBe(1) != 0;
-      this.channel2 = this._io.readBitsIntBe(1) != 0;
-      this.channel1 = this._io.readBitsIntBe(1) != 0;
+      this.rawMask = this._io.readU2le();
     }
+    Object.defineProperty(ChannelMask.prototype, 'channel1', {
+      get: function() {
+        if (this._m_channel1 !== undefined)
+          return this._m_channel1;
+        this._m_channel1 = (this.rawMask & 1) != 0;
+        return this._m_channel1;
+      }
+    });
+    Object.defineProperty(ChannelMask.prototype, 'channel2', {
+      get: function() {
+        if (this._m_channel2 !== undefined)
+          return this._m_channel2;
+        this._m_channel2 = (this.rawMask & 2) != 0;
+        return this._m_channel2;
+      }
+    });
+    Object.defineProperty(ChannelMask.prototype, 'channel3', {
+      get: function() {
+        if (this._m_channel3 !== undefined)
+          return this._m_channel3;
+        this._m_channel3 = (this.rawMask & 4) != 0;
+        return this._m_channel3;
+      }
+    });
+    Object.defineProperty(ChannelMask.prototype, 'channel4', {
+      get: function() {
+        if (this._m_channel4 !== undefined)
+          return this._m_channel4;
+        this._m_channel4 = (this.rawMask & 8) != 0;
+        return this._m_channel4;
+      }
+    });
 
     return ChannelMask;
   })();
 
-  var Header = Wfm6000.Header = (function() {
+  var Header = Rigol6000Wfm.Header = (function() {
     function Header(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -256,18 +284,26 @@ var Wfm6000 = (function() {
       this.firmwareVersion = KaitaiStream.bytesToStr(KaitaiStream.bytesTerminate(this._io.readBytes(20), 0, false), "ASCII");
       this.blockNum = this._io.readU2le();
       this.fileVersion = this._io.readU2le();
-      this.unused1 = this._io.readBytes(18);
+      this.fileCrc = this._io.readU4le();
+      this.reserved52 = this._io.readU2le();
+      this.reserved54 = this._io.readU2le();
+      this.wfmCrc = this._io.readU4le();
+      this.structureSize = this._io.readU2le();
+      this.structureVersion = this._io.readU2le();
       this.enabled = new ChannelMask(this._io, this, this._root);
+      this.reserved66 = this._io.readBytes(2);
       this.channelOffset = [];
       for (var i = 0; i < 4; i++) {
         this.channelOffset.push(this._io.readU4le());
       }
-      this.acquisitionMode = this._io.readU1();
+      this.acquisitionMode = this._io.readU2le();
       this.averageTime = this._io.readU2le();
       this.sampleMode = this._io.readU2le();
+      this.reserved90 = this._io.readBytes(2);
       this.memDepth = this._io.readU4le();
       this.sampleRateHz = this._io.readF4le();
       this.timeMode = this._io.readU2le();
+      this.reserved102 = this._io.readBytes(2);
       this.timeScalePs = this._io.readU8le();
       this.timeOffsetPs = this._io.readS8le();
       this.ch = [];
@@ -314,6 +350,7 @@ var Wfm6000 = (function() {
       this.zoomForceAnalogTrig = this._io.readU1();
       this.horizSlowForceStopFrame = this._io.readU1();
       this.getSpuDigDataStatus = this._io.readU1();
+      this.reserved307 = this._io.readBytes(1);
       this.mainMemOffset = this._io.readS8le();
       this.memViewOffset = this._io.readS8le();
       this.slowDetaWaveLength = this._io.readS8le();
@@ -327,19 +364,24 @@ var Wfm6000 = (function() {
       this.spuMemDepthRema = this._io.readU4le();
       this.memOffsetBase = this._io.readU4le();
       this.spuMemBankSize = this._io.readU4le();
-      this.s16Adc1ClockDelay = this._io.readU2le();
-      this.s16Adc2ClockDelay = this._io.readU2le();
+      this.s16Adc1ClockDelay = this._io.readS2le();
+      this.s16Adc2ClockDelay = this._io.readS2le();
       this.maxMainScrnChnlDelay = this._io.readU2le();
       this.maxZoomScrnChnlDelay = this._io.readU2le();
       this.mainDgtlTrigDataOffset = this._io.readU2le();
       this.zoomDgtlTrigDataOffset = this._io.readU2le();
       this.recordFrameIndex = this._io.readU4le();
+      this.frameCur = this._io.readU4le();
+      this.private = [];
+      for (var i = 0; i < 4; i++) {
+        this.private.push(this._io.readU4le());
+      }
     }
     Object.defineProperty(Header.prototype, 'lenRaw1', {
       get: function() {
         if (this._m_lenRaw1 !== undefined)
           return this._m_lenRaw1;
-        this._m_lenRaw1 = (this.enabled.channel1 ? this.wfmLen : 0);
+        this._m_lenRaw1 = (this.channelOffset[0] != 0 ? this.wfmLen : 0);
         return this._m_lenRaw1;
       }
     });
@@ -347,7 +389,7 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_lenRaw2 !== undefined)
           return this._m_lenRaw2;
-        this._m_lenRaw2 = (this.enabled.channel2 ? this.wfmLen : 0);
+        this._m_lenRaw2 = (this.channelOffset[1] != 0 ? this.wfmLen : 0);
         return this._m_lenRaw2;
       }
     });
@@ -355,7 +397,7 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_lenRaw3 !== undefined)
           return this._m_lenRaw3;
-        this._m_lenRaw3 = (this.enabled.channel3 ? this.wfmLen : 0);
+        this._m_lenRaw3 = (this.channelOffset[2] != 0 ? this.wfmLen : 0);
         return this._m_lenRaw3;
       }
     });
@@ -363,7 +405,7 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_lenRaw4 !== undefined)
           return this._m_lenRaw4;
-        this._m_lenRaw4 = (this.enabled.channel4 ? this.wfmLen : 0);
+        this._m_lenRaw4 = (this.channelOffset[3] != 0 ? this.wfmLen : 0);
         return this._m_lenRaw4;
       }
     });
@@ -379,9 +421,9 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_raw1 !== undefined)
           return this._m_raw1;
-        if (this.enabled.channel1) {
+        if (this.channelOffset[0] != 0) {
           var _pos = this._io.pos;
-          this._io.seek((this.wfmOffset + this.channelOffset[0]) + this.zPtOffset);
+          this._io.seek(this.channelOffset[0] + this.zPtOffset);
           this._m_raw1 = this._io.readBytes(this.lenRaw1);
           this._io.seek(_pos);
         }
@@ -392,9 +434,9 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_raw2 !== undefined)
           return this._m_raw2;
-        if (this.enabled.channel2) {
+        if (this.channelOffset[1] != 0) {
           var _pos = this._io.pos;
-          this._io.seek((this.wfmOffset + this.channelOffset[1]) + this.zPtOffset);
+          this._io.seek(this.channelOffset[1] + this.zPtOffset);
           this._m_raw2 = this._io.readBytes(this.lenRaw2);
           this._io.seek(_pos);
         }
@@ -405,9 +447,9 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_raw3 !== undefined)
           return this._m_raw3;
-        if (this.enabled.channel3) {
+        if (this.channelOffset[2] != 0) {
           var _pos = this._io.pos;
-          this._io.seek((this.wfmOffset + this.channelOffset[2]) + this.zPtOffset);
+          this._io.seek(this.channelOffset[2] + this.zPtOffset);
           this._m_raw3 = this._io.readBytes(this.lenRaw3);
           this._io.seek(_pos);
         }
@@ -418,9 +460,9 @@ var Wfm6000 = (function() {
       get: function() {
         if (this._m_raw4 !== undefined)
           return this._m_raw4;
-        if (this.enabled.channel4) {
+        if (this.channelOffset[3] != 0) {
           var _pos = this._io.pos;
-          this._io.seek((this.wfmOffset + this.channelOffset[3]) + this.zPtOffset);
+          this._io.seek(this.channelOffset[3] + this.zPtOffset);
           this._m_raw4 = this._io.readBytes(this.lenRaw4);
           this._io.seek(_pos);
         }
@@ -486,7 +528,7 @@ var Wfm6000 = (function() {
 
     return Header;
   })();
-  Object.defineProperty(Wfm6000.prototype, 'header', {
+  Object.defineProperty(Rigol6000Wfm.prototype, 'header', {
     get: function() {
       if (this._m_header !== undefined)
         return this._m_header;
@@ -498,7 +540,7 @@ var Wfm6000 = (function() {
     }
   });
 
-  return Wfm6000;
+  return Rigol6000Wfm;
 })();
-Wfm6000_.Wfm6000 = Wfm6000;
+Rigol6000Wfm_.Rigol6000Wfm = Rigol6000Wfm;
 });

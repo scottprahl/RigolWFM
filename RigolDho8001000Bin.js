@@ -6,9 +6,9 @@
   } else if (typeof exports === 'object' && exports !== null && typeof exports.nodeType !== 'number') {
     factory(exports, require('kaitai-struct/KaitaiStream'));
   } else {
-    factory(root.Bindho1000 || (root.Bindho1000 = {}), root.KaitaiStream);
+    factory(root.RigolDho8001000Bin || (root.RigolDho8001000Bin = {}), root.KaitaiStream);
   }
-})(typeof self !== 'undefined' ? self : this, function (Bindho1000_, KaitaiStream) {
+})(typeof self !== 'undefined' ? self : this, function (RigolDho8001000Bin_, KaitaiStream) {
 /**
  * Official binary waveform export format documented in DHO1000 User Guide
  * §19.2.4 (Tables 19.1–19.4).
@@ -34,8 +34,8 @@
  * stores a positive pre-trigger distance, so downstream code negates it.
  */
 
-var Bindho1000 = (function() {
-  Bindho1000.BufferTypeEnum = Object.freeze({
+var RigolDho8001000Bin = (function() {
+  RigolDho8001000Bin.BufferTypeEnum = Object.freeze({
     UNKNOWN: 0,
     FLOAT32_NORMAL: 1,
     FLOAT32_MAXIMUM: 2,
@@ -51,7 +51,7 @@ var Bindho1000 = (function() {
     5: "DIGITAL_U8",
   });
 
-  Bindho1000.UnitEnum = Object.freeze({
+  RigolDho8001000Bin.UnitEnum = Object.freeze({
     UNKNOWN: 0,
     V: 1,
     S: 2,
@@ -69,7 +69,7 @@ var Bindho1000 = (function() {
     6: "HZ",
   });
 
-  Bindho1000.WaveformTypeEnum = Object.freeze({
+  RigolDho8001000Bin.WaveformTypeEnum = Object.freeze({
     UNKNOWN: 0,
     NORMAL: 1,
     PEAK: 2,
@@ -87,14 +87,14 @@ var Bindho1000 = (function() {
     6: "LOGIC",
   });
 
-  function Bindho1000(_io, _parent, _root) {
+  function RigolDho8001000Bin(_io, _parent, _root) {
     this._io = _io;
     this._parent = _parent;
     this._root = _root || this;
 
     this._read();
   }
-  Bindho1000.prototype._read = function() {
+  RigolDho8001000Bin.prototype._read = function() {
     this.fileHeader = new FileHeader(this._io, this, this._root);
     this.waveforms = [];
     for (var i = 0; i < this.fileHeader.nWaveforms; i++) {
@@ -106,7 +106,7 @@ var Bindho1000 = (function() {
    * 16-byte data buffer header (Table 19.4).
    */
 
-  var DataHeader = Bindho1000.DataHeader = (function() {
+  var DataHeader = RigolDho8001000Bin.DataHeader = (function() {
     function DataHeader(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -145,7 +145,7 @@ var Bindho1000 = (function() {
    * 16-byte file header (Table 19.2).
    */
 
-  var FileHeader = Bindho1000.FileHeader = (function() {
+  var FileHeader = RigolDho8001000Bin.FileHeader = (function() {
     function FileHeader(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -186,7 +186,7 @@ var Bindho1000 = (function() {
    * Stream of calibrated float32 voltage samples for analog buffers.
    */
 
-  var SampleData = Bindho1000.SampleData = (function() {
+  var SampleData = RigolDho8001000Bin.SampleData = (function() {
     function SampleData(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -214,7 +214,7 @@ var Bindho1000 = (function() {
    * One waveform record: header, data header, and sample payload.
    */
 
-  var Waveform = Bindho1000.Waveform = (function() {
+  var Waveform = RigolDho8001000Bin.Waveform = (function() {
     function Waveform(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -242,7 +242,7 @@ var Bindho1000 = (function() {
    * Describes acquisition settings and time-axis parameters for one channel.
    */
 
-  var WaveformHeader = Bindho1000.WaveformHeader = (function() {
+  var WaveformHeader = RigolDho8001000Bin.WaveformHeader = (function() {
     function WaveformHeader(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
@@ -364,7 +364,7 @@ var Bindho1000 = (function() {
     return WaveformHeader;
   })();
 
-  return Bindho1000;
+  return RigolDho8001000Bin;
 })();
-Bindho1000_.Bindho1000 = Bindho1000;
+RigolDho8001000Bin_.RigolDho8001000Bin = RigolDho8001000Bin;
 });
