@@ -12,7 +12,7 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
 class Rigol1000zWfm(KaitaiStruct):
     """Rigol DS1000Z scope .wmf file format.
     
-    Sources used for this KSY binary format. An document titled 
+    Sources used for this KSY binary format. An document titled
     "DS1000Z Waveform Storage Structure" and the Github repository
     <https://github.com/michal-szkutnik/pyRigolWfm1000Z>,
     

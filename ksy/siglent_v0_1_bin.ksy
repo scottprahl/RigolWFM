@@ -10,8 +10,8 @@ doc: |
   layouts. It stores four analog channels with 16-byte value/unit structures
   and places waveform samples after a large fixed metadata block.
 
-  Sources used for this KSY binary format: The binary waveform layout documented by 
-  Siglent as "How to Extract Data from the Binary File of SIGLENT Oscilloscope". 
+  Sources used for this KSY binary format: The binary waveform layout documented by
+  Siglent as "How to Extract Data from the Binary File of SIGLENT Oscilloscope".
 
   Tested file formats: the synthetic `Binary Format V0.1` fixture in
   `tests/test_siglent.py`, exercised through revision detection, low-level

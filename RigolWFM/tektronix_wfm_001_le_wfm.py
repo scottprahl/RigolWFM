@@ -35,7 +35,7 @@ class TektronixWfm001LeWfm(KaitaiStruct):
     where i = 0 corresponds to the first sample in the curve buffer.
     Valid user data starts at curve.data_start_offset bytes into the buffer.
     
-    Sources used for this KSY binary format: "Reference Waveform File Format" 
+    Sources used for this KSY binary format: "Reference Waveform File Format"
     (001-1378-03).
     
     Tested file formats: no checked-in `WFM#001` little-endian fixture currently

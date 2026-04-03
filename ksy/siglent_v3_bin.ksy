@@ -9,8 +9,8 @@ doc: |
   V3.0 retains the V2.0 2 KiB header but adds byte order, horizontal grid
   count, per-channel code-per-division values, and math-wave metadata.
 
-  Sources used for this KSY binary format: The binary waveform layout documented by 
-  Siglent as "How to Extract Data from the Binary File of SIGLENT Oscilloscope". 
+  Sources used for this KSY binary format: The binary waveform layout documented by
+  Siglent as "How to Extract Data from the Binary File of SIGLENT Oscilloscope".
 
   Tested file formats: the synthetic `Binary Format V3.0` fixture in
   `tests/test_siglent.py`, exercised through revision detection, low-level

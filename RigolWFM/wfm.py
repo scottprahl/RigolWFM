@@ -22,7 +22,7 @@ import sys
 import tempfile
 import urllib.parse
 import wave
-from typing import IO, Any, Literal
+from typing import IO, TYPE_CHECKING, Any, Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -39,6 +39,9 @@ import RigolWFM.siglent
 import RigolWFM.tek
 import RigolWFM.yokogawa
 import RigolWFM.yokogawa_hdr
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
 
 # ---------------------------------------------------------------------------
 # Non-Rigol vendor scope-family model-string lists

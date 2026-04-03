@@ -25,7 +25,7 @@ doc: |
 
   Sources used for this KSY binary format: `Agilent InfiniiVision
   6000 Series Oscilloscopes` and `Agilent InfiniiVision 2000 X-Series
-  Oscilloscopes` as well as GitHub repositories 
+  Oscilloscopes` as well as GitHub repositories
   <https://github.com/shotaizu/agilent-oscilloscope-bin-parser>,
   <https://github.com/AntonBryansky/ImportAgilentBin>,
   <https://github.com/yodalee/keysightBin>, and

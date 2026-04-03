@@ -37,7 +37,7 @@ class TektronixWfm002LeWfm(KaitaiStruct):
     
     where i = 0 corresponds to the first sample in the curve buffer.
     
-    Sources used for this KSY binary format: Tektronix "Reference Waveform File Format" 
+    Sources used for this KSY binary format: Tektronix "Reference Waveform File Format"
     (001-1378-03).
     
     Tested file formats: synthetic little-endian `WFM#002` and `WFM#003`

@@ -11,8 +11,8 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
 class SiglentOldBin(KaitaiStruct):
     """This revision is used by older SDS1000X / SDS2000X families.
     
-    Sources used for this KSY binary format: The binary waveform layout documented by 
-    Siglent as "How to Extract Data from the Binary File of SIGLENT Oscilloscope". 
+    Sources used for this KSY binary format: The binary waveform layout documented by
+    Siglent as "How to Extract Data from the Binary File of SIGLENT Oscilloscope".
     
     Tested file formats: the synthetic old-platform fixture built in
     `tests/test_siglent.py`, exercised through revision detection and low-level
