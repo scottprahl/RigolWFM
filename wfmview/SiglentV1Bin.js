@@ -15,8 +15,8 @@
  * V1.0 introduces a compact 2 KiB waveform header at the start of the file and
  * stores enabled analog channels first in the sample payload at offset 0x800.
  * 
- * Sources used for this KSY binary format: The binary waveform layout documented by 
- * Siglent as "How to Extract Data from the Binary File of SIGLENT Oscilloscope". 
+ * Sources used for this KSY binary format: The binary waveform layout documented by
+ * Siglent as "How to Extract Data from the Binary File of SIGLENT Oscilloscope".
  * 
  * Tested file formats: the synthetic `Binary Format V1.0` fixture in
  * `tests/test_siglent.py`, exercised through revision detection, low-level

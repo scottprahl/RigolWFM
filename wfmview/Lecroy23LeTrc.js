@@ -53,8 +53,8 @@
  *            + i * HORIZ_INTERVAL
  * 
  * Sources used for this KSY binary format:
- * `docs/vendors/lecroy/LeCroyWaveformTemplate_2_3.pdf`.  Github repos: 
- * <https://github.com/bennomeier/leCroyParser>, and 
+ * `docs/vendors/lecroy/LeCroyWaveformTemplate_2_3.pdf`.  Github repos:
+ * <https://github.com/bennomeier/leCroyParser>, and
  * <https://github.com/lobis/lecroy-scope> were used for verification.
  * 
  * Tested file formats: synthetic little-endian `LECROY_2_3` files with 8-bit

@@ -16,8 +16,8 @@
  * Each waveform contains a fixed shared header, optional extension bytes, an
  * optional additional-information block, and then the sample payload.
  * 
- * Sources used for this KSY binary format: The binary waveform layout documented by 
- * Siglent as "How to Extract Data from the Binary File of SIGLENT Oscilloscope". 
+ * Sources used for this KSY binary format: The binary waveform layout documented by
+ * Siglent as "How to Extract Data from the Binary File of SIGLENT Oscilloscope".
  * 
  * Tested file formats: the synthetic `Binary Format V6.0` fixture in
  * `tests/test_siglent.py`, exercised through revision detection, low-level

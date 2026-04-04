@@ -684,10 +684,13 @@ function derivedLevels(result) {
     }
 
     result.channels.forEach(function(ch) {
+        if (ch.kind === 'digital') {
+            return;
+        }
         if (sourceChannelNumber && ch.channelNumber !== sourceChannelNumber) {
             return;
         }
-        if (!ch.times.length || !ch.volts.length) {
+        if (!ch.times || !ch.volts || !ch.times.length || !ch.volts.length) {
             return;
         }
         var bestIndex = 0;
@@ -763,9 +766,20 @@ function formatChannelVoltageStat(value) {
     return engineeringString(value, 2).padStart(10, ' ') + 'V';
 }
 
+function channelListLabel(ch) {
+    if (ch && ch.infoLabel) {
+        return ch.infoLabel;
+    }
+    return String(ch.channelNumber);
+}
+
+function channelHeadingLabel(ch) {
+    return channelListLabel(ch);
+}
+
 function channelInfoText(ch, stats) {
     var channelStats = stats || summarizeChannelVoltages(ch, null);
-    var s = '     Channel ' + ch.channelNumber + ':\n';
+    var s = '     Channel ' + channelHeadingLabel(ch) + ':\n';
     s += '         Coupling = ' + String(ch.coupling || 'unknown').padStart(8, ' ') + '\n';
     s += '            Scale = ' + engineeringString(ch.voltPerDiv, 2).padStart(10, ' ') + 'V/div\n';
     s += '           Offset = ' + engineeringString(ch.voltOffset, 2).padStart(10, ' ') + 'V\n';
@@ -780,6 +794,12 @@ function channelInfoText(ch, stats) {
     s += '             Vmax = ' + formatChannelVoltageStat(channelStats.vMax) + '\n';
     s += '             Vave = ' + formatChannelVoltageStat(channelStats.vAve) + '\n';
     s += '             Vrms = ' + formatChannelVoltageStat(channelStats.vRms) + '\n';
+    if (ch.logicMapping) {
+        s += '         Mapping = ' + ch.logicMapping + '\n';
+    }
+    if (ch.observedLabels && ch.observedLabels.length) {
+        s += '        Observed = [' + ch.observedLabels.join(', ') + ']\n';
+    }
 
     return s;
 }
@@ -795,7 +815,7 @@ function buildInfoHeaderText(result, filename) {
     s += '        Firmware     = ' + (result.firmware || 'unknown') + '\n';
     s += '        Filename     = ' + filename + '\n';
     s += '        Channels     = [' + result.channels.map(function(ch) {
-        return ch.channelNumber;
+        return channelListLabel(ch);
     }).join(', ') + ']\n\n';
 
     var levels = derivedLevels(result);
@@ -1820,6 +1840,208 @@ function parseC(buffer) {
     };
 }
 
+function zSliceStride(raw, offset, stride) {
+    var count = Math.floor((raw.length - offset + stride - 1) / stride);
+    var out = new Uint8Array(Math.max(0, count));
+    for (var i = 0, src = offset; i < out.length; i++, src += stride) {
+        out[i] = raw[src];
+    }
+    return out;
+}
+
+function zLooksLikeSingleBitLogic(values) {
+    if (!values.length) {
+        return false;
+    }
+
+    var seen = new Uint8Array(256);
+    var uniqueCount = 0;
+    for (var i = 0; i < values.length; i++) {
+        var value = values[i];
+        if (!seen[value]) {
+            seen[value] = 1;
+            uniqueCount += 1;
+            if (uniqueCount > 8) {
+                return false;
+            }
+            if (value !== 0 && (value & (value - 1)) !== 0) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+function zSplitRawPayload(raw, analogChannels) {
+    if (analogChannels === 0 && raw.length % 2 === 0) {
+        var logicA = zSliceStride(raw, 0, 2);
+        var logicB = zSliceStride(raw, 1, 2);
+        if (zLooksLikeSingleBitLogic(logicA) && zLooksLikeSingleBitLogic(logicB)) {
+            return {
+                analogLanes: [],
+                logicLanes: [logicA, logicB],
+                inferredStride: 2,
+                usesLogicLayout: true,
+            };
+        }
+    }
+
+    if (analogChannels === 1 && raw.length % 4 === 0) {
+        var lanes = [];
+        for (var laneIndex = 0; laneIndex < 4; laneIndex++) {
+            lanes.push(zSliceStride(raw, laneIndex, 4));
+        }
+        if (zLooksLikeSingleBitLogic(lanes[0]) && zLooksLikeSingleBitLogic(lanes[2])) {
+            return {
+                analogLanes: [lanes[1]],
+                logicLanes: [lanes[0], lanes[2]],
+                inferredStride: 4,
+                usesLogicLayout: true,
+            };
+        }
+    }
+
+    return {
+        analogLanes: [],
+        logicLanes: [],
+        inferredStride: Math.max(analogChannels, 1),
+        usesLogicLayout: false,
+    };
+}
+
+function zActiveBits(values) {
+    var mask = 0;
+    var bits = [];
+    for (var i = 0; i < values.length; i++) {
+        mask |= values[i];
+    }
+    for (var bit = 0; bit < 8; bit++) {
+        if (mask & (1 << bit)) {
+            bits.push(bit);
+        }
+    }
+    return bits;
+}
+
+function zBitTrace(values, bit) {
+    var volts = new Float64Array(values.length);
+    var raw = new Uint8Array(values.length);
+    for (var i = 0; i < values.length; i++) {
+        var level = (values[i] >> bit) & 1;
+        volts[i] = level;
+        raw[i] = level ? 255 : 0;
+    }
+    return { volts: volts, raw: raw };
+}
+
+function zLaneAgreement(valuesA, valuesB) {
+    if (!valuesA.length || !valuesB.length) {
+        return 0;
+    }
+    var count = Math.min(valuesA.length, valuesB.length);
+    var matches = 0;
+    for (var i = 0; i < count; i++) {
+        if (valuesA[i] === valuesB[i]) {
+            matches += 1;
+        }
+    }
+    return matches / count;
+}
+
+function zTransitionPositions(values) {
+    var positions = [];
+    for (var i = 0; i + 1 < values.length; i++) {
+        if (values[i + 1] !== values[i]) {
+            positions.push(i);
+        }
+    }
+    return positions;
+}
+
+function zLooksLikeMirroredLowByte(valuesA, valuesB) {
+    var bitsA = zActiveBits(valuesA);
+    var bitsB = zActiveBits(valuesB);
+    if (!bitsA.length || bitsA.length !== bitsB.length) {
+        return false;
+    }
+    for (var i = 0; i < bitsA.length; i++) {
+        if (bitsA[i] !== bitsB[i]) {
+            return false;
+        }
+    }
+
+    if (zLaneAgreement(valuesA, valuesB) < 0.9999) {
+        return false;
+    }
+
+    var transitionsA = zTransitionPositions(valuesA);
+    var transitionsB = zTransitionPositions(valuesB);
+    if (!transitionsA.length || transitionsA.length !== transitionsB.length) {
+        return false;
+    }
+
+    var maxDelta = 0;
+    var totalDelta = 0;
+    for (var j = 0; j < transitionsA.length; j++) {
+        var delta = Math.abs(transitionsA[j] - transitionsB[j]);
+        if (delta > maxDelta) {
+            maxDelta = delta;
+        }
+        totalDelta += delta;
+    }
+    return maxDelta <= 1 && totalDelta / transitionsA.length <= 0.5;
+}
+
+function zNamedDigitalTraces(split) {
+    var traces = [];
+    if (!split.logicLanes.length) {
+        return { mapping: '', traces: traces };
+    }
+
+    var lane0Bits = zActiveBits(split.logicLanes[0]);
+    if (split.logicLanes.length >= 2 && zLooksLikeMirroredLowByte(split.logicLanes[0], split.logicLanes[1])) {
+        lane0Bits.forEach(function(bit) {
+            var trace = zBitTrace(split.logicLanes[0], bit);
+            traces.push({
+                name: 'D' + bit,
+                digitalLine: bit,
+                volts: trace.volts,
+                raw: trace.raw,
+                observedLabels: ['L0.B' + bit, 'L1.B' + bit],
+            });
+        });
+        return { mapping: 'mirrored D7-D0 byte lanes', traces: traces };
+    }
+
+    lane0Bits.forEach(function(bit) {
+        var trace = zBitTrace(split.logicLanes[0], bit);
+        traces.push({
+            name: 'D' + bit,
+            digitalLine: bit,
+            volts: trace.volts,
+            raw: trace.raw,
+            observedLabels: ['L0.B' + bit],
+        });
+    });
+
+    if (split.logicLanes.length >= 2) {
+        zActiveBits(split.logicLanes[1]).forEach(function(bit) {
+            var trace = zBitTrace(split.logicLanes[1], bit);
+            traces.push({
+                name: 'D' + (8 + bit),
+                digitalLine: 8 + bit,
+                volts: trace.volts,
+                raw: trace.raw,
+                observedLabels: ['L1.B' + bit],
+            });
+        });
+        return { mapping: 'D7-D0 + D15-D8 byte lanes', traces: traces };
+    }
+
+    return { mapping: 'single D7-D0 byte lane', traces: traces };
+}
+
 function parseZ(buffer) {
     var w = new Rigol1000zWfm.Rigol1000zWfm(new KaitaiStream(buffer), null, null);
     var h = w.header;
@@ -1827,41 +2049,53 @@ function parseZ(buffer) {
     var spp = h.secondsPerPoint;
     var tOff = h.timeOffset;
     var stride = h.stride;
-    var points = h.points;
-    var start = tOff - points * spp / 2;
     var enabledFlags = [h.ch1Enabled, h.ch2Enabled, h.ch3Enabled, h.ch4Enabled];
+    var analogCount = enabledFlags.reduce(function(total, enabled) {
+        return total + (enabled ? 1 : 0);
+    }, 0);
+    var split = zSplitRawPayload(all, analogCount);
     var channels = [];
     for (var ci = 0; ci < 4; ci++) {
         var chh = h.ch[ci];
         if (!enabledFlags[ci]) {
             continue;
         }
-        var offset;
-        if (stride === 1) {
-            offset = 0;
-        } else if (stride === 2) {
-            var anyLower = false;
-            for (var j = 0; j < ci; j++) {
-                if (enabledFlags[j]) {
-                    anyLower = true;
-                    break;
-                }
-            }
-            offset = anyLower ? 0 : 1;
+        var raw;
+        if (split.usesLogicLayout && analogCount === 1 && split.analogLanes.length) {
+            raw = split.analogLanes[0];
         } else {
-            offset = 3 - ci;
+            var offset;
+            if (stride === 1) {
+                offset = 0;
+            } else if (stride === 2) {
+                var anyLower = false;
+                for (var j = 0; j < ci; j++) {
+                    if (enabledFlags[j]) {
+                        anyLower = true;
+                        break;
+                    }
+                }
+                offset = anyLower ? 0 : 1;
+            } else {
+                offset = 3 - ci;
+            }
+            raw = new Uint8Array(h.points);
+            for (var src = offset, copyIndex = 0; copyIndex < raw.length; copyIndex++, src += stride) {
+                raw[copyIndex] = all[src];
+            }
         }
-        var raw = new Uint8Array(points);
+        var points = raw.length;
+        var start = tOff - points * spp / 2;
         var times = new Float64Array(points);
         var volts = new Float64Array(points);
         for (var i = 0; i < points; i++) {
-            raw[i] = all[offset + i * stride];
             times[i] = start + i * spp;
             volts[i] = chh.yScale * (127 - raw[i]) - chh.yOffset;
         }
         channels.push({
             name: 'CH' + (ci + 1),
             color: CH_COLORS[ci],
+            kind: 'analog',
             times: times,
             volts: volts,
             raw: raw,
@@ -1875,6 +2109,39 @@ function parseZ(buffer) {
             timeScale: h.timeScale,
             timeOffset: tOff,
             secondsPerPoint: spp,
+        });
+    }
+
+    if (split.usesLogicLayout) {
+        var namedDigital = zNamedDigitalTraces(split);
+        namedDigital.traces.forEach(function(trace) {
+            var points = trace.volts.length;
+            var start = tOff - points * spp / 2;
+            var times = new Float64Array(points);
+            for (var i = 0; i < points; i++) {
+                times[i] = start + i * spp;
+            }
+            channels.push({
+                name: trace.name,
+                infoLabel: trace.name,
+                kind: 'digital',
+                color: CH_COLORS[channels.length % CH_COLORS.length],
+                times: times,
+                volts: trace.volts,
+                raw: trace.raw,
+                channelNumber: trace.digitalLine,
+                points: points,
+                coupling: 'DIGITAL',
+                voltPerDiv: 0.25,
+                voltOffset: 0,
+                probeValue: 1,
+                inverted: false,
+                timeScale: h.timeScale,
+                timeOffset: tOff,
+                secondsPerPoint: spp,
+                logicMapping: namedDigital.mapping,
+                observedLabels: trace.observedLabels.slice(),
+            });
         });
     }
     return {
@@ -3887,8 +4154,8 @@ function render(result) {
     ctx.rect(ml, mt, pw, ph);
     ctx.clip();
     result.channels.forEach(function(ch) {
-        var count = ch.times.length;
-        if (!count) {
+        var vertices = channelPlotVertices(ch, xOf, yOf, maxPts);
+        if (!vertices.length) {
             return;
         }
         ctx.strokeStyle = ch.color;
@@ -3897,16 +4164,11 @@ function render(result) {
         ctx.lineJoin = 'round';
         ctx.setLineDash(traceDashArray(ch));
         ctx.beginPath();
-        var skip = Math.max(1, Math.floor(count / maxPts));
-        var first = true;
-        for (var i = 0; i < count; i += skip) {
-            var px = xOf(ch.times[i]);
-            var py = yOf(ch.volts[i]);
-            if (first) {
-                ctx.moveTo(px, py);
-                first = false;
+        for (var i = 0; i < vertices.length; i++) {
+            if (i === 0) {
+                ctx.moveTo(vertices[i][0], vertices[i][1]);
             } else {
-                ctx.lineTo(px, py);
+                ctx.lineTo(vertices[i][0], vertices[i][1]);
             }
         }
         ctx.stroke();
@@ -4014,14 +4276,13 @@ function renderToSVG(result) {
     var maxPts = pw * 2;
     o.push('<g clip-path="url(#plot-clip)">');
     result.channels.forEach(function(ch) {
-        var count = ch.times.length;
-        if (!count) {
+        var vertices = channelPlotVertices(ch, xOf, yOf, maxPts);
+        if (!vertices.length) {
             return;
         }
-        var skip = Math.max(1, Math.floor(count / maxPts));
         var pts = [];
-        for (var i = 0; i < count; i += skip) {
-            pts.push(fx(xOf(ch.times[i])) + ',' + fx(yOf(ch.volts[i])));
+        for (var i = 0; i < vertices.length; i++) {
+            pts.push(fx(vertices[i][0]) + ',' + fx(vertices[i][1]));
         }
         o.push('<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + ch.color + '" stroke-width="1.5" stroke-linecap="' + traceLineCap(ch) + '" stroke-linejoin="round"' + (traceSvgDash(ch) ? ' stroke-dasharray="' + traceSvgDash(ch) + '"' : '') + '/>');
     });
@@ -4327,6 +4588,45 @@ function traceLineCap(channel) {
 function traceSvgDash(channel) {
     var dash = traceDashArray(channel);
     return dash.length ? dash.join(' ') : '';
+}
+
+function channelPlotVertices(channel, xOf, yOf, maxPts) {
+    var count = channel.times.length;
+    var points = [];
+    if (!count) {
+        return points;
+    }
+
+    if (channel.kind === 'digital') {
+        var level = channel.volts[0];
+        points.push([xOf(channel.times[0]), yOf(level)]);
+        for (var i = 1; i < count; i++) {
+            if (channel.volts[i] !== level) {
+                var x = xOf(channel.times[i]);
+                points.push([x, yOf(level)]);
+                level = channel.volts[i];
+                points.push([x, yOf(level)]);
+            }
+        }
+        if (count > 1) {
+            points.push([xOf(channel.times[count - 1]), yOf(level)]);
+        }
+        return points;
+    }
+
+    var skip = Math.max(1, Math.floor(count / maxPts));
+    for (var index = 0; index < count; index += skip) {
+        points.push([xOf(channel.times[index]), yOf(channel.volts[index])]);
+    }
+    if (count > 1) {
+        var lastPoint = points[points.length - 1];
+        var lastX = xOf(channel.times[count - 1]);
+        var lastY = yOf(channel.volts[count - 1]);
+        if (!lastPoint || lastPoint[0] !== lastX || lastPoint[1] !== lastY) {
+            points.push([lastX, lastY]);
+        }
+    }
+    return points;
 }
 
 function normalizeColor(color, fallback) {
