@@ -12,7 +12,7 @@
 /**
  * Rigol DS1000Z scope .wmf file format.
  * 
- * Sources used for this KSY binary format. An document titled 
+ * Sources used for this KSY binary format. An document titled
  * "DS1000Z Waveform Storage Structure" and the Github repository
  * <https://github.com/michal-szkutnik/pyRigolWfm1000Z>,
  * 

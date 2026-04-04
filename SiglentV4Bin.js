@@ -16,9 +16,8 @@
  * expands the analog channel metadata to support up to eight channels plus
  * additional memory/zoom parameters.
  * 
- * Sources used for this KSY binary format:
- * `docs/vendors/siglent/siglent-binaries.pdf` plus the synthetic regression
- * builder in `tests/test_siglent.py`.
+ * Sources used for this KSY binary format: The binary waveform layout documented by
+ * Siglent as "How to Extract Data from the Binary File of SIGLENT Oscilloscope".
  * 
  * Tested file formats: the synthetic `Binary Format V4.0` fixture in
  * `tests/test_siglent.py`, exercised through revision detection, low-level
