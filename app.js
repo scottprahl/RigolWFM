@@ -4154,8 +4154,8 @@ function render(result) {
     ctx.rect(ml, mt, pw, ph);
     ctx.clip();
     result.channels.forEach(function(ch) {
-        var count = ch.times.length;
-        if (!count) {
+        var vertices = channelPlotVertices(ch, xOf, yOf, maxPts);
+        if (!vertices.length) {
             return;
         }
         ctx.strokeStyle = ch.color;
@@ -4164,16 +4164,11 @@ function render(result) {
         ctx.lineJoin = 'round';
         ctx.setLineDash(traceDashArray(ch));
         ctx.beginPath();
-        var skip = Math.max(1, Math.floor(count / maxPts));
-        var first = true;
-        for (var i = 0; i < count; i += skip) {
-            var px = xOf(ch.times[i]);
-            var py = yOf(ch.volts[i]);
-            if (first) {
-                ctx.moveTo(px, py);
-                first = false;
+        for (var i = 0; i < vertices.length; i++) {
+            if (i === 0) {
+                ctx.moveTo(vertices[i][0], vertices[i][1]);
             } else {
-                ctx.lineTo(px, py);
+                ctx.lineTo(vertices[i][0], vertices[i][1]);
             }
         }
         ctx.stroke();
@@ -4281,14 +4276,13 @@ function renderToSVG(result) {
     var maxPts = pw * 2;
     o.push('<g clip-path="url(#plot-clip)">');
     result.channels.forEach(function(ch) {
-        var count = ch.times.length;
-        if (!count) {
+        var vertices = channelPlotVertices(ch, xOf, yOf, maxPts);
+        if (!vertices.length) {
             return;
         }
-        var skip = Math.max(1, Math.floor(count / maxPts));
         var pts = [];
-        for (var i = 0; i < count; i += skip) {
-            pts.push(fx(xOf(ch.times[i])) + ',' + fx(yOf(ch.volts[i])));
+        for (var i = 0; i < vertices.length; i++) {
+            pts.push(fx(vertices[i][0]) + ',' + fx(vertices[i][1]));
         }
         o.push('<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + ch.color + '" stroke-width="1.5" stroke-linecap="' + traceLineCap(ch) + '" stroke-linejoin="round"' + (traceSvgDash(ch) ? ' stroke-dasharray="' + traceSvgDash(ch) + '"' : '') + '/>');
     });
@@ -4594,6 +4588,45 @@ function traceLineCap(channel) {
 function traceSvgDash(channel) {
     var dash = traceDashArray(channel);
     return dash.length ? dash.join(' ') : '';
+}
+
+function channelPlotVertices(channel, xOf, yOf, maxPts) {
+    var count = channel.times.length;
+    var points = [];
+    if (!count) {
+        return points;
+    }
+
+    if (channel.kind === 'digital') {
+        var level = channel.volts[0];
+        points.push([xOf(channel.times[0]), yOf(level)]);
+        for (var i = 1; i < count; i++) {
+            if (channel.volts[i] !== level) {
+                var x = xOf(channel.times[i]);
+                points.push([x, yOf(level)]);
+                level = channel.volts[i];
+                points.push([x, yOf(level)]);
+            }
+        }
+        if (count > 1) {
+            points.push([xOf(channel.times[count - 1]), yOf(level)]);
+        }
+        return points;
+    }
+
+    var skip = Math.max(1, Math.floor(count / maxPts));
+    for (var index = 0; index < count; index += skip) {
+        points.push([xOf(channel.times[index]), yOf(channel.volts[index])]);
+    }
+    if (count > 1) {
+        var lastPoint = points[points.length - 1];
+        var lastX = xOf(channel.times[count - 1]);
+        var lastY = yOf(channel.volts[count - 1]);
+        if (!lastPoint || lastPoint[0] !== lastX || lastPoint[1] !== lastY) {
+            points.push([lastX, lastY]);
+        }
+    }
+    return points;
 }
 
 function normalizeColor(color, fallback) {
