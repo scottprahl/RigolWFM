@@ -35,6 +35,7 @@ import RigolWFM.isf
 import RigolWFM.lecroy
 import RigolWFM.rohde_schwarz
 import RigolWFM.rigol
+import RigolWFM.rigol_1000z_logic
 import RigolWFM.siglent
 import RigolWFM.tek
 import RigolWFM.yokogawa
@@ -383,6 +384,21 @@ def _rohde_schwarz_payload_url(url: str) -> str:
     return parsed._replace(path=path[:-4] + ".Wfm.bin").geturl()
 
 
+def _best_firmware_version(waveform: Any) -> str:
+    """Return the most informative firmware-version string exposed by a parser."""
+    preheader = getattr(waveform, "preheader", None)
+    preheader_firmware = getattr(preheader, "firmware_version", "")
+    if preheader_firmware:
+        return str(preheader_firmware)
+
+    header = getattr(waveform, "header", None)
+    header_firmware = getattr(header, "firmware_version", "")
+    if header_firmware:
+        return str(header_firmware)
+
+    return ""
+
+
 def valid_scope_list() -> str:
     """List all supported oscilloscope model strings."""
     s = "\nRigol oscilloscope models:\n    "
@@ -455,6 +471,13 @@ class Wfm:
         self.header_name = "unknown"
         self.serial_number = ""
         self.trigger_info: dict = {}
+        self.logic_split: RigolWFM.rigol_1000z_logic.Rigol1000zSplit | None = None
+        self.logic_mapping = ""
+        self.logic_channels: dict[str, npt.NDArray[np.uint8]] = {}
+        self.logic_observed_channels: dict[str, npt.NDArray[np.uint8]] = {}
+        self.logic_times: npt.NDArray[np.float64] | None = None
+        self.logic_seconds_per_point: float | None = None
+        self.logic_time_offset: float | None = None
 
     @classmethod
     def from_file(cls, file_name: str, model: str = "auto", selected: str = "1234") -> "Wfm":
@@ -537,6 +560,31 @@ class Wfm:
         pname = getattr(w, "parser_name", type(w).__module__.rsplit(".", 1)[-1])
         pname = _CANONICAL_PARSER_NAMES.get(pname, pname)
         new_wfm.parser_name = pname
+        fallback_firmware = _best_firmware_version(w)
+
+        if pname == "wfm1000z":
+            enabled_count = sum(
+                int(flag)
+                for flag in (
+                    getattr(w.header, "ch1_enabled", False),
+                    getattr(w.header, "ch2_enabled", False),
+                    getattr(w.header, "ch3_enabled", False),
+                    getattr(w.header, "ch4_enabled", False),
+                )
+            )
+            split = RigolWFM.rigol_1000z_logic.split_raw_payload(w.data.raw, enabled_count)
+            if split.uses_logic_layout:
+                new_wfm.logic_split = split
+                new_wfm.logic_observed_channels = RigolWFM.rigol_1000z_logic.observed_bit_traces(split)
+                new_wfm.logic_channels, new_wfm.logic_mapping = RigolWFM.rigol_1000z_logic.named_digital_traces(split)
+                if split.logic_lanes:
+                    logic_points = len(split.logic_lanes[0])
+                    new_wfm.logic_seconds_per_point = float(w.header.seconds_per_point)
+                    new_wfm.logic_time_offset = float(w.header.time_offset)
+                    start = new_wfm.logic_time_offset - logic_points * new_wfm.logic_seconds_per_point / 2
+                    new_wfm.logic_times = (
+                        start + np.arange(logic_points) * new_wfm.logic_seconds_per_point
+                    ).astype(np.float64)
 
         # Warn when the model embedded in the file clearly disagrees with the
         # user-supplied model.  Single-character aliases (B, C, D, E, Z) and
@@ -567,12 +615,17 @@ class Wfm:
             new_wfm.channels.append(ch)
 
         if len(new_wfm.channels) == 0:
-            print("Sorry! No channels in the waveform are both selected and enabled", file=sys.stderr)
-            print(f"    User selected channels = '{selected}'", file=sys.stderr)
-            print(f"    Scope enabled channels = '{enabled}'", file=sys.stderr)
-            print(file=sys.stderr)
+            if not new_wfm.logic_channels:
+                print("Sorry! No channels in the waveform are both selected and enabled", file=sys.stderr)
+                print(f"    User selected channels = '{selected}'", file=sys.stderr)
+                print(f"    Scope enabled channels = '{enabled}'", file=sys.stderr)
+                print(file=sys.stderr)
+            if fallback_firmware:
+                new_wfm.firmware = fallback_firmware
         else:
             new_wfm.firmware = new_wfm.channels[0].firmware
+            if new_wfm.firmware == "unknown" and fallback_firmware:
+                new_wfm.firmware = fallback_firmware
 
         return new_wfm
 
@@ -665,6 +718,26 @@ class Wfm:
             s += "%s" % ch.channel_number
             first = False
         s += "]\n\n"
+
+        if self.logic_split is not None and self.logic_split.uses_logic_layout:
+            s += "    Logic:\n"
+            s += "        Layout       = interleaved stride %d\n" % self.logic_split.inferred_stride
+            if self.logic_mapping:
+                s += "        Mapping      = %s\n" % self.logic_mapping
+            if self.logic_split.logic_lanes:
+                s += "        Points       = %8d\n" % len(self.logic_split.logic_lanes[0])
+            if self.logic_seconds_per_point is not None:
+                s += "        Delta        = %10ss/point\n" % (
+                    RigolWFM.channel.engineering_string(self.logic_seconds_per_point, 3)
+                )
+            s += "        Traces       = ["
+            s += ", ".join(self.logic_channels)
+            s += "]\n"
+            if self.logic_observed_channels and list(self.logic_observed_channels) != list(self.logic_channels):
+                s += "        Observed     = ["
+                s += ", ".join(self.logic_observed_channels)
+                s += "]\n"
+            s += "\n"
 
         # Compute derived trigger levels: voltage at t=0 for relevant analog channels.
         _source = self.trigger_info.get("source", "")

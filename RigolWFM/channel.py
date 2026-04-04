@@ -22,6 +22,8 @@ from typing import Any, Optional
 import numpy as np
 import numpy.typing as npt
 
+import RigolWFM.rigol_1000z_logic
+
 __all__ = ["UnitEnum", "Channel", "best_scale", "engineering_string"]
 
 
@@ -439,7 +441,26 @@ class Channel:
         self.y_offset = w.header.ch[channel_number - 1].y_offset
 
         if self.enabled_and_selected:
-            self.raw = _channel_bytes(channel_number, w)
+            enabled_count = sum(
+                int(flag)
+                for flag in (
+                    getattr(w.header, "ch1_enabled", False),
+                    getattr(w.header, "ch2_enabled", False),
+                    getattr(w.header, "ch3_enabled", False),
+                    getattr(w.header, "ch4_enabled", False),
+                )
+            )
+            split = RigolWFM.rigol_1000z_logic.split_raw_payload(w.data.raw, enabled_count)
+
+            # Mixed analog+logic captures observed on Z/MSO-class scopes expose
+            # the active analog trace on lane 1 while lanes 0 and 2 behave like
+            # logic-byte streams.  When that pattern is not present, fall back
+            # to the long-standing analog-only extraction logic.
+            if split.uses_logic_layout and enabled_count == 1 and split.analog_lanes:
+                self.raw = split.analog_lanes[0]
+            else:
+                self.raw = _channel_bytes(channel_number, w)
+
             self.points = len(self.raw)
 
         self.calc_times_and_volts(sample_aligned=True)

@@ -2,8 +2,14 @@
         File Model   = DS1074Z Plus
         User Model   = Z
         Parser Model = wfm1000z
-        Firmware     = unknown
+        Firmware     = 00.04.05.SP2
         Filename     = DS1074Z-C.wfm
         Channels     = []
 
-
+    Logic:
+        Layout       = interleaved stride 2
+        Mapping      = mirrored D7-D0 byte lanes
+        Points       =  3000256
+        Delta        =   20.000 ns/point
+        Traces       = [D6]
+        Observed     = [L0.B6, L1.B6]
