@@ -164,7 +164,9 @@ def _looks_like_single_bit_logic(values: npt.NDArray[np.uint8]) -> bool:
     return all(value == 0 or (int(value) & (int(value) - 1)) == 0 for value in unique)
 
 
-def split_raw_payload(raw_bytes: bytes | bytearray | memoryview | npt.NDArray[np.uint8], analog_channels: int) -> Rigol1000zSplit:
+def split_raw_payload(
+    raw_bytes: bytes | bytearray | memoryview | npt.NDArray[np.uint8], analog_channels: int
+) -> Rigol1000zSplit:
     """Return a best-effort split of a DS1000Z raw payload.
 
     Args:
@@ -183,7 +185,9 @@ def split_raw_payload(raw_bytes: bytes | bytearray | memoryview | npt.NDArray[np
         logic_a = raw[0::2].copy()
         logic_b = raw[1::2].copy()
         if _looks_like_single_bit_logic(logic_a) and _looks_like_single_bit_logic(logic_b):
-            return Rigol1000zSplit(analog_lanes=(), logic_lanes=(logic_a, logic_b), inferred_stride=2, uses_logic_layout=True)
+            return Rigol1000zSplit(
+                analog_lanes=(), logic_lanes=(logic_a, logic_b), inferred_stride=2, uses_logic_layout=True
+            )
 
     if analog_channels == 1 and raw.size % 4 == 0:
         lanes = tuple(raw[index::4].copy() for index in range(4))
@@ -195,4 +199,6 @@ def split_raw_payload(raw_bytes: bytes | bytearray | memoryview | npt.NDArray[np
                 uses_logic_layout=True,
             )
 
-    return Rigol1000zSplit(analog_lanes=(), logic_lanes=(), inferred_stride=max(analog_channels, 1), uses_logic_layout=False)
+    return Rigol1000zSplit(
+        analog_lanes=(), logic_lanes=(), inferred_stride=max(analog_channels, 1), uses_logic_layout=False
+    )

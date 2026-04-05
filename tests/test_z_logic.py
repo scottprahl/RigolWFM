@@ -20,7 +20,7 @@ def _interleave(*lanes: np.ndarray) -> bytes:
     assert all(len(lane) == count for lane in lanes)
     raw = np.empty(count * len(lanes), dtype=np.uint8)
     for index, lane in enumerate(lanes):
-        raw[index:: len(lanes)] = lane
+        raw[index :: len(lanes)] = lane
     return raw.tobytes()
 
 
@@ -33,7 +33,7 @@ def test_split_raw_payload_detects_logic_only_capture():
 
     assert split.uses_logic_layout
     assert split.inferred_stride == 2
-    assert split.analog_lanes == ()
+    assert not split.analog_lanes
     np.testing.assert_array_equal(split.logic_low, logic_a)
     np.testing.assert_array_equal(split.logic_high, logic_b)
     assert split.logic_low_mask == 0x40
@@ -121,7 +121,7 @@ def test_checked_in_z_logic_only_fixture_exposes_observed_logic_traces():
     """The checked-in DS1074Z logic-only fixture should map to named digital traces."""
     waveform = RigolWFM.wfm.Wfm.from_file(str(_CHECKED_IN_LOGIC_ONLY), "Z")
 
-    assert waveform.channels == []
+    assert not waveform.channels
     assert waveform.firmware == "00.04.05.SP2"
     assert waveform.logic_split is not None
     assert waveform.logic_split.uses_logic_layout

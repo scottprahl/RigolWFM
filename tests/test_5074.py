@@ -51,7 +51,7 @@ def test_wfm_from_file_accepts_5074_alias_but_uses_bin5000_parser():
 
     assert alias_waveform.parser_name == family_waveform.parser_name == "bin5000"
     assert alias_waveform.header_name == family_waveform.header_name == "MSO5074"
-    assert alias_waveform.channels == []
+    assert not alias_waveform.channels
     assert list(alias_waveform.logic_channels) == [f"D{i}" for i in range(8)]
     assert alias_waveform.logic_mapping == "LA D7-D0"
     assert alias_waveform.logic_times is not None

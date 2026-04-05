@@ -47,7 +47,7 @@ TABLE_RSTS      := $(patsubst ksy/%.ksy,$(TABLES_DIR)/%_table.rst,$(KSY_FILES))
 PYLINT_TARGETS  := $(PACKAGE_DIR)/*.py tests/*.py .github/scripts/update_citation.py
 PYDOC_TARGETS   := $(PACKAGE_DIR)/wfm.py $(PACKAGE_DIR)/channel.py $(PACKAGE_DIR)/wfmconvert.py
 YAML_TARGETS    := .github/workflows/*.yaml .readthedocs.yaml
-RST_TARGETS     := README.rst CHANGELOG.rst $(DOCS_DIR)/index.rst $(DOCS_DIR)/changelog.rst
+RST_TARGETS     := README.rst CHANGELOG.rst
 BLACK_PY_TARGETS := $(filter-out $(GENERATED_PY_FILES),$(wildcard $(PACKAGE_DIR)/*.py)) \
 	$(wildcard tests/*.py) \
 	.github/scripts/update_citation.py \

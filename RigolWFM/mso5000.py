@@ -234,7 +234,12 @@ def _looks_like_malformed_5074(file_name: str) -> bool:
     with open(file_name, "rb") as handle:
         raw = handle.read()
 
-    return raw.startswith(b"RG01") and raw.count(b"RG01") > 1 and len(raw) >= 16 and int.from_bytes(raw[12:16], "little") == 144
+    return (
+        raw.startswith(b"RG01")
+        and raw.count(b"RG01") > 1
+        and len(raw) >= 16
+        and int.from_bytes(raw[12:16], "little") == 144
+    )
 
 
 def _validate_standard_rg01_layout(file_name: str, raw: Any) -> None:

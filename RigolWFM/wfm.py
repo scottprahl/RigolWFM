@@ -580,9 +580,9 @@ class Wfm:
                     new_wfm.logic_seconds_per_point = float(w.header.seconds_per_point)
                     new_wfm.logic_time_offset = float(w.header.time_offset)
                     start = new_wfm.logic_time_offset - logic_points * new_wfm.logic_seconds_per_point / 2
-                    new_wfm.logic_times = (
-                        start + np.arange(logic_points) * new_wfm.logic_seconds_per_point
-                    ).astype(np.float64)
+                    new_wfm.logic_times = (start + np.arange(logic_points) * new_wfm.logic_seconds_per_point).astype(
+                        np.float64
+                    )
         elif pname == "bin5000":
             logic_channels = getattr(w, "logic_channels", {})
             if logic_channels:
@@ -600,8 +600,9 @@ class Wfm:
                     and new_wfm.logic_seconds_per_point is not None
                     and logic_x_origin is not None
                 ):
+                    logic_start = -float(logic_x_origin)
                     new_wfm.logic_times = (
-                        -logic_x_origin + np.arange(len(first_trace)) * new_wfm.logic_seconds_per_point
+                        logic_start + np.arange(len(first_trace)) * new_wfm.logic_seconds_per_point
                     ).astype(np.float64)
 
         # Warn when the model embedded in the file clearly disagrees with the

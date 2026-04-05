@@ -467,7 +467,10 @@ def test_wfmview_rg01_logic_helpers_execute_under_node():
         if (JSON.stringify(Array.from(result.channels[1].volts)) !== JSON.stringify([0, 0, 1, 1])) {{
             throw new Error('D1 should follow bit 1 of the RG01 logic byte stream.');
         }}
-        if (!buildInfoHeaderText(result, 'MSO5074-C.bin').includes('Channels     = [D0, D1, D2, D3, D4, D5, D6, D7]')) {{
+        if (
+            !buildInfoHeaderText(result, 'MSO5074-C.bin')
+                .includes('Channels     = [D0, D1, D2, D3, D4, D5, D6, D7]')
+        ) {{
             throw new Error('RG01 logic channels should appear in the viewer info header.');
         }}
 
