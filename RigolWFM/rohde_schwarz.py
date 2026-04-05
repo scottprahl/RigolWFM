@@ -329,13 +329,13 @@ def _decode_single_acquisition(
 
     if signal_format == "eRS_SIGNAL_FORMAT_XYDOUBLEFLOAT":
         row_dtype = np.dtype([("time", "<f8"), ("channels", "<f4", (channel_count,))])
-        rows = np.frombuffer(payload, dtype=row_dtype)
-        if rows.size != expected_rows:
+        xy_rows = np.frombuffer(payload, dtype=row_dtype)
+        if xy_rows.size != expected_rows:
             raise ValueError(
                 "Rohde & Schwarz XYDOUBLEFLOAT payload length does not match its XML metadata: "
-                f"expected {expected_rows} rows, found {rows.size}"
+                f"expected {expected_rows} rows, found {xy_rows.size}"
             )
-        window = rows[leading_samples : leading_samples + record_length]
+        window = xy_rows[leading_samples : leading_samples + record_length]
         if window.size != record_length:
             raise ValueError("Rohde & Schwarz XYDOUBLEFLOAT payload is shorter than its requested RecordLength")
         times = window["time"].astype(np.float64, copy=True)

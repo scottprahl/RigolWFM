@@ -45,10 +45,30 @@
    1-DS4000-Waveforms.ipynb
 
 .. toctree::
+   :caption: 5 Series
+
+   1-MSO5000-Waveforms.ipynb
+
+.. toctree::
    :caption: DHO Series
 
    1-DHO800-Waveforms.ipynb
    1-DHO1000-Waveforms.ipynb
+
+.. toctree::
+   :caption: Agilent / Keysight
+
+   1-Agilent-Waveforms.ipynb
+
+.. toctree::
+   :caption: LeCroy
+
+   1-LeCroy-Waveforms.ipynb
+
+.. toctree::
+   :caption: Rohde & Schwarz
+
+   1-Rohde-Schwarz-Waveforms.ipynb
 
 .. toctree::
    :caption: Schema Tables

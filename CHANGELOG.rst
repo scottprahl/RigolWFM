@@ -1,12 +1,13 @@
 Changelog
 =========
 
-Unreleased (2026-03-29)
+Unreleased (2026-04-04)
 ------------------------
 *    add web based viewer of .wfm files
 *    extend ``wfmview`` to support Agilent / Keysight ``AG01``/``AG03``/``AG10`` ``.bin`` files
 *    extend ``wfmview`` to support Rohde & Schwarz RTP XML ``.bin`` files with companion ``.Wfm.bin`` payloads
 *    extend ``wfmview`` to support Siglent ``.bin`` files for documented revisions V0.1, V0.2, V1.0, V2.0, V3.0, V4.0, V5.0, and V6.0
+*    extend ``wfmview`` to support Rigol RG01 logic channels and DS1000Z digital traces, including scope-style stepped rendering
 *    fix ``wfmview`` file-picker filters to advertise supported ``.trc`` and ``.isf`` files
 *    improve browser-side LeCroy detection by scanning for ``WAVEDESC`` beyond short prefixes
 *    fix timing issue for DHO800.wfm files
@@ -14,6 +15,7 @@ Unreleased (2026-03-29)
 *    add Rigol MSO5000 binary waveform support
 *    add Rigol MSO7000/MSO8000 binary waveform support via shared ``RigolWFM.mso7000_8000`` adapter
 *    add MSO5074-specific adapter to work around firmware bugs (wrong metadata, uint8 ADC counts, concatenated per-channel blocks)
+*    treat standard ``MSO5074-C.bin`` captures as part of the MSO5000 / RG01 family, expose their logic channels, and drop support for broken concatenated MSO5074 exports
 *    fix ``IndexError`` in ``Channel.__str__`` when a channel has fewer than 5 points
 *    fix ``wav()`` crash when no channels are enabled
 *    fix ``csv()`` and ``sigrokcsv()`` to use the shortest channel when channels have mismatched point counts
@@ -27,6 +29,7 @@ Unreleased (2026-03-29)
 *    add Kaitai Struct descriptions and normalized adapters for Agilent / Keysight ``AGxx`` ``.bin`` files
 *    add Kaitai Struct descriptions and normalized adapters for Rohde & Schwarz RTP XML ``.bin`` metadata plus companion ``.Wfm.bin`` payloads
 *    add Kaitai Struct descriptions for Siglent documented ``.bin`` revisions plus browser-side generated parsers for ``wfmview``
+*    rename Kaitai schemas, generated parser modules, and browser parser assets to family-specific names, clean up schema titles / source metadata, and add generated schema tables plus ``scripts/ksy_to_table.py`` to the docs workflow
 *    add ``RigolWFM.dho`` adapter logic so DHO ``.bin`` and ``.wfm`` files match ``Wfm`` and ``Channel`` interfaces
 *    add ``RigolWFM.agilent`` adapter logic so Agilent / Keysight ``.bin`` files match ``Wfm`` and ``Channel`` interfaces
 *    add ``RigolWFM.rohde_schwarz`` adapter logic so supported Rohde & Schwarz RTP exports match ``Wfm`` and ``Channel`` interfaces
@@ -34,14 +37,18 @@ Unreleased (2026-03-29)
 *    extend DHO ``.wfm`` decoding for DHO800 differences and DHO1000 multichannel captures
 *    fail fast on unsupported DHO ``.bin`` buffer types instead of silently misinterpreting non-analog payloads
 *    add Yokogawa ``.wfm`` support via ``RigolWFM.yokogawa`` and autodetect integration
+*    add Yokogawa ``.hdr`` companion-metadata parsing for ``.hdr`` + ``.wvf`` waveform packages via ``RigolWFM.yokogawa_hdr``
 *    add legacy Tektronix ``LLWFM`` support alongside modern ``WFM#001``/``WFM#002``/``WFM#003`` parsing
 *    fix Tektronix ``WFM#003`` parsing by reading user-view ``point_density`` fields at their correct 8-byte layout
 *    reject unsupported Tektronix FastFrame, multi-curve, and unknown-version ``.wfm`` files more explicitly
 *    preserve Tektronix ``WFID`` and waveform labels as trace metadata instead of reporting them as instrument models
 *    improve LeCroy ``.trc`` detection by scanning for ``WAVEDESC`` beyond short SCPI / transport prefixes
 *    align Agilent / Keysight parsing with vendor docs and reference readers: use ``x_origin``, expose multi-buffer waveforms in the low-level parser, preserve segment metadata, and reject unsupported segmented or Peak Detect normalization paths
+*    fix Agilent / Keysight channel timing with new InfiniiVision test coverage
+*    add DS1000Z / MSO1000Z digital-trace inference, expose named logic channels through ``Wfm``, and keep analog + digital mixed captures aligned
 *    add test coverage in ``tests/test_dho1000.py`` and ``tests/test_dho800.py``
 *    add regression coverage for Agilent / Keysight, Siglent, Yokogawa, Tektronix ``WFM#003``/``LLWFM``, Tektronix ``.isf`` label handling, and LeCroy SCPI-prefixed ``.trc`` files
+*    add regression coverage for ``wfmview`` browser helpers, schema-table generation, Z-series logic decoding, RG01 logic, Yokogawa ``.hdr`` parsing, and new Agilent / Rohde & Schwarz fixtures
 *    add smoke tests for ``wfmview`` assets plus CLI coverage for newer waveform families using checked-in and synthetic fixtures
 *    run real tests and lint in GitHub Actions instead of only checking ``wfmconvert --version``
 *    scope default ``pytest`` discovery to the repository test suite and ignore vendored test trees under ``docs/vendors``
@@ -49,14 +56,17 @@ Unreleased (2026-03-29)
 *    add notebooks ``1-DHO1000-Waveforms.ipynb`` and ``1-DHO800-Waveforms.ipynb`` and include the new waveform docs in the notebook test suite
 *    ignore generated parser modules in Ruff and Pylint to keep lint results focused on handwritten code
 *    update README, docs index, Makefile targets, and manifest entries for the new DHO parser and documentation workflow
+*    refresh README installation text, notebook examples, and generated docs to match renamed schemas, updated sources, and new sample files
 *    migrate package metadata and dependencies fully into ``pyproject.toml``
 *    switch Makefile workflows to uv-based tooling and shared command wrappers
 *    add consistent ``RM``/``RMR`` cleanup variables and remove hardcoded ``rm`` usage
 *    update supported Python policy to 3.10 through 3.14 in package metadata and CI
+*    remove ``from __future__ import annotations`` now that Python 3.10+ is required, and fix the resulting import-time and mypy regressions
 *    update docs and lite dependency ranges, including ``rstcheck[toml,sphinx]``
 *    add JupyterLite build/serve/deploy tooling and configuration
 *    modernize Read the Docs install/runtime configuration
 *    improve docs configuration and project automation/help targets
+*    make ``rcheck`` / ``html`` clean again, including doc-lint false positives and notebook syntax-highlighting warnings
 *    fix badges and default branch references
 *    improve testing structure
 *    broaden README and package metadata to describe the current multi-vendor scope of the project

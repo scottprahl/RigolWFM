@@ -290,6 +290,7 @@ def from_file(file_name: str) -> LeCroyWaveform:
 
     # Decode sample array
     byte_order = "<" if is_le else ">"
+    adc: npt.NDArray[np.signedinteger[Any]]
     if is_16bit:
         dtype = np.dtype(f"{byte_order}i2")
         adc = np.frombuffer(raw_bytes, dtype=dtype).astype(np.int16)

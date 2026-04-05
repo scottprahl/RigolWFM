@@ -1,5 +1,8 @@
 """Snapshot tests for Rigol 1000E-family `wfmconvert info` output."""
 
+from pathlib import Path
+import wave
+
 import pytest
 import RigolWFM.wfm
 
@@ -52,3 +55,25 @@ def test_ds1102e_time_grid_matches_sample_period(stem, _expected_points):
     for channel in waveform.channels:
         if channel.enabled:
             assert channel.times[1] - channel.times[0] == pytest.approx(channel.seconds_per_point)
+
+
+def test_wav_export_accepts_pathlike_output(tmp_path):
+    """`Wfm.wav()` should accept `pathlib.Path` destinations as documented."""
+    waveform = RigolWFM.wfm.Wfm.from_file("tests/files/wfm/DS1102E-D.wfm", "E")
+
+    wav_path = Path(tmp_path) / "ds1102e-d.wav"
+    waveform.wav(wav_path, channel=1, scale="auto")
+
+    assert wav_path.is_file()
+    with wave.open(str(wav_path), "rb") as handle:
+        assert handle.getnchannels() == 1
+        assert handle.getsampwidth() == 2
+        assert handle.getnframes() == 8192
+
+
+def test_wav_export_rejects_channel_that_is_not_selected(tmp_path):
+    """`Wfm.wav()` should reject channels excluded by the `selected=` filter."""
+    waveform = RigolWFM.wfm.Wfm.from_file("tests/files/wfm/DS1102E-D.wfm", "E", selected="1")
+
+    with pytest.raises(ValueError, match="enabled/selected"):
+        waveform.wav(tmp_path / "not-selected.wav", channel=2, scale="scope")

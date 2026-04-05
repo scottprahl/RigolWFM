@@ -272,7 +272,7 @@ def main() -> None:
             wfmconvert --channel 2 csv DS1102E.wfm
             wfmconvert --channel 124 vcsv DS1102E.wfm
             wfmconvert --channel 3 --scale scope wav DS1102E.wfm
-            wfmconvert --channel 12 wav DS1102E.wfm
+            wfmconvert --channel 12 --scale scope wav DS1102E.wfm
             wfmconvert --model C info DS1042C-A.wfm
         """) + RigolWFM.wfm.valid_scope_list(),
     )
@@ -316,7 +316,8 @@ def main() -> None:
         help=textwrap.dedent("""\
         voltage scaling for WAV output (default: auto).
           auto:  signal min/max → ±32767.  Waveform shape is preserved;
-                 set Vpeak on the LTspice WAV source to the actual peak voltage.
+                 set Vpeak on the LTspice WAV source to half the signal's
+                 peak-to-peak voltage.
           scope: scope ±(4×V/div) range → ±32767.  Zero volts stays at zero;
                  set Vpeak = 4×V/div in LTspice.
         """),

@@ -926,8 +926,8 @@ class Wfm:
             scale: How to map voltages to the ±32767 integer range.
                 ``"auto"`` maps each channel's own min/max volts to ±32767.
                 This preserves waveform shape, but absolute voltage information is
-                lost. In LTspice, set ``Vpeak`` on the WAV source to the actual
-                peak voltage.
+                lost. In LTspice, set ``Vpeak`` on the WAV source to half the
+                signal's peak-to-peak voltage.
 
                 ``"scope"`` maps each channel's ±(4 × V/div) full-scale range to
                 ±32767 while keeping zero volts at zero. In LTspice, set
@@ -977,7 +977,13 @@ class Wfm:
         _MAX_WAV_U32 = 2**32 - 1
         sample_rate = int(min(round(1.0 / channels[0].seconds_per_point), _MAX_WAV_U32 // (n_channels * 2)))
 
-        wavef = wave.Wave_write(filename)  # type: ignore[arg-type]
+        wave_target: str | IO[bytes]
+        if isinstance(filename, (str, os.PathLike)):
+            wave_target = os.fspath(filename)
+        else:
+            wave_target = filename
+
+        wavef = wave.open(wave_target, "wb")
         try:
             wavef.setnchannels(n_channels)
             wavef.setsampwidth(2)
