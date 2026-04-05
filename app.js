@@ -806,14 +806,13 @@ function channelInfoText(ch, stats) {
 
 function buildInfoHeaderText(result, filename) {
     var s = '    General:\n';
-    s += '        File Model   = ' + (result.fileModel || result.format) + '\n';
+    s += '        Filename     = ' + filename + '\n';
+    s += '        Scope        = ' + (result.fileModel || result.format) + '\n';
+    s += '        Parser Model = ' + (result.parserModel || 'browser') + '\n';
     if (result.serialNumber) {
         s += '        Serial Number = ' + result.serialNumber + '\n';
     }
-    s += '        User Model   = ' + (result.userModel || 'auto') + '\n';
-    s += '        Parser Model = ' + (result.parserModel || 'browser') + '\n';
     s += '        Firmware     = ' + (result.firmware || 'unknown') + '\n';
-    s += '        Filename     = ' + filename + '\n';
     s += '        Channels     = [' + result.channels.map(function(ch) {
         return channelListLabel(ch);
     }).join(', ') + ']\n\n';
