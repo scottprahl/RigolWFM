@@ -347,9 +347,7 @@ def main() -> None:
         csv:    convert to a file with comma separated values
         info:   show the various scope settings for a waveform file
         png:    save a waveform plot as a PNG image (use --dpi to set resolution)
-        wav:    convert to a WAV sound format file for use with Audacity
-                or Sigrok Pulseview. If a single channel is specified then
-                the .wav file can be used with LTspice.
+        wav:    convert to a WAV sound format file for use with Pulseview or LTspice.
         vcsv:   convert to a file with comma separated values with raw voltages
         sigrok: convert to a sigrok file
         """),

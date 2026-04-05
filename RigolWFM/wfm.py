@@ -818,7 +818,64 @@ class Wfm:
             if h > h_scale:
                 h_scale = h
                 h_prefix = p
+        if not self.channels:
+            logic_span = 0.0
+            if self.logic_times is not None and len(self.logic_times) > 1:
+                logic_span = float(self.logic_times[-1] - self.logic_times[0])
+            elif self.logic_seconds_per_point is not None:
+                logic_span = float(self.logic_seconds_per_point)
+            h_scale, h_prefix = RigolWFM.channel.best_scale(logic_span)
         return h_scale, h_prefix, v_scale, v_prefix
+
+    def _csv_series(
+        self,
+    ) -> tuple[
+        npt.NDArray[np.float64],
+        list[tuple[str, str, npt.NDArray[np.float64] | npt.NDArray[np.uint8]]],
+    ]:
+        """Return a shared X axis plus ordered analog/digital traces for CSV export."""
+        analog_channels = [
+            ch
+            for ch in self.channels
+            if ch.enabled_and_selected and ch.times is not None and ch.volts is not None and ch.points > 0
+        ]
+        digital_channels = list(self.logic_channels.items())
+
+        if not analog_channels and not digital_channels:
+            return np.empty(0, dtype=np.float64), []
+
+        base_times: npt.NDArray[np.float64] | None
+        if analog_channels:
+            assert analog_channels[0].times is not None
+            base_times = analog_channels[0].times.astype(np.float64, copy=False)
+        elif self.logic_times is not None:
+            base_times = self.logic_times.astype(np.float64, copy=False)
+        else:
+            first_trace = next(iter(self.logic_channels.values()), None)
+            if first_trace is None:
+                return np.empty(0, dtype=np.float64), []
+            start = float(self.logic_time_offset or 0.0)
+            step = float(self.logic_seconds_per_point or 1.0)
+            base_times = start + np.arange(len(first_trace), dtype=np.float64) * step
+
+        n_pts = len(base_times)
+        for ch in analog_channels:
+            assert ch.times is not None
+            assert ch.volts is not None
+            n_pts = min(n_pts, len(ch.times), len(ch.volts), ch.points)
+        if self.logic_times is not None:
+            n_pts = min(n_pts, len(self.logic_times))
+        for _, trace in digital_channels:
+            n_pts = min(n_pts, len(trace))
+
+        series: list[tuple[str, str, npt.NDArray[np.float64] | npt.NDArray[np.uint8]]] = []
+        for ch in analog_channels:
+            assert ch.volts is not None
+            series.append((ch.name, "analog", ch.volts[:n_pts]))
+        for name, trace in digital_channels:
+            series.append((name, "digital", trace[:n_pts]))
+
+        return base_times[:n_pts], series
 
     def plot(self) -> "Figure":
         """Plot the data in oscilloscope style and return the Figure."""
@@ -856,33 +913,41 @@ class Wfm:
 
     def csv(self) -> str:
         """Return a string of comma separated values."""
-        data_channels = [ch for ch in self.channels if ch.enabled_and_selected]
-        if not data_channels:
+        times, series = self._csv_series()
+        if len(times) == 0 or not series:
             return ""
 
         h_scale, h_prefix, v_scale, v_prefix = self.best_scaling()
 
+        def _fmt_float(value: float) -> str:
+            """Format floats with enough precision for round-trip CSV axes."""
+            return format(value, ".17g")
+
         s = "X"
-        for ch in data_channels:
-            s += ",%s" % ch.name
+        for name, _, _ in series:
+            s += ",%s" % name
         s += ",Start,Increment\n"
 
-        ch = data_channels[0]
-        times = data_channels[0].times
-        assert times is not None
-        incr = (times[1] - times[0]) * h_scale if len(times) > 1 else 0.0
+        n_pts = len(times)
+        incr = ((times[n_pts - 1] - times[0]) / (n_pts - 1)) * h_scale if n_pts > 1 else 0.0
         off = times[0] * h_scale
+        x_values = off + np.arange(n_pts, dtype=np.float64) * incr
         s += "%ss" % h_prefix
-        for ch in data_channels:
-            s += ",%s%s" % (v_prefix, ch.unit.name.upper())
-        s += ",%e,%e\n" % (off, incr)
+        for name, kind, _ in series:
+            if kind == "analog":
+                ch = next(ch for ch in self.channels if ch.name == name)
+                s += ",%s%s" % (v_prefix, ch.unit.name.upper())
+            else:
+                s += ",STATE"
+        s += f",{_fmt_float(off)},{_fmt_float(incr)}\n"
 
-        n_pts = min(ch.points for ch in data_channels)
         for i in range(n_pts):
-            s += "%.6f" % (times[i] * h_scale)
-            for ch in data_channels:
-                assert ch.volts is not None
-                s += ",%.2f" % (ch.volts[i] * v_scale)
+            s += _fmt_float(float(x_values[i]))
+            for _, kind, values in series:
+                if kind == "analog":
+                    s += ",%.2f" % (float(values[i]) * v_scale)
+                else:
+                    s += ",%d" % int(values[i])
             s += "\n"
         return s
 

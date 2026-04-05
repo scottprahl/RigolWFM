@@ -3,10 +3,13 @@
 from pathlib import Path
 import shlex
 import shutil
+from types import SimpleNamespace
 import sys
 
+import numpy as np
 import pytest
 
+import RigolWFM.channel
 import RigolWFM.wfm
 from tests.cli_helpers import run_command, run_command_failure, run_command_result
 from tests.test_isf import _build_isf
@@ -148,12 +151,106 @@ def test_csv_metadata_matches_exported_time_axis(path):
 
     times = waveform.channels[0].times
     assert times is not None
+    n_rows = len(lines) - 2
     expected_start = float(times[0] * h_scale)
-    expected_increment = float((times[1] - times[0]) * h_scale) if len(times) > 1 else 0.0
+    expected_increment = float(((times[n_rows - 1] - times[0]) / (n_rows - 1)) * h_scale) if n_rows > 1 else 0.0
 
     assert start == pytest.approx(expected_start)
     assert increment == pytest.approx(expected_increment)
-    assert float(lines[2].split(",")[0]) == pytest.approx(expected_start, rel=0.0, abs=1e-6)
+
+    sample_rows = sorted({0, 1, 2, n_rows // 2, n_rows - 2, n_rows - 1})
+    for idx in sample_rows:
+        if idx < 0:
+            continue
+        exported_time = float(lines[2 + idx].split(",")[0])
+        expected_time = start + idx * increment
+        assert exported_time == pytest.approx(expected_time, rel=1e-12, abs=1e-15)
+
+
+def test_csv_time_axis_ignores_small_in_memory_roundoff():
+    """CSV X values should follow the declared linear Start/Increment grid."""
+    waveform = RigolWFM.wfm.Wfm.from_file("tests/files/wfm/DS1102E-A.wfm", "E")
+    h_scale, _, _, _ = waveform.best_scaling()
+    times = waveform.channels[0].times
+    assert times is not None
+
+    noisy_times = times.copy()
+    idx = 123
+    noisy_times[idx] += waveform.channels[0].seconds_per_point * 1e-3
+    waveform.channels[0].times = noisy_times
+
+    lines = waveform.csv().splitlines()
+    metadata = lines[1].split(",")
+    start = float(metadata[-2])
+    increment = float(metadata[-1])
+    exported_time = float(lines[2 + idx].split(",")[0])
+    expected_time = start + idx * increment
+
+    assert exported_time == pytest.approx(expected_time, rel=1e-12, abs=1e-15)
+    assert abs(exported_time - float(noisy_times[idx] * h_scale)) > abs(increment) * 1e-4
+
+
+def test_csv_exports_logic_only_waveforms():
+    """Logic-only captures should export named digital traces as 0/1 CSV columns."""
+    waveform = RigolWFM.wfm.Wfm.from_file("tests/files/wfm/DS1074Z-C.wfm", "Z")
+    h_scale, _, _, _ = waveform.best_scaling()
+
+    lines = waveform.csv().splitlines()
+    assert lines[0].split(",") == ["X", "D6", "Start", "Increment"]
+    assert lines[1].split(",")[1] == "STATE"
+
+    metadata = lines[1].split(",")
+    start = float(metadata[-2])
+    increment = float(metadata[-1])
+
+    assert waveform.logic_times is not None
+    assert start == pytest.approx(float(waveform.logic_times[0] * h_scale))
+    expected_increment = float((waveform.logic_times[1] - waveform.logic_times[0]) * h_scale)
+    assert increment == pytest.approx(expected_increment)
+
+    sample_rows = [line.split(",") for line in lines[2:20]]
+    assert {row[1] for row in sample_rows} <= {"0", "1"}
+
+
+def test_csv_exports_mixed_analog_and_digital_columns():
+    """Digital traces should appear after analog traces and stay integer formatted."""
+    waveform = RigolWFM.wfm.Wfm("synthetic.csv")
+    waveform.channels = [
+        SimpleNamespace(
+            name="CH1",
+            enabled_and_selected=True,
+            times=np.array([0.0, 1.0e-6, 2.0e-6], dtype=np.float64),
+            volts=np.array([0.25, -0.5, 0.75], dtype=np.float64),
+            points=3,
+            unit=RigolWFM.channel.UnitEnum.v,
+            volt_per_division=1.0e-3,
+            time_scale=1.0e-6,
+        )
+    ]
+    waveform.logic_channels = {"D6": np.array([0, 1, 0], dtype=np.uint8)}
+    waveform.logic_times = np.array([0.0, 1.0e-6, 2.0e-6], dtype=np.float64)
+    waveform.logic_seconds_per_point = 1.0e-6
+
+    lines = waveform.csv().splitlines()
+
+    assert lines[0].split(",") == ["X", "CH1", "D6", "Start", "Increment"]
+    assert lines[1].split(",")[1:3] == ["mV", "STATE"]
+
+    row0 = lines[2].split(",")
+    row1 = lines[3].split(",")
+    assert row0[2] == "0"
+    assert row1[2] == "1"
+    assert row0[1] == "250.00"
+    assert row1[1] == "-500.00"
+
+
+def test_wfmconvert_csv_writes_logic_columns(tmp_path):
+    """CLI CSV export should include parsed digital channels for logic-only fixtures."""
+    run_command(f"wfmconvert --model Z --output-dir {shlex.quote(str(tmp_path))} csv tests/files/wfm/DS1074Z-C.wfm")
+
+    lines = (tmp_path / "DS1074Z-C.csv").read_text(encoding="utf-8").splitlines()
+    assert lines[0].split(",") == ["X", "D6", "Start", "Increment"]
+    assert lines[1].split(",")[1] == "STATE"
 
 
 def test_wfmconvert_missing_file_reports_clean_error():
