@@ -40,7 +40,6 @@ def _build_model_aliases() -> dict[str, str]:
         ("2", RigolWFM.wfm.DS2000_scopes),
         ("4", RigolWFM.wfm.DS4000_scopes),
         ("5", RigolWFM.wfm.DS5000_scopes),
-        ("5074", RigolWFM.wfm.MSO5074_scopes),
         ("6", RigolWFM.wfm.DS6000_scopes),
         ("7", RigolWFM.wfm.DS7000_scopes),
         ("8", RigolWFM.wfm.DS8000_scopes),
@@ -50,6 +49,8 @@ def _build_model_aliases() -> dict[str, str]:
         aliases[canonical.upper()] = canonical
         for alias in family:
             aliases[str(alias).upper()] = canonical
+    for alias in RigolWFM.wfm.MSO5074_scopes:
+        aliases[str(alias).upper()] = "5"
 
     vendor_families = [
         ("Keysight", RigolWFM.wfm.Keysight_scopes),
@@ -80,7 +81,6 @@ _CANONICAL_MODELS = [
     "2",
     "4",
     "5",
-    "5074",
     "6",
     "7",
     "8",
@@ -101,7 +101,7 @@ def _normalize_model_choice(value: str) -> str:
     canonical = _MODEL_ALIASES.get(value.upper())
     if canonical is None:
         raise argparse.ArgumentTypeError(
-            "unsupported model '{}'; choose one of {} or any alias listed below".format(
+            "unsupported model '{}'; choose one of {}. Supported aliases are also accepted.".format(
                 value, ", ".join(_CANONICAL_MODELS)
             )
         )
@@ -335,7 +335,7 @@ def main() -> None:
             wfmconvert --channel 3 --scale scope wav DS1102E.wfm
             wfmconvert --channel 12 --scale scope wav DS1102E.wfm
             wfmconvert --model C info DS1042C-A.wfm
-        """) + RigolWFM.wfm.valid_scope_list(),
+        """),
     )
 
     parser.add_argument(
@@ -343,10 +343,13 @@ def main() -> None:
         type=_normalize_model_choice,
         default="auto",
         metavar="MODEL",
-        help=(
-            "oscilloscope model family (default: auto-detect from file). "
-            "Canonical values include {}. Aliases listed below are also accepted."
-        ).format(", ".join(_CANONICAL_MODELS)),
+        help=textwrap.dedent("""\
+        oscilloscope model family (default: auto-detect from file).
+        canonical values: auto, B, C, D, E, Z, 2, 4, 5, 6, 7, 8, DHO,
+                          Keysight, Siglent, SiglentOld, RohdeSchwarz,
+                          LeCroy, Tek, ISF, Yokogawa.
+        aliases are also accepted.
+        """),
     )
 
     parser.add_argument(

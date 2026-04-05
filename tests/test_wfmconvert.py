@@ -142,6 +142,12 @@ def test_wfmconvert_model_aliases():
     run_command(f"wfmconvert --model rohde info {_quote(_ROHDE)}")
 
 
+def test_wfmconvert_5074_alias_normalizes_to_5_family():
+    """The `5074` CLI alias should map to the standard MSO5000 family choice."""
+    assert RigolWFM.wfmconvert._normalize_model_choice("5074") == "5"
+    assert RigolWFM.wfmconvert._normalize_model_choice("MSO5074") == "5"
+
+
 def test_wfmconvert_rejects_removed_vcsv_action():
     """The deprecated `vcsv` action should no longer be accepted."""
     result = run_command_result("wfmconvert --model E vcsv tests/files/wfm/DS1102E-A.wfm")
@@ -154,6 +160,12 @@ def test_wfmconvert_rejects_removed_vcsv_action():
     assert "npz" in help_result.stdout
     assert "mat" in help_result.stdout
     assert "sigrok" in help_result.stdout
+    assert "Rigol oscilloscope models:" not in help_result.stdout
+    assert "DS1000B" not in help_result.stdout
+    assert " 5074," not in help_result.stdout
+    assert "MSO5074" not in help_result.stdout
+    assert "Aliases listed below are also accepted." not in help_result.stdout
+    assert "aliases are also accepted." in help_result.stdout
 
 
 @pytest.mark.parametrize(

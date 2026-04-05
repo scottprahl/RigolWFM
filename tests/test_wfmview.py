@@ -59,6 +59,22 @@ def test_wfmview_index_describes_npz_and_mat_exports():
     assert "MATLAB .mat file with numeric arrays for each visible channel" in text
 
 
+def test_wfmview_export_modal_lists_formats_alphabetically():
+    """The export modal should list formats in alphabetical order."""
+    text = _INDEX.read_text(encoding="utf-8")
+    button_ids = re.findall(r'<button class="exp-btn" id="([^"]+)">', text)
+    assert button_ids == [
+        "exp-csv",
+        "exp-info",
+        "exp-mat",
+        "exp-npz",
+        "exp-png",
+        "exp-sigrok",
+        "exp-svg",
+        "exp-wav",
+    ]
+
+
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
 @pytest.mark.parametrize("path", _viewer_script_paths(), ids=lambda path: Path(path).name)
 def test_wfmview_javascript_is_syntax_valid(path: Path):
