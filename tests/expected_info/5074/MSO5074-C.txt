@@ -1,0 +1,13 @@
+    General:
+        File Model   = MSO5074
+        User Model   = 5074
+        Parser Model = bin5000
+        Firmware     = 01
+        Filename     = MSO5074-C.bin
+        Channels     = []
+
+    Logic:
+        Mapping      = LA D7-D0
+        Points       =   500000
+        Delta        = 1000.000 ps/point
+        Traces       = [D0, D1, D2, D3, D4, D5, D6, D7]
