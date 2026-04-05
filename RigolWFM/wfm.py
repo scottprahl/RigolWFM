@@ -953,23 +953,31 @@ class Wfm:
 
     def sigrokcsv(self) -> str:
         """Return a string of comma separated values for sigrok."""
-        data_channels = [ch for ch in self.channels if ch.enabled_and_selected]
-        if not data_channels:
+        times, series = self._csv_series()
+        if len(times) == 0 or not series:
             return ""
 
+        def _fmt_float(value: float) -> str:
+            """Format floats with enough precision for sigrok round-trips."""
+            return format(value, ".17g")
+
         s = "X"
-        for ch in data_channels:
-            s += ",%s (%s)" % (ch.name, ch.unit.name.upper())
+        analog_labels = {
+            ch.name: f"{ch.name} ({ch.unit.name.upper()})"
+            for ch in self.channels
+            if ch.enabled_and_selected and ch.volts is not None
+        }
+        for name, kind, _ in series:
+            s += ",%s" % (analog_labels.get(name, name) if kind == "analog" else name)
         s += "\n"
 
-        n_pts = min(ch.points for ch in data_channels)
-        times = data_channels[0].times
-        assert times is not None
-        for i in range(n_pts):
-            s += "%.8f" % (times[i])
-            for ch in data_channels:
-                assert ch.volts is not None
-                s += ",%.2f" % (ch.volts[i])
+        for i in range(len(times)):
+            s += _fmt_float(float(times[i]))
+            for _, kind, values in series:
+                if kind == "analog":
+                    s += ",%s" % _fmt_float(float(values[i]))
+                else:
+                    s += ",%d" % int(values[i])
             s += "\n"
         return s
 

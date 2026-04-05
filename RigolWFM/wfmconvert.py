@@ -191,6 +191,10 @@ def sigrok(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) 
         return False
 
     s = scope_data.sigrokcsv()
+    sigrok_input_format = _sigrok_csv_input_format(scope_data)
+    if not s or not sigrok_input_format:
+        print("No analog or digital channels are available to export to sigrok.", file=sys.stderr)
+        return False
 
     # Check if sigrok-cli is installed and accessible
     if not shutil.which("sigrok-cli"):
@@ -208,7 +212,7 @@ def sigrok(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) 
             [
                 "sigrok-cli",
                 "-I",
-                "csv:start_line=2:column_formats=t,1a",
+                sigrok_input_format,
                 "-i",
                 "/dev/stdin",
                 "-o",
@@ -238,7 +242,46 @@ def sigrok(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) 
         )
         return False
 
+    if not os.path.isfile(sigrok_name) or os.path.getsize(sigrok_name) == 0:
+        print(f"sigrok-cli did not produce a usable output file: '{sigrok_name}'", file=sys.stderr)
+        print(
+            "See https://sigrok.org/wiki/Sigrok-cli for more information.",
+            file=sys.stderr,
+        )
+        return False
+
     return True
+
+
+def _sigrok_csv_input_format(scope_data: RigolWFM.wfm.Wfm) -> str:
+    """Return `sigrok-cli` CSV import options for the waveform's exported series."""
+    times, series = scope_data._csv_series()
+    if len(times) == 0 or not series:
+        return ""
+
+    format_parts = ["t"]
+    previous = ""
+    count = 0
+    for _, kind, _ in series:
+        current = "a" if kind == "analog" else "l"
+        if current == previous:
+            count += 1
+            continue
+        if previous:
+            format_parts.append(f"{count}{previous}" if count > 1 else previous)
+        previous = current
+        count = 1
+    format_parts.append(f"{count}{previous}" if count > 1 else previous)
+
+    options = ["csv", "start_line=1", "header=true", f"column_formats={','.join(format_parts)}"]
+
+    if len(times) > 1:
+        span = float(times[-1] - times[0])
+        if span > 0:
+            samplerate = (len(times) - 1) / span
+            options.insert(3, f"samplerate={format(samplerate, '.17g')}")
+
+    return ":".join(options)
 
 
 class _WfmParser(argparse.ArgumentParser):

@@ -11,6 +11,7 @@ import pytest
 
 import RigolWFM.channel
 import RigolWFM.wfm
+import RigolWFM.wfmconvert
 from tests.cli_helpers import run_command, run_command_failure, run_command_result
 from tests.test_isf import _build_isf
 from tests.test_lecroy import _build_trc
@@ -251,6 +252,97 @@ def test_wfmconvert_csv_writes_logic_columns(tmp_path):
     lines = (tmp_path / "DS1074Z-C.csv").read_text(encoding="utf-8").splitlines()
     assert lines[0].split(",") == ["X", "D6", "Start", "Increment"]
     assert lines[1].split(",")[1] == "STATE"
+
+
+def test_sigrokcsv_exports_logic_only_waveforms():
+    """Logic-only captures should export named digital traces for sigrok staging."""
+    waveform = RigolWFM.wfm.Wfm.from_file("tests/files/wfm/DS1074Z-C.wfm", "Z")
+
+    lines = waveform.sigrokcsv().splitlines()
+    assert lines[0].split(",") == ["X", "D6"]
+
+    sample_rows = [line.split(",") for line in lines[1:20]]
+    assert {row[1] for row in sample_rows} <= {"0", "1"}
+
+
+def test_sigrokcsv_exports_mixed_analog_and_digital_columns():
+    """Sigrok staging CSV should preserve full analog precision and digital columns."""
+    waveform = RigolWFM.wfm.Wfm("synthetic.sigrok")
+    waveform.channels = [
+        SimpleNamespace(
+            name="CH1",
+            enabled_and_selected=True,
+            times=np.array([0.0, 1.0e-6, 2.0e-6], dtype=np.float64),
+            volts=np.array([0.123456789, -0.5, 0.75], dtype=np.float64),
+            points=3,
+            unit=RigolWFM.channel.UnitEnum.v,
+            volt_per_division=1.0,
+            time_scale=1.0e-6,
+        )
+    ]
+    waveform.logic_channels = {"D6": np.array([0, 1, 0], dtype=np.uint8)}
+    waveform.logic_times = np.array([0.0, 1.0e-6, 2.0e-6], dtype=np.float64)
+    waveform.logic_seconds_per_point = 1.0e-6
+
+    lines = waveform.sigrokcsv().splitlines()
+
+    assert lines[0].split(",") == ["X", "CH1 (V)", "D6"]
+    row1 = lines[2].split(",")
+    assert float(row1[0]) == pytest.approx(1.0e-6, rel=1e-12, abs=1e-18)
+    assert float(row1[1]) == pytest.approx(-0.5, rel=1e-12, abs=1e-18)
+    assert row1[2] == "1"
+    assert "0.123456789" in lines[1]
+
+
+def test_sigrokcsv_preserves_high_resolution_time_axis():
+    """Fast-sampled captures should keep adjacent timestamps distinguishable."""
+    waveform = RigolWFM.wfm.Wfm.from_file("tests/files/wfm/DS1054Z-A.wfm", "Z")
+    assert waveform.channels
+    assert waveform.channels[0].times is not None
+
+    actual_increment = float(waveform.channels[0].times[1] - waveform.channels[0].times[0])
+    lines = waveform.sigrokcsv().splitlines()
+    exported_increment = float(lines[2].split(",")[0]) - float(lines[1].split(",")[0])
+
+    assert exported_increment == pytest.approx(actual_increment, rel=1e-12, abs=1e-18)
+
+
+def test_sigrok_input_format_covers_all_exported_series():
+    """Sigrok import options should describe every exported analog and logic column."""
+    waveform = RigolWFM.wfm.Wfm("synthetic.sigrok")
+    waveform.channels = [
+        SimpleNamespace(
+            name="CH1",
+            enabled_and_selected=True,
+            times=np.array([0.0, 1.0e-6], dtype=np.float64),
+            volts=np.array([0.1, 0.2], dtype=np.float64),
+            points=2,
+            unit=RigolWFM.channel.UnitEnum.v,
+            volt_per_division=1.0,
+            time_scale=1.0e-6,
+        ),
+        SimpleNamespace(
+            name="CH2",
+            enabled_and_selected=True,
+            times=np.array([0.0, 1.0e-6], dtype=np.float64),
+            volts=np.array([0.3, 0.4], dtype=np.float64),
+            points=2,
+            unit=RigolWFM.channel.UnitEnum.v,
+            volt_per_division=1.0,
+            time_scale=1.0e-6,
+        ),
+    ]
+    waveform.logic_channels = {
+        "D0": np.array([0, 1], dtype=np.uint8),
+        "D1": np.array([1, 0], dtype=np.uint8),
+    }
+    waveform.logic_times = np.array([0.0, 1.0e-6], dtype=np.float64)
+    waveform.logic_seconds_per_point = 1.0e-6
+
+    assert (
+        RigolWFM.wfmconvert._sigrok_csv_input_format(waveform)
+        == "csv:start_line=1:header=true:samplerate=1000000:column_formats=t,2a,2l"
+    )
 
 
 def test_wfmconvert_missing_file_reports_clean_error():

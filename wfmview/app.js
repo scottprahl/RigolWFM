@@ -888,6 +888,133 @@ function decodeUtf8Bytes(bytes) {
     return bytesToAscii(view);
 }
 
+function encodeUtf8Text(text) {
+    if (typeof TextEncoder !== 'undefined') {
+        return new TextEncoder().encode(String(text));
+    }
+    var ascii = String(text);
+    var out = new Uint8Array(ascii.length);
+    for (var i = 0; i < ascii.length; i++) {
+        out[i] = ascii.charCodeAt(i) & 0xff;
+    }
+    return out;
+}
+
+var CRC32_TABLE = (function() {
+    var table = new Uint32Array(256);
+    for (var i = 0; i < 256; i++) {
+        var crc = i;
+        for (var bit = 0; bit < 8; bit++) {
+            crc = (crc & 1) ? (0xedb88320 ^ (crc >>> 1)) : (crc >>> 1);
+        }
+        table[i] = crc >>> 0;
+    }
+    return table;
+})();
+
+function crc32(bytes) {
+    var view = toU8(bytes) || new Uint8Array(0);
+    var crc = 0xffffffff;
+    for (var i = 0; i < view.length; i++) {
+        crc = CRC32_TABLE[(crc ^ view[i]) & 0xff] ^ (crc >>> 8);
+    }
+    return (crc ^ 0xffffffff) >>> 0;
+}
+
+function concatUint8Arrays(parts) {
+    var total = 0;
+    for (var i = 0; i < parts.length; i++) {
+        total += parts[i].length;
+    }
+    var out = new Uint8Array(total);
+    var offset = 0;
+    for (var j = 0; j < parts.length; j++) {
+        out.set(parts[j], offset);
+        offset += parts[j].length;
+    }
+    return out;
+}
+
+function writeUint16LE(view, offset, value) {
+    view.setUint16(offset, value & 0xffff, true);
+}
+
+function writeUint32LE(view, offset, value) {
+    view.setUint32(offset, value >>> 0, true);
+}
+
+function buildStoredZipArchive(entries) {
+    var normalized = entries.map(function(entry) {
+        var nameBytes = encodeUtf8Text(entry.name);
+        var dataBytes = toU8(entry.data) || new Uint8Array(0);
+        return {
+            name: entry.name,
+            nameBytes: nameBytes,
+            data: dataBytes,
+            crc: crc32(dataBytes),
+        };
+    });
+    var localParts = [];
+    var centralParts = [];
+    var offset = 0;
+    for (var i = 0; i < normalized.length; i++) {
+        var entry = normalized[i];
+        var localHeader = new Uint8Array(30 + entry.nameBytes.length);
+        var localView = new DataView(localHeader.buffer);
+        writeUint32LE(localView, 0, 0x04034b50);
+        writeUint16LE(localView, 4, 20);
+        writeUint16LE(localView, 6, 0);
+        writeUint16LE(localView, 8, 0);
+        writeUint16LE(localView, 10, 0);
+        writeUint16LE(localView, 12, 0);
+        writeUint32LE(localView, 14, entry.crc);
+        writeUint32LE(localView, 18, entry.data.length);
+        writeUint32LE(localView, 22, entry.data.length);
+        writeUint16LE(localView, 26, entry.nameBytes.length);
+        writeUint16LE(localView, 28, 0);
+        localHeader.set(entry.nameBytes, 30);
+        localParts.push(localHeader, entry.data);
+
+        var centralHeader = new Uint8Array(46 + entry.nameBytes.length);
+        var centralView = new DataView(centralHeader.buffer);
+        writeUint32LE(centralView, 0, 0x02014b50);
+        writeUint16LE(centralView, 4, 20);
+        writeUint16LE(centralView, 6, 20);
+        writeUint16LE(centralView, 8, 0);
+        writeUint16LE(centralView, 10, 0);
+        writeUint16LE(centralView, 12, 0);
+        writeUint16LE(centralView, 14, 0);
+        writeUint32LE(centralView, 16, entry.crc);
+        writeUint32LE(centralView, 20, entry.data.length);
+        writeUint32LE(centralView, 24, entry.data.length);
+        writeUint16LE(centralView, 28, entry.nameBytes.length);
+        writeUint16LE(centralView, 30, 0);
+        writeUint16LE(centralView, 32, 0);
+        writeUint16LE(centralView, 34, 0);
+        writeUint16LE(centralView, 36, 0);
+        writeUint32LE(centralView, 38, 0);
+        writeUint32LE(centralView, 42, offset);
+        centralHeader.set(entry.nameBytes, 46);
+        centralParts.push(centralHeader);
+
+        offset += localHeader.length + entry.data.length;
+    }
+
+    var centralDirectory = concatUint8Arrays(centralParts);
+    var end = new Uint8Array(22);
+    var endView = new DataView(end.buffer);
+    writeUint32LE(endView, 0, 0x06054b50);
+    writeUint16LE(endView, 4, 0);
+    writeUint16LE(endView, 6, 0);
+    writeUint16LE(endView, 8, normalized.length);
+    writeUint16LE(endView, 10, normalized.length);
+    writeUint32LE(endView, 12, centralDirectory.length);
+    writeUint32LE(endView, 16, offset);
+    writeUint16LE(endView, 20, 0);
+
+    return concatUint8Arrays(localParts.concat([centralDirectory, end]));
+}
+
 function lowerFilename(name) {
     return String(name || '').toLowerCase();
 }
@@ -4471,6 +4598,145 @@ function buildExportCSVText(entry) {
     return rows.join('\n');
 }
 
+function sigrokAnalogLabel(channel) {
+    return channel.name + ' (V)';
+}
+
+function sigrokUnitsize(probeCount) {
+    if (probeCount <= 8) {
+        return 1;
+    }
+    if (probeCount <= 16) {
+        return 2;
+    }
+    if (probeCount <= 32) {
+        return 4;
+    }
+    return 8;
+}
+
+function formatSigrokSamplerate(sampleRate) {
+    if (!Number.isFinite(sampleRate) || sampleRate <= 0) {
+        return '0 Hz';
+    }
+    var abs = Math.abs(sampleRate);
+    var scale = 1;
+    var prefix = '';
+    if (abs >= 1e9) {
+        scale = 1e-9;
+        prefix = 'G';
+    } else if (abs >= 1e6) {
+        scale = 1e-6;
+        prefix = 'M';
+    } else if (abs >= 1e3) {
+        scale = 1e-3;
+        prefix = 'k';
+    }
+    return formatExportFloat(sampleRate * scale) + ' ' + prefix + 'Hz';
+}
+
+function buildSigrokAnalogPayload(channel, npts) {
+    var data = new Uint8Array(npts * 4);
+    var view = new DataView(data.buffer);
+    for (var i = 0; i < npts; i++) {
+        view.setFloat32(i * 4, channel.volts[i], true);
+    }
+    return data;
+}
+
+function buildSigrokLogicPayload(channels, npts) {
+    var unitsize = sigrokUnitsize(channels.length);
+    var data = new Uint8Array(npts * unitsize);
+    for (var sample = 0; sample < npts; sample++) {
+        var value = 0n;
+        for (var bit = 0; bit < channels.length; bit++) {
+            if (Math.round(channels[bit].volts[sample])) {
+                value |= (1n << BigInt(bit));
+            }
+        }
+        var offset = sample * unitsize;
+        for (var byteIndex = 0; byteIndex < unitsize; byteIndex++) {
+            data[offset + byteIndex] = Number((value >> BigInt(8 * byteIndex)) & 0xffn);
+        }
+    }
+    return { unitsize: unitsize, data: data };
+}
+
+function buildExportSigrokMembers(entry) {
+    var chs = getVisibleChannelsForEntry(entry);
+    if (!chs.length) {
+        return null;
+    }
+    var npts = Math.min.apply(null, chs.map(function(c) {
+        return c.times.length;
+    }));
+    if (!npts) {
+        return null;
+    }
+
+    var digitalChannels = chs.filter(function(c) {
+        return c.kind === 'digital';
+    });
+    var analogChannels = chs.filter(function(c) {
+        return c.kind !== 'digital';
+    });
+
+    var sampleRate = 0;
+    var sampleTimes = chs[0].times;
+    if (npts > 1) {
+        var span = sampleTimes[npts - 1] - sampleTimes[0];
+        if (span > 0) {
+            sampleRate = (npts - 1) / span;
+        }
+    }
+
+    var lines = ['[global]', 'sigrok version=0.5.2', '', '[device 1]'];
+    if (digitalChannels.length) {
+        lines.push('capturefile=logic-1');
+        lines.push('total probes=' + digitalChannels.length);
+    }
+    lines.push('samplerate=' + formatSigrokSamplerate(sampleRate));
+    lines.push('total analog=' + analogChannels.length);
+    for (var probeIndex = 0; probeIndex < digitalChannels.length; probeIndex++) {
+        lines.push('probe' + (probeIndex + 1) + '=' + digitalChannels[probeIndex].name);
+    }
+    for (var analogIndex = 0; analogIndex < analogChannels.length; analogIndex++) {
+        var absoluteIndex = digitalChannels.length + analogIndex + 1;
+        lines.push('analog' + absoluteIndex + '=' + sigrokAnalogLabel(analogChannels[analogIndex]));
+    }
+    if (digitalChannels.length) {
+        lines.push('unitsize=' + sigrokUnitsize(digitalChannels.length));
+    }
+    lines.push('');
+
+    var members = [
+        { name: 'version', data: encodeUtf8Text('2') },
+        { name: 'metadata', data: encodeUtf8Text(lines.join('\n')) },
+    ];
+
+    if (digitalChannels.length) {
+        var logicPayload = buildSigrokLogicPayload(digitalChannels, npts);
+        members.push({ name: 'logic-1-1', data: logicPayload.data });
+    }
+    for (var analogMemberIndex = 0; analogMemberIndex < analogChannels.length; analogMemberIndex++) {
+        var channelNumber = digitalChannels.length + analogMemberIndex + 1;
+        members.push({
+            name: 'analog-1-' + channelNumber + '-1',
+            data: buildSigrokAnalogPayload(analogChannels[analogMemberIndex], npts),
+        });
+    }
+
+    return members;
+}
+
+function buildExportSigrokArchive(entry) {
+    var members = buildExportSigrokMembers(entry);
+    if (!members) {
+        return null;
+    }
+    return buildStoredZipArchive(members);
+}
+
 function doExportCSV() {
     var active = getActiveEntry();
     var csvText = buildExportCSVText(active);
@@ -4490,25 +4756,11 @@ function doExportInfo() {
 
 function doExportSigrok() {
     var active = getActiveEntry();
-    var chs = getVisibleChannelsForEntry(active);
-    if (!chs.length) {
+    var archive = buildExportSigrokArchive(active);
+    if (!archive) {
         return;
     }
-    var npts = Math.min.apply(null, chs.map(function(c) {
-        return c.times.length;
-    }));
-    var rows = [];
-    rows.push('X,' + chs.map(function(c) {
-        return c.name + ' (V)';
-    }).join(','));
-    for (var i = 0; i < npts; i++) {
-        var row = chs[0].times[i].toFixed(8);
-        chs.forEach(function(c) {
-            row += ',' + c.volts[i].toFixed(2);
-        });
-        rows.push(row);
-    }
-    triggerDownload(rows.join('\n'), currentFilename + '_sigrok.csv', 'text/csv');
+    triggerDownload(archive, currentFilename + '.sr', 'application/zip');
 }
 
 function doExportWAV() {

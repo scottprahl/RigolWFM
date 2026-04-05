@@ -1,11 +1,14 @@
 """Smoke tests for the browser-side `wfmview` assets."""
 
+import io
 import json
 from pathlib import Path
 import re
 import shutil
+import struct
 import subprocess
 import textwrap
+import zipfile
 
 import pytest
 
@@ -304,6 +307,403 @@ def test_wfmview_csv_export_matches_python_digital_format():
         }}
         if (logicLines[2] !== '1,0' || logicLines[3] !== '2,1') {{
             throw new Error('Logic-only CSV rows should contain integer digital samples.');
+        }}
+        """)
+
+    subprocess.run(["node", "-e", script], check=True, text=True)
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
+def test_wfmview_sigrok_export_builds_real_mixed_session_archive():
+    """Viewer SR export should build a real sigrok session for mixed traces."""
+    script = textwrap.dedent(f"""
+        const fs = require('fs');
+        const vm = require('vm');
+
+        function makeClassList() {{
+            return {{
+                add() {{}},
+                remove() {{}},
+                toggle() {{}},
+                contains() {{ return false; }},
+            }};
+        }}
+
+        function makeElement() {{
+            return {{
+                checked: false,
+                disabled: false,
+                innerHTML: '',
+                textContent: '',
+                value: '',
+                dataset: {{}},
+                style: {{}},
+                classList: makeClassList(),
+                addEventListener() {{}},
+                removeEventListener() {{}},
+                appendChild() {{}},
+                removeChild() {{}},
+                setAttribute() {{}},
+                getAttribute() {{ return null; }},
+                getContext() {{
+                    return {{
+                        fillRect() {{}},
+                        beginPath() {{}},
+                        moveTo() {{}},
+                        lineTo() {{}},
+                        stroke() {{}},
+                        fillText() {{}},
+                        measureText() {{ return {{ width: 0 }}; }},
+                        save() {{}},
+                        restore() {{}},
+                        clearRect() {{}},
+                        arc() {{}},
+                        closePath() {{}},
+                        setLineDash() {{}},
+                    }};
+                }},
+                getBoundingClientRect() {{
+                    return {{ left: 0, top: 0, right: 800, bottom: 480, width: 800, height: 480 }};
+                }},
+                closest() {{ return null; }},
+                click() {{}},
+                width: 800,
+                height: 480,
+                offsetWidth: 800,
+                offsetHeight: 480,
+                clientWidth: 800,
+                clientHeight: 480,
+            }};
+        }}
+
+        global.document = {{
+            getElementById() {{ return makeElement(); }},
+            createElement() {{ return makeElement(); }},
+            addEventListener() {{}},
+            removeEventListener() {{}},
+            body: {{
+                classList: makeClassList(),
+                appendChild() {{}},
+                removeChild() {{}},
+            }},
+        }};
+        global.window = {{
+            addEventListener() {{}},
+            removeEventListener() {{}},
+            innerHeight: 800,
+            URL: {{
+                createObjectURL() {{ return 'blob:test'; }},
+                revokeObjectURL() {{}},
+            }},
+        }};
+        global.FileReader = function FileReader() {{}};
+
+        vm.runInThisContext(fs.readFileSync({json.dumps(str(_APP))}, 'utf8'), {{ filename: 'app.js' }});
+
+        const entry = {{
+            result: {{
+                channels: [
+                    {{
+                        name: 'CH1',
+                        times: Float64Array.from([0, 1e-6, 2e-6]),
+                        volts: Float64Array.from([0.25, -0.5, 0.75]),
+                        voltPerDiv: 1e-3,
+                        timeScale: 1e-6,
+                    }},
+                    {{
+                        name: 'D6',
+                        kind: 'digital',
+                        times: Float64Array.from([0, 1e-6, 2e-6]),
+                        volts: Float64Array.from([0, 1, 0]),
+                        voltPerDiv: 0.25,
+                        timeScale: 1e-6,
+                    }},
+                ],
+            }},
+            channelEnabled: [true, true],
+        }};
+
+        const archive = buildExportSigrokArchive(entry);
+        if (!archive) {{
+            throw new Error('Expected mixed entry to produce an SR archive.');
+        }}
+        process.stdout.write(Buffer.from(archive));
+        """)
+
+    result = subprocess.run(["node", "-e", script], check=True, stdout=subprocess.PIPE)
+    archive = zipfile.ZipFile(io.BytesIO(result.stdout))
+
+    assert archive.namelist() == ["version", "metadata", "logic-1-1", "analog-1-2-1"]
+    assert archive.read("version") == b"2"
+
+    metadata = archive.read("metadata").decode("utf-8")
+    assert "capturefile=logic-1" in metadata
+    assert "total probes=1" in metadata
+    assert "samplerate=1 MHz" in metadata
+    assert "total analog=1" in metadata
+    assert "probe1=D6" in metadata
+    assert "analog2=CH1 (V)" in metadata
+    assert "unitsize=1" in metadata
+
+    logic = archive.read("logic-1-1")
+    assert logic == bytes([0, 1, 0])
+
+    analog = archive.read("analog-1-2-1")
+    assert struct.unpack("<fff", analog) == pytest.approx((0.25, -0.5, 0.75), rel=1e-7, abs=1e-7)
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
+def test_wfmview_sigrok_export_builds_real_logic_only_session_archive():
+    """Viewer SR export should write logic-only captures as named probes."""
+    script = textwrap.dedent(f"""
+        const fs = require('fs');
+        const vm = require('vm');
+
+        function makeClassList() {{
+            return {{
+                add() {{}},
+                remove() {{}},
+                toggle() {{}},
+                contains() {{ return false; }},
+            }};
+        }}
+
+        function makeElement() {{
+            return {{
+                checked: false,
+                disabled: false,
+                innerHTML: '',
+                textContent: '',
+                value: '',
+                dataset: {{}},
+                style: {{}},
+                classList: makeClassList(),
+                addEventListener() {{}},
+                removeEventListener() {{}},
+                appendChild() {{}},
+                removeChild() {{}},
+                setAttribute() {{}},
+                getAttribute() {{ return null; }},
+                getContext() {{
+                    return {{
+                        fillRect() {{}},
+                        beginPath() {{}},
+                        moveTo() {{}},
+                        lineTo() {{}},
+                        stroke() {{}},
+                        fillText() {{}},
+                        measureText() {{ return {{ width: 0 }}; }},
+                        save() {{}},
+                        restore() {{}},
+                        clearRect() {{}},
+                        arc() {{}},
+                        closePath() {{}},
+                        setLineDash() {{}},
+                    }};
+                }},
+                getBoundingClientRect() {{
+                    return {{ left: 0, top: 0, right: 800, bottom: 480, width: 800, height: 480 }};
+                }},
+                closest() {{ return null; }},
+                click() {{}},
+                width: 800,
+                height: 480,
+                offsetWidth: 800,
+                offsetHeight: 480,
+                clientWidth: 800,
+                clientHeight: 480,
+            }};
+        }}
+
+        global.document = {{
+            getElementById() {{ return makeElement(); }},
+            createElement() {{ return makeElement(); }},
+            addEventListener() {{}},
+            removeEventListener() {{}},
+            body: {{
+                classList: makeClassList(),
+                appendChild() {{}},
+                removeChild() {{}},
+            }},
+        }};
+        global.window = {{
+            addEventListener() {{}},
+            removeEventListener() {{}},
+            innerHeight: 800,
+            URL: {{
+                createObjectURL() {{ return 'blob:test'; }},
+                revokeObjectURL() {{}},
+            }},
+        }};
+        global.FileReader = function FileReader() {{}};
+
+        vm.runInThisContext(fs.readFileSync({json.dumps(str(_APP))}, 'utf8'), {{ filename: 'app.js' }});
+
+        const entry = {{
+            result: {{
+                channels: [
+                    {{
+                        name: 'D6',
+                        kind: 'digital',
+                        times: Float64Array.from([0.001, 0.002, 0.003]),
+                        volts: Float64Array.from([0, 1, 1]),
+                        voltPerDiv: 0.25,
+                        timeScale: 0.001,
+                    }},
+                ],
+            }},
+            channelEnabled: [true],
+        }};
+
+        const archive = buildExportSigrokArchive(entry);
+        if (!archive) {{
+            throw new Error('Expected logic-only entry to produce an SR archive.');
+        }}
+        process.stdout.write(Buffer.from(archive));
+        """)
+
+    result = subprocess.run(["node", "-e", script], check=True, stdout=subprocess.PIPE)
+    archive = zipfile.ZipFile(io.BytesIO(result.stdout))
+
+    assert archive.namelist() == ["version", "metadata", "logic-1-1"]
+
+    metadata = archive.read("metadata").decode("utf-8")
+    assert "capturefile=logic-1" in metadata
+    assert "total probes=1" in metadata
+    assert "samplerate=1 kHz" in metadata
+    assert "total analog=0" in metadata
+    assert "probe1=D6" in metadata
+    assert "unitsize=1" in metadata
+
+    logic = archive.read("logic-1-1")
+    assert logic == bytes([0, 1, 1])
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
+def test_wfmview_sigrok_export_downloads_sr_archive():
+    """The SR export action should download a real `.sr` archive."""
+    script = textwrap.dedent(f"""
+        const fs = require('fs');
+        const vm = require('vm');
+
+        function makeClassList() {{
+            return {{
+                add() {{}},
+                remove() {{}},
+                toggle() {{}},
+                contains() {{ return false; }},
+            }};
+        }}
+
+        function makeElement() {{
+            return {{
+                checked: false,
+                disabled: false,
+                innerHTML: '',
+                textContent: '',
+                value: '',
+                dataset: {{}},
+                style: {{}},
+                classList: makeClassList(),
+                addEventListener() {{}},
+                removeEventListener() {{}},
+                appendChild() {{}},
+                removeChild() {{}},
+                setAttribute() {{}},
+                getAttribute() {{ return null; }},
+                getContext() {{
+                    return {{
+                        fillRect() {{}},
+                        beginPath() {{}},
+                        moveTo() {{}},
+                        lineTo() {{}},
+                        stroke() {{}},
+                        fillText() {{}},
+                        measureText() {{ return {{ width: 0 }}; }},
+                        save() {{}},
+                        restore() {{}},
+                        clearRect() {{}},
+                        arc() {{}},
+                        closePath() {{}},
+                        setLineDash() {{}},
+                    }};
+                }},
+                getBoundingClientRect() {{
+                    return {{ left: 0, top: 0, right: 800, bottom: 480, width: 800, height: 480 }};
+                }},
+                closest() {{ return null; }},
+                click() {{}},
+                width: 800,
+                height: 480,
+                offsetWidth: 800,
+                offsetHeight: 480,
+                clientWidth: 800,
+                clientHeight: 480,
+            }};
+        }}
+
+        global.document = {{
+            getElementById() {{ return makeElement(); }},
+            createElement() {{ return makeElement(); }},
+            addEventListener() {{}},
+            removeEventListener() {{}},
+            body: {{
+                classList: makeClassList(),
+                appendChild() {{}},
+                removeChild() {{}},
+            }},
+        }};
+        global.window = {{
+            addEventListener() {{}},
+            removeEventListener() {{}},
+            innerHeight: 800,
+            URL: {{
+                createObjectURL() {{ return 'blob:test'; }},
+                revokeObjectURL() {{}},
+            }},
+        }};
+        global.FileReader = function FileReader() {{}};
+
+        vm.runInThisContext(fs.readFileSync({json.dumps(str(_APP))}, 'utf8'), {{ filename: 'app.js' }});
+
+        loadedFiles = [{{
+            id: 'file-1',
+            stem: 'scope-shot',
+            filename: 'scope-shot.wfm',
+            result: {{
+                channels: [
+                    {{
+                        name: 'D6',
+                        kind: 'digital',
+                        times: Float64Array.from([0, 1e-6]),
+                        volts: Float64Array.from([0, 1]),
+                        voltPerDiv: 0.25,
+                        timeScale: 1e-6,
+                    }},
+                ],
+            }},
+            channelEnabled: [true],
+        }}];
+        activeFileId = 'file-1';
+        currentFilename = 'scope-shot';
+
+        let captured = null;
+        triggerDownload = function(data, filename, mime) {{
+            captured = {{ filename, mime, bytes: Array.from(data.slice(0, 4)) }};
+        }};
+
+        doExportSigrok();
+        if (!captured) {{
+            throw new Error('SR export did not trigger a download.');
+        }}
+        if (captured.filename !== 'scope-shot.sr') {{
+            throw new Error('SR export should download a .sr file.');
+        }}
+        if (captured.mime !== 'application/zip') {{
+            throw new Error('SR export should download the archive as application/zip.');
+        }}
+        if (JSON.stringify(captured.bytes) !== JSON.stringify([80, 75, 3, 4])) {{
+            throw new Error('SR export should begin with a ZIP local-file header.');
         }}
         """)
 
