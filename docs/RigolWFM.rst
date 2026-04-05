@@ -15,7 +15,7 @@ Core Interfaces
 
 .. automodapi:: RigolWFM.wfm
    :no-inheritance-diagram:
-   :skip: Any, IO
+   :skip: Any, IO, cast
 
 .. automodapi:: RigolWFM.wfmconvert
    :no-inheritance-diagram:
