@@ -2332,15 +2332,88 @@ function parseBinWaveforms(w, format, userModel, parserModel) {
     var channels = [];
     var fileModel = format;
     var firmware = w.fileHeader && w.fileHeader.version ? w.fileHeader.version : 'unknown';
+    var analogSlot = 1;
+    var logicLane = 0;
     for (var wi = 0; wi < w.waveforms.length; wi++) {
         var wfm = w.waveforms[wi];
+        var wh = wfm.wfmHeader;
         var dh = wfm.dataHeader;
-        if (dh.bufferType < 1 || dh.bufferType > 3) {
+        var n = wh.nPts;
+        fileModel = modelFromFrameString(wh.frameString, fileModel);
+        var timeScale = wh.xDisplayRange > 0 ? wh.xDisplayRange / 10 : n * wh.xIncrement / 10;
+        var timeOffset = n * wh.xIncrement / 2 - wh.xOrigin;
+
+        var isLogicWaveform = (
+            wh.waveformType === 6 ||
+            dh.bufferType === 6 ||
+            /^LA/i.test(wh.waveformLabel || '')
+        );
+
+        if (isLogicWaveform) {
+            var logicSamples = null;
+            if (dh.bufferType === 6 && dh.bytesPerPoint === 1) {
+                logicSamples = wfm.dataRaw.slice(0);
+            }
+            else if (dh.bufferType === 5 && dh.bytesPerPoint === 4) {
+                var sampleCount = Math.floor(wfm.dataRaw.length / 4);
+                logicSamples = new Uint8Array(sampleCount);
+                var logicView = new DataView(wfm.dataRaw.buffer, wfm.dataRaw.byteOffset, wfm.dataRaw.byteLength);
+                for (var sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
+                    var sample = logicView.getFloat32(sampleIndex * 4, true);
+                    if (!Number.isFinite(sample)) {
+                        sample = 0;
+                    }
+                    if (sample < 0) {
+                        sample = 0;
+                    }
+                    else if (sample > 255) {
+                        sample = 255;
+                    }
+                    logicSamples[sampleIndex] = Math.trunc(sample);
+                }
+            }
+
+            if (!logicSamples || logicSamples.length !== n) {
+                throw new Error('RG01 logic waveform payload length does not match the header point count.');
+            }
+
+            var bitBase = logicLane * 8;
+            var laneMapping = logicLane === 0 ? 'LA D7-D0' : ('LA D' + (bitBase + 7) + '-D' + bitBase);
+            var logicTimes = new Float64Array(n);
+            for (var logicTimeIndex = 0; logicTimeIndex < n; logicTimeIndex++) {
+                logicTimes[logicTimeIndex] = -wh.xOrigin + logicTimeIndex * wh.xIncrement;
+            }
+            logicLane += 1;
+            for (var bit = 0; bit < 8; bit++) {
+                var trace = zBitTrace(logicSamples, bit);
+                channels.push({
+                    name: 'D' + (bitBase + bit),
+                    infoLabel: 'D' + (bitBase + bit),
+                    kind: 'digital',
+                    color: CH_COLORS[channels.length % CH_COLORS.length],
+                    times: logicTimes,
+                    volts: trace.volts,
+                    raw: trace.raw,
+                    channelNumber: bitBase + bit,
+                    points: n,
+                    coupling: 'DIGITAL',
+                    voltPerDiv: 0.25,
+                    voltOffset: 0,
+                    probeValue: 1,
+                    inverted: false,
+                    timeScale: timeScale,
+                    timeOffset: timeOffset,
+                    secondsPerPoint: wh.xIncrement,
+                    logicMapping: laneMapping,
+                });
+            }
             continue;
         }
-        var wh = wfm.wfmHeader;
+
+        if (dh.bytesPerPoint !== 4 || dh.bufferType < 1 || dh.bufferType > 5) {
+            continue;
+        }
         var dataRaw = wfm.dataRaw;
-        var n = wh.nPts;
         var dv = new DataView(dataRaw.buffer, dataRaw.byteOffset, dataRaw.byteLength);
         var times = new Float64Array(n);
         var volts = new Float64Array(n);
@@ -2357,16 +2430,13 @@ function parseBinWaveforms(w, format, userModel, parserModel) {
                 vMax = v;
             }
         }
-        fileModel = modelFromFrameString(wh.frameString, fileModel);
-        var timeScale = wh.xDisplayRange > 0 ? wh.xDisplayRange / 10 : n * wh.xIncrement / 10;
-        var timeOffset = n * wh.xIncrement / 2 - wh.xOrigin;
         channels.push({
-            name: wh.waveformLabel || ('CH' + (channels.length + 1)),
+            name: wh.waveformLabel || ('CH' + analogSlot),
             color: CH_COLORS[channels.length % CH_COLORS.length],
             times: times,
             volts: volts,
             raw: proxyRawFromCalibrated(volts),
-            channelNumber: channelNumberFromName(wh.waveformLabel, channels.length + 1),
+            channelNumber: channelNumberFromName(wh.waveformLabel, analogSlot),
             points: n,
             coupling: 'unknown',
             voltPerDiv: vMax > vMin ? (vMax - vMin) / 8 : 1,
@@ -2377,6 +2447,7 @@ function parseBinWaveforms(w, format, userModel, parserModel) {
             timeOffset: timeOffset,
             secondsPerPoint: wh.xIncrement,
         });
+        analogSlot += 1;
     }
     return {
         format: format,

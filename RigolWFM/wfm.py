@@ -261,12 +261,10 @@ def _detect_model_from_header(hdr: bytes, fsize: int, filename_hint: str = "") -
     if allow_bin_like and hdr.startswith(b"<?xml") and b"<Database" in hdr and b'SaveItemType="Data"' in hdr:
         return "RohdeSchwarz"
 
-    # RG01: MSO5000, MSO5074, MSO7000, MSO8000
+    # RG01: MSO5000-family, MSO7000, MSO8000
     if hdr[:4] == b"RG01":
         if len(hdr) >= 16:
             wfm_hdr_size = struct.unpack("<I", hdr[12:16])[0]
-            if wfm_hdr_size == 144:
-                return "5074"
             if wfm_hdr_size == 128:
                 # MSO7000 vs MSO8000: read frame_string at file offset 100
                 # (12-byte file header + 88 bytes into waveform header)
@@ -585,6 +583,26 @@ class Wfm:
                     new_wfm.logic_times = (
                         start + np.arange(logic_points) * new_wfm.logic_seconds_per_point
                     ).astype(np.float64)
+        elif pname == "bin5000":
+            logic_channels = getattr(w, "logic_channels", {})
+            if logic_channels:
+                new_wfm.logic_channels = logic_channels
+                new_wfm.logic_observed_channels = getattr(w, "logic_observed_channels", logic_channels)
+                new_wfm.logic_mapping = getattr(w, "logic_mapping", "")
+                new_wfm.logic_seconds_per_point = getattr(w, "logic_x_increment", None)
+                logic_x_origin = getattr(w, "logic_x_origin", None)
+                if logic_x_origin is not None:
+                    new_wfm.logic_time_offset = -logic_x_origin
+
+                first_trace = next(iter(logic_channels.values()), None)
+                if (
+                    first_trace is not None
+                    and new_wfm.logic_seconds_per_point is not None
+                    and logic_x_origin is not None
+                ):
+                    new_wfm.logic_times = (
+                        -logic_x_origin + np.arange(len(first_trace)) * new_wfm.logic_seconds_per_point
+                    ).astype(np.float64)
 
         # Warn when the model embedded in the file clearly disagrees with the
         # user-supplied model.  Single-character aliases (B, C, D, E, Z) and
@@ -719,13 +737,19 @@ class Wfm:
             first = False
         s += "]\n\n"
 
-        if self.logic_split is not None and self.logic_split.uses_logic_layout:
+        if self.logic_channels:
             s += "    Logic:\n"
-            s += "        Layout       = interleaved stride %d\n" % self.logic_split.inferred_stride
+            if self.logic_split is not None and self.logic_split.uses_logic_layout:
+                s += "        Layout       = interleaved stride %d\n" % self.logic_split.inferred_stride
             if self.logic_mapping:
                 s += "        Mapping      = %s\n" % self.logic_mapping
-            if self.logic_split.logic_lanes:
+            if self.logic_split is not None and self.logic_split.logic_lanes:
                 s += "        Points       = %8d\n" % len(self.logic_split.logic_lanes[0])
+            elif self.logic_times is not None:
+                s += "        Points       = %8d\n" % len(self.logic_times)
+            elif self.logic_channels:
+                first_trace = next(iter(self.logic_channels.values()))
+                s += "        Points       = %8d\n" % len(first_trace)
             if self.logic_seconds_per_point is not None:
                 s += "        Delta        = %10ss/point\n" % (
                     RigolWFM.channel.engineering_string(self.logic_seconds_per_point, 3)

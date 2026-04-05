@@ -17,6 +17,7 @@ from tests.test_yokogawa import _build_yokogawa_wfm
 _ROOT = Path(__file__).resolve().parents[1]
 _KEYSIGHT = _ROOT / "tests" / "files" / "bin" / "agilent_1.bin"
 _ROHDE = _ROOT / "tests" / "files" / "rs" / "rs_rtp_01.bin"
+_STANDARD_5074 = _ROOT / "tests" / "files" / "bin" / "MSO5074-C.bin"
 
 
 _LEGACY_INFO = [
@@ -31,7 +32,6 @@ _LEGACY_INFO = [
 
 _BIN_INFO = [
     ("5", "tests/files/bin/MSO5000-A.bin"),
-    ("5074", "tests/files/bin/MSO5074-A.bin"),
     ("DHO", "tests/files/bin/DHO1074.bin"),
     ("DHO", "tests/files/bin/DHO824-ch1.bin"),
 ]
@@ -85,6 +85,8 @@ def test_wfmconvert_info(tmp_path):
     """Verify `info` conversion succeeds for representative scopes."""
     for scope, path in _LEGACY_INFO + _BIN_INFO:
         run_command(f"wfmconvert --model {scope} info {path}")
+    if _STANDARD_5074.is_file():
+        run_command("wfmconvert --model 5074 info tests/files/bin/MSO5074-C.bin")
     for scope, path in _newer_family_cases(tmp_path):
         run_command(f"wfmconvert --model {scope} info {path}")
 

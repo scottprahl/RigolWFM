@@ -14,7 +14,6 @@ from typing import Any, Optional
 import RigolWFM.channel
 import RigolWFM.dho
 import RigolWFM.mso5000
-import RigolWFM.mso5074
 import RigolWFM.mso7000_8000
 import RigolWFM.rigol_1000b_wfm
 import RigolWFM.rigol_1000c_wfm
@@ -114,7 +113,7 @@ DS6000_scopes: list[str] = ["6", "6000", "DS6000", "DS6062", "DS6064", "DS6102",
 # example-backed `.bin` support
 DS5000_scopes: list[str] = ["5", "5000", "MSO5000"]
 
-# MSO5074 uses a different firmware format (uint8 ADC counts, wrong metadata)
+# Alias for MSO5074 standard RG01 captures, parsed with the MSO5000 family code.
 MSO5074_scopes: list[str] = ["5074", "MSO5074"]
 
 # manual-backed `.bin` support
@@ -405,7 +404,7 @@ def parse_file(
         header_name = w.header.model_number or "MSO5000"
 
     elif umodel in MSO5074_scopes:
-        w = RigolWFM.mso5074.from_file(file_name)
+        w = RigolWFM.mso5000.from_file(file_name)
         header_name = w.header.model_number or "MSO5074"
 
     elif umodel in DS7000_scopes:

@@ -1,16 +1,17 @@
 """
-Adapter layer for Rigol MSO5000 binary waveform exports.
+Adapter layer for Rigol MSO5000-family binary waveform exports.
 
-`RigolWFM.rigol_mso5000_bin` is the generated low-level Kaitai parser for the exported
-`.bin` container, but the rest of RigolWFM expects a normalized object with
-fixed channel slots, common timing fields, and calibrated sample arrays.
+`RigolWFM.rigol_mso5000_bin` is the generated low-level Kaitai parser for the
+exported `.bin` container, but the rest of RigolWFM expects a normalized object
+with fixed analog channel slots, common timing fields, and decoded sample
+arrays.
 
-This module performs that normalization for the analog float32 records found in
-the shipped MSO5000 example files. Logic-analyzer records are detected and
-rejected explicitly for now because the current repo has no matching fixtures to
-validate their layout.
+This module performs that normalization for standard RG01 captures, including
+analog float32 records and logic-analyzer records such as the checked-in
+`MSO5074-C.bin` fixture.
 """
 
+import os
 from enum import IntEnum
 from typing import Any, Optional
 
@@ -136,10 +137,20 @@ class Mso5000Waveform:
     """Normalized MSO5000 parser result consumed by `Channel`."""
 
     header: Header
+    logic_channels: dict[str, npt.NDArray[np.uint8]]
+    logic_observed_channels: dict[str, npt.NDArray[np.uint8]]
+    logic_mapping: str
+    logic_x_increment: float | None
+    logic_x_origin: float | None
 
     def __init__(self) -> None:
         """Initialize the normalized MSO5000 wrapper."""
         self.header = Header()
+        self.logic_channels = {}
+        self.logic_observed_channels = {}
+        self.logic_mapping = ""
+        self.logic_x_increment = None
+        self.logic_x_origin = None
 
     @property
     def parser_name(self) -> str:
@@ -208,10 +219,76 @@ def _model_from_frame(frame_string: str) -> str:
     return frame_string
 
 
+def _expected_rg01_file_size(raw: Any) -> int:
+    """Return the expected byte size for a standard RG01 file."""
+    total = 12
+    for waveform in raw.waveforms:
+        total += waveform.wfm_header.header_size
+        total += waveform.data_header.header_size
+        total += waveform.data_header.buffer_size
+    return total
+
+
+def _looks_like_malformed_5074(file_name: str) -> bool:
+    """Return True for the old concatenated MSO5074 export style we no longer support."""
+    with open(file_name, "rb") as handle:
+        raw = handle.read()
+
+    return raw.startswith(b"RG01") and raw.count(b"RG01") > 1 and len(raw) >= 16 and int.from_bytes(raw[12:16], "little") == 144
+
+
+def _validate_standard_rg01_layout(file_name: str, raw: Any) -> None:
+    """Reject malformed concatenated RG01 files that are not standard MSO5000 exports."""
+    expected = _expected_rg01_file_size(raw)
+    actual = os.path.getsize(file_name)
+    if expected != actual and _looks_like_malformed_5074(file_name):
+        raise ValueError(
+            "Unsupported malformed MSO5074 concatenated RG01 export. "
+            "Use a standard MSO5000/MSO5074 RG01 waveform file instead."
+        )
+
+
+def _logic_byte_samples(data_header: Any, data_raw: bytes) -> npt.NDArray[np.uint8]:
+    """Decode a logic-analyzer buffer into one byte per sample."""
+    buffer_type = data_header.buffer_type
+    bytes_per_point = data_header.bytes_per_point
+
+    if int(buffer_type) == 6 and bytes_per_point == 1:
+        return np.frombuffer(data_raw, dtype=np.uint8).copy()
+
+    if int(buffer_type) == 5 and bytes_per_point == 4:
+        data = np.frombuffer(data_raw, dtype="<f4").copy()
+        np.nan_to_num(data, copy=False)
+        return np.clip(data, 0, 255).astype(np.uint8)
+
+    raise ValueError(
+        "Unsupported MSO5000 logic waveform buffer "
+        f"(buffer_type={int(buffer_type)}, bytes_per_point={bytes_per_point})."
+    )
+
+
+def _logic_bit_traces(samples: npt.NDArray[np.uint8], bit_base: int) -> dict[str, npt.NDArray[np.uint8]]:
+    """Expand packed logic samples into named digital traces."""
+    traces: dict[str, npt.NDArray[np.uint8]] = {}
+    for bit in range(8):
+        traces[f"D{bit_base + bit}"] = ((samples >> bit) & 1).astype(np.uint8)
+    return traces
+
+
 def from_file(file_name: str) -> Mso5000Waveform:
     """Parse a Rigol MSO5000 `.bin` file and normalize it for `Wfm.from_file()`."""
     RigolMso5000Bin: Any = RigolWFM.rigol_mso5000_bin.RigolMso5000Bin  # type: ignore[attr-defined]
-    raw = RigolMso5000Bin.from_file(file_name)
+    try:
+        raw = RigolMso5000Bin.from_file(file_name)
+    except Exception as exc:
+        if _looks_like_malformed_5074(file_name):
+            raise ValueError(
+                "Unsupported malformed MSO5074 concatenated RG01 export. "
+                "Use a standard MSO5000/MSO5074 RG01 waveform file instead."
+            ) from exc
+        raise
+
+    _validate_standard_rg01_layout(file_name, raw)
     supported_buffer_types = {
         RigolMso5000Bin.BufferTypeEnum.normal_float32,
         RigolMso5000Bin.BufferTypeEnum.maximum_float32,
@@ -228,22 +305,40 @@ def from_file(file_name: str) -> Mso5000Waveform:
     header.ch = [ChannelHeader(f"CH{i + 1}", enabled=False) for i in range(4)]
 
     analog_slot = 0
+    logic_slot = 0
     for waveform in raw.waveforms:
         wfm_header = waveform.wfm_header
         data_header = waveform.data_header
         label = wfm_header.waveform_label.strip()
         waveform_type = int(wfm_header.waveform_type)
         buffer_type = data_header.buffer_type
+        point_count = int(wfm_header.n_pts)
+
+        if header.n_pts == 0:
+            header.n_pts = point_count
+            header.x_increment = wfm_header.x_increment
+            header.x_origin = wfm_header.x_origin
+            header.x_display_range = wfm_header.x_display_range
+            header.model = _model_from_frame(wfm_header.frame_string)
 
         if (
             waveform_type == RigolMso5000Bin.WaveformTypeEnum.logic
             or label.upper().startswith("LA")
             or buffer_type == RigolMso5000Bin.BufferTypeEnum.digital_u8
         ):
-            raise ValueError(
-                "Unsupported MSO5000 logic waveform record. "
-                "Only analog float32 waveform buffers are currently supported."
-            )
+            samples = _logic_byte_samples(data_header, waveform.data_raw)
+            if len(samples) != point_count:
+                raise ValueError(
+                    "MSO5000 logic waveform point count does not match the RG01 header. "
+                    f"Expected {point_count}, found {len(samples)}."
+                )
+
+            bit_base = 8 * logic_slot
+            obj.logic_channels.update(_logic_bit_traces(samples, bit_base))
+            logic_slot += 1
+            obj.logic_x_increment = wfm_header.x_increment
+            obj.logic_x_origin = wfm_header.x_origin
+            continue
 
         if buffer_type not in supported_buffer_types or data_header.bytes_per_point != 4:
             raise ValueError(
@@ -261,13 +356,12 @@ def from_file(file_name: str) -> Mso5000Waveform:
         np.nan_to_num(data, copy=False)
         raw_proxy = _proxy_raw(data)
 
-        if header.n_pts == 0:
-            header.n_pts = len(data)
-            header.x_increment = wfm_header.x_increment
-            header.x_origin = wfm_header.x_origin
-            header.x_display_range = wfm_header.x_display_range
-            header.model = _model_from_frame(wfm_header.frame_string)
-        elif len(data) != header.n_pts:
+        if len(data) != point_count:
+            raise ValueError(
+                "MSO5000 analog waveform point count does not match the RG01 header. "
+                f"Expected {point_count}, found {len(data)}."
+            )
+        if analog_slot > 0 and len(data) != header.n_pts:
             raise ValueError(
                 "MSO5000 analog channels have mismatched point counts. " f"Expected {header.n_pts}, found {len(data)}."
             )
@@ -281,5 +375,12 @@ def from_file(file_name: str) -> Mso5000Waveform:
         header.channel_data[slot] = data
         header.raw_data[slot] = raw_proxy
         analog_slot += 1
+
+    if logic_slot == 1:
+        obj.logic_mapping = "LA D7-D0"
+    elif logic_slot == 2:
+        obj.logic_mapping = "LA D7-D0 + LA D15-D8"
+    elif logic_slot > 2:
+        obj.logic_mapping = f"{logic_slot} explicit logic byte lanes"
 
     return obj

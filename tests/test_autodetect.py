@@ -11,6 +11,7 @@ from tests.test_tek import _build_tek_wfm
 _ROOT = Path(__file__).resolve().parents[1]
 _RS_DIR = _ROOT / "tests" / "files" / "rs"
 _ROHDE = _RS_DIR / "rs_rtp_01.bin"
+_STANDARD_5074 = _ROOT / "tests" / "files" / "bin" / "MSO5074-C.bin"
 
 # (filename, expected_model)
 # One representative file per detectable family.
@@ -34,10 +35,8 @@ _CASES = [
     ("tests/files/wfm/DS2072A-1.wfm", "2"),
     # DS4000 — same magic as DS2000, model string starting DS4/MSO4
     ("tests/files/wfm/DS4022-A.wfm", "4"),
-    # MSO5000 — magic RG01, wfm_hdr_size == 140
+    # MSO5000-family RG01 analog export
     ("tests/files/bin/MSO5000-A.bin", "5"),
-    # MSO5074 — magic RG01, wfm_hdr_size == 144
-    ("tests/files/bin/MSO5074-A.bin", "5074"),
     # DHO800/1000 — magic 0x02 0x00 0x00 0x00 or RG03
     ("tests/files/bin/DHO1074.bin", "DHO"),
     ("tests/files/bin/DHO824-ch1.bin", "DHO"),
@@ -47,6 +46,9 @@ _CASES = [
     # Rohde & Schwarz RTP `.bin` metadata with companion `.Wfm.bin` payload
     ("tests/files/rs/rs_rtp_01.bin", "RohdeSchwarz"),
 ]
+
+if _STANDARD_5074.is_file():
+    _CASES.append(("tests/files/bin/MSO5074-C.bin", "5"))
 
 
 @pytest.mark.parametrize("path, expected", _CASES)
