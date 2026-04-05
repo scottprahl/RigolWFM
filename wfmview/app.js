@@ -804,16 +804,16 @@ function channelInfoText(ch, stats) {
     return s;
 }
 
-function buildInfoHeaderText(result, filename) {
+function buildInfoHeaderText(result, filename, includeSerial) {
+    var showSerial = includeSerial !== false;
     var s = '    General:\n';
-    s += '        File Model   = ' + (result.fileModel || result.format) + '\n';
-    if (result.serialNumber) {
+    s += '        Filename     = ' + filename + '\n';
+    s += '        Scope        = ' + (result.fileModel || result.format) + '\n';
+    s += '        Parser Model = ' + (result.parserModel || 'browser') + '\n';
+    if (showSerial && result.serialNumber) {
         s += '        Serial Number = ' + result.serialNumber + '\n';
     }
-    s += '        User Model   = ' + (result.userModel || 'auto') + '\n';
-    s += '        Parser Model = ' + (result.parserModel || 'browser') + '\n';
     s += '        Firmware     = ' + (result.firmware || 'unknown') + '\n';
-    s += '        Filename     = ' + filename + '\n';
     s += '        Channels     = [' + result.channels.map(function(ch) {
         return channelListLabel(ch);
     }).join(', ') + ']\n\n';
@@ -5524,7 +5524,7 @@ function showFileInfoTooltip(fileId, anchorEl) {
         return;
     }
 
-    showSidebarTooltip(buildInfoHeaderText(entry.result, entry.filename).replace(/\s+$/, ''), anchorEl, true);
+    showSidebarTooltip(buildInfoHeaderText(entry.result, entry.filename, false).replace(/\s+$/, ''), anchorEl, true);
 }
 
 function clearDragState() {

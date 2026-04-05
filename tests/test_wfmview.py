@@ -1261,11 +1261,36 @@ def test_wfmview_z_logic_helpers_execute_under_node():
             fileModel: 'DS1074Z Plus',
             userModel: 'Z',
             parserModel: 'wfm1000z',
+            serialNumber: 'DS1ZA000000001',
             firmware: '00.04.05.SP2',
             channels: [{{ channelNumber: 1 }}, {{ channelNumber: 6, infoLabel: 'D6' }}],
         }}, 'test3.wfm');
+        if (
+            !infoHeader.includes('Filename     = test3.wfm\\n') ||
+            !infoHeader.includes('Scope        = DS1074Z Plus\\n') ||
+            !infoHeader.includes('Parser Model = wfm1000z\\n')
+        ) {{
+            throw new Error('Info header should list filename first, then scope, then parser model.');
+        }}
+        if (infoHeader.includes('User Model')) {{
+            throw new Error('Info header should not include the user model.');
+        }}
+        if (!infoHeader.includes('Serial Number = DS1ZA000000001')) {{
+            throw new Error('Full info header should still include the serial number.');
+        }}
         if (!infoHeader.includes('Channels     = [1, D6]')) {{
             throw new Error('Digital channels should appear in the info header like analog channels.');
+        }}
+
+        const tooltipHeader = buildInfoHeaderText({{
+            fileModel: 'DS1074Z Plus',
+            parserModel: 'wfm1000z',
+            serialNumber: 'DS1ZA000000001',
+            firmware: '00.04.05.SP2',
+            channels: [{{ channelNumber: 1 }}, {{ channelNumber: 6, infoLabel: 'D6' }}],
+        }}, 'test3.wfm', false);
+        if (tooltipHeader.includes('Serial Number')) {{
+            throw new Error('Filename hover popup should omit the serial number.');
         }}
 
         const digitalInfo = channelInfoText({{
