@@ -70,7 +70,7 @@ Installation
 
 You can install locally using pip::
     
-    pip install --user RigolWFM
+    pip install RigolWFM
 
 or ``conda``::
 
