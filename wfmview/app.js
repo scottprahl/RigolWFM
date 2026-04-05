@@ -4541,6 +4541,209 @@ function formatExportFloat(value) {
     return Number.parseFloat(value.toPrecision(17)).toString();
 }
 
+function sanitizeExportName(name, used) {
+    var sanitized = String(name || '').replace(/[^0-9A-Za-z_]+/g, '_').replace(/^_+|_+$/g, '');
+    if (!sanitized) {
+        sanitized = 'signal';
+    }
+    if (/^[0-9]/.test(sanitized)) {
+        sanitized = 'signal_' + sanitized;
+    }
+    if (sanitized === 'time' || sanitized === 'start' || sanitized === 'increment') {
+        sanitized += '_channel';
+    }
+    var base = sanitized;
+    var suffix = 1;
+    while (used[sanitized]) {
+        sanitized = base + '_' + suffix;
+        suffix += 1;
+    }
+    return sanitized;
+}
+
+function buildExportArrayBundle(entry) {
+    var chs = getVisibleChannelsForEntry(entry);
+    if (!chs.length) {
+        return null;
+    }
+    var npts = Math.min.apply(null, chs.map(function(c) {
+        return c.times.length;
+    }));
+    if (!npts) {
+        return null;
+    }
+
+    var times = new Float64Array(npts);
+    for (var i = 0; i < npts; i++) {
+        times[i] = Number(chs[0].times[i]);
+    }
+    var increment = npts > 1 ? (times[npts - 1] - times[0]) / (npts - 1) : 0;
+
+    var arrays = [
+        { name: 'time', descr: '<f8', values: times },
+        { name: 'start', descr: '<f8', values: new Float64Array([times[0]]) },
+        { name: 'increment', descr: '<f8', values: new Float64Array([increment]) },
+    ];
+    var used = { time: true, start: true, increment: true };
+
+    chs.forEach(function(ch) {
+        var key = sanitizeExportName(ch.name, used);
+        var values;
+        if (ch.kind === 'digital') {
+            values = new Uint8Array(npts);
+            for (var sample = 0; sample < npts; sample++) {
+                values[sample] = Math.round(ch.volts[sample]) ? 1 : 0;
+            }
+            arrays.push({ name: key, descr: '|u1', values: values });
+        } else {
+            values = new Float64Array(npts);
+            for (var sampleIndex = 0; sampleIndex < npts; sampleIndex++) {
+                values[sampleIndex] = Number(ch.volts[sampleIndex]);
+            }
+            arrays.push({ name: key, descr: '<f8', values: values });
+        }
+        used[key] = true;
+    });
+
+    return {
+        arrays: arrays,
+        increment: increment,
+        npts: npts,
+        start: times[0],
+        times: times,
+    };
+}
+
+function buildLittleEndianFloat64Bytes(values) {
+    var out = new Uint8Array(values.length * 8);
+    var view = new DataView(out.buffer);
+    for (var i = 0; i < values.length; i++) {
+        view.setFloat64(i * 8, Number(values[i]), true);
+    }
+    return out;
+}
+
+function buildNpyShapeString(length) {
+    return '(' + length + ',)';
+}
+
+function buildNpyArrayBytes(arrayInfo) {
+    var body;
+    if (arrayInfo.descr === '<f8') {
+        body = buildLittleEndianFloat64Bytes(arrayInfo.values);
+    } else if (arrayInfo.descr === '|u1') {
+        body = toU8(arrayInfo.values) || new Uint8Array(0);
+    } else {
+        throw new Error('Unsupported NPY descriptor: ' + arrayInfo.descr);
+    }
+
+    var header = (
+        "{'descr': '" + arrayInfo.descr +
+        "', 'fortran_order': False, 'shape': " + buildNpyShapeString(arrayInfo.values.length) +
+        ", }"
+    );
+    var pad = 16 - ((10 + header.length + 1) % 16);
+    if (pad === 16) {
+        pad = 0;
+    }
+    header += Array(pad + 1).join(' ') + '\n';
+    var headerBytes = encodeUtf8Text(header);
+
+    var magic = new Uint8Array(10);
+    magic[0] = 0x93;
+    magic[1] = 0x4e;
+    magic[2] = 0x55;
+    magic[3] = 0x4d;
+    magic[4] = 0x50;
+    magic[5] = 0x59;
+    magic[6] = 0x01;
+    magic[7] = 0x00;
+    var magicView = new DataView(magic.buffer);
+    writeUint16LE(magicView, 8, headerBytes.length);
+
+    return concatUint8Arrays([magic, headerBytes, body]);
+}
+
+function buildExportNPZArchive(entry) {
+    var bundle = buildExportArrayBundle(entry);
+    if (!bundle) {
+        return null;
+    }
+    return buildStoredZipArchive(bundle.arrays.map(function(arrayInfo) {
+        return {
+            name: arrayInfo.name + '.npy',
+            data: buildNpyArrayBytes(arrayInfo),
+        };
+    }));
+}
+
+function buildMatPaddedBytes(payload) {
+    var pad = (8 - (payload.length % 8)) % 8;
+    if (pad === 0) {
+        return payload;
+    }
+    return concatUint8Arrays([payload, new Uint8Array(pad)]);
+}
+
+function buildMatElement(dataType, payload) {
+    var header = new Uint8Array(8);
+    var view = new DataView(header.buffer);
+    writeUint32LE(view, 0, dataType);
+    writeUint32LE(view, 4, payload.length);
+    return concatUint8Arrays([header, buildMatPaddedBytes(payload)]);
+}
+
+function buildMatNumericMatrix(name, values) {
+    var mxDOUBLE_CLASS = 6;
+    var miINT8 = 1;
+    var miINT32 = 5;
+    var miUINT32 = 6;
+    var miDOUBLE = 9;
+    var miMATRIX = 14;
+
+    var floatValues = values instanceof Float64Array ? values : Float64Array.from(values);
+
+    var flags = new Uint8Array(8);
+    var flagsView = new DataView(flags.buffer);
+    writeUint32LE(flagsView, 0, mxDOUBLE_CLASS);
+    writeUint32LE(flagsView, 4, 0);
+
+    var dims = new Uint8Array(8);
+    var dimsView = new DataView(dims.buffer);
+    dimsView.setInt32(0, floatValues.length, true);
+    dimsView.setInt32(4, 1, true);
+
+    var matrixPayload = concatUint8Arrays([
+        buildMatElement(miUINT32, flags),
+        buildMatElement(miINT32, dims),
+        buildMatElement(miINT8, encodeUtf8Text(name)),
+        buildMatElement(miDOUBLE, buildLittleEndianFloat64Bytes(floatValues)),
+    ]);
+
+    return buildMatElement(miMATRIX, matrixPayload);
+}
+
+function buildExportMATPayload(entry) {
+    var bundle = buildExportArrayBundle(entry);
+    if (!bundle) {
+        return null;
+    }
+
+    var header = new Uint8Array(128);
+    var headerText = encodeUtf8Text('MATLAB 5.0 MAT-file, Platform: RigolWFM, Created by RigolWFM');
+    header.set(headerText.slice(0, 116), 0);
+    var headerView = new DataView(header.buffer);
+    writeUint16LE(headerView, 124, 0x0100);
+    header[126] = 0x49;
+    header[127] = 0x4d;
+
+    var matrices = [header];
+    bundle.arrays.forEach(function(arrayInfo) {
+        matrices.push(buildMatNumericMatrix(arrayInfo.name, arrayInfo.values));
+    });
+    return concatUint8Arrays(matrices);
+}
+
 function buildExportCSVText(entry) {
     var chs = getVisibleChannelsForEntry(entry);
     if (!chs.length) {
@@ -4744,6 +4947,24 @@ function doExportCSV() {
         return;
     }
     triggerDownload(csvText, currentFilename + '.csv', 'text/csv');
+}
+
+function doExportNPZ() {
+    var active = getActiveEntry();
+    var archive = buildExportNPZArchive(active);
+    if (!archive) {
+        return;
+    }
+    triggerDownload(archive, currentFilename + '.npz', 'application/zip');
+}
+
+function doExportMAT() {
+    var active = getActiveEntry();
+    var payload = buildExportMATPayload(active);
+    if (!payload) {
+        return;
+    }
+    triggerDownload(payload, currentFilename + '.mat', 'application/octet-stream');
 }
 
 function doExportInfo() {
@@ -5581,6 +5802,14 @@ exportModal.addEventListener('click', function(e) {
 
 document.getElementById('exp-csv').addEventListener('click', function() {
     doExportCSV();
+    exportModal.classList.remove('open');
+});
+document.getElementById('exp-npz').addEventListener('click', function() {
+    doExportNPZ();
+    exportModal.classList.remove('open');
+});
+document.getElementById('exp-mat').addEventListener('click', function() {
+    doExportMAT();
     exportModal.classList.remove('open');
 });
 document.getElementById('exp-info').addEventListener('click', function() {

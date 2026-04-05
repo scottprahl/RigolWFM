@@ -1,5 +1,6 @@
 """Integration checks for core `wfmconvert` output modes."""
 
+import io
 from pathlib import Path
 import shlex
 import shutil
@@ -12,6 +13,7 @@ import pytest
 import RigolWFM.channel
 import RigolWFM.wfm
 import RigolWFM.wfmconvert
+from tests.mat_helpers import load_simple_mat_v5
 from tests.cli_helpers import run_command, run_command_failure, run_command_result
 from tests.test_isf import _build_isf
 from tests.test_lecroy import _build_trc
@@ -103,21 +105,28 @@ def test_wfmconvert_csv(tmp_path):
         run_command(f"wfmconvert --model {scope} --output-dir {shlex.quote(str(tmp_path))} csv {path}")
 
 
+def test_wfmconvert_npz(tmp_path):
+    """Verify NPZ export succeeds for representative scopes."""
+    for scope, path in _LEGACY_INFO + _BIN_INFO:
+        run_command(f"wfmconvert --model {scope} --output-dir {tmp_path} npz {path}")
+    for scope, path in _newer_family_cases(tmp_path):
+        run_command(f"wfmconvert --model {scope} --output-dir {shlex.quote(str(tmp_path))} npz {path}")
+
+
+def test_wfmconvert_mat(tmp_path):
+    """Verify MAT export succeeds for representative scopes."""
+    for scope, path in _LEGACY_INFO + _BIN_INFO:
+        run_command(f"wfmconvert --model {scope} --output-dir {tmp_path} mat {path}")
+    for scope, path in _newer_family_cases(tmp_path):
+        run_command(f"wfmconvert --model {scope} --output-dir {shlex.quote(str(tmp_path))} mat {path}")
+
+
 def test_wfmconvert_wav(tmp_path):
     """Verify WAV export succeeds for representative scopes."""
     for scope, path in _LEGACY_INFO + _BIN_INFO:
         run_command(f"wfmconvert --model {scope} --channel 1 --output-dir {tmp_path} wav {path}")
     for scope, path in _newer_family_cases(tmp_path):
         run_command(f"wfmconvert --model {scope} --channel 1 --output-dir {shlex.quote(str(tmp_path))} wav {path}")
-
-
-def test_wfmconvert_vcsv(tmp_path):
-    """Verify VCSV export succeeds for representative scopes."""
-    for scope, path in _LEGACY_INFO + _BIN_INFO:
-        run_command(f"wfmconvert --model {scope} --output-dir {tmp_path} vcsv {path}")
-    for scope, path in _newer_family_cases(tmp_path):
-        run_command(f"wfmconvert --model {scope} --output-dir {shlex.quote(str(tmp_path))} vcsv {path}")
-
 
 def test_wfmconvert_sigrok(tmp_path):
     """Verify sigrok export either writes output or reports the missing dependency."""
@@ -131,6 +140,20 @@ def test_wfmconvert_model_aliases():
     """Representative aliases should be accepted case-insensitively."""
     run_command(f"wfmconvert --model keysight info {_quote(_KEYSIGHT)}")
     run_command(f"wfmconvert --model rohde info {_quote(_ROHDE)}")
+
+
+def test_wfmconvert_rejects_removed_vcsv_action():
+    """The deprecated `vcsv` action should no longer be accepted."""
+    result = run_command_result("wfmconvert --model E vcsv tests/files/wfm/DS1102E-A.wfm")
+    help_result = run_command_result("wfmconvert --help")
+
+    assert result.returncode != 0
+    assert "missing action verb" in result.stderr
+    assert help_result.returncode == 0
+    assert "vcsv" not in help_result.stdout
+    assert "npz" in help_result.stdout
+    assert "mat" in help_result.stdout
+    assert "sigrok" in help_result.stdout
 
 
 @pytest.mark.parametrize(
@@ -245,6 +268,97 @@ def test_csv_exports_mixed_analog_and_digital_columns():
     assert row1[1] == "-500.00"
 
 
+def test_npz_exports_logic_only_waveforms():
+    """Logic-only captures should export named digital arrays to NPZ."""
+    waveform = RigolWFM.wfm.Wfm.from_file("tests/files/wfm/DS1074Z-C.wfm", "Z")
+
+    handle = io.BytesIO()
+    waveform.npz(handle)
+    handle.seek(0)
+
+    with np.load(handle) as archive:
+        assert set(archive.files) == {"time", "start", "increment", "D6"}
+        assert archive["D6"].dtype == np.uint8
+        assert archive["D6"][:20].tolist()
+        assert set(archive["D6"][:20].tolist()) <= {0, 1}
+        assert archive["start"][0] == pytest.approx(float(archive["time"][0]))
+        assert archive["increment"][0] == pytest.approx(float(archive["time"][1] - archive["time"][0]))
+
+
+def test_npz_exports_mixed_analog_and_digital_series():
+    """NPZ export should preserve float analog data and uint8 digital traces."""
+    waveform = RigolWFM.wfm.Wfm("synthetic.npz")
+    waveform.channels = [
+        SimpleNamespace(
+            name="CH1",
+            enabled_and_selected=True,
+            times=np.array([0.0, 1.0e-6, 2.0e-6], dtype=np.float64),
+            volts=np.array([0.25, -0.5, 0.75], dtype=np.float64),
+            points=3,
+            unit=RigolWFM.channel.UnitEnum.v,
+            volt_per_division=1.0e-3,
+            time_scale=1.0e-6,
+        )
+    ]
+    waveform.logic_channels = {"D6": np.array([0, 1, 0], dtype=np.uint8)}
+    waveform.logic_times = np.array([0.0, 1.0e-6, 2.0e-6], dtype=np.float64)
+    waveform.logic_seconds_per_point = 1.0e-6
+
+    handle = io.BytesIO()
+    waveform.npz(handle)
+    handle.seek(0)
+
+    with np.load(handle) as archive:
+        assert set(archive.files) == {"time", "start", "increment", "CH1", "D6"}
+        assert archive["CH1"].dtype == np.float64
+        assert archive["D6"].dtype == np.uint8
+        assert archive["CH1"].tolist() == pytest.approx([0.25, -0.5, 0.75])
+        assert archive["D6"].tolist() == [0, 1, 0]
+
+
+def test_mat_exports_logic_only_waveforms():
+    """Logic-only captures should export named digital arrays to MAT."""
+    waveform = RigolWFM.wfm.Wfm.from_file("tests/files/wfm/DS1074Z-C.wfm", "Z")
+
+    handle = io.BytesIO()
+    waveform.mat(handle)
+
+    arrays = load_simple_mat_v5(handle.getvalue())
+    assert set(arrays) == {"time", "start", "increment", "D6"}
+    assert arrays["D6"][:20].tolist()
+    assert set(arrays["D6"][:20].astype(int).tolist()) <= {0, 1}
+    assert arrays["start"][0] == pytest.approx(float(arrays["time"][0]))
+    assert arrays["increment"][0] == pytest.approx(float(arrays["time"][1] - arrays["time"][0]))
+
+
+def test_mat_exports_mixed_analog_and_digital_series():
+    """MAT export should preserve the shared time axis plus named series arrays."""
+    waveform = RigolWFM.wfm.Wfm("synthetic.mat")
+    waveform.channels = [
+        SimpleNamespace(
+            name="CH1",
+            enabled_and_selected=True,
+            times=np.array([0.0, 1.0e-6, 2.0e-6], dtype=np.float64),
+            volts=np.array([0.25, -0.5, 0.75], dtype=np.float64),
+            points=3,
+            unit=RigolWFM.channel.UnitEnum.v,
+            volt_per_division=1.0e-3,
+            time_scale=1.0e-6,
+        )
+    ]
+    waveform.logic_channels = {"D6": np.array([0, 1, 0], dtype=np.uint8)}
+    waveform.logic_times = np.array([0.0, 1.0e-6, 2.0e-6], dtype=np.float64)
+    waveform.logic_seconds_per_point = 1.0e-6
+
+    handle = io.BytesIO()
+    waveform.mat(handle)
+
+    arrays = load_simple_mat_v5(handle.getvalue())
+    assert set(arrays) == {"time", "start", "increment", "CH1", "D6"}
+    assert arrays["CH1"].tolist() == pytest.approx([0.25, -0.5, 0.75])
+    assert arrays["D6"].tolist() == pytest.approx([0.0, 1.0, 0.0])
+
+
 def test_wfmconvert_csv_writes_logic_columns(tmp_path):
     """CLI CSV export should include parsed digital channels for logic-only fixtures."""
     run_command(f"wfmconvert --model Z --output-dir {shlex.quote(str(tmp_path))} csv tests/files/wfm/DS1074Z-C.wfm")
@@ -252,6 +366,24 @@ def test_wfmconvert_csv_writes_logic_columns(tmp_path):
     lines = (tmp_path / "DS1074Z-C.csv").read_text(encoding="utf-8").splitlines()
     assert lines[0].split(",") == ["X", "D6", "Start", "Increment"]
     assert lines[1].split(",")[1] == "STATE"
+
+
+def test_wfmconvert_npz_writes_logic_arrays(tmp_path):
+    """CLI NPZ export should include parsed digital channels for logic-only fixtures."""
+    run_command(f"wfmconvert --model Z --output-dir {shlex.quote(str(tmp_path))} npz tests/files/wfm/DS1074Z-C.wfm")
+
+    with np.load(tmp_path / "DS1074Z-C.npz") as archive:
+        assert set(archive.files) == {"time", "start", "increment", "D6"}
+        assert archive["D6"].dtype == np.uint8
+
+
+def test_wfmconvert_mat_writes_logic_arrays(tmp_path):
+    """CLI MAT export should include parsed digital channels for logic-only fixtures."""
+    run_command(f"wfmconvert --model Z --output-dir {shlex.quote(str(tmp_path))} mat tests/files/wfm/DS1074Z-C.wfm")
+
+    arrays = load_simple_mat_v5(tmp_path / "DS1074Z-C.mat")
+    assert set(arrays) == {"time", "start", "increment", "D6"}
+    assert arrays["D6"].tolist()[:10]
 
 
 def test_sigrokcsv_exports_logic_only_waveforms():

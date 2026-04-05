@@ -134,18 +134,34 @@ def csv(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> 
         f.write(b)
 
 
-def vcsv(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
-    """Create a file with comma separated values (full volts)."""
-    csv_name = _output_path(infile, ".csv", args.output_dir)
+def npz(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
+    """Create a NumPy `.npz` archive."""
+    npz_name = _output_path(infile, ".npz", args.output_dir)
 
-    if os.path.isfile(csv_name) and not args.force:
-        print(f"'{csv_name}' exists, use --force to overwrite")
+    if os.path.isfile(npz_name) and not args.force:
+        print(f"'{npz_name}' exists, use --force to overwrite")
         return
 
-    s = scope_data.sigrokcsv()
-    with open(csv_name, "wb") as f:
-        b = s.encode(encoding="utf-8")
-        f.write(b)
+    try:
+        scope_data.npz(npz_name)
+    except ValueError as e:
+        print(f"wfmconvert error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def mat(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
+    """Create a MATLAB `.mat` file."""
+    mat_name = _output_path(infile, ".mat", args.output_dir)
+
+    if os.path.isfile(mat_name) and not args.force:
+        print(f"'{mat_name}' exists, use --force to overwrite")
+        return
+
+    try:
+        scope_data.mat(mat_name)
+    except ValueError as e:
+        print(f"wfmconvert error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def wav(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
@@ -310,10 +326,12 @@ def main() -> None:
         examples:
             wfmconvert info DS1102E.wfm
             wfmconvert csv DS1102E.wfm
+            wfmconvert npz DS1102E.wfm
+            wfmconvert mat DS1102E.wfm
             wfmconvert png DS1102E.wfm
             wfmconvert --output-dir /tmp csv *.wfm
             wfmconvert --channel 2 csv DS1102E.wfm
-            wfmconvert --channel 124 vcsv DS1102E.wfm
+            wfmconvert --channel 124 sigrok DS1102E.wfm
             wfmconvert --channel 3 --scale scope wav DS1102E.wfm
             wfmconvert --channel 12 --scale scope wav DS1102E.wfm
             wfmconvert --model C info DS1042C-A.wfm
@@ -385,13 +403,14 @@ def main() -> None:
 
     parser.add_argument(
         dest="action",
-        choices=["csv", "info", "png", "wav", "vcsv", "sigrok"],
+        choices=["csv", "info", "png", "wav", "sigrok", "npz", "mat"],
         help=textwrap.dedent("""\
         csv:    convert to a file with comma separated values
         info:   show the various scope settings for a waveform file
+        npz:    save waveform arrays in a NumPy `.npz` archive
+        mat:    save waveform arrays in a MATLAB `.mat` file
         png:    save a waveform plot as a PNG image (use --dpi to set resolution)
         wav:    convert to a WAV sound format file for use with Pulseview or LTspice.
-        vcsv:   convert to a file with comma separated values with raw voltages
         sigrok: convert to a sigrok file
         """),
     )
@@ -417,7 +436,7 @@ def main() -> None:
         print(f'You used "--channel {args.channel}"')
         sys.exit(1)
 
-    actionMap = {"info": info, "csv": csv, "png": png, "wav": wav, "vcsv": vcsv, "sigrok": sigrok}
+    actionMap = {"info": info, "csv": csv, "npz": npz, "mat": mat, "png": png, "wav": wav, "sigrok": sigrok}
 
     for filename in args.infile:
         try:

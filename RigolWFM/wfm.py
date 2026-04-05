@@ -17,12 +17,13 @@ Example:
 
 import os
 import os.path
+import re
 import struct
 import sys
 import tempfile
 import urllib.parse
 import wave
-from typing import IO, TYPE_CHECKING, Any, Literal
+from typing import IO, TYPE_CHECKING, Any, Literal, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -128,6 +129,8 @@ MSO5074_scopes = RigolWFM.rigol.MSO5074_scopes
 DS7000_scopes = RigolWFM.rigol.DS7000_scopes
 DS8000_scopes = RigolWFM.rigol.DS8000_scopes
 DHO1000_scopes = RigolWFM.rigol.DHO1000_scopes
+
+ExportArray = npt.NDArray[np.float64] | npt.NDArray[np.uint8]
 
 # Re-export Rigol trigger constants so existing callers continue to work.
 _DS2000_SOURCE_NAMES = RigolWFM.rigol._DS2000_SOURCE_NAMES  # pylint: disable=protected-access
@@ -432,6 +435,97 @@ def _scope_family(name: str) -> str:
 def dho_from_file(file_name: str) -> Any:
     """Backward-compatible wrapper around `RigolWFM.dho.from_file()`."""
     return RigolWFM.rigol.dho_from_file(file_name)
+
+
+def _sanitize_export_name(name: str, used: set[str]) -> str:
+    """Return a MAT/NPZ-safe array name while preserving familiar channel labels."""
+    sanitized = re.sub(r"[^0-9A-Za-z_]+", "_", name).strip("_")
+    if not sanitized:
+        sanitized = "signal"
+    if sanitized[0].isdigit():
+        sanitized = f"signal_{sanitized}"
+    if sanitized in {"time", "start", "increment"}:
+        sanitized = f"{sanitized}_channel"
+
+    base = sanitized
+    suffix = 1
+    while sanitized in used:
+        sanitized = f"{base}_{suffix}"
+        suffix += 1
+    return sanitized
+
+
+def _write_binary_output(filename: str | os.PathLike[str] | IO[bytes], payload: bytes) -> None:
+    """Write a binary payload to a path or writable binary file object."""
+    if isinstance(filename, (str, os.PathLike)):
+        with open(os.fspath(filename), "wb") as handle:
+            handle.write(payload)
+        return
+    filename.write(payload)
+
+
+def _mat_v5_pad(data: bytes) -> bytes:
+    """Pad a MAT v5 element payload to the next 8-byte boundary."""
+    pad = (-len(data)) % 8
+    if pad == 0:
+        return data
+    return data + (b"\x00" * pad)
+
+
+def _mat_v5_element(data_type: int, payload: bytes) -> bytes:
+    """Build one regular MAT v5 data element."""
+    return struct.pack("<II", data_type, len(payload)) + _mat_v5_pad(payload)
+
+
+def _mat_v5_numeric_matrix(name: str, values: ExportArray) -> bytes:
+    """Encode one real numeric MATLAB v5 matrix using column-major storage."""
+    array = np.asarray(values, dtype=np.float64)
+    array2d: npt.NDArray[np.float64]
+    if array.ndim == 0:
+        array2d = array.reshape((1, 1))
+    elif array.ndim == 1:
+        array2d = array.reshape((array.shape[0], 1))
+    elif array.ndim == 2:
+        array2d = cast(npt.NDArray[np.float64], array)
+    else:
+        raise ValueError(f"MAT export only supports scalars, vectors, and 2-D arrays; got {array.ndim} dims.")
+
+    name_bytes = name.encode("ascii")
+    if not name_bytes:
+        raise ValueError("MAT export variable names must not be empty.")
+
+    mxDOUBLE_CLASS = 6
+    miINT8 = 1
+    miINT32 = 5
+    miUINT32 = 6
+    miDOUBLE = 9
+    miMATRIX = 14
+
+    flags = struct.pack("<II", mxDOUBLE_CLASS, 0)
+    dims = struct.pack("<" + ("i" * array2d.ndim), *array2d.shape)
+    real = np.asfortranarray(array2d).tobytes(order="F")
+
+    matrix = b"".join(
+        [
+            _mat_v5_element(miUINT32, flags),
+            _mat_v5_element(miINT32, dims),
+            _mat_v5_element(miINT8, name_bytes),
+            _mat_v5_element(miDOUBLE, real),
+        ]
+    )
+    return _mat_v5_element(miMATRIX, matrix)
+
+
+def _build_mat_v5_payload(arrays: dict[str, ExportArray]) -> bytes:
+    """Return a MATLAB v5 `.mat` payload for the provided numeric arrays."""
+    header_text = "MATLAB 5.0 MAT-file, Platform: RigolWFM, Created by RigolWFM"
+    header = header_text.encode("ascii", "replace")[:116].ljust(116, b" ")
+    header += b"\x00" * 8
+    header += struct.pack("<H", 0x0100)
+    header += b"IM"
+
+    body = b"".join(_mat_v5_numeric_matrix(name, values) for name, values in arrays.items())
+    return header + body
 
 
 # ---------------------------------------------------------------------------
@@ -877,6 +971,30 @@ class Wfm:
 
         return base_times[:n_pts], series
 
+    def _export_arrays(self) -> dict[str, ExportArray]:
+        """Return the shared MAT/NPZ export arrays for this waveform."""
+        times, series = self._csv_series()
+        if len(times) == 0 or not series:
+            return {}
+
+        increment = float((times[-1] - times[0]) / (len(times) - 1)) if len(times) > 1 else 0.0
+        arrays: dict[str, ExportArray] = {
+            "time": times.astype(np.float64, copy=True),
+            "start": np.array([float(times[0])], dtype=np.float64),
+            "increment": np.array([increment], dtype=np.float64),
+        }
+
+        used = set(arrays)
+        for name, kind, values in series:
+            key = _sanitize_export_name(name, used)
+            used.add(key)
+            if kind == "analog":
+                arrays[key] = np.asarray(values, dtype=np.float64)
+            else:
+                arrays[key] = np.asarray(values, dtype=np.uint8)
+
+        return arrays
+
     def plot(self) -> "Figure":
         """Plot the data in oscilloscope style and return the Figure."""
         _CH_COLORS = ["#FFFF00", "#00FFFF", "#FF00FF", "#00FF00"]
@@ -980,6 +1098,27 @@ class Wfm:
                     s += ",%d" % int(values[i])
             s += "\n"
         return s
+
+    def npz(self, filename: str | os.PathLike[str] | IO[bytes]) -> None:
+        """Save waveform arrays as a NumPy `.npz` archive."""
+        arrays = self._export_arrays()
+        if not arrays:
+            raise ValueError("No analog or digital channels are available to export to NPZ.")
+        kwargs: Any = arrays
+
+        if isinstance(filename, (str, os.PathLike)):
+            np.savez(file=os.fspath(filename), **kwargs)
+            return
+        np.savez(file=filename, **kwargs)
+
+    def mat(self, filename: str | os.PathLike[str] | IO[bytes]) -> None:
+        """Save waveform arrays as a MATLAB v5 `.mat` file."""
+        arrays = self._export_arrays()
+        if not arrays:
+            raise ValueError("No analog or digital channels are available to export to MAT.")
+
+        payload = _build_mat_v5_payload(arrays)
+        _write_binary_output(filename, payload)
 
     def wav(
         self,
