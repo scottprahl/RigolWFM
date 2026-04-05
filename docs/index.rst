@@ -7,6 +7,8 @@
    :caption: Introduction
 
    0-Basics.ipynb
+   0-Saving-As-NPZ-and-MAT.ipynb
+   0-Saving-As-Sigrok-SR.ipynb
    0-Saving-As-WAV.ipynb
 
 .. toctree::
