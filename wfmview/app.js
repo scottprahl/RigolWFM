@@ -4407,54 +4407,77 @@ function triggerDownload(data, filename, mime) {
     }, 1000);
 }
 
-function doExportCSV() {
-    var active = getActiveEntry();
-    var chs = getVisibleChannelsForEntry(active);
+function formatExportFloat(value) {
+    if (!Number.isFinite(value)) {
+        return String(value);
+    }
+    return Number.parseFloat(value.toPrecision(17)).toString();
+}
+
+function buildExportCSVText(entry) {
+    var chs = getVisibleChannelsForEntry(entry);
     if (!chs.length) {
-        return;
+        return '';
     }
     var hScale = 1e-30;
     var hPrefix = '';
-    var vScale = 1e-30;
+    var vScale = 1;
     var vPrefix = '';
     chs.forEach(function(ch) {
         var hs = bestScaleJS(ch.timeScale);
-        var vs = bestScaleJS(ch.voltPerDiv);
         if (hs[0] > hScale) {
             hScale = hs[0];
             hPrefix = hs[1];
         }
-        if (vs[0] > vScale) {
-            vScale = vs[0];
-            vPrefix = vs[1];
+        if (ch.kind !== 'digital') {
+            var vs = bestScaleJS(ch.voltPerDiv);
+            if (vs[0] > vScale) {
+                vScale = vs[0];
+                vPrefix = vs[1];
+            }
         }
     });
     var ch0 = chs[0];
     var npts = Math.min.apply(null, chs.map(function(c) {
         return c.times.length;
     }));
-    var incr = ch0.timeScale / 100;
-    var off = -6 * ch0.timeScale;
+    var hUnitPrefix = hPrefix || ' ';
+    var vUnitPrefix = vPrefix || ' ';
+    var off = ch0.times[0] * hScale;
+    var incr = npts > 1 ? ((ch0.times[npts - 1] - ch0.times[0]) / (npts - 1)) * hScale : 0;
     var rows = [];
     rows.push('X,' + chs.map(function(c) {
         return c.name;
     }).join(',') + ',Start,Increment');
     rows.push(
-        hPrefix + 's,' +
-        chs.map(function() {
-            return vPrefix + 'V';
+        hUnitPrefix + 's,' +
+        chs.map(function(c) {
+            return c.kind === 'digital' ? 'STATE' : (vUnitPrefix + 'V');
         }).join(',') +
-        ',' + off.toExponential() +
-        ',' + incr.toExponential()
+        ',' + formatExportFloat(off) +
+        ',' + formatExportFloat(incr)
     );
     for (var i = 0; i < npts; i++) {
-        var row = (ch0.times[i] * hScale).toFixed(6);
+        var row = formatExportFloat(off + i * incr);
         chs.forEach(function(c) {
-            row += ',' + (c.volts[i] * vScale).toFixed(2);
+            if (c.kind === 'digital') {
+                row += ',' + Math.round(c.volts[i]).toString();
+            } else {
+                row += ',' + (c.volts[i] * vScale).toFixed(2);
+            }
         });
         rows.push(row);
     }
-    triggerDownload(rows.join('\n'), currentFilename + '.csv', 'text/csv');
+    return rows.join('\n');
+}
+
+function doExportCSV() {
+    var active = getActiveEntry();
+    var csvText = buildExportCSVText(active);
+    if (!csvText) {
+        return;
+    }
+    triggerDownload(csvText, currentFilename + '.csv', 'text/csv');
 }
 
 function doExportInfo() {

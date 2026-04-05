@@ -161,6 +161,156 @@ def test_wfmview_rohde_schwarz_helpers_execute_under_node():
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
+def test_wfmview_csv_export_matches_python_digital_format():
+    """Viewer CSV export should emit STATE columns and integer digital samples."""
+    script = textwrap.dedent(f"""
+        const fs = require('fs');
+        const vm = require('vm');
+
+        function makeClassList() {{
+            return {{
+                add() {{}},
+                remove() {{}},
+                toggle() {{}},
+                contains() {{ return false; }},
+            }};
+        }}
+
+        function makeElement() {{
+            return {{
+                checked: false,
+                disabled: false,
+                innerHTML: '',
+                textContent: '',
+                value: '',
+                dataset: {{}},
+                style: {{}},
+                classList: makeClassList(),
+                addEventListener() {{}},
+                removeEventListener() {{}},
+                appendChild() {{}},
+                removeChild() {{}},
+                setAttribute() {{}},
+                getAttribute() {{ return null; }},
+                getContext() {{
+                    return {{
+                        fillRect() {{}},
+                        beginPath() {{}},
+                        moveTo() {{}},
+                        lineTo() {{}},
+                        stroke() {{}},
+                        fillText() {{}},
+                        measureText() {{ return {{ width: 0 }}; }},
+                        save() {{}},
+                        restore() {{}},
+                        clearRect() {{}},
+                        arc() {{}},
+                        closePath() {{}},
+                        setLineDash() {{}},
+                    }};
+                }},
+                getBoundingClientRect() {{
+                    return {{ left: 0, top: 0, right: 800, bottom: 480, width: 800, height: 480 }};
+                }},
+                closest() {{ return null; }},
+                click() {{}},
+                width: 800,
+                height: 480,
+                offsetWidth: 800,
+                offsetHeight: 480,
+                clientWidth: 800,
+                clientHeight: 480,
+            }};
+        }}
+
+        global.document = {{
+            getElementById() {{ return makeElement(); }},
+            createElement() {{ return makeElement(); }},
+            addEventListener() {{}},
+            removeEventListener() {{}},
+            body: {{
+                classList: makeClassList(),
+                appendChild() {{}},
+                removeChild() {{}},
+            }},
+        }};
+        global.window = {{
+            addEventListener() {{}},
+            removeEventListener() {{}},
+            innerHeight: 800,
+            URL: {{
+                createObjectURL() {{ return 'blob:test'; }},
+                revokeObjectURL() {{}},
+            }},
+        }};
+        global.FileReader = function FileReader() {{}};
+
+        vm.runInThisContext(fs.readFileSync({json.dumps(str(_APP))}, 'utf8'), {{ filename: 'app.js' }});
+
+        const mixedEntry = {{
+            result: {{
+                channels: [
+                    {{
+                        name: 'CH1',
+                        times: Float64Array.from([0, 1e-6, 2e-6]),
+                        volts: Float64Array.from([0.25, -0.5, 0.75]),
+                        voltPerDiv: 1e-3,
+                        timeScale: 1e-6,
+                    }},
+                    {{
+                        name: 'D6',
+                        kind: 'digital',
+                        times: Float64Array.from([0, 1e-6, 2e-6]),
+                        volts: Float64Array.from([0, 1, 0]),
+                        voltPerDiv: 0.25,
+                        timeScale: 1e-6,
+                    }},
+                ],
+            }},
+            channelEnabled: [true, true],
+        }};
+        const mixedLines = buildExportCSVText(mixedEntry).split('\\n');
+        if (mixedLines[0] !== 'X,CH1,D6,Start,Increment') {{
+            throw new Error('Mixed CSV header should include the digital channel.');
+        }}
+        if (mixedLines[1] !== 'µs,mV,STATE,0,1') {{
+            throw new Error('Mixed CSV units row should match the Python digital export shape.');
+        }}
+        if (mixedLines[2] !== '0,250.00,0' || mixedLines[3] !== '1,-500.00,1') {{
+            throw new Error('Mixed CSV data rows should keep analog decimals and digital 0/1 values.');
+        }}
+
+        const logicEntry = {{
+            result: {{
+                channels: [
+                    {{
+                        name: 'D6',
+                        kind: 'digital',
+                        times: Float64Array.from([0.001, 0.002, 0.003]),
+                        volts: Float64Array.from([0, 1, 1]),
+                        voltPerDiv: 0.25,
+                        timeScale: 0.001,
+                    }},
+                ],
+            }},
+            channelEnabled: [true],
+        }};
+        const logicLines = buildExportCSVText(logicEntry).split('\\n');
+        if (logicLines[0] !== 'X,D6,Start,Increment') {{
+            throw new Error('Logic-only CSV header should include the digital trace name.');
+        }}
+        if (logicLines[1] !== 'ms,STATE,1,1') {{
+            throw new Error('Logic-only CSV should export STATE units and linear metadata.');
+        }}
+        if (logicLines[2] !== '1,0' || logicLines[3] !== '2,1') {{
+            throw new Error('Logic-only CSV rows should contain integer digital samples.');
+        }}
+        """)
+
+    subprocess.run(["node", "-e", script], check=True, text=True)
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
 def test_wfmview_z_logic_helpers_execute_under_node():
     """Selected Z-series logic helper functions should expose digital traces like channels."""
     script = textwrap.dedent(f"""
