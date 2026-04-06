@@ -3,10 +3,6 @@ A checklist for releasing a new version
 # sanity test the release
   make rcheck
 
-# make sure package builds
-  python -m build
-  make clean
-
 # update the version in RigolWFM/__init__.py
   git commit RigolWFM/__init__.py -m 'update version'
 

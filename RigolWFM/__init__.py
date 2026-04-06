@@ -11,9 +11,7 @@ Example::
 
     >>> import matplotlib.pyplot as plt
     >>> from RigolWFM import Wfm
-
-    >>> filename = 'example.wfm'
-    >>> w = Wfm.from_file(filename)
+    >>> w = Wfm.from_file('example.wfm')
     >>> w.plot()
     >>> plt.show()
 
@@ -58,10 +56,10 @@ from .wfm import (
     MSO5074_scopes,
 )
 
-__version__: str = "1.0.0"
+__version__: str = "1.5.0"
 __author__: str = "Scott Prahl"
 __email__: str = "scott.prahl@oit.edu"
-__copyright__: str = "2020-26, Scott Prahl"
+__copyright__: str = "2020-2026, Scott Prahl"
 __license__: str = "BSD 3-clause"
 __url__: str = "https://github.com/scottprahl/RigolWFM"
 

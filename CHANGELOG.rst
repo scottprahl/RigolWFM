@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Unreleased (2026-04-04)
-------------------------
+1.5.0 (2026-04-05)
+------------------
 *    add web based viewer of .wfm files
 *    extend ``wfmview`` to support Agilent / Keysight ``AG01``/``AG03``/``AG10`` ``.bin`` files
 *    extend ``wfmview`` to support Rohde & Schwarz RTP XML ``.bin`` files with companion ``.Wfm.bin`` payloads
@@ -20,7 +20,7 @@ Unreleased (2026-04-04)
 *    fix ``wav()`` crash when no channels are enabled
 *    fix ``csv()`` and ``sigrokcsv()`` to use the shortest channel when channels have mismatched point counts
 *    fix ``from_url()`` to preserve ``Read_WFM_Error``, ``Parse_WFM_Error``, and ``Unknown_Scope_Error`` instead of wrapping them
-*    add missing ``5074``, ``7``, and ``8`` model choices to ``wfmconvert`` CLI
+*    add missing newer-family ``wfmconvert --model`` choices and aliases, including ``7``, ``8``, and ``5074`` as an alias for ``5``
 *    remove unreachable ``len(selected) > 4`` dead-code guard in ``wfmconvert``
 *    add user-visible warning when MSO5074 voltages are read (no calibration data in file)
 *    warn to stderr when the model string in the file disagrees with the user-supplied scope type
@@ -70,14 +70,13 @@ Unreleased (2026-04-04)
 *    fix badges and default branch references
 *    improve testing structure
 *    broaden README and package metadata to describe the current multi-vendor scope of the project
-*    fix the hardcoded absolute path in ``1-DS1000E-Waveforms.ipynb``
-*    rewrite ``test_wfmconvert.py`` to copy fixtures into pytest ``tmp_path`` so conversion output never pollutes
-*    remove ``CONVERT_CASES``, ``CLEANTEST_FILES``, ``cleantest``, ``csv``, ``wav``, ``vcsv``, and ``sigrok`` Makefile targets
-*    add ``pip`` to dev dependencies so ``check-manifest`` and ``pyroma`` work correctly inside uv venvs
-*    add ``[tool.pytest.ini_options]`` section to ``pyproject.toml``
 *    add ``mypy`` type checking: annotate all hand-written ``RigolWFM/`` modules
 *    fix ``wav()`` to use ``wave.Wave_write`` directly instead of ``wave.open(..., "wb")``
-*    add ``__all__`` to ``channel.py``
+*    extend ``csv()`` export to include digital channels
+*    complete ``.sr`` / sigrok export for analog and digital waveforms
+*    remove ``vcsv`` CLI action
+*    add ``npz`` and ``mat`` export formats
+*    rename and simplify the notebook docs
 
 1.0.0 (2023-10-06)
 ------------------------
