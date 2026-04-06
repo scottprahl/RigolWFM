@@ -9,8 +9,10 @@ import struct
 import subprocess
 import textwrap
 import zipfile
+from typing import cast
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 
 from tests.mat_helpers import load_simple_mat_v5
@@ -25,6 +27,12 @@ def _viewer_script_paths() -> list[Path]:
     """Return local JS assets referenced by the viewer index page."""
     text = _INDEX.read_text(encoding="utf-8")
     return [(_ROOT / "wfmview" / match.group(1)) for match in _SCRIPT_RE.finditer(text)]
+
+
+def _load_npz_arrays(source: io.BytesIO) -> dict[str, npt.NDArray[np.generic]]:
+    """Read a viewer-generated NPZ archive into plain NumPy arrays."""
+    with np.load(source) as archive:
+        return {name: cast(npt.NDArray[np.generic], np.asarray(archive[name])) for name in archive.files}
 
 
 def test_wfmview_referenced_scripts_exist():
@@ -463,14 +471,14 @@ def test_wfmview_npz_export_builds_real_mixed_archive():
         """)
 
     result = subprocess.run(["node", "-e", script], check=True, stdout=subprocess.PIPE)
-    with np.load(io.BytesIO(result.stdout)) as archive:
-        assert set(archive.files) == {"time", "start", "increment", "CH1", "D6"}
-        assert archive["CH1"].dtype == np.float64
-        assert archive["D6"].dtype == np.uint8
-        assert archive["CH1"].tolist() == pytest.approx([0.25, -0.5, 0.75])
-        assert archive["D6"].tolist() == [0, 1, 0]
-        assert archive["start"][0] == pytest.approx(0.0)
-        assert archive["increment"][0] == pytest.approx(1.0e-6)
+    arrays = _load_npz_arrays(io.BytesIO(result.stdout))
+    assert set(arrays) == {"time", "start", "increment", "CH1", "D6"}
+    assert arrays["CH1"].dtype == np.dtype(np.float64)
+    assert arrays["D6"].dtype == np.dtype(np.uint8)
+    assert arrays["CH1"].tolist() == pytest.approx([0.25, -0.5, 0.75])
+    assert arrays["D6"].tolist() == [0, 1, 0]
+    assert arrays["start"][0] == pytest.approx(0.0)
+    assert arrays["increment"][0] == pytest.approx(1.0e-6)
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
@@ -854,25 +862,24 @@ def test_wfmview_sigrok_export_builds_real_mixed_session_archive():
         """)
 
     result = subprocess.run(["node", "-e", script], check=True, stdout=subprocess.PIPE)
-    archive = zipfile.ZipFile(io.BytesIO(result.stdout))
+    with zipfile.ZipFile(io.BytesIO(result.stdout)) as archive:
+        assert archive.namelist() == ["version", "metadata", "logic-1-1", "analog-1-2-1"]
+        assert archive.read("version") == b"2"
 
-    assert archive.namelist() == ["version", "metadata", "logic-1-1", "analog-1-2-1"]
-    assert archive.read("version") == b"2"
+        metadata = archive.read("metadata").decode("utf-8")
+        assert "capturefile=logic-1" in metadata
+        assert "total probes=1" in metadata
+        assert "samplerate=1 MHz" in metadata
+        assert "total analog=1" in metadata
+        assert "probe1=D6" in metadata
+        assert "analog2=CH1 (V)" in metadata
+        assert "unitsize=1" in metadata
 
-    metadata = archive.read("metadata").decode("utf-8")
-    assert "capturefile=logic-1" in metadata
-    assert "total probes=1" in metadata
-    assert "samplerate=1 MHz" in metadata
-    assert "total analog=1" in metadata
-    assert "probe1=D6" in metadata
-    assert "analog2=CH1 (V)" in metadata
-    assert "unitsize=1" in metadata
+        logic = archive.read("logic-1-1")
+        assert logic == bytes([0, 1, 0])
 
-    logic = archive.read("logic-1-1")
-    assert logic == bytes([0, 1, 0])
-
-    analog = archive.read("analog-1-2-1")
-    assert struct.unpack("<fff", analog) == pytest.approx((0.25, -0.5, 0.75), rel=1e-7, abs=1e-7)
+        analog = archive.read("analog-1-2-1")
+        assert struct.unpack("<fff", analog) == pytest.approx((0.25, -0.5, 0.75), rel=1e-7, abs=1e-7)
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
@@ -986,20 +993,19 @@ def test_wfmview_sigrok_export_builds_real_logic_only_session_archive():
         """)
 
     result = subprocess.run(["node", "-e", script], check=True, stdout=subprocess.PIPE)
-    archive = zipfile.ZipFile(io.BytesIO(result.stdout))
+    with zipfile.ZipFile(io.BytesIO(result.stdout)) as archive:
+        assert archive.namelist() == ["version", "metadata", "logic-1-1"]
 
-    assert archive.namelist() == ["version", "metadata", "logic-1-1"]
+        metadata = archive.read("metadata").decode("utf-8")
+        assert "capturefile=logic-1" in metadata
+        assert "total probes=1" in metadata
+        assert "samplerate=1 kHz" in metadata
+        assert "total analog=0" in metadata
+        assert "probe1=D6" in metadata
+        assert "unitsize=1" in metadata
 
-    metadata = archive.read("metadata").decode("utf-8")
-    assert "capturefile=logic-1" in metadata
-    assert "total probes=1" in metadata
-    assert "samplerate=1 kHz" in metadata
-    assert "total analog=0" in metadata
-    assert "probe1=D6" in metadata
-    assert "unitsize=1" in metadata
-
-    logic = archive.read("logic-1-1")
-    assert logic == bytes([0, 1, 1])
+        logic = archive.read("logic-1-1")
+        assert logic == bytes([0, 1, 1])
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")

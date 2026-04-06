@@ -181,9 +181,7 @@ Tracker = "https://github.com/scottprahl/RigolWFM/issues"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 norecursedirs = [".git", ".venv", "__pycache__", "docs/_build", "docs/vendors"]
-filterwarnings = [
-    "ignore:MSO5074 voltage values are approximate:UserWarning",
-]
+addopts = "--capture=sys"
 
 [tool.pylint.format]
 max-line-length = 120

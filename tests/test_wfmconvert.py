@@ -5,16 +5,17 @@ from pathlib import Path
 import shlex
 import shutil
 from types import SimpleNamespace
-import sys
+from typing import cast
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 
 import RigolWFM.channel
 import RigolWFM.wfm
 import RigolWFM.wfmconvert
 from tests.mat_helpers import load_simple_mat_v5
-from tests.cli_helpers import run_command, run_command_failure, run_command_result
+from tests.cli_helpers import run_command, run_command_failure, run_command_result, wfmconvert_command
 from tests.test_isf import _build_isf
 from tests.test_lecroy import _build_trc
 from tests.test_siglent import _build_siglent_v6
@@ -46,6 +47,12 @@ _BIN_INFO = [
 def _quote(path: Path | str) -> str:
     """Shell-quote a path for the CLI integration helpers."""
     return shlex.quote(str(path))
+
+
+def _load_npz_arrays(source: io.BytesIO | Path) -> dict[str, npt.NDArray[np.generic]]:
+    """Read an NPZ archive into plain NumPy arrays for straightforward assertions."""
+    with np.load(source) as archive:
+        return {name: cast(npt.NDArray[np.generic], np.asarray(archive[name])) for name in archive.files}
 
 
 def _newer_family_cases(tmp_path: Path) -> list[tuple[str, str]]:
@@ -127,6 +134,7 @@ def test_wfmconvert_wav(tmp_path):
         run_command(f"wfmconvert --model {scope} --channel 1 --output-dir {tmp_path} wav {path}")
     for scope, path in _newer_family_cases(tmp_path):
         run_command(f"wfmconvert --model {scope} --channel 1 --output-dir {shlex.quote(str(tmp_path))} wav {path}")
+
 
 def test_wfmconvert_sigrok(tmp_path):
     """Verify sigrok export either writes output or reports the missing dependency."""
@@ -288,13 +296,15 @@ def test_npz_exports_logic_only_waveforms():
     waveform.npz(handle)
     handle.seek(0)
 
-    with np.load(handle) as archive:
-        assert set(archive.files) == {"time", "start", "increment", "D6"}
-        assert archive["D6"].dtype == np.uint8
-        assert archive["D6"][:20].tolist()
-        assert set(archive["D6"][:20].tolist()) <= {0, 1}
-        assert archive["start"][0] == pytest.approx(float(archive["time"][0]))
-        assert archive["increment"][0] == pytest.approx(float(archive["time"][1] - archive["time"][0]))
+    arrays = _load_npz_arrays(handle)
+    d6 = arrays["D6"]
+    times = arrays["time"]
+    assert set(arrays) == {"time", "start", "increment", "D6"}
+    assert d6.dtype == np.dtype(np.uint8)
+    assert d6[:20].size > 0
+    assert {int(value) for value in d6[:20]} <= {0, 1}
+    assert arrays["start"][0] == pytest.approx(float(times[0]))
+    assert arrays["increment"][0] == pytest.approx(float(times[1] - times[0]))
 
 
 def test_npz_exports_mixed_analog_and_digital_series():
@@ -320,12 +330,12 @@ def test_npz_exports_mixed_analog_and_digital_series():
     waveform.npz(handle)
     handle.seek(0)
 
-    with np.load(handle) as archive:
-        assert set(archive.files) == {"time", "start", "increment", "CH1", "D6"}
-        assert archive["CH1"].dtype == np.float64
-        assert archive["D6"].dtype == np.uint8
-        assert archive["CH1"].tolist() == pytest.approx([0.25, -0.5, 0.75])
-        assert archive["D6"].tolist() == [0, 1, 0]
+    arrays = _load_npz_arrays(handle)
+    assert set(arrays) == {"time", "start", "increment", "CH1", "D6"}
+    assert arrays["CH1"].dtype == np.dtype(np.float64)
+    assert arrays["D6"].dtype == np.dtype(np.uint8)
+    assert arrays["CH1"].tolist() == pytest.approx([0.25, -0.5, 0.75])
+    assert arrays["D6"].tolist() == [0, 1, 0]
 
 
 def test_mat_exports_logic_only_waveforms():
@@ -384,9 +394,9 @@ def test_wfmconvert_npz_writes_logic_arrays(tmp_path):
     """CLI NPZ export should include parsed digital channels for logic-only fixtures."""
     run_command(f"wfmconvert --model Z --output-dir {shlex.quote(str(tmp_path))} npz tests/files/wfm/DS1074Z-C.wfm")
 
-    with np.load(tmp_path / "DS1074Z-C.npz") as archive:
-        assert set(archive.files) == {"time", "start", "increment", "D6"}
-        assert archive["D6"].dtype == np.uint8
+    arrays = _load_npz_arrays(tmp_path / "DS1074Z-C.npz")
+    assert set(arrays) == {"time", "start", "increment", "D6"}
+    assert arrays["D6"].dtype == np.dtype(np.uint8)
 
 
 def test_wfmconvert_mat_writes_logic_arrays(tmp_path):
@@ -501,11 +511,9 @@ def test_wfmconvert_sigrok_missing_dependency_fails_cleanly(tmp_path):
     if shutil.which("sigrok-cli") is None:
         pytest.skip("sigrok-cli is already absent in this environment")
 
-    command = (
-        f"PATH=/nonexistent {shlex.quote(sys.executable)} -m RigolWFM.wfmconvert "
-        f"--model E --force --output-dir {shlex.quote(str(tmp_path))} "
-        "sigrok tests/files/wfm/DS1102E-A.wfm"
-    )
+    command = f"PATH=/nonexistent {wfmconvert_command(
+        f'--model E --force --output-dir {shlex.quote(str(tmp_path))} sigrok tests/files/wfm/DS1102E-A.wfm'
+    )}"
     result = run_command_result(command)
 
     assert result.returncode != 0

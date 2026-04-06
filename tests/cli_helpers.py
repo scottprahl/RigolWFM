@@ -1,9 +1,24 @@
 """Helpers for invoking CLI commands in integration-style tests."""
 
 import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+_UV = shutil.which("uv")
+
+
+def wfmconvert_command(arguments: str = "") -> str:
+    """Build a shell-safe `wfmconvert` command using the active `uv` environment."""
+    if _UV is not None:
+        base = f"{shlex.quote(_UV)} run python -m RigolWFM.wfmconvert"
+    else:
+        executable = getattr(sys, "_base_executable", sys.executable)
+        base = f"{shlex.quote(executable)} -m RigolWFM.wfmconvert"
+
+    stripped = arguments.strip()
+    return f"{base} {stripped}" if stripped else base
 
 
 def _resolve_command(command: str) -> str:
@@ -11,7 +26,7 @@ def _resolve_command(command: str) -> str:
     stripped = command.lstrip()
     if stripped == "wfmconvert" or stripped.startswith("wfmconvert "):
         suffix = stripped[len("wfmconvert") :]
-        return f"{shlex.quote(sys.executable)} -m RigolWFM.wfmconvert{suffix}"
+        return wfmconvert_command(suffix)
     return command
 
 

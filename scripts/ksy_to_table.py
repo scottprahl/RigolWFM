@@ -88,6 +88,7 @@ def _render_rst_table(headers: list[str], rows: list[list[str]]) -> str:
         lines.extend([*render_row(row), border("-")])
     return "\n".join(lines)
 
+
 def _render_table(headers: list[str], rows: list[list[str]]) -> str:
     """Render a grid table in reStructuredText."""
     if not rows:

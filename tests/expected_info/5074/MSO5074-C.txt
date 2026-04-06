@@ -1,6 +1,6 @@
     General:
         File Model   = MSO5074
-        User Model   = 5074
+        User Model   = 5
         Parser Model = bin5000
         Firmware     = 01
         Filename     = MSO5074-C.bin

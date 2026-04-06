@@ -1089,8 +1089,8 @@ class Wfm:
             s += ",%s" % (analog_labels.get(name, name) if kind == "analog" else name)
         s += "\n"
 
-        for i in range(len(times)):
-            s += _fmt_float(float(times[i]))
+        for i, time_value in enumerate(times):
+            s += _fmt_float(float(time_value))
             for _, kind, values in series:
                 if kind == "analog":
                     s += ",%s" % _fmt_float(float(values[i]))
