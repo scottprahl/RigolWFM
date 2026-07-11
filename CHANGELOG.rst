@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Unreleased
+----------
+*    fix Siglent V4.0 voltage conversion: subtract ``vert_offset`` and apply the probe factor (verified against SDS814X HD captures of known levels)
+*    add SDS814X HD captures as Siglent test fixtures
+
 1.5.0 (2026-04-05)
 ------------------
 *    add web based viewer of .wfm files
