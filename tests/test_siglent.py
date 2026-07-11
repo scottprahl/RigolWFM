@@ -1,6 +1,7 @@
 """Tests for Siglent waveform binary parsing."""
 
 import struct
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -296,3 +297,24 @@ def test_siglent_old_platform_is_detectable_but_not_normalized(tmp_path):
     assert RigolWFM.wfm.detect_model(str(path)) == "SiglentOld"
     with pytest.raises(ValueError, match="does not normalize"):
         RigolWFM.wfm.Wfm.from_file(str(path))
+
+
+_ROOT = Path(__file__).resolve().parents[1]
+
+# Real SDS814X HD captures of known levels. These pin the V4.0 conversion to hardware:
+# the vendor PDF's "+ vert_offset" and an unapplied probe factor both land far outside
+# these tolerances.
+_V4_KNOWN_LEVEL_CASES = [
+    ("SDS814X-3v0-probe1x.bin", 3.0),  # 3.0 V line, 1x probe, 1 V/div
+    ("SDS814X-3v0-probe10x.bin", 3.0),  # same line, 10x probe, 0.1 V/div stored
+    ("SDS814X-4v5-dc.bin", 4.5),  # flat 4.5 V DC, 0 V far off-screen
+]
+
+
+@pytest.mark.parametrize("file_name, expected_high", _V4_KNOWN_LEVEL_CASES)
+def test_siglent_v4_known_levels(file_name, expected_high):
+    """V4.0 captures of known levels decode to the expected voltages."""
+    waveform = RigolWFM.wfm.Wfm.from_file(str(_ROOT / "tests" / "files" / "bin" / file_name), model="auto")
+    volts = np.asarray(waveform.channels[0].volts)
+    high = float(np.median(volts[volts >= (volts.min() + volts.max()) / 2.0]))
+    assert high == pytest.approx(expected_high, abs=0.1)

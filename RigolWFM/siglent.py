@@ -527,10 +527,14 @@ def _normalized_waveform(
         if code_per_div <= 0:
             raise ValueError(f"Siglent {revision} channel {slot + 1} has a non-positive code_per_div value")
 
-        volts = (
-            (codes.astype(np.float64) - center_code) * (float(volt_divs[slot]) / code_per_div)
-            + float(vert_offsets[slot])
-        ).astype(np.float32)
+        base = (codes.astype(np.float64) - center_code) * (float(volt_divs[slot]) / code_per_div)
+        if revision == "V4.0":
+            # Verified against SDS814X HD captures of known levels: the vendor PDF's
+            # "+ vert_offset" does not match hardware, and volt_div is stored without
+            # the probe factor.
+            volts = ((base - float(vert_offsets[slot])) * float(probes[slot])).astype(np.float32)
+        else:
+            volts = (base + float(vert_offsets[slot])).astype(np.float32)
         raw_proxy = _raw_proxy_from_codes(codes, sample_width=sample_width)
         _assign_channel(
             header,
