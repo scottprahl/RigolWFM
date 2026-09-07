@@ -134,6 +134,27 @@ def csv(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> 
         f.write(b)
 
 
+def pwl(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
+    """Create a PWL file for use in LTspice."""
+    pwl_name = _output_path(infile, ".pwl", args.output_dir)
+
+    if os.path.isfile(pwl_name) and not args.force:
+        print(f"'{pwl_name}' exists, use --force to overwrite")
+        return
+
+    if len(args.channel) > 1:
+        print(
+            f"wfmconvert error: pwl supports only one channel; got --channel {args.channel}.\n",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    s = scope_data.pwl()
+    with open(pwl_name, "wb") as f:
+        b = s.encode(encoding="utf-8")
+        f.write(b)
+
+
 def npz(args: argparse.Namespace, scope_data: RigolWFM.wfm.Wfm, infile: str) -> None:
     """Create a NumPy `.npz` archive."""
     npz_name = _output_path(infile, ".npz", args.output_dir)
@@ -406,7 +427,7 @@ def main() -> None:
 
     parser.add_argument(
         dest="action",
-        choices=["csv", "info", "png", "wav", "sigrok", "npz", "mat"],
+        choices=["csv", "info", "png", "wav", "pwl", "sigrok", "npz", "mat"],
         help=textwrap.dedent("""\
         csv:    convert to a file with comma separated values
         info:   show the various scope settings for a waveform file
@@ -414,6 +435,7 @@ def main() -> None:
         mat:    save waveform arrays in a MATLAB `.mat` file
         png:    save a waveform plot as a PNG image (use --dpi to set resolution)
         wav:    convert to a WAV sound format file for use with Pulseview or LTspice.
+        pwl:    convert to a piecewise linear file for use with LTspice
         sigrok: convert to a sigrok file
         """),
     )
@@ -439,7 +461,7 @@ def main() -> None:
         print(f'You used "--channel {args.channel}"')
         sys.exit(1)
 
-    actionMap = {"info": info, "csv": csv, "npz": npz, "mat": mat, "png": png, "wav": wav, "sigrok": sigrok}
+    actionMap = {"info": info, "csv": csv, "npz": npz, "mat": mat, "png": png, "wav": wav, "pwl": pwl, "sigrok": sigrok}
 
     for filename in args.infile:
         try:

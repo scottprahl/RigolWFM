@@ -1069,6 +1069,25 @@ class Wfm:
             s += "\n"
         return s
 
+    def pwl(self) -> str:
+        """Return a PWL file for use in LTspice"""
+        ch = [
+            ch
+            for ch in self.channels
+            if ch.enabled_and_selected and ch.times is not None and ch.volts is not None and ch.points > 0
+        ]
+
+        if len(ch) == 0:
+            return ""
+
+        if len(ch) > 1:
+            raise ValueError("PWL supports only one channel")
+
+        ch = ch[0]
+        t0 = ch.times[0]
+
+        return "\n".join([f"{t-t0:.7g}\t{v:.7g}" for t, v in zip(ch.times, ch.volts)])
+
     def sigrokcsv(self) -> str:
         """Return a string of comma separated values for sigrok."""
         times, series = self._csv_series()
