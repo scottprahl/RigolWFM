@@ -45,6 +45,12 @@ _CASES = [
     ("tests/files/bin/agilent_1.bin", "Keysight"),
     # Rohde & Schwarz RTP `.bin` metadata with companion `.Wfm.bin` payload
     ("tests/files/rs/rs_rtp_01.bin", "RohdeSchwarz"),
+    # Tektronix published example .wfm files
+    ("tests/files/wfm-tek/analog_waveform.wfm", "Tek"),
+    ("tests/files/wfm-tek/data_test_waveform.wfm", "Tek"),
+    ("tests/files/wfm-tek/digital_waveform.wfm", "Tek"),
+    ("tests/files/wfm-tek/golden_analog.wfm", "Tek"),
+    ("tests/files/wfm-tek/iq_waveform.wfm", "Tek"),
 ]
 
 if _STANDARD_5074.is_file():

@@ -343,8 +343,8 @@ def from_file(file_name: str) -> TekWaveform:
     else:
         raise ValueError(f"File '{file_name}' has unrecognised byte_order field: " f"0x{data[0]:02X}{data[1]:02X}")
 
-    # Detect version from version_number string at offset 2 (8 bytes)
-    version_str = data[2:10].split(b"\x00")[0].decode("ascii", errors="ignore").strip()
+    # Detect version from version_number string at offset 3 (7 bytes)
+    version_str = data[3:10].split(b"\x00")[0].decode("ascii", errors="ignore").strip()
     if version_str not in {"WFM#001", "WFM#002", "WFM#003"}:
         raise ValueError(f"File '{file_name}' has unsupported Tektronix WFM version '{version_str}'")
     is_v1 = version_str == "WFM#001"

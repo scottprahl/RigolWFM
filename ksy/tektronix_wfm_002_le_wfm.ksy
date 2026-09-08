@@ -75,16 +75,17 @@ types:
         doc: |
           Byte-order marker.  0x0F0F = little-endian (Intel / PC); 0xF0F0 = big-endian
           (PPC).  Offset 0.
+      - id: byte_version_colon
+        size: 1
+        doc: |
+          Colon character separating byte_order and version_number. Offset 2.
       - id: version_number
         type: str
         size: 7
         encoding: ASCII
         doc: |
           Version identification string.
-          "WFM#002" or "WFM#003" for this parser.  Offset 2.
-      - id: version_pad
-        size: 1
-        doc: Null terminator / padding byte after version_number.  Offset 9.
+          "WFM#002" or "WFM#003" for this parser.  Offset 3.
       - id: num_digits_byte_count
         type: u1
         doc: Number of decimal digits in the byte-count field (0–9).  Offset 10.

@@ -146,8 +146,7 @@ def _build_tek_wfm(
 
     # Static file info (78 bytes)
     put(0, "H", 0x0F0F)
-    buf[2:9] = version.encode("ascii")
-    buf[9] = 0
+    buf[2:10] = f":{version}".encode("ascii")
     put(10, "B", 0)
     put(11, "i", file_size - 15)
     put(15, "B", 1)
@@ -324,6 +323,16 @@ def test_wfm002_synthetic_from_file(tmp_path):
     assert obj.header.x_increment == pytest.approx(2.5e-9)
 
 
+def test_wfm002_synthetic_autodetect(tmp_path):
+    """detect_model() should classify Synthetic WFM#002 files as Tek."""
+    samples = [-8, -1, 0, 7, 12]
+    data = _build_tek_wfm(version="WFM#002", samples=samples)
+    path = tmp_path / "synthetic_002_autodetect.wfm"
+    path.write_bytes(data)
+
+    assert RigolWFM.wfm.detect_model(str(path)) == "Tek"
+
+
 def test_wfm003_parser_uses_post_point_density_offsets():
     """WFM#003 should parse fields after point_density at their correct shifted offsets."""
     samples = [-3, 1, 4, 8]
@@ -370,6 +379,24 @@ def test_wfm003_synthetic_from_file(tmp_path):
     np.testing.assert_allclose(waveform.channels[0].times, expected_times)
 
 
+def test_wfm003_synthetic_autodetect(tmp_path):
+    """detect_model() should classify Synthetic WFM#003 files as Tek."""
+    samples = [-10, -5, 0, 5, 10]
+    data = _build_tek_wfm(
+        version="WFM#003",
+        samples=samples,
+        dim_scale=0.05,
+        dim_offset=0.25,
+        time_scale=1.25e-9,
+        time_offset=-2.5e-9,
+        label="DPO7000",
+    )
+    path = tmp_path / "synthetic_003_auto.wfm"
+    path.write_bytes(data)
+
+    assert RigolWFM.wfm.detect_model(str(path)) == "Tek"
+
+
 def test_legacy_llwfm_synthetic_from_file(tmp_path):
     """Legacy LLWFM files should parse through the Tek adapter."""
     samples = [-2048, -1024, 0, 1024, 2047]
@@ -393,3 +420,11 @@ def test_legacy_llwfm_autodetect(tmp_path):
     path.write_bytes(_build_legacy_llwfm(samples=[-1, 0, 1]))
 
     assert RigolWFM.wfm.detect_model(str(path)) == "Tek"
+
+
+def test_wfm003_from_file():
+    """Use actual Tektronix sample file, should get correct number of data points."""
+    path = "tests/files/wfm-tek/analog_waveform.wfm"
+    waveform = RigolWFM.wfm.Wfm.from_file(path)
+
+    assert waveform.channels[0].points == 50_000
