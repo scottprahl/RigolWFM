@@ -72,11 +72,15 @@ types:
         doc: |
           Byte-order marker.  0x0F0F = little-endian (Intel / PC); 0xF0F0 = big-endian
           (PPC / older TDS instruments).  Select parser variant before parsing.  Offset 0.
-      - id: version_number
-        size: 8
+      - id: byte_version_colon
+        size: 1
         doc: |
-          Version identification string, null-padded to 8 bytes.
-          "WFM#001" for this parser.  Offset 2.
+          Colon character separating byte_order and version_number. Offset 2.
+      - id: version_number
+        size: 7
+        doc: |
+          Version identification string.
+          "WFM#001" for this parser.  Offset 3.
       - id: num_digits_byte_count
         type: u1
         doc: Number of decimal digits in the byte-count field (0–9).  Offset 10.

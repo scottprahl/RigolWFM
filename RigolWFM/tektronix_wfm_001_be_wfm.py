@@ -216,7 +216,8 @@ class TektronixWfm001BeWfm(KaitaiStruct):
 
         def _read(self):
             self.byte_order = self._io.read_u2be()
-            self.version_number = self._io.read_bytes(8)
+            self.byte_version_colon = self._io.read_bytes(1)
+            self.version_number = self._io.read_bytes(7)
             self.num_digits_byte_count = self._io.read_u1()
             self.num_bytes_to_eof = self._io.read_s4be()
             self.num_bytes_per_point = self._io.read_u1()

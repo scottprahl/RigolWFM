@@ -327,8 +327,10 @@ def _detect_model_from_header(hdr: bytes, fsize: int, filename_hint: str = "") -
     if b"LLWFM" in hdr[:8]:
         return "Tek"
 
-    # Tektronix .wfm: byte_order word at 0 (0x0F0F LE or 0xF0F0 BE), version "WFM#" at offset 2
-    if hdr[0] in (0x0F, 0xF0) and hdr[1] in (0x0F, 0xF0) and hdr[2:6] == _TEK_MAGIC:
+    ## Tektronix .wfm: byte_order word at 0 (0x0F0F LE or 0xF0F0 BE), version "WFM#" at offset 2
+    # if hdr[0] in (0x0F, 0xF0) and hdr[1] in (0x0F, 0xF0) and hdr[2:6] == _TEK_MAGIC:
+    # Tektronix .wfm: byte_order word at 0 (0x0F0F LE or 0xF0F0 BE), version "WFM#" at offset 3
+    if hdr[0] in (0x0F, 0xF0) and hdr[1] in (0x0F, 0xF0) and hdr[3:7] == _TEK_MAGIC:
         return "Tek"
 
     # Tektronix .isf: ASCII header containing ":CURV " or ":CURVE " followed by '#'
