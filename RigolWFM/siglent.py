@@ -28,7 +28,8 @@ constants ambiguous between SDS1000X and SDS2000X captures.
 import math
 import os
 import struct
-from typing import Any, NamedTuple, Optional
+import typing
+from typing import Any, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -474,7 +475,7 @@ def _unit_from_words(words: Any) -> RigolWFM.channel.UnitEnum:
     return RigolWFM.channel.UnitEnum[name] if name else unknown
 
 
-class _MathTrace(NamedTuple):
+class _MathTrace(typing.NamedTuple):
     """One enabled Siglent V4.0 math (F1-F4) trace."""
 
     name: str

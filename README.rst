@@ -2,6 +2,10 @@
    :target: https://pypi.org/project/RigolWFM/
    :alt: pypi
 
+.. |pyversions-badge| image:: https://img.shields.io/pypi/pyversions/RigolWFM?color=68CA66&logo=python&logoColor=white
+   :target: https://pypi.org/project/RigolWFM/
+   :alt: Supported Python versions
+
 .. |github-badge| image:: https://img.shields.io/github/v/tag/scottprahl/RigolWFM?label=github&color=68CA66
    :target: https://github.com/scottprahl/RigolWFM
    :alt: github
@@ -46,11 +50,12 @@ by Scott Prahl
 A utility to process oscilloscope waveform files
 ------------------------------------------------
 
-|pypi-badge| |github-badge| |conda-badge| |kaitaistruct| |zenodo-badge|
-
-|license-badge| |test-badge| |docs-badge| |downloads-badge|
-
-|view|
+=================  ==========================================================================================
+**Testing**        |test-badge|
+**Package**        |pypi-badge| |pyversions-badge| |conda-badge| |downloads-badge| |license-badge| |github-badge|
+**Documentation**  |docs-badge| |zenodo-badge|
+**Explore**        |view| |kaitaistruct|
+=================  ==========================================================================================
 
 This project started as a resource for interpreting the proprietary ``.wfm``
 files created by Rigol oscilloscopes.  It now also includes parsers for
