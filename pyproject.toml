@@ -141,7 +141,6 @@ docs = [
 dev = [
   "pytest",
   "yamllint",
-#  "ksylint",
   "rstcheck[toml,sphinx]",
   "black[jupyter]",
   "pylint",
@@ -249,6 +248,7 @@ pydocstyle.convention = "google"
 [tool.check-manifest]
 ignore = [
     ".readthedocs.yaml",
+    "CLAUDE.md",
     "todo",
     "docs/*",
     "docs/**/*",
