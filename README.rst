@@ -122,6 +122,11 @@ several::
 
    prompt> wfmconvert --channel 2 pwl DS1102E.wfm
 
+A full memory dump is often far more than you need.  ``--trim`` keeps only a
+window of the given length, centered on the point the scope was displaying::
+
+   prompt> wfmconvert --trim 1ms csv DS1102E.wfm
+
 The project also includes a browser-based viewer at
 <https://scottprahl.github.io/RigolWFM/>.  The current web app supports Rigol
 ``.wfm`` / ``.bin`` files, Tektronix ``.wfm`` / ``.isf`` files, LeCroy

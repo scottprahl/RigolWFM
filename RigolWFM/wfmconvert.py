@@ -352,6 +352,50 @@ class _WfmParser(argparse.ArgumentParser):
         super().error(message)
 
 
+_SI_PREFIXES = {
+    "f": 1e-15,
+    "p": 1e-12,
+    "n": 1e-9,
+    "u": 1e-6,
+    "\u00b5": 1e-6,  # MICRO SIGN
+    "\u03bc": 1e-6,  # GREEK SMALL LETTER MU
+    "m": 1e-3,
+    "k": 1e3,
+    "M": 1e6,
+    "G": 1e9,
+    "T": 1e12,
+}
+
+# A number, an optional SI prefix, and an optional unit letter, so that both
+# "5m" and the "5ms" a user is far more likely to type mean five milliseconds.
+_SI_PATTERN = re.compile(
+    r"^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*([fpnu\u00b5\u03bcmkMGT])?(s|sec|secs|seconds?)?$"
+)
+
+
+def _parse_si(value: str) -> float:
+    """Convert a number that may carry an SI prefix into a plain float.
+
+    Accepts a bare number, an SI prefix (``5m``), and an optional trailing unit
+    (``5ms``).  Note that ``M`` is mega and ``m`` is milli.
+
+    Args:
+        value: the text to convert, e.g. "1.5", "5ms", "200us".
+
+    Returns:
+        The value in base units.
+
+    Raises:
+        ValueError: if the text is not a number with an optional SI prefix.
+    """
+    match = _SI_PATTERN.match(value.strip())
+    if not match:
+        raise ValueError(f"Invalid number format: {value}")
+
+    number, prefix, _unit = match.groups()
+    return float(number) * (_SI_PREFIXES[prefix] if prefix else 1.0)
+
+
 def main() -> None:
     """Parse console command line arguments."""
     parser = _WfmParser(
@@ -371,6 +415,7 @@ def main() -> None:
             wfmconvert --channel 3 --scale scope wav DS1102E.wfm
             wfmconvert --channel 12 --scale scope wav DS1102E.wfm
             wfmconvert --channel 1 pwl DS1102E.wfm
+            wfmconvert --trim 1ms csv DS1102E.wfm
             wfmconvert --model C info DS1042C-A.wfm
         """),
     )
@@ -436,6 +481,17 @@ def main() -> None:
     )
 
     parser.add_argument(
+        "--trim",
+        metavar="DURATION",
+        help=textwrap.dedent("""\
+        keep only a window of this length, centered on the point the scope was
+        displaying.  Accepts an SI prefix and an optional unit, e.g. `--trim 1ms`
+        or `--trim 200us`.  The window slides back inside the record if it would
+        run off either end.
+        """),
+    )
+
+    parser.add_argument(
         "--version",
         action="version",
         version="%(prog)s {version}".format(version=RigolWFM.__version__),
@@ -487,6 +543,18 @@ def main() -> None:
                 print(f"Detected model: {model}", file=sys.stderr)
 
             scope_data = RigolWFM.wfm.Wfm.from_file(filename, model, selected)
+
+            if args.trim is not None:
+                try:
+                    duration = _parse_si(args.trim)
+                except ValueError as e:
+                    print(f"wfmconvert error: {e}", file=sys.stderr)
+                    sys.exit(1)
+                if duration <= 0:
+                    print(f"wfmconvert error: --trim needs a positive duration, got '{args.trim}'", file=sys.stderr)
+                    sys.exit(1)
+                scope_data.trim(duration)
+
             result = actionMap[args.action](args, scope_data, filename)
             if result is False:
                 sys.exit(1)

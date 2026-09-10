@@ -970,6 +970,42 @@ class Wfm:
             h_scale, h_prefix = RigolWFM.channel.best_scale(logic_span)
         return h_scale, h_prefix, v_scale, v_prefix
 
+    def trim(self, duration: float) -> None:
+        """Trim every trace to a window of `duration` around the displayed point.
+
+        One window is computed and applied to the analog channels and the logic
+        traces alike, so a trimmed export stays aligned across all of them.  The
+        window is centered on the time offset the scope was displaying and slid
+        back inside the record if it would overhang either end; a duration
+        longer than the record keeps everything.
+
+        Args:
+            duration: length of the window to keep, in seconds.
+        """
+        window = None
+        for channel in self.channels:
+            window = channel.trim_window(duration)
+            if window is not None:
+                break
+
+        if window is None and self.logic_times is not None and len(self.logic_times) > 0:
+            center = self.logic_time_offset or 0.0
+            start = max(center - duration / 2, float(self.logic_times[0]))
+            window = (start, start + duration)
+
+        if window is None:
+            return
+
+        start, end = window
+        for channel in self.channels:
+            channel.trim_to(start, end)
+
+        if self.logic_times is not None and len(self.logic_times) > 0:
+            mask = (self.logic_times >= start) & (self.logic_times <= end)
+            self.logic_times = self.logic_times[mask]
+            self.logic_channels = {name: trace[mask] for name, trace in self.logic_channels.items()}
+            self.logic_observed_channels = {name: trace[mask] for name, trace in self.logic_observed_channels.items()}
+
     def _csv_series(
         self,
     ) -> tuple[

@@ -292,6 +292,70 @@ class Channel:
             s += format_str % (v[0], v[1], v[2], v[-2], v[-1])
         return s
 
+    def trim_window(self, duration: float) -> Optional[tuple[float, float]]:
+        """Return the time window of `duration` this channel would keep.
+
+        The window is centered on `time_offset`, the point the scope was
+        displaying, and slid back inside the record if that would run off
+        either end.  A duration longer than the record keeps everything.
+
+        Args:
+            duration: length of the window in seconds.
+
+        Returns:
+            The (start, end) times, or None when there is nothing to trim.
+        """
+        if self.times is None or len(self.times) == 0:
+            return None
+
+        first = float(self.times[0])
+        last = float(self.times[-1])
+        start = self.time_offset - duration / 2
+
+        # Slide the window back inside the record if it overhangs either end.
+        # Pin the edge to the sample time rather than adding a shift: the
+        # offsets involved can dwarf the record, and the rounding error from
+        # that cancellation is enough to drop the boundary sample.
+        if start + duration > last:
+            start = last - duration
+        start = max(start, first)
+
+        return start, start + duration
+
+    def trim_to(self, start: float, end: float) -> None:
+        """Keep only the samples between `start` and `end`, inclusive.
+
+        Args:
+            start: first time to keep, in seconds.
+            end: last time to keep, in seconds.
+        """
+        if self.times is None or len(self.times) == 0:
+            return
+
+        mask = (self.times >= start) & (self.times <= end)
+
+        self.times = self.times[mask]
+
+        if self.raw is not None:
+            self.raw = self.raw[mask]
+
+        if self.volts is not None:
+            self.volts = self.volts[mask]
+
+        # `points` drives the info output and the CSV/array exports, so it has
+        # to follow the arrays it describes.
+        self.points = len(self.times)
+
+    def trim(self, duration: float) -> None:
+        """Trim the data arrays to a window of `duration` around `time_offset`.
+
+        Args:
+            duration: length of the window to keep, in seconds.
+        """
+        window = self.trim_window(duration)
+        if window is not None:
+            self.trim_to(*window)
+
     def calc_times_and_volts(
         self,
         sample_aligned: bool = False,
