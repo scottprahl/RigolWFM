@@ -472,13 +472,30 @@ function siglentLooksLikeV5(bytes, fileSize) {
     );
 }
 
+function siglentV4MathSampleCount(bytes) {
+    if (bytes.length < 0x3E0) {
+        return 0;
+    }
+    var total = 0;
+    for (var index = 0; index < 4; index++) {
+        if (siglentU32le(bytes, 0x280 + 4 * index) === 1) {
+            total += siglentU32le(bytes, 0x3D0 + 4 * index);
+        }
+    }
+    return total;
+}
+
 function siglentLooksLikeV4(bytes, fileSize) {
     if (bytes.length < 0x280 || siglentU32le(bytes, 0x00) !== 4) {
         return false;
     }
     var enabled = siglentU32le(bytes, 0x08) + siglentU32le(bytes, 0x0C) + siglentU32le(bytes, 0x10) + siglentU32le(bytes, 0x14);
     var dataOffset = siglentU32le(bytes, 0x04);
-    var points = siglentU32le(bytes, 0x1EC);
+    // A math (F1-F4) save clears every ch_on flag and stores its length in
+    // math_store_len instead, so fall back to the math payload when no analog
+    // channel is enabled.
+    var traces = enabled > 0 ? enabled : 1;
+    var points = enabled > 0 ? siglentU32le(bytes, 0x1EC) : siglentV4MathSampleCount(bytes);
     return (
         dataOffset >= 0x1000 &&
         siglentAllFlags(bytes, [0x08, 0x0C, 0x10, 0x14]) &&
@@ -486,7 +503,7 @@ function siglentLooksLikeV4(bytes, fileSize) {
         siglentLooksLikeDataWithUnit(bytes, 0x1F0) &&
         (bytes[0x264] === 0 || bytes[0x264] === 1) &&
         (bytes[0x265] === 0 || bytes[0x265] === 1) &&
-        siglentMinPayloadOk(fileSize, dataOffset, enabled, points, bytes[0x264] === 0 ? 1 : 2)
+        siglentMinPayloadOk(fileSize, dataOffset, traces, points, bytes[0x264] === 0 ? 1 : 2)
     );
 }
 
@@ -617,6 +634,42 @@ function detectSiglentRevision(buffer, filename) {
 
 function siglentScaledToSi(node) {
     return node.value * Math.pow(10, 3 * (node.magnitude - 8));
+}
+
+// A Siglent "data with unit" struct ends with a seven-word descriptor laid out as
+// [type, V_num, V_den, A_num, A_den, s_num, s_den].  Type 0 composes the unit from
+// rational powers of volts, amps and seconds; every other type names a unit outright
+// (1 dBV, 2 dBA, 3 dB, 4 Vpp, 5 Vdc, 6 dBm, 7 Sa, 8 div, 9 pts, 10 none, 11 degree,
+// 12 percent).  Only the few the viewer can label are distinguished.
+var SIGLENT_DIRECT_UNITS = { 4: 'V', 5: 'V' };
+var SIGLENT_COMPOSED_UNITS = { '1,0,0': 'V', '0,1,0': 'A', '1,1,0': 'W' };
+
+function siglentUnitExponent(numerator, denominator) {
+    if (!denominator) {
+        return NaN;
+    }
+    return numerator / denominator;
+}
+
+function siglentUnitFromWords(words) {
+    if (!words || words.length < 7) {
+        return '?';
+    }
+
+    var unitType = Number(words[0]);
+    if (Object.prototype.hasOwnProperty.call(SIGLENT_DIRECT_UNITS, unitType)) {
+        return SIGLENT_DIRECT_UNITS[unitType];
+    }
+    if (unitType !== 0) {
+        return '?';
+    }
+
+    var key = [
+        siglentUnitExponent(Number(words[1]), Number(words[2])),
+        siglentUnitExponent(Number(words[3]), Number(words[4])),
+        siglentUnitExponent(Number(words[5]), Number(words[6])),
+    ].join(',');
+    return SIGLENT_COMPOSED_UNITS[key] || '?';
 }
 
 function siglentEstimateVoltPerDiv(vMin, vMax, fallback) {
@@ -804,12 +857,13 @@ function channelInfoText(ch, stats) {
     return s;
 }
 
-function buildInfoHeaderText(result, filename) {
+function buildInfoHeaderText(result, filename, includeSerial) {
+    var showSerial = includeSerial !== false;
     var s = '    General:\n';
     s += '        Filename     = ' + filename + '\n';
     s += '        Scope        = ' + (result.fileModel || result.format) + '\n';
     s += '        Parser Model = ' + (result.parserModel || 'browser') + '\n';
-    if (result.serialNumber) {
+    if (showSerial && result.serialNumber) {
         s += '        Serial Number = ' + result.serialNumber + '\n';
     }
     s += '        Firmware     = ' + (result.firmware || 'unknown') + '\n';
@@ -2613,6 +2667,11 @@ function buildSiglentFixedHeaderResult(options) {
     var littleEndian = options.littleEndian !== false;
     var analogCount = 0;
     var channels = [];
+    var mathTraces = options.mathTraces || [];
+    var mathBytes = 0;
+    // The verified V4.0 conversion subtracts vert_offset and applies the probe
+    // factor; the earlier revisions follow the vendor document as written.
+    var isV4 = options.revision === 'V4.0';
     var sampleBytes = waveLength * sampleWidth;
     var centerCode = Math.pow(2, 8 * sampleWidth - 1);
     var xIncrement = 1 / sampleRate;
@@ -2630,13 +2689,16 @@ function buildSiglentFixedHeaderResult(options) {
             analogCount += 1;
         }
     }
-    if (!analogCount) {
+    if (!analogCount && !mathTraces.length) {
         throw new Error('Siglent ' + options.revision + ' file does not enable any of the first four analog channels.');
     }
-    if (payload.length < analogCount * sampleBytes) {
+    for (var mathIndex = 0; mathIndex < mathTraces.length; mathIndex++) {
+        mathBytes += mathTraces[mathIndex].points * sampleWidth;
+    }
+    if (payload.length < analogCount * sampleBytes + mathBytes) {
         throw new Error(
             'Siglent ' + options.revision + ' payload is too short for ' +
-            analogCount + ' enabled analog channel(s).'
+            analogCount + ' enabled analog channel(s) and ' + mathTraces.length + ' math trace(s).'
         );
     }
 
@@ -2656,6 +2718,7 @@ function buildSiglentFixedHeaderResult(options) {
         var codePerDiv = options.codePerDivs[slot];
         var scale = options.voltDivs[slot] / codePerDiv;
         var voltOffset = options.vertOffsets[slot];
+        var probe = isV4 ? (options.probes[slot] || 1) : 1;
 
         if (!(codePerDiv > 0)) {
             throw new Error('Siglent ' + options.revision + ' channel ' + (slot + 1) + ' has a non-positive code-per-division value.');
@@ -2663,7 +2726,9 @@ function buildSiglentFixedHeaderResult(options) {
 
         for (var i = 0; i < waveLength; i++) {
             var code = siglentDecodeUnsignedCode(view, i, sampleWidth, littleEndian);
-            var voltage = (code - centerCode) * scale + voltOffset;
+            var voltage = isV4
+                ? ((code - centerCode) * scale - voltOffset) * probe
+                : (code - centerCode) * scale + voltOffset;
             var time = options.xOrigin + i * xIncrement;
             volts[i] = voltage;
             times[i] = time;
@@ -2685,8 +2750,9 @@ function buildSiglentFixedHeaderResult(options) {
             channelNumber: slot + 1,
             points: waveLength,
             coupling: 'DC',
-            voltPerDiv: siglentEstimateVoltPerDiv(vMin, vMax, options.voltDivs[slot]),
+            voltPerDiv: siglentEstimateVoltPerDiv(vMin, vMax, options.voltDivs[slot] * probe),
             voltOffset: voltOffset,
+            unit: (options.units && options.units[slot]) || 'V',
             probeValue: options.probes[slot] || 1,
             inverted: false,
             timeScale: timeScale,
@@ -2695,6 +2761,50 @@ function buildSiglentFixedHeaderResult(options) {
         });
 
         offset += sampleBytes;
+    }
+
+    for (var ti = 0; ti < mathTraces.length; ti++) {
+        var trace = mathTraces[ti];
+        var mathBytesForTrace = trace.points * sampleWidth;
+        var mathChunk = payload.subarray(offset, offset + mathBytesForTrace);
+        var mathView = new DataView(mathChunk.buffer, mathChunk.byteOffset, mathChunk.byteLength);
+        var mathTimes = new Float64Array(trace.points);
+        var mathVolts = new Float64Array(trace.points);
+        var mathRaw = new Uint8Array(trace.points);
+
+        offset += mathBytesForTrace;
+        if (!(trace.codePerDiv > 0)) {
+            throw new Error('Siglent ' + options.revision + ' math trace ' + trace.name + ' has a non-positive code-per-division value.');
+        }
+
+        // Same conversion as a V4.0 analog channel, but with the math header
+        // fields and no probe factor.
+        var mathScale = trace.voltDiv / trace.codePerDiv;
+        for (var mj = 0; mj < trace.points; mj++) {
+            var mathCode = siglentDecodeUnsignedCode(mathView, mj, sampleWidth, littleEndian);
+            mathVolts[mj] = (mathCode - centerCode) * mathScale - trace.vertPos;
+            mathTimes[mj] = options.xOrigin + mj * trace.xIncrement;
+            mathRaw[mj] = siglentRawByteFromCode(mathCode, sampleWidth);
+        }
+
+        channels.push({
+            name: trace.name,
+            color: CH_COLORS[channels.length % CH_COLORS.length],
+            times: mathTimes,
+            volts: mathVolts,
+            raw: mathRaw,
+            channelNumber: channels.length + 1,
+            points: trace.points,
+            coupling: 'DC',
+            voltPerDiv: siglentEstimateVoltPerDiv(0, 0, trace.voltDiv),
+            voltOffset: trace.vertPos,
+            unit: trace.unit || 'V',
+            probeValue: 1,
+            inverted: false,
+            timeScale: trace.points * trace.xIncrement / 10,
+            timeOffset: options.xOrigin,
+            secondsPerPoint: trace.xIncrement,
+        });
     }
 
     return {
@@ -2707,6 +2817,26 @@ function buildSiglentFixedHeaderResult(options) {
         triggerInfo: null,
         channels: channels,
     };
+}
+
+function siglentV4MathTraces(v4) {
+    var traces = [];
+    for (var index = 0; index < v4.mathSwitch.entries.length; index++) {
+        var points = v4.mathStoreLen.entries[index];
+        if (!v4.mathSwitch.entries[index] || !(points > 0)) {
+            continue;
+        }
+        traces.push({
+            name: 'F' + (index + 1),
+            points: points,
+            voltDiv: siglentScaledToSi(v4.mathVoltDiv.entries[index]),
+            vertPos: siglentScaledToSi(v4.mathVertPos.entries[index]),
+            unit: siglentUnitFromWords(v4.mathVoltDiv.entries[index].unitWords),
+            codePerDiv: v4.mathVertCodePerDiv,
+            xIncrement: v4.mathFTime.entries[index],
+        });
+    }
+    return traces;
 }
 
 function siglentV6Slot(header) {
@@ -2842,6 +2972,17 @@ function parseSiglentBin(buffer, revision) {
 
     if (revision === 'v4') {
         var v4 = new SiglentV4Bin.SiglentV4Bin(new KaitaiStream(buffer), null, null);
+        var v4Grid = v4.horiDivNum;
+        var v4Origin;
+        if (v4.zoomSwitch) {
+            // A zoom (Z1-Z4) save stores a slice of the parent record, so its time
+            // axis comes from the zoom window.  Its centre sits at
+            // +zoom_trig_delay_val -- the opposite sign to the main axis's time_delay.
+            var zoomTimeDiv = siglentScaledToSi(v4.zoomTdVal);
+            v4Origin = siglentScaledToSi(v4.zoomTrigDelayVal) - zoomTimeDiv * v4Grid / 2;
+        } else {
+            v4Origin = -(siglentScaledToSi(v4.timeDiv) * v4Grid / 2) - siglentScaledToSi(v4.timeDelay);
+        }
         return buildSiglentFixedHeaderResult({
             revision: 'V4.0',
             model: 'Siglent V4.0',
@@ -2852,10 +2993,14 @@ function parseSiglentBin(buffer, revision) {
             probes: v4.chProbe14.entries.slice(),
             waveLength: v4.waveLength,
             sampleRate: siglentScaledToSi(v4.sampleRate),
-            xOrigin: -(siglentScaledToSi(v4.timeDiv) * v4.horiDivNum / 2) - siglentScaledToSi(v4.timeDelay),
+            xOrigin: v4Origin,
             codePerDivs: v4.chVertCodePerDiv14.entries.slice(),
             sampleWidth: v4.dataWidth === 0 ? 1 : 2,
             littleEndian: v4.byteOrder === 0,
+            units: v4.chVoltDiv14.entries.map(function(node) {
+                return siglentUnitFromWords(node.unitWords);
+            }),
+            mathTraces: siglentV4MathTraces(v4),
         });
     }
 
@@ -3942,6 +4087,30 @@ function createAxisLabelFormatter(axis, unit) {
     };
 }
 
+function sharedChannelUnit(channels) {
+    var unit = '';
+    for (var i = 0; i < (channels || []).length; i++) {
+        var channel = channels[i];
+        if (!channel || channel.kind === 'digital') {
+            continue;
+        }
+        var channelUnit = channel.unit || 'V';
+        if (!unit) {
+            unit = channelUnit;
+        } else if (unit !== channelUnit) {
+            // One vertical axis cannot label mixed units, so label neither.
+            return '';
+        }
+    }
+    return unit || 'V';
+}
+
+var AXIS_TITLES = { V: 'Voltage', A: 'Current', W: 'Power' };
+
+function axisTitleForUnit(unit) {
+    return AXIS_TITLES[unit] || 'Amplitude';
+}
+
 function axisTitleText(label, formatter) {
     return label + ' [' + formatter.prefix + formatter.unit + ']';
 }
@@ -4251,10 +4420,11 @@ function render(result) {
     var vMinorTicks = buildAxisTickValues(vAx, 5);
     var tMajorTicks = buildAxisTickValues(tAx, 1);
     var vMajorTicks = buildAxisTickValues(vAx, 1);
+    var vUnit = sharedChannelUnit(result.channels);
     var tLabelFormatter = createAxisLabelFormatter(tAx, 's');
-    var vLabelFormatter = createAxisLabelFormatter(vAx, 'V');
+    var vLabelFormatter = createAxisLabelFormatter(vAx, vUnit);
     var tAxisTitle = axisTitleText('Time', tLabelFormatter);
-    var vAxisTitle = axisTitleText('Voltage', vLabelFormatter);
+    var vAxisTitle = axisTitleText(axisTitleForUnit(vUnit), vLabelFormatter);
     var theme = currentPlotTheme();
 
     function xOf(t) {
@@ -4398,10 +4568,11 @@ function renderToSVG(result) {
     var vMinorTicks = buildAxisTickValues(vAx, 5);
     var tMajorTicks = buildAxisTickValues(tAx, 1);
     var vMajorTicks = buildAxisTickValues(vAx, 1);
+    var vUnit = sharedChannelUnit(result.channels);
     var tLabelFormatter = createAxisLabelFormatter(tAx, 's');
-    var vLabelFormatter = createAxisLabelFormatter(vAx, 'V');
+    var vLabelFormatter = createAxisLabelFormatter(vAx, vUnit);
     var tAxisTitle = axisTitleText('Time', tLabelFormatter);
-    var vAxisTitle = axisTitleText('Voltage', vLabelFormatter);
+    var vAxisTitle = axisTitleText(axisTitleForUnit(vUnit), vLabelFormatter);
     var theme = currentPlotTheme();
 
     function xOf(t) {
@@ -4781,7 +4952,7 @@ function buildExportCSVText(entry) {
     rows.push(
         hUnitPrefix + 's,' +
         chs.map(function(c) {
-            return c.kind === 'digital' ? 'STATE' : (vUnitPrefix + 'V');
+            return c.kind === 'digital' ? 'STATE' : (vUnitPrefix + (c.unit || 'V'));
         }).join(',') +
         ',' + formatExportFloat(off) +
         ',' + formatExportFloat(incr)
@@ -5523,7 +5694,7 @@ function showFileInfoTooltip(fileId, anchorEl) {
         return;
     }
 
-    showSidebarTooltip(buildInfoHeaderText(entry.result, entry.filename).replace(/\s+$/, ''), anchorEl, true);
+    showSidebarTooltip(buildInfoHeaderText(entry.result, entry.filename, false).replace(/\s+$/, ''), anchorEl, true);
 }
 
 function clearDragState() {

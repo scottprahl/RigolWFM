@@ -21,11 +21,14 @@
  * 
  * Tested file formats: the synthetic `Binary Format V4.0` fixture in
  * `tests/test_siglent.py`, exercised through revision detection, low-level
- * Kaitai parsing, and normalized waveform loading.
+ * Kaitai parsing, and normalized waveform loading, plus real SDS814X HD
+ * captures in `tests/files/bin/` covering known voltage levels, a probe pair,
+ * an amps-display capture, an F1 math save, and a Z1 zoom save.
  * 
  * Oscilloscope models this format may apply to: Siglent instruments that write
- * `Binary Format V4.0`; the checked-in tests do not yet narrow this revision to
- * a smaller verified model list.
+ * `Binary Format V4.0`.  The checked-in captures come from an SDS814X HD; the
+ * CH5-CH8 bank, 8-bit samples, big-endian samples, and the digital channels are
+ * described by the vendor document but not exercised by any file on hand.
  */
 
 var SiglentV4Bin = (function() {
@@ -390,6 +393,28 @@ var SiglentV4Bin = (function() {
       return this._m_mathVertCodePerDiv;
     }
   });
+  Object.defineProperty(SiglentV4Bin.prototype, 'mathVertPos', {
+    get: function() {
+      if (this._m_mathVertPos !== undefined)
+        return this._m_mathVertPos;
+      var _pos = this._io.pos;
+      this._io.seek(816);
+      this._m_mathVertPos = new DataWithUnitArray4(this._io, this, this._root);
+      this._io.seek(_pos);
+      return this._m_mathVertPos;
+    }
+  });
+  Object.defineProperty(SiglentV4Bin.prototype, 'mathVoltDiv', {
+    get: function() {
+      if (this._m_mathVoltDiv !== undefined)
+        return this._m_mathVoltDiv;
+      var _pos = this._io.pos;
+      this._io.seek(656);
+      this._m_mathVoltDiv = new DataWithUnitArray4(this._io, this, this._root);
+      this._io.seek(_pos);
+      return this._m_mathVoltDiv;
+    }
+  });
   Object.defineProperty(SiglentV4Bin.prototype, 'sampleRate', {
     get: function() {
       if (this._m_sampleRate !== undefined)
@@ -454,6 +479,39 @@ var SiglentV4Bin = (function() {
       this._m_waveLength = this._io.readU4le();
       this._io.seek(_pos);
       return this._m_waveLength;
+    }
+  });
+  Object.defineProperty(SiglentV4Bin.prototype, 'zoomSwitch', {
+    get: function() {
+      if (this._m_zoomSwitch !== undefined)
+        return this._m_zoomSwitch;
+      var _pos = this._io.pos;
+      this._io.seek(2804);
+      this._m_zoomSwitch = this._io.readS4le();
+      this._io.seek(_pos);
+      return this._m_zoomSwitch;
+    }
+  });
+  Object.defineProperty(SiglentV4Bin.prototype, 'zoomTdVal', {
+    get: function() {
+      if (this._m_zoomTdVal !== undefined)
+        return this._m_zoomTdVal;
+      var _pos = this._io.pos;
+      this._io.seek(2808);
+      this._m_zoomTdVal = new DataWithUnit(this._io, this, this._root);
+      this._io.seek(_pos);
+      return this._m_zoomTdVal;
+    }
+  });
+  Object.defineProperty(SiglentV4Bin.prototype, 'zoomTrigDelayVal', {
+    get: function() {
+      if (this._m_zoomTrigDelayVal !== undefined)
+        return this._m_zoomTrigDelayVal;
+      var _pos = this._io.pos;
+      this._io.seek(2848);
+      this._m_zoomTrigDelayVal = new DataWithUnit(this._io, this, this._root);
+      this._io.seek(_pos);
+      return this._m_zoomTrigDelayVal;
     }
   });
 
