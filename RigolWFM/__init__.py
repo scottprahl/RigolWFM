@@ -56,7 +56,7 @@ from .wfm import (
     MSO5074_scopes,
 )
 
-__version__: str = "1.5.0"
+__version__: str = "1.6.0"
 __author__: str = "Scott Prahl"
 __email__: str = "scott.prahl@oit.edu"
 __copyright__: str = "2020-2026, Scott Prahl"
