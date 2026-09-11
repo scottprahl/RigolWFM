@@ -8,6 +8,7 @@ Changelog
 *    trim logic traces with the analog channels so a trimmed export stays aligned
 *    plot logic traces for captures that have no analog channel, instead of writing an empty figure
 *    CI now runs the whole test suite and the JavaScript tests, rather than a single test file
+*    notebook tests now read their sample captures from the checkout instead of downloading them, so ``make rcheck`` no longer depends on the network
 *    CI now runs the linting and packaging checks too, so a formatting, typing or manifest regression fails on push
 *    Siglent - fix V4.0 voltage conversion: subtract ``vert_offset`` and apply the probe factor (verified against SDS814X HD captures of known levels)
 *    Siglent - report V4.0 volts/div with the probe factor applied so it matches the scaled data
