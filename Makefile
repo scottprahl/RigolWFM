@@ -42,6 +42,7 @@ GENERATED_PY_FILES := $(shell grep -l "This is a generated file!" $(PACKAGE_DIR)
 PYTHON_STAMP    := .generated_python_parsers.stamp
 JS_STAMP        := .generated_javascript_parsers.stamp
 TABLE_RSTS      := $(patsubst ksy/%.ksy,$(TABLES_DIR)/%_table.rst,$(KSY_FILES))
+JS_TEST_FILES   := $(wildcard $(WEB_DIR)/tests/*.test.js)
 
 
 PYLINT_TARGETS  := $(PACKAGE_DIR)/*.py tests/*.py .github/scripts/update_citation.py
@@ -86,6 +87,7 @@ help:
 	@echo "  lite-clean     - Remove JupyterLite build artifacts"
 	@echo ""
 	@echo "Web Viewer Targets:"
+	@echo "  js-test        - Run the JavaScript tests in $(WEB_DIR)/tests"
 	@echo "  web-check      - Regenerate JS parsers and run the viewer tests"
 	@echo "  web-deploy     - Deploy $(WEB_DIR) to $(PAGES_BRANCH) (runs web-check first)"
 	@echo ""
@@ -247,8 +249,13 @@ lite-deploy:
 			echo "Deployed to https://$(GITHUB_USER).github.io/$(PACKAGE)/"; \
 		fi
 
+.PHONY: js-test
+js-test:
+	@command -v node >/dev/null 2>&1 || { echo "node is not installed; skipping JavaScript tests"; exit 0; }
+	@node --test $(JS_TEST_FILES)
+
 .PHONY: web-check
-web-check: $(JS_STAMP)
+web-check: $(JS_STAMP) js-test
 	@$(RUN) pytest $(PYTEST_OPTS) tests/test_wfmview.py
 
 .PHONY: web-deploy

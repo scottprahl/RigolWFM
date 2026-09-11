@@ -65,9 +65,17 @@ When changing a format, check all four layers:
 3. `wfmview/app.js` — the viewer's own detection and normalization
 4. `wfmview/index.html` — only if an export or UI control is involved
 
-`make web-check` regenerates the JavaScript parsers and runs the viewer tests;
-`make web-deploy` runs it first, so a stale parser cannot reach the published
-site.
+The viewer has tests on both sides of the language boundary:
+
+- `wfmview/tests/*.test.js` — JavaScript tests of the viewer's own helpers,
+  run by `make js-test` with Node's built-in runner (no npm, no dependencies).
+  New viewer logic belongs here.
+- `tests/test_wfmview.py` — static checks on `index.html`, and the
+  cross-language cases where the point is that Python can read what the viewer
+  wrote (CSV, NPZ, MAT, sigrok).
+
+`make web-check` runs both after regenerating the parsers, and `make
+web-deploy` runs it first, so a stale parser cannot reach the published site.
 
 Verify the two agree on real fixtures rather than assuming; the node harness
 pattern in `tests/test_wfmview.py` can load `app.js` and parse a fixture so the
