@@ -9,9 +9,10 @@ waveforms:
 
 They are the only real (instrument-written) Tektronix ``.wfm`` files in this
 test suite; every other Tektronix fixture is synthesised by
-``tests/test_tek.py``.  All five are ``WFM#003`` little-endian files and all
-five begin with the ``:`` that ``RigolWFM`` failed to expect before this
-directory was added.
+``tests/test_tek.py``.  All are ``WFM#003`` little-endian files and all begin
+with the ``:`` that ``RigolWFM`` failed to expect before this directory was
+added.  ``FF5MhzX100From5Series.wfm`` comes from the ``fastframe``
+subdirectory upstream and holds 100 frames.
 
 ``tm_data_types`` is distributed under the Apache License, Version 2.0:
 

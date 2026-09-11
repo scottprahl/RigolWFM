@@ -42,7 +42,8 @@ class TektronixWfm002LeWfm(KaitaiStruct):
     
     Tested file formats: synthetic little-endian `WFM#002` and `WFM#003`
     fixtures in `tests/test_tek.py`, including the `WFM#003` offset regression
-    after the `point_density` field; no checked-in vendor capture is present yet.
+    after the `point_density` field, plus vendor-published `WFM#003` captures in
+    `tests/files/wfm-tek/`, one of which is a 100-frame FastFrame acquisition.
     
     Oscilloscope models this format may apply to: `TDS5000B` for `WFM#002` and
     `DPO7000`, `DPO70000`, `DSA70000`, and closely related Tektronix scopes for
@@ -128,6 +129,22 @@ class TektronixWfm002LeWfm(KaitaiStruct):
         _ = self.curve_buffer
         if hasattr(self, '_m_curve_buffer'):
             pass
+
+        _ = self.frame_curve_objects
+        if hasattr(self, '_m_frame_curve_objects'):
+            pass
+            for i in range(len(self._m_frame_curve_objects)):
+                pass
+                self._m_frame_curve_objects[i]._fetch_instances()
+
+
+        _ = self.frame_update_specs
+        if hasattr(self, '_m_frame_update_specs'):
+            pass
+            for i in range(len(self._m_frame_update_specs)):
+                pass
+                self._m_frame_update_specs[i]._fetch_instances()
+
 
 
     class ExpDim(KaitaiStruct):
@@ -438,15 +455,66 @@ class TektronixWfm002LeWfm(KaitaiStruct):
         """Raw curve data bytes, inclusive of pre- and post-charge interpolation data.
         Valid user-accessible data occupies the byte range
         [data_start_offset, postcharge_start_offset) within this buffer.
+        
+        A FastFrame file stores every frame here back to back, each occupying
+        end_of_curve_buffer_offset bytes, so frame k begins at
+        k * end_of_curve_buffer_offset.
         """
         if hasattr(self, '_m_curve_buffer'):
             return self._m_curve_buffer
 
         _pos = self._io.pos()
         self._io.seek(self.static_file_info.byte_offset_to_curve_buffer)
-        self._m_curve_buffer = self._io.read_bytes(self.wfm_header.curve.end_of_curve_buffer_offset)
+        self._m_curve_buffer = self._io.read_bytes(self.wfm_header.curve.end_of_curve_buffer_offset * self.n_frames)
         self._io.seek(_pos)
         return getattr(self, '_m_curve_buffer', None)
+
+    @property
+    def frame_curve_objects(self):
+        """Curve offsets for frames 1..N, in order.  Frame 0 uses wfm_header.curve.
+        Every frame shares the buffer lengths of frame 0.
+        """
+        if hasattr(self, '_m_frame_curve_objects'):
+            return self._m_frame_curve_objects
+
+        _pos = self._io.pos()
+        self._io.seek((self.static_file_info.byte_offset_to_curve_buffer - self.frame_spec_bytes) + self.static_file_info.n_fast_frames_minus_1 * 24)
+        self._m_frame_curve_objects = []
+        for i in range(self.static_file_info.n_fast_frames_minus_1):
+            self._m_frame_curve_objects.append(TektronixWfm002LeWfm.WfmCurveObject(self._io, self, self._root))
+
+        self._io.seek(_pos)
+        return getattr(self, '_m_frame_curve_objects', None)
+
+    @property
+    def frame_spec_bytes(self):
+        """Size of the per-frame specification block: one 24-byte update spec plus
+        one 30-byte curve object for every frame after the first.
+        """
+        if hasattr(self, '_m_frame_spec_bytes'):
+            return self._m_frame_spec_bytes
+
+        self._m_frame_spec_bytes = self.static_file_info.n_fast_frames_minus_1 * 54
+        return getattr(self, '_m_frame_spec_bytes', None)
+
+    @property
+    def frame_update_specs(self):
+        """Trigger timing for frames 1..N, in order.  These sit between the fixed
+        header and the curve buffer, so they are located by working back from
+        byte_offset_to_curve_buffer rather than from the version-dependent end of
+        the header.  Frame 0 uses wfm_header.update_spec.
+        """
+        if hasattr(self, '_m_frame_update_specs'):
+            return self._m_frame_update_specs
+
+        _pos = self._io.pos()
+        self._io.seek(self.static_file_info.byte_offset_to_curve_buffer - self.frame_spec_bytes)
+        self._m_frame_update_specs = []
+        for i in range(self.static_file_info.n_fast_frames_minus_1):
+            self._m_frame_update_specs.append(TektronixWfm002LeWfm.WfmUpdateSpec(self._io, self, self._root))
+
+        self._io.seek(_pos)
+        return getattr(self, '_m_frame_update_specs', None)
 
     @property
     def is_wfm003(self):
@@ -456,5 +524,16 @@ class TektronixWfm002LeWfm(KaitaiStruct):
 
         self._m_is_wfm003 = self.static_file_info.version_number == u"WFM#003"
         return getattr(self, '_m_is_wfm003', None)
+
+    @property
+    def n_frames(self):
+        """Total number of FastFrame frames, counting the one described by the fixed
+        header.  1 for an ordinary single-waveform file.
+        """
+        if hasattr(self, '_m_n_frames'):
+            return self._m_n_frames
+
+        self._m_n_frames = self.static_file_info.n_fast_frames_minus_1 + 1
+        return getattr(self, '_m_n_frames', None)
 
 

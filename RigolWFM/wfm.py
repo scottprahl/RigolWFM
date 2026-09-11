@@ -582,9 +582,12 @@ class Wfm:
         self.logic_seconds_per_point: float | None = None
         self.logic_time_offset: float | None = None
         self.iq_info: dict = {}
+        self.frame_count: int = 1
+        self.frame_index: int = 0
+        self.frame_trigger_offset: float = 0.0
 
     @classmethod
-    def from_file(cls, file_name: str, model: str = "auto", selected: str = "1234") -> "Wfm":
+    def from_file(cls, file_name: str, model: str = "auto", selected: str = "1234", frame: int = 0) -> "Wfm":
         """
         Create Wfm object from a file.
 
@@ -592,6 +595,8 @@ class Wfm:
             file_name: name of file
             model: oscilloscope family, e.g. 'E', 'Z', 'LeCroy', 'Tek'; defaults to auto-detect
             selected: string of channels to process e.g., '12'
+            frame: zero-based frame of a Tektronix FastFrame capture; other
+                formats hold a single frame and accept only 0
         Returns:
             a Wfm object for the file
         """
@@ -639,7 +644,7 @@ class Wfm:
 
         # --- Tektronix .wfm ---
         elif _model_in_family(umodel, Tek_scopes):
-            w = RigolWFM.tek.from_file(file_name)
+            w = RigolWFM.tek.from_file(file_name, frame=frame)
             new_wfm.header_name = w.header.model or "Tektronix"
 
         # --- Tektronix .isf ---
@@ -659,6 +664,11 @@ class Wfm:
 
         else:
             raise Unknown_Scope_Error(f"Unknown oscilloscope type: '{umodel}'\n{valid_scope_list()}")
+
+        # Only Tektronix FastFrame captures hold more than one frame, so asking
+        # for another frame of anything else is a mistake worth reporting.
+        if frame != 0 and not _model_in_family(umodel, Tek_scopes):
+            raise Parse_WFM_Error(f"'{umodel}' files hold a single frame, so frame {frame} does not exist")
 
         new_wfm.user_name = "auto" if auto_model else model
         pname = getattr(w, "parser_name", type(w).__module__.rsplit(".", 1)[-1])
@@ -711,6 +721,9 @@ class Wfm:
                         logic_start + np.arange(len(first_trace)) * new_wfm.logic_seconds_per_point
                     ).astype(np.float64)
         elif pname == "tek_wfm":
+            new_wfm.frame_count = int(getattr(w.header, "frame_count", 1))
+            new_wfm.frame_index = int(getattr(w.header, "frame_index", 0))
+            new_wfm.frame_trigger_offset = float(getattr(w.header, "frame_trigger_offset", 0.0))
             new_wfm.iq_info = {key: value for key, value in getattr(w, "tekmeta", {}).items() if key.startswith("IQ_")}
             logic_channels = getattr(w, "logic_channels", {})
             if logic_channels:
@@ -890,6 +903,13 @@ class Wfm:
                 s += "        Observed     = ["
                 s += ", ".join(self.logic_observed_channels)
                 s += "]\n"
+            s += "\n"
+
+        if self.frame_count > 1:
+            s += "    FastFrame:\n"
+            s += "        Frames       = %8d\n" % self.frame_count
+            s += "        Showing      = %8d\n" % self.frame_index
+            s += "        Since frame 0= %10ss\n" % (RigolWFM.channel.engineering_string(self.frame_trigger_offset, 3))
             s += "\n"
 
         if self.iq_info:

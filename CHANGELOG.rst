@@ -3,6 +3,7 @@ Changelog
 
 Unreleased
 ----------
+*    read Tektronix FastFrame ``.wfm`` captures, which were previously rejected outright, and add ``--frame N`` to pick one of the frames
 *    add ``--trim DURATION`` to keep only a window around the point the scope was displaying, accepting SI prefixes such as ``1ms`` or ``200us``
 *    trim logic traces with the analog channels so a trimmed export stays aligned
 *    decode Tektronix digital ``.wfm`` captures into one logic trace per line instead of scaling the packed bits as a voltage

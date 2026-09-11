@@ -434,7 +434,8 @@ var TektronixWfm001BeWfm = (function() {
     }
     StaticFileInfo.prototype._read = function() {
       this.byteOrder = this._io.readU2be();
-      this.versionNumber = this._io.readBytes(8);
+      this.byteVersionColon = this._io.readBytes(1);
+      this.versionNumber = this._io.readBytes(7);
       this.numDigitsByteCount = this._io.readU1();
       this.numBytesToEof = this._io.readS4be();
       this.numBytesPerPoint = this._io.readU1();
@@ -454,8 +455,12 @@ var TektronixWfm001BeWfm = (function() {
      */
 
     /**
-     * Version identification string, null-padded to 8 bytes.
-     * "WFM#001" for this parser.  Offset 2.
+     * Colon character separating byte_order and version_number. Offset 2.
+     */
+
+    /**
+     * Version identification string.
+     * "WFM#001" for this parser.  Offset 3.
      */
 
     /**

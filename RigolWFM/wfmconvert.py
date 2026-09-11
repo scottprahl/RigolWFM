@@ -416,6 +416,7 @@ def main() -> None:
             wfmconvert --channel 12 --scale scope wav DS1102E.wfm
             wfmconvert --channel 1 pwl DS1102E.wfm
             wfmconvert --trim 1ms csv DS1102E.wfm
+            wfmconvert --frame 7 csv FastFrame.wfm
             wfmconvert --model C info DS1042C-A.wfm
         """),
     )
@@ -481,6 +482,17 @@ def main() -> None:
     )
 
     parser.add_argument(
+        "--frame",
+        type=int,
+        default=0,
+        metavar="N",
+        help=textwrap.dedent("""\
+        select one frame of a Tektronix FastFrame capture, counting from 0
+        (default: 0, the first frame).  Other formats hold a single frame.
+        """),
+    )
+
+    parser.add_argument(
         "--trim",
         metavar="DURATION",
         help=textwrap.dedent("""\
@@ -542,7 +554,7 @@ def main() -> None:
                 model = RigolWFM.wfm.detect_model(filename)
                 print(f"Detected model: {model}", file=sys.stderr)
 
-            scope_data = RigolWFM.wfm.Wfm.from_file(filename, model, selected)
+            scope_data = RigolWFM.wfm.Wfm.from_file(filename, model, selected, frame=args.frame)
 
             if args.trim is not None:
                 try:

@@ -37,7 +37,8 @@ doc: |
 
   Tested file formats: synthetic little-endian `WFM#002` and `WFM#003`
   fixtures in `tests/test_tek.py`, including the `WFM#003` offset regression
-  after the `point_density` field; no checked-in vendor capture is present yet.
+  after the `point_density` field, plus vendor-published `WFM#003` captures in
+  `tests/files/wfm-tek/`, one of which is a 100-frame FastFrame acquisition.
 
   Oscilloscope models this format may apply to: `TDS5000B` for `WFM#002` and
   `DPO7000`, `DPO70000`, `DSA70000`, and closely related Tektronix scopes for
@@ -56,13 +57,45 @@ instances:
   is_wfm003:
     value: static_file_info.version_number == "WFM#003"
     doc: True when this file uses the WFM#003 layout.
+  n_frames:
+    value: static_file_info.n_fast_frames_minus_1 + 1
+    doc: |
+      Total number of FastFrame frames, counting the one described by the fixed
+      header.  1 for an ordinary single-waveform file.
+  frame_spec_bytes:
+    value: static_file_info.n_fast_frames_minus_1 * 54
+    doc: |
+      Size of the per-frame specification block: one 24-byte update spec plus
+      one 30-byte curve object for every frame after the first.
+  frame_update_specs:
+    pos: static_file_info.byte_offset_to_curve_buffer - frame_spec_bytes
+    type: wfm_update_spec
+    repeat: expr
+    repeat-expr: static_file_info.n_fast_frames_minus_1
+    doc: |
+      Trigger timing for frames 1..N, in order.  These sit between the fixed
+      header and the curve buffer, so they are located by working back from
+      byte_offset_to_curve_buffer rather than from the version-dependent end of
+      the header.  Frame 0 uses wfm_header.update_spec.
+  frame_curve_objects:
+    pos: static_file_info.byte_offset_to_curve_buffer - frame_spec_bytes + (static_file_info.n_fast_frames_minus_1 * 24)
+    type: wfm_curve_object
+    repeat: expr
+    repeat-expr: static_file_info.n_fast_frames_minus_1
+    doc: |
+      Curve offsets for frames 1..N, in order.  Frame 0 uses wfm_header.curve.
+      Every frame shares the buffer lengths of frame 0.
   curve_buffer:
     pos: static_file_info.byte_offset_to_curve_buffer
-    size: wfm_header.curve.end_of_curve_buffer_offset
+    size: wfm_header.curve.end_of_curve_buffer_offset * n_frames
     doc: |
       Raw curve data bytes, inclusive of pre- and post-charge interpolation data.
       Valid user-accessible data occupies the byte range
       [data_start_offset, postcharge_start_offset) within this buffer.
+
+      A FastFrame file stores every frame here back to back, each occupying
+      end_of_curve_buffer_offset bytes, so frame k begins at
+      k * end_of_curve_buffer_offset.
 
 types:
   static_file_info:

@@ -121,6 +121,11 @@ class Header:
     ch: list[ChannelHeader]
     raw_data: list[Optional[npt.NDArray]]
     channel_data: list[Optional[npt.NDArray[np.float32]]]
+    frame_count: int
+    frame_index: int
+    frame_trigger_seconds: int
+    frame_trigger_fraction: float
+    frame_trigger_offset: float
 
     def __init__(self) -> None:
         """Initialize an empty Tektronix header."""
@@ -129,6 +134,11 @@ class Header:
         self.n_pts = 0
         self.x_origin = 0.0
         self.x_increment = 1e-6
+        self.frame_count = 1
+        self.frame_index = 0
+        self.frame_trigger_seconds = 0
+        self.frame_trigger_fraction = 0.0
+        self.frame_trigger_offset = 0.0
         self.ch = [ChannelHeader(f"CH{i + 1}", enabled=False) for i in range(4)]
         self.raw_data = [None] * 4
         self.channel_data = [None] * 4
@@ -501,14 +511,19 @@ def _digital_waveform(
     return obj
 
 
-def from_file(file_name: str) -> TekWaveform:
+def from_file(file_name: str, frame: int = 0) -> TekWaveform:
     """Parse a Tektronix .wfm file and normalize it for `Wfm.from_file()`.
 
     Handles WFM#001, WFM#002, and WFM#003 formats in both little-endian
     and big-endian byte orders.
 
+    A FastFrame capture stores many frames of one channel in a single file.
+    They share every scale factor and differ only in their samples and their
+    trigger timestamp, so one frame is returned at a time.
+
     Args:
         file_name: path to a Tektronix .wfm waveform file.
+        frame: zero-based FastFrame index to return; 0 for an ordinary capture.
 
     Returns:
         A `TekWaveform` object whose `header` follows the shape expected
@@ -558,9 +573,10 @@ def from_file(file_name: str) -> TekWaveform:
     imp1 = hdr.imp_dim1
 
     if not is_v1:
+        # set_type 0 is a single waveform, 1 is FastFrame; both are handled.
         set_type = getattr(hdr.set_type, "value", int(hdr.set_type))
-        if int(sfi.n_fast_frames_minus_1) != 0 or set_type != 0:
-            raise ValueError(f"FastFrame Tektronix WFM files are not yet supported: '{file_name}'")
+        if set_type not in (0, 1):
+            raise ValueError(f"Tektronix WFM set type {set_type} is not supported: '{file_name}'")
         if int(hdr.curve_ref_count) != 1:
             raise ValueError(f"Multi-curve Tektronix WFM files are not yet supported: '{file_name}'")
 
@@ -587,8 +603,23 @@ def from_file(file_name: str) -> TekWaveform:
     except Exception as exc:
         raise ValueError(f"No waveform data in '{file_name}' (file may be truncated): {exc}") from exc
 
-    data_start = int(curve.data_start_offset)
-    data_end = int(curve.postcharge_start_offset)
+    frame_count = int(getattr(raw, "n_frames", 1) or 1)
+    if not 0 <= frame < frame_count:
+        raise ValueError(
+            f"'{file_name}' holds {frame_count} frame(s), so frame {frame} does not exist "
+            f"(valid range 0..{frame_count - 1})"
+        )
+
+    # Frames 1..N describe themselves; frame 0 is the one in the fixed header.
+    if frame > 0:
+        curve = raw.frame_curve_objects[frame - 1]
+        n_pts = int(curve.num_valid_samples) or n_pts
+
+    # Every frame occupies the same span, laid end to end in the curve buffer.
+    frame_stride = int(hdr.curve.end_of_curve_buffer_offset)
+    base = frame * frame_stride
+    data_start = base + int(curve.data_start_offset)
+    data_end = base + int(curve.postcharge_start_offset)
     if data_end <= data_start:
         data_end = data_start + n_pts * bytes_per_point
 
@@ -599,13 +630,26 @@ def from_file(file_name: str) -> TekWaveform:
     meta = _parse_tekmeta(data, byte_order)
     data_type = getattr(hdr.data_type, "value", int(hdr.data_type))
 
+    # Each frame records when it triggered, as whole GMT seconds plus a
+    # fraction.  Keep the two apart: frames can be well under a microsecond
+    # apart, and adding a fraction to a ~1.8e9 second count loses that in
+    # float64.  The offset from frame 0 subtracts the whole seconds exactly, so
+    # it keeps full resolution.
+    spec = hdr.update_spec if frame == 0 else raw.frame_update_specs[frame - 1]
+    first = hdr.update_spec
+    frame_trigger_seconds = int(spec.gmt_sec)
+    frame_trigger_fraction = float(spec.frac_sec)
+    frame_trigger_offset = (frame_trigger_seconds - int(first.gmt_sec)) + (
+        frame_trigger_fraction - float(first.frac_sec)
+    )
+
     t_scale = float(imp1.dim_scale)
     t_origin = float(imp1.dim_offset)
 
     if _is_digital(data_type, meta):
         # Packed logic lines, not volts.  Scaling these bytes as a voltage is
         # what produced a meaningless analog trace before.
-        return _digital_waveform(
+        digital = _digital_waveform(
             raw_bytes,
             meta,
             model_str=model_str,
@@ -613,6 +657,12 @@ def from_file(file_name: str) -> TekWaveform:
             t_origin=t_origin,
             t_scale=t_scale,
         )
+        digital.header.frame_count = frame_count
+        digital.header.frame_index = frame
+        digital.header.frame_trigger_seconds = frame_trigger_seconds
+        digital.header.frame_trigger_fraction = frame_trigger_fraction
+        digital.header.frame_trigger_offset = frame_trigger_offset
+        return digital
 
     # Decode ADC samples
     adc = _decode_adc(raw_bytes, fmt_code, byte_order, n_pts)
@@ -640,6 +690,11 @@ def from_file(file_name: str) -> TekWaveform:
     h.trace_label = trace_label
     h.x_origin = t_origin
     h.x_increment = x_increment
+    h.frame_count = frame_count
+    h.frame_index = frame
+    h.frame_trigger_seconds = frame_trigger_seconds
+    h.frame_trigger_fraction = frame_trigger_fraction
+    h.frame_trigger_offset = frame_trigger_offset
 
     if _is_iq(meta):
         # Interleaved I/Q: even samples are in-phase, odd are quadrature.  One

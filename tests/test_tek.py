@@ -503,6 +503,80 @@ def test_tektronix_iq_parameters_are_reported():
     assert "Window       = Blackharris" in described
 
 
+def test_tektronix_fastframe_exposes_every_frame():
+    """A FastFrame capture holds many frames of one channel, selected by index."""
+    path = str(_TEK_SAMPLES / "FF5MhzX100From5Series.wfm")
+    waveform = RigolWFM.wfm.Wfm.from_file(path)
+
+    assert waveform.frame_count == 100
+    assert waveform.frame_index == 0  # frame 0 by default
+    assert waveform.channels[0].points == 2500
+
+    last = RigolWFM.wfm.Wfm.from_file(path, frame=99)
+    assert last.frame_index == 99
+    assert last.channels[0].points == 2500
+
+    # frames share every scale factor and differ only in their samples
+    np.testing.assert_allclose(last.channels[0].times, waveform.channels[0].times)
+    assert not np.array_equal(last.channels[0].volts, waveform.channels[0].volts)
+
+
+def test_tektronix_fastframe_matches_vendor_reader():
+    """Frames should decode the way Tektronix decodes them.
+
+    Spot values read from the same file with `tm_data_types`, whose per-frame
+    arrays agree with these to float32 rounding across all 100 frames.
+    """
+    path = str(_TEK_SAMPLES / "FF5MhzX100From5Series.wfm")
+
+    expected = {
+        0: [0.0, 0.004, 0.008, 0.008],
+        1: [-0.004, 0.0, 0.004, 0.004],
+        50: [0.0, 0.0, 0.004, 0.004],
+        99: [-0.004, -0.004, 0.0, 0.0],
+    }
+    for index, first_four in expected.items():
+        volts = RigolWFM.wfm.Wfm.from_file(path, frame=index).channels[0].volts
+        np.testing.assert_allclose(volts[:4], first_four, atol=1e-6)
+
+
+def test_tektronix_fastframe_records_each_frame_trigger_time():
+    """Per-frame trigger stamps place the frames against one another in time.
+
+    They are held as whole seconds plus a fraction: the capture triggers about
+    602 ns apart, which adding a fraction to a ~1.8e9 second count would lose.
+    """
+    path = str(_TEK_SAMPLES / "FF5MhzX100From5Series.wfm")
+
+    offsets = [RigolWFM.wfm.Wfm.from_file(path, frame=i).frame_trigger_offset for i in range(4)]
+
+    assert offsets[0] == 0.0
+    steps = np.diff(offsets)
+    np.testing.assert_allclose(steps, 602e-9, atol=5e-9)
+
+
+def test_tektronix_fastframe_rejects_a_frame_that_does_not_exist():
+    """An out-of-range frame should say how many the file actually holds."""
+    path = str(_TEK_SAMPLES / "FF5MhzX100From5Series.wfm")
+
+    with pytest.raises(ValueError, match="holds 100 frame"):
+        RigolWFM.wfm.Wfm.from_file(path, frame=100)
+
+
+def test_frames_are_rejected_for_formats_that_have_none():
+    """Only Tektronix FastFrame files have frames; asking elsewhere is an error."""
+    with pytest.raises(RigolWFM.wfm.Parse_WFM_Error, match="single frame"):
+        RigolWFM.wfm.Wfm.from_file("tests/files/wfm/DS1102E-A.wfm", "E", frame=2)
+
+
+def test_tektronix_ordinary_capture_reports_one_frame():
+    """A normal capture is a one-frame file, and says so."""
+    waveform = RigolWFM.wfm.Wfm.from_file(str(_TEK_SAMPLES / "analog_waveform.wfm"))
+
+    assert waveform.frame_count == 1
+    assert "FastFrame" not in waveform.describe()
+
+
 def test_tektronix_analog_capture_is_not_treated_as_iq():
     """Only captures with IQ metadata split; ordinary analog files stay single."""
     waveform = RigolWFM.wfm.Wfm.from_file(str(_TEK_SAMPLES / "analog_waveform.wfm"))

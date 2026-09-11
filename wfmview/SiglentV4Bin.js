@@ -21,11 +21,14 @@
  * 
  * Tested file formats: the synthetic `Binary Format V4.0` fixture in
  * `tests/test_siglent.py`, exercised through revision detection, low-level
- * Kaitai parsing, and normalized waveform loading.
+ * Kaitai parsing, and normalized waveform loading, plus real SDS814X HD
+ * captures in `tests/files/bin/` covering known voltage levels, a probe pair,
+ * an amps-display capture, an F1 math save, and a Z1 zoom save.
  * 
  * Oscilloscope models this format may apply to: Siglent instruments that write
- * `Binary Format V4.0`; the checked-in tests do not yet narrow this revision to
- * a smaller verified model list.
+ * `Binary Format V4.0`.  The checked-in captures come from an SDS814X HD; the
+ * CH5-CH8 bank, 8-bit samples, big-endian samples, and the digital channels are
+ * described by the vendor document but not exercised by any file on hand.
  */
 
 var SiglentV4Bin = (function() {

@@ -42,8 +42,10 @@
  * 
  * Tested file formats: no checked-in big-endian `WFM#002` / `WFM#003` fixture
  * currently exercises this exact schema; the little-endian sibling is covered
- * by synthetic `WFM#002` / `WFM#003` regressions and this variant is the
- * byte-swapped counterpart from the same Tektronix reference manual.
+ * by synthetic `WFM#002` / `WFM#003` regressions and by vendor-published
+ * captures in `tests/files/wfm-tek/`, and this variant is the byte-swapped
+ * counterpart from the same Tektronix reference manual.  That includes the
+ * FastFrame frame blocks, which no big-endian capture on hand exercises.
  * 
  * Oscilloscope models this format may apply to: big-endian Tektronix scopes
  * that write `WFM#002` or `WFM#003`, especially older PPC-based variants of
@@ -479,8 +481,8 @@ var TektronixWfm002BeWfm = (function() {
     }
     StaticFileInfo.prototype._read = function() {
       this.byteOrder = this._io.readU2be();
+      this.byteVersionColon = this._io.readBytes(1);
       this.versionNumber = KaitaiStream.bytesToStr(this._io.readBytes(7), "ASCII");
-      this.versionPad = this._io.readBytes(1);
       this.numDigitsByteCount = this._io.readU1();
       this.numBytesToEof = this._io.readS4be();
       this.numBytesPerPoint = this._io.readU1();
@@ -500,12 +502,12 @@ var TektronixWfm002BeWfm = (function() {
      */
 
     /**
-     * Version identification string.
-     * "WFM#002" or "WFM#003" for this parser.  Offset 2.
+     * Colon character separating byte_order and version_number. Offset 2.
      */
 
     /**
-     * Null terminator / padding byte after version_number.  Offset 9.
+     * Version identification string.
+     * "WFM#002" or "WFM#003" for this parser.  Offset 3.
      */
 
     /**
@@ -886,6 +888,10 @@ var TektronixWfm002BeWfm = (function() {
    * Raw curve data bytes, inclusive of pre- and post-charge interpolation data.
    * Valid user-accessible data occupies the byte range
    * [data_start_offset, postcharge_start_offset) within this buffer.
+   * 
+   * A FastFrame file stores every frame here back to back, each occupying
+   * end_of_curve_buffer_offset bytes, so frame k begins at
+   * k * end_of_curve_buffer_offset.
    */
   Object.defineProperty(TektronixWfm002BeWfm.prototype, 'curveBuffer', {
     get: function() {
@@ -893,9 +899,62 @@ var TektronixWfm002BeWfm = (function() {
         return this._m_curveBuffer;
       var _pos = this._io.pos;
       this._io.seek(this.staticFileInfo.byteOffsetToCurveBuffer);
-      this._m_curveBuffer = this._io.readBytes(this.wfmHeader.curve.endOfCurveBufferOffset);
+      this._m_curveBuffer = this._io.readBytes(this.wfmHeader.curve.endOfCurveBufferOffset * this.nFrames);
       this._io.seek(_pos);
       return this._m_curveBuffer;
+    }
+  });
+
+  /**
+   * Curve offsets for frames 1..N, in order.  Frame 0 uses wfm_header.curve.
+   * Every frame shares the buffer lengths of frame 0.
+   */
+  Object.defineProperty(TektronixWfm002BeWfm.prototype, 'frameCurveObjects', {
+    get: function() {
+      if (this._m_frameCurveObjects !== undefined)
+        return this._m_frameCurveObjects;
+      var _pos = this._io.pos;
+      this._io.seek((this.staticFileInfo.byteOffsetToCurveBuffer - this.frameSpecBytes) + this.staticFileInfo.nFastFramesMinus1 * 24);
+      this._m_frameCurveObjects = [];
+      for (var i = 0; i < this.staticFileInfo.nFastFramesMinus1; i++) {
+        this._m_frameCurveObjects.push(new WfmCurveObject(this._io, this, this._root));
+      }
+      this._io.seek(_pos);
+      return this._m_frameCurveObjects;
+    }
+  });
+
+  /**
+   * Size of the per-frame specification block: one 24-byte update spec plus
+   * one 30-byte curve object for every frame after the first.
+   */
+  Object.defineProperty(TektronixWfm002BeWfm.prototype, 'frameSpecBytes', {
+    get: function() {
+      if (this._m_frameSpecBytes !== undefined)
+        return this._m_frameSpecBytes;
+      this._m_frameSpecBytes = this.staticFileInfo.nFastFramesMinus1 * 54;
+      return this._m_frameSpecBytes;
+    }
+  });
+
+  /**
+   * Trigger timing for frames 1..N, in order.  These sit between the fixed
+   * header and the curve buffer, so they are located by working back from
+   * byte_offset_to_curve_buffer rather than from the version-dependent end of
+   * the header.  Frame 0 uses wfm_header.update_spec.
+   */
+  Object.defineProperty(TektronixWfm002BeWfm.prototype, 'frameUpdateSpecs', {
+    get: function() {
+      if (this._m_frameUpdateSpecs !== undefined)
+        return this._m_frameUpdateSpecs;
+      var _pos = this._io.pos;
+      this._io.seek(this.staticFileInfo.byteOffsetToCurveBuffer - this.frameSpecBytes);
+      this._m_frameUpdateSpecs = [];
+      for (var i = 0; i < this.staticFileInfo.nFastFramesMinus1; i++) {
+        this._m_frameUpdateSpecs.push(new WfmUpdateSpec(this._io, this, this._root));
+      }
+      this._io.seek(_pos);
+      return this._m_frameUpdateSpecs;
     }
   });
 
@@ -908,6 +967,19 @@ var TektronixWfm002BeWfm = (function() {
         return this._m_isWfm003;
       this._m_isWfm003 = this.staticFileInfo.versionNumber == "WFM#003";
       return this._m_isWfm003;
+    }
+  });
+
+  /**
+   * Total number of FastFrame frames, counting the one described by the fixed
+   * header.  1 for an ordinary single-waveform file.
+   */
+  Object.defineProperty(TektronixWfm002BeWfm.prototype, 'nFrames', {
+    get: function() {
+      if (this._m_nFrames !== undefined)
+        return this._m_nFrames;
+      this._m_nFrames = this.staticFileInfo.nFastFramesMinus1 + 1;
+      return this._m_nFrames;
     }
   });
 
