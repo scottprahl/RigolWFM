@@ -145,7 +145,9 @@ def from_file(file_name: str) -> Mso5000Waveform:
 
         # Convert raw uint8 ADC counts to approximate volts.
         # No calibration coefficients are present in the file.
-        volts = (samples.astype(np.float64) - _ADC_MIDPOINT) / _COUNTS_PER_VOLT
+        # float32 to match `channel_data`, as every other adapter does; the
+        # source is 8-bit ADC counts, so nothing is lost.
+        volts = ((samples.astype(np.float64) - _ADC_MIDPOINT) / _COUNTS_PER_VOLT).astype(np.float32)
 
         ch_name = str(wh_fields["waveform_label"]) or f"CH{slot + 1}"
         channel = ChannelHeader(ch_name, enabled=True, unit_code=1)  # 1 = V

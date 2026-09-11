@@ -542,9 +542,10 @@ def test_wfmconvert_sigrok_missing_dependency_fails_cleanly(tmp_path):
     if shutil.which("sigrok-cli") is None:
         pytest.skip("sigrok-cli is already absent in this environment")
 
-    command = f"PATH=/nonexistent {wfmconvert_command(
-        f'--model E --force --output-dir {shlex.quote(str(tmp_path))} sigrok tests/files/wfm/DS1102E-A.wfm'
-    )}"
+    # Keep the nested f-string out of the replacement field: line breaks inside
+    # one need Python 3.12, and this project supports 3.10.
+    arguments = f"--model E --force --output-dir {shlex.quote(str(tmp_path))} sigrok tests/files/wfm/DS1102E-A.wfm"
+    command = f"PATH=/nonexistent {wfmconvert_command(arguments)}"
     result = run_command_result(command)
 
     assert result.returncode != 0
