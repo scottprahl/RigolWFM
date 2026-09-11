@@ -24,7 +24,8 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10
+        # setup-uv publishes no floating major tag, so pin the exact release
+        uses: astral-sh/setup-uv@v10.1.0
 
       # Each check is its own step so a failure names itself in the run summary
       # rather than hiding inside one long command.  They are the same targets
