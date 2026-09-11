@@ -67,7 +67,12 @@ def test_run_notebook(notebook):
 
     with open(notebook, encoding="utf-8") as f:
         nb = nbformat.read(f, as_version=4)
-    ep = nbconvert.preprocessors.ExecutePreprocessor(timeout=600)
+    # Quiet the kernel's own logger.  Starting it over TCP makes ipykernel warn
+    # about unencrypted transport on every notebook, which is noise here: the
+    # kernel is local and short-lived.  IPC transport would also silence it, but
+    # it is not available on Windows.  Execution errors still reach us, since
+    # they are raised by preprocess() rather than logged.
+    ep = nbconvert.preprocessors.ExecutePreprocessor(timeout=600, extra_arguments=["--log-level=ERROR"])
     try:
         ep.preprocess(nb, {"metadata": {"path": notebook.parent}})
     except PermissionError as exc:
