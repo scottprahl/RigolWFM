@@ -122,6 +122,12 @@ Tests are primarily snapshot-based: `wfmconvert <scope> info <file>` output is c
 
 ## Linting Notes
 
+`.github/workflows/lint.yaml` runs the same `make` targets as the list below,
+so anything that passes locally passes there.  It covers everything
+`make rcheck` does except the docs build and the test suites, which the test
+workflow runs.
+
+
 - Line length is 120 characters (ruff, pylint, black all configured to this)
 - Docstrings follow Google style (ruff rule `D`)
 - Auto-generated parser files (`wfm\d+\.py`, `bin\d+\.py`) are excluded from linting

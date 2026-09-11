@@ -1,0 +1,55 @@
+---
+name: lint
+
+on:    # yamllint disable-line rule:truthy
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:  # allow manual triggering
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint and static checks
+
+    env:
+      # Pin the interpreter so results match `make` locally.  mypy analyses the
+      # package as 3.12 (see [tool.mypy]); ruff still holds it to the 3.10 floor
+      # in requires-python, so the older syntax rules are covered either way.
+      UV_PYTHON: '3.12'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      # Each check is its own step so a failure names itself in the run summary
+      # rather than hiding inside one long command.  They are the same targets
+      # `make rcheck` runs, minus the docs build and the test suites, which the
+      # test workflow already covers.
+      - name: ruff
+        run: make ruff-check
+
+      - name: black
+        run: make black-check
+
+      - name: pylint
+        run: make pylint-check
+
+      - name: mypy
+        run: make mypy-check
+
+      - name: reStructuredText
+        run: make rst-check
+
+      - name: YAML
+        run: make yaml-check
+
+      - name: MANIFEST.in
+        run: make manifest-check
+
+      - name: packaging metadata
+        run: make pyroma-check

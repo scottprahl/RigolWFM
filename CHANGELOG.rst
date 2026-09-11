@@ -7,6 +7,8 @@ Changelog
 *    add ``--trim DURATION`` to keep only a window around the point the scope was displaying, accepting SI prefixes such as ``1ms`` or ``200us``
 *    trim logic traces with the analog channels so a trimmed export stays aligned
 *    plot logic traces for captures that have no analog channel, instead of writing an empty figure
+*    CI now runs the whole test suite and the JavaScript tests, rather than a single test file
+*    CI now runs the linting and packaging checks too, so a formatting, typing or manifest regression fails on push
 *    Siglent - fix V4.0 voltage conversion: subtract ``vert_offset`` and apply the probe factor (verified against SDS814X HD captures of known levels)
 *    Siglent - report V4.0 volts/div with the probe factor applied so it matches the scaled data
 *    Siglent - read the unit descriptor so a channel in amps display mode reports amps instead of volts
@@ -28,7 +30,6 @@ Changelog
 *    ``wfmview`` - port the Tektronix fixes so the viewer stops rejecting real ``.wfm`` files, and decodes digital, IQ and FastFrame captures as the library does
 *    ``wfmview`` - move every embedded JavaScript harness out of ``tests/test_wfmview.py``, which drops from 1700 lines to under 200
 *    ``wfmview`` - move the pure-JavaScript viewer tests out of Python and into ``wfmview/tests``, where they are readable JavaScript instead of strings inside f-strings
-*    CI now runs the whole test suite and the JavaScript tests, rather than a single test file
 *    ``wfmview`` - add JavaScript tests in ``wfmview/tests`` run by ``make js-test`` with Node's built-in runner
 *    ``wfmview`` - ``make web-deploy`` now regenerates the JavaScript parsers and runs the viewer tests first, so a stale parser cannot be published
 *    ``wfmview`` - add PWL export and report IQ acquisition parameters in the INFO export
