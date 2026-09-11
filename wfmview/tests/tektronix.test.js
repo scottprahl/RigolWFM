@@ -58,13 +58,19 @@ test('IQ captures are recognised only by their acquisition parameters', () => {
     assert.ok(!tekIsIq({ ANALOG_Thumbnail: '', yOffset: 0 }));
 });
 
-test('the version string is read past its leading colon', () => {
+test('a .wfm is recognised past the colon in its version string', () => {
     // ":WFM#003" -- the colon is part of the eight-byte field, so the magic
     // starts at offset 3.  Looking at offset 2 made the viewer reject every
     // instrument-written file as unsupported.
-    const header = Buffer.from('\x0f\x0f:WFM#003', 'binary');
+    const littleEndian = Buffer.from('\x0f\x0f:WFM#003', 'binary');
+    const bigEndian = Buffer.from('\xf0\xf0:WFM#002', 'binary');
 
-    assert.strictEqual(header[2], 0x3a, 'byte 2 is the colon');
-    assert.strictEqual(header[3], 0x57, 'the W of WFM# is at offset 3');
-    assert.strictEqual(header.slice(3, 7).toString('ascii'), 'WFM#');
+    assert.ok(looksLikeTekWfm(littleEndian), 'little-endian capture');
+    assert.ok(looksLikeTekWfm(bigEndian), 'big-endian capture');
+
+    // the pre-fix layout, without the colon, is not what instruments write
+    assert.ok(!looksLikeTekWfm(Buffer.from('\x0f\x0fWFM#003\x00', 'binary')));
+    assert.ok(!looksLikeTekWfm(Buffer.from('\x0f\x0f:XXX#003', 'binary')), 'wrong magic');
+    assert.ok(!looksLikeTekWfm(Buffer.from('\x12\x34:WFM#003', 'binary')), 'wrong byte order mark');
+    assert.ok(!looksLikeTekWfm(Buffer.from('\x0f\x0f:W', 'binary')), 'too short');
 });

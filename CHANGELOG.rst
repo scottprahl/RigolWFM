@@ -26,6 +26,7 @@ Changelog
 *    Tektronix - fix the time axis to stop counting the curve buffer precharge twice, which shifted ``t=0`` by 32 samples on files that have one
 *    Tektronix - add real ``.wfm`` captures as fixtures and check them against Tektronix's own reader
 *    ``wfmview`` - port the Tektronix fixes so the viewer stops rejecting real ``.wfm`` files, and decodes digital, IQ and FastFrame captures as the library does
+*    ``wfmview`` - move the pure-JavaScript viewer tests out of Python and into ``wfmview/tests``, where they are readable JavaScript instead of strings inside f-strings
 *    CI now runs the whole test suite and the JavaScript tests, rather than a single test file
 *    ``wfmview`` - add JavaScript tests in ``wfmview/tests`` run by ``make js-test`` with Node's built-in runner
 *    ``wfmview`` - ``make web-deploy`` now regenerates the JavaScript parsers and runs the viewer tests first, so a stale parser cannot be published

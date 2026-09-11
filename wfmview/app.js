@@ -1426,12 +1426,8 @@ async function detectAndParse(buffer, filename, fileMap) {
         return parseE(buffer);
     }
 
-    // Tektronix .wfm: byte_order word at 0 (0x0F0F LE or 0xF0F0 BE), then the
-    // eight-byte version string ":WFM#00n", so the magic sits at offset 3.
-    if ((b[0] === 0x0F && b[1] === 0x0F) || (b[0] === 0xF0 && b[1] === 0xF0)) {
-        if (b.length > 6 && b[3] === 0x57 && b[4] === 0x46 && b[5] === 0x4D && b[6] === 0x23) {
-            return parseTek(buffer);
-        }
+    if (looksLikeTekWfm(b)) {
+        return parseTek(buffer);
     }
 
     // Tektronix .isf: ASCII text header containing ":CURV" somewhere in first 512 bytes
@@ -1597,6 +1593,18 @@ var TEK_IQ_META_KEYS = [
 ];
 var TEK_DIGITAL_DATA_TYPE = 6;
 var TEK_DIGITAL_LINES = 8;
+
+function looksLikeTekWfm(bytes) {
+    // byte_order word at 0 (0x0F0F little-endian, 0xF0F0 big-endian), then the
+    // eight-byte version string ":WFM#00n" -- so the magic sits at offset 3,
+    // after the colon.  Looking at offset 2 made the viewer reject every
+    // instrument-written file as unsupported.
+    if (!((bytes[0] === 0x0F && bytes[1] === 0x0F) || (bytes[0] === 0xF0 && bytes[1] === 0xF0))) {
+        return false;
+    }
+    return bytes.length > 6
+        && bytes[3] === 0x57 && bytes[4] === 0x46 && bytes[5] === 0x4D && bytes[6] === 0x23;
+}
 
 function tekParseTekmeta(bytes, isLe) {
     var marker = [0x74, 0x65, 0x6b, 0x6d, 0x65, 0x74, 0x61, 0x21];  // "tekmeta!"
