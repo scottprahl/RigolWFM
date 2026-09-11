@@ -36,5 +36,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"  # editable mode with test deps
 
-      - name: Run test suite
-        run: pytest tests/test_2.py
+      - name: Run Python test suite
+        # Everything except the notebook tests, which `make test` also skips:
+        # they run JupyterLab and are far slower than the rest put together.
+        run: pytest tests --ignore=tests/test_all_notebooks.py
+
+      - name: Run JavaScript test suite
+        # wfmview/app.js re-implements every format in JavaScript, so it has
+        # tests of its own.  Node's built-in runner needs no dependencies.
+        run: node --test wfmview/tests/*.test.js

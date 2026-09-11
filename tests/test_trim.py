@@ -141,7 +141,9 @@ def test_trim_is_applied_by_the_command_line(tmp_path):
 @pytest.mark.parametrize("duration", ["bogus", "0", "-1ms"])
 def test_command_line_rejects_a_bad_trim_duration(tmp_path, duration):
     """A duration that is not a positive number should fail loudly."""
-    result = run_command_failure(f"wfmconvert --model E --output-dir {tmp_path} --trim {duration} csv {_ANALOG}")
+    # `--trim=-1ms` rather than `--trim -1ms`: argparse takes a leading dash for
+    # another option and rejects it before the value ever reaches wfmconvert.
+    result = run_command_failure(f"wfmconvert --model E --output-dir {tmp_path} --trim={duration} csv {_ANALOG}")
 
     assert "wfmconvert error" in result.stderr
     assert not list(Path(tmp_path).glob("*.csv"))
