@@ -871,6 +871,30 @@ function buildInfoHeaderText(result, filename, includeSerial) {
         return channelListLabel(ch);
     }).join(', ') + ']\n\n';
 
+    if (result.iqInfo && Object.keys(result.iqInfo).length) {
+        var iqFields = [
+            ['IQ_centerFrequency', 'Center Freq', 'Hz'],
+            ['IQ_span', 'Span', 'Hz'],
+            ['IQ_rbw', 'RBW', 'Hz'],
+            ['IQ_sampleRate', 'Sample Rate', 'Hz'],
+            ['IQ_fftLength', 'FFT Length', ''],
+            ['IQ_windowType', 'Window', ''],
+        ];
+        s += '    IQ:\n';
+        for (var iqi = 0; iqi < iqFields.length; iqi++) {
+            var key = iqFields[iqi][0];
+            if (!Object.prototype.hasOwnProperty.call(result.iqInfo, key)) {
+                continue;
+            }
+            var value = result.iqInfo[key];
+            var shown = (iqFields[iqi][2] && typeof value === 'number')
+                ? fmtSI(value, iqFields[iqi][2])
+                : String(value);
+            s += '        ' + (iqFields[iqi][1] + '             ').slice(0, 13) + '= ' + shown + '\n';
+        }
+        s += '\n';
+    }
+
     var levels = derivedLevels(result);
     if (result.triggerInfo || levels.length) {
         s += '    Trigger:\n';
@@ -1402,9 +1426,10 @@ async function detectAndParse(buffer, filename, fileMap) {
         return parseE(buffer);
     }
 
-    // Tektronix .wfm: byte_order word at 0 (0x0F0F LE or 0xF0F0 BE), "WFM#" at offset 2
+    // Tektronix .wfm: byte_order word at 0 (0x0F0F LE or 0xF0F0 BE), then the
+    // eight-byte version string ":WFM#00n", so the magic sits at offset 3.
     if ((b[0] === 0x0F && b[1] === 0x0F) || (b[0] === 0xF0 && b[1] === 0xF0)) {
-        if (b.length > 5 && b[2] === 0x57 && b[3] === 0x46 && b[4] === 0x4D && b[5] === 0x23) {
+        if (b.length > 6 && b[3] === 0x57 && b[4] === 0x46 && b[5] === 0x4D && b[6] === 0x23) {
             return parseTek(buffer);
         }
     }
@@ -1565,16 +1590,91 @@ function parseLeCroy(buffer, wavedescOffset) {
     };
 }
 
+// Tektronix appends a `tekmeta!` key/value block after the curve buffer.  It is
+// the only thing that marks a capture as IQ, and it names the digital lines.
+var TEK_IQ_META_KEYS = [
+    'IQ_centerFrequency', 'IQ_fftLength', 'IQ_rbw', 'IQ_span', 'IQ_windowType', 'IQ_sampleRate',
+];
+var TEK_DIGITAL_DATA_TYPE = 6;
+var TEK_DIGITAL_LINES = 8;
+
+function tekParseTekmeta(bytes, isLe) {
+    var marker = [0x74, 0x65, 0x6b, 0x6d, 0x65, 0x74, 0x61, 0x21];  // "tekmeta!"
+    var start = -1;
+    for (var i = 0; i + marker.length <= bytes.length; i++) {
+        var hit = true;
+        for (var j = 0; j < marker.length; j++) {
+            if (bytes[i + j] !== marker[j]) { hit = false; break; }
+        }
+        if (hit) { start = i; break; }
+    }
+    if (start < 0) {
+        return {};
+    }
+
+    var meta = {};
+    var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var off = start + marker.length;
+    try {
+        var count = dv.getUint32(off, isLe); off += 4;
+        for (var e = 0; e < count; e++) {
+            var keySize = dv.getUint32(off, isLe); off += 4;
+            var key = '';
+            for (var k = 0; k < keySize; k++) { key += String.fromCharCode(bytes[off + k]); }
+            off += keySize;
+            var tag = bytes[off]; off += 1;
+            var value;
+            if (tag === 1) {
+                var valueSize = dv.getUint32(off, isLe); off += 4;
+                value = '';
+                for (var v = 0; v < valueSize; v++) { value += String.fromCharCode(bytes[off + v]); }
+                off += valueSize;
+            } else if (tag === 2) {
+                value = dv.getInt32(off, isLe); off += 4;
+            } else if (tag === 3) {
+                value = dv.getFloat64(off, isLe); off += 8;
+            } else if (tag === 4) {
+                value = dv.getUint32(off, isLe); off += 4;
+            } else {
+                break;  // an unknown tag makes every later entry unreadable
+            }
+            meta[key] = value;
+        }
+    } catch (err) {
+        return meta;  // metadata is optional; a short block is not an error
+    }
+    return meta;
+}
+
+function tekDigitalLineNames(meta) {
+    var names = [];
+    for (var bit = 0; bit < TEK_DIGITAL_LINES; bit++) {
+        if (Object.prototype.hasOwnProperty.call(meta, 'd' + bit)) { names.push('d' + bit); }
+    }
+    return names;
+}
+
+function tekIsDigital(dataType, meta) {
+    return dataType === TEK_DIGITAL_DATA_TYPE || tekDigitalLineNames(meta).length > 0;
+}
+
+function tekIsIq(meta) {
+    for (var i = 0; i < TEK_IQ_META_KEYS.length; i++) {
+        if (Object.prototype.hasOwnProperty.call(meta, TEK_IQ_META_KEYS[i])) { return true; }
+    }
+    return false;
+}
+
 function parseTek(buffer) {
     var b = new Uint8Array(buffer);
 
     // Endianness: bytes 0-1 are 0x0F,0x0F (LE) or 0xF0,0xF0 (BE)
     var isLe = (b[0] === 0x0F && b[1] === 0x0F);
 
-    // Version: bytes 2-8 contain "WFM#001" or "WFM#002"/"WFM#003"
+    // Version: byte 2 is ':', then bytes 3-9 hold "WFM#001"/"WFM#002"/"WFM#003"
     var versionStr = '';
-    for (var vi = 0; vi < 7 && b[2 + vi]; vi++) {
-        versionStr += String.fromCharCode(b[2 + vi]);
+    for (var vi = 0; vi < 7 && b[3 + vi]; vi++) {
+        versionStr += String.fromCharCode(b[3 + vi]);
     }
     var isV1 = versionStr.trim() === 'WFM#001';
 
@@ -1605,8 +1705,10 @@ function parseTek(buffer) {
         nPts = imp1.dimSize;
     }
 
-    // Curve buffer and data slice
+    // Curve buffer and data slice.  A FastFrame capture lays every frame end to
+    // end here; the viewer shows the first, matching wfmconvert's default.
     var curveBuffer = w.curveBuffer;
+    var frameCount = (!isV1 && w.nFrames) ? w.nFrames : 1;
     var dataStart = curveObj.dataStartOffset;
     var dataEnd = curveObj.postchargeStartOffset;
     var bytesPerPoint = sfi.numBytesPerPoint || 2;
@@ -1614,6 +1716,65 @@ function parseTek(buffer) {
         dataEnd = dataStart + nPts * bytesPerPoint;
     }
     var rawSlice = curveBuffer.slice(dataStart, dataEnd);
+
+    var tekMeta = tekParseTekmeta(b, isLe);
+    var tekDataType = typeof hdr.dataType === 'object' ? hdr.dataType.value : hdr.dataType;
+
+    var tScaleEarly = imp1.dimScale;
+    var tOriginEarly = imp1.dimOffset;
+
+    if (tekIsDigital(tekDataType, tekMeta)) {
+        // Packed logic lines, not volts: each byte holds one sample of every
+        // line, bit 0 first.
+        var lineNames = tekDigitalLineNames(tekMeta);
+        if (!lineNames.length) {
+            lineNames = [];
+            for (var dn = 0; dn < TEK_DIGITAL_LINES; dn++) { lineNames.push('d' + dn); }
+        }
+        var digitalPoints = rawSlice.length;
+        var digitalTimes = new Float64Array(digitalPoints);
+        for (var dt = 0; dt < digitalPoints; dt++) {
+            digitalTimes[dt] = tOriginEarly + dt * tScaleEarly;
+        }
+        var digitalChannels = [];
+        for (var lb = 0; lb < lineNames.length; lb++) {
+            var lineVolts = new Float64Array(digitalPoints);
+            var lineRaw = new Uint8Array(digitalPoints);
+            for (var ds = 0; ds < digitalPoints; ds++) {
+                var bit = (rawSlice[ds] >> lb) & 1;
+                lineVolts[ds] = bit;
+                lineRaw[ds] = bit;
+            }
+            digitalChannels.push({
+                name: lineNames[lb],
+                infoLabel: lineNames[lb],
+                kind: 'digital',
+                color: CH_COLORS[lb % CH_COLORS.length],
+                times: digitalTimes,
+                volts: lineVolts,
+                raw: lineRaw,
+                channelNumber: lb,
+                points: digitalPoints,
+                coupling: 'DIGITAL',
+                voltPerDiv: 0.25,
+                voltOffset: 0,
+                probeValue: 1,
+                inverted: false,
+                timeScale: digitalPoints > 0 ? digitalPoints * tScaleEarly / 10 : 1e-3,
+                timeOffset: tOriginEarly,
+                secondsPerPoint: tScaleEarly,
+            });
+        }
+        return {
+            format: 'Tektronix WFM',
+            fileModel: label,
+            userModel: 'Tektronix',
+            parserModel: isV1 ? 'tek_wfm_001' : 'tek_wfm_002',
+            firmware: 'unknown',
+            triggerInfo: null,
+            channels: digitalChannels,
+        };
+    }
 
     // Format code for ADC decoding
     var fmtCode = typeof exp1.format === 'object' ? exp1.format.value : exp1.format;
@@ -1648,9 +1809,12 @@ function parseTek(buffer) {
     var userScale = exp1.userScale;
     var voltPerDiv = (userScale !== 0) ? userScale : Math.abs(dimScale) * 25;
 
-    // Time axis: t[i] = t0 + i * tScale (t0 = dim_offset + first_valid_sample * dim_scale)
+    // Time axis: t[i] = dim_offset + i * dim_scale.  The samples were sliced
+    // from dataStartOffset, so index 0 is already the first valid sample and
+    // dim_offset already refers to it; adding firstValidSample would count the
+    // curve buffer's precharge region twice.
     var tScale = imp1.dimScale;
-    var t0 = imp1.dimOffset + curveObj.firstValidSample * tScale;
+    var t0 = imp1.dimOffset;
     var times = new Float64Array(nPts);
     for (var ti2 = 0; ti2 < nPts; ti2++) {
         times[ti2] = t0 + ti2 * tScale;
@@ -1658,6 +1822,55 @@ function parseTek(buffer) {
 
     var raw = proxyRawFromCalibrated(volts);
     var parserModel = isV1 ? 'tek_wfm_001' : 'tek_wfm_002';
+
+    if (tekIsIq(tekMeta)) {
+        // Interleaved I/Q: even samples are in phase, odd are quadrature.  One
+        // step of imp_dim1.dimScale already covers a pair, so the time axis
+        // carries over and only the point count halves.
+        var pairs = Math.floor(nPts / 2);
+        var iqChannels = [];
+        var iqNames = ['I', 'Q'];
+        for (var qi = 0; qi < 2; qi++) {
+            var qVolts = new Float64Array(pairs);
+            var qTimes = new Float64Array(pairs);
+            for (var qs = 0; qs < pairs; qs++) {
+                qVolts[qs] = volts[qs * 2 + qi];
+                qTimes[qs] = t0 + qs * tScale;
+            }
+            iqChannels.push({
+                name: iqNames[qi],
+                infoLabel: iqNames[qi],
+                color: CH_COLORS[qi % CH_COLORS.length],
+                times: qTimes,
+                volts: qVolts,
+                raw: proxyRawFromCalibrated(qVolts),
+                channelNumber: qi + 1,
+                points: pairs,
+                coupling: 'DC',
+                voltPerDiv: voltPerDiv,
+                voltOffset: dimOffset,
+                probeValue: 1.0,
+                inverted: false,
+                timeScale: pairs > 0 ? pairs * tScale / 10 : 1e-3,
+                timeOffset: t0,
+                secondsPerPoint: tScale,
+            });
+        }
+        var iqInfo = {};
+        Object.keys(tekMeta).forEach(function(key) {
+            if (key.indexOf('IQ_') === 0) { iqInfo[key] = tekMeta[key]; }
+        });
+        return {
+            format: 'Tektronix WFM',
+            fileModel: label,
+            userModel: 'Tektronix',
+            parserModel: parserModel,
+            firmware: 'unknown',
+            triggerInfo: null,
+            iqInfo: iqInfo,
+            channels: iqChannels,
+        };
+    }
 
     return {
         format: 'Tektronix WFM',
@@ -5119,6 +5332,49 @@ function doExportCSV() {
     triggerDownload(csvText, currentFilename + '.csv', 'text/csv');
 }
 
+function pwlFloat(value) {
+    // Seven significant digits, as Wfm.pwl() writes with "%.7g".
+    if (!Number.isFinite(value)) {
+        return String(value);
+    }
+    return Number.parseFloat(value.toPrecision(7)).toString();
+}
+
+function buildExportPWLText(entry) {
+    // Mirrors Wfm.pwl(): a headerless, tab-separated table of time/voltage
+    // pairs for one trace, shifted so the first sample sits at t=0.
+    var chs = getVisibleChannelsForEntry(entry).filter(function(c) {
+        return c.kind !== 'digital' && c.times && c.times.length;
+    });
+    if (!chs.length) {
+        return '';
+    }
+    if (chs.length > 1) {
+        return null;  // a PWL source drives one node
+    }
+
+    var ch = chs[0];
+    var t0 = ch.times[0];
+    var rows = [];
+    for (var i = 0; i < ch.times.length; i++) {
+        rows.push(pwlFloat(ch.times[i] - t0) + '\t' + pwlFloat(ch.volts[i]));
+    }
+    return rows.join('\n') + '\n';
+}
+
+function doExportPWL() {
+    var active = getActiveEntry();
+    var pwlText = buildExportPWLText(active);
+    if (pwlText === null) {
+        showError('PWL holds one waveform; hide the other channels and export again.');
+        return;
+    }
+    if (!pwlText) {
+        return;
+    }
+    triggerDownload(pwlText, currentFilename + '.pwl', 'text/plain');
+}
+
 function doExportNPZ() {
     var active = getActiveEntry();
     var archive = buildExportNPZArchive(active);
@@ -5972,6 +6228,10 @@ exportModal.addEventListener('click', function(e) {
 
 document.getElementById('exp-csv').addEventListener('click', function() {
     doExportCSV();
+    exportModal.classList.remove('open');
+});
+document.getElementById('exp-pwl').addEventListener('click', function() {
+    doExportPWL();
     exportModal.classList.remove('open');
 });
 document.getElementById('exp-npz').addEventListener('click', function() {
