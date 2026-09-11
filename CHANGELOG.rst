@@ -1,31 +1,30 @@
 Changelog
 =========
 
-Unreleased
-----------
-*    read Tektronix FastFrame ``.wfm`` captures, which were previously rejected outright, and add ``--frame N`` to pick one of the frames
+1.6.0 (2026-09-10)
+------------------
+*    add ``pwl`` output for LTspice piecewise linear sources, which preserve the waveform's voltage scale and offset instead of LTspice's fixed -1 V to +1 V WAV full-scale range
 *    add ``--trim DURATION`` to keep only a window around the point the scope was displaying, accepting SI prefixes such as ``1ms`` or ``200us``
 *    trim logic traces with the analog channels so a trimmed export stays aligned
-*    decode Tektronix digital ``.wfm`` captures into one logic trace per line instead of scaling the packed bits as a voltage
-*    split Tektronix IQ ``.wfm`` captures into separate ``I`` and ``Q`` traces instead of returning the interleaved pairs as one trace of twice the length
-*    report the center frequency, span, RBW and window of an IQ capture in ``wfmconvert info``
-*    read the Tektronix ``tekmeta!`` block, which names the digital lines and carries IQ and label metadata
 *    plot logic traces for captures that have no analog channel, instead of writing an empty figure
-*    fix Tektronix ``.wfm`` parsing to expect the leading ``:`` in the eight-byte version string (``:WFM#003``), which no real instrument file could get past before
-*    fix the Tektronix time axis to stop counting the curve buffer precharge twice, which shifted ``t=0`` by 32 samples on files that have one
-*    add real Tektronix ``.wfm`` captures as fixtures and check them against Tektronix's own reader
-*    add ``pwl`` output for LTspice piecewise linear sources, which preserve the waveform's voltage scale and offset instead of LTspice's fixed -1 V to +1 V WAV full-scale range
-*    fix Siglent V4.0 voltage conversion: subtract ``vert_offset`` and apply the probe factor (verified against SDS814X HD captures of known levels)
-*    report Siglent V4.0 volts/div with the probe factor applied so it matches the scaled data
-*    read the Siglent unit descriptor so a channel in amps display mode reports amps instead of volts
-*    detect and normalize Siglent V4.0 math (F1-F4) saves, which leave every ``ch_on`` flag clear
-*    use the zoom window timebase for Siglent V4.0 zoom (Z1-Z4) saves
-*    apply the same Siglent V4.0 fixes to ``wfmview``, including the unit descriptor, so the browser viewer and the library agree
-*    label Siglent math traces ``F1``-``F4`` in exported output instead of the generic channel name
-*    label the ``wfmview`` vertical axis Voltage / Current / Power from the channel unit, and leave it unlabeled when channels disagree
-*    add the V4.0 math and zoom fields to ``ksy/siglent_v4_bin.ksy``
-*    add SDS814X HD captures as Siglent test fixtures
-*    known limitation: the Siglent V4.0 time axis follows the vendor document (trigger centered, ``time_delay`` subtracted); bench captures suggest the scope instead places the trigger at a horizontal reference position the file does not record
+*    Tektronix - read FastFrame ``.wfm`` captures, which were previously rejected outright, and add ``--frame N`` to pick one of the frames
+*    Tektronix - decode digital ``.wfm`` captures into one logic trace per line instead of scaling the packed bits as a voltage
+*    Tektronix - split IQ ``.wfm`` captures into separate ``I`` and ``Q`` traces instead of returning the interleaved pairs as one trace of twice the length
+*    Tektronix - report the center frequency, span, RBW and window of an IQ capture in ``wfmconvert info``
+*    Tektronix - read the ``tekmeta!`` block, which names the digital lines and carries IQ and label metadata
+*    Tektronix - fix ``.wfm`` parsing to expect the leading ``:`` in the eight-byte version string (``:WFM#003``), which no real instrument file could get past before
+*    Tektronix - fix the time axis to stop counting the curve buffer precharge twice, which shifted ``t=0`` by 32 samples on files that have one
+*    Tektronix - add real ``.wfm`` captures as fixtures and check them against Tektronix's own reader
+*    Siglent - fix V4.0 voltage conversion: subtract ``vert_offset`` and apply the probe factor (verified against SDS814X HD captures of known levels)
+*    Siglent - report V4.0 volts/div with the probe factor applied so it matches the scaled data
+*    Siglent - read the unit descriptor so a channel in amps display mode reports amps instead of volts
+*    Siglent - detect and normalize V4.0 math (F1-F4) saves, which leave every ``ch_on`` flag clear
+*    Siglent - use the zoom window timebase for V4.0 zoom (Z1-Z4) saves
+*    Siglent - apply the same V4.0 fixes to ``wfmview``, including the unit descriptor, so the browser viewer and the library agree
+*    Siglent - label math traces ``F1``-``F4`` in exported output instead of the generic channel name
+*    Siglent - label the ``wfmview`` vertical axis Voltage / Current / Power from the channel unit, and leave it unlabeled when channels disagree
+*    Siglent - add the V4.0 math and zoom fields to ``ksy/siglent_v4_bin.ksy``
+*    Siglent - add SDS814X HD captures as test fixtures
 
 1.5.0 (2026-04-05)
 ------------------
