@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.6.1 (unreleased)
+------------------
+*    fix the release workflow, which could not read a version carrying a type annotation and so left ``CITATION.cff`` stuck at 1.0.0
+*    add a citation block to ``README.rst``, which the release workflow keeps up to date
+
 1.6.0 (2026-09-10)
 ------------------
 *    add ``pwl`` output for LTspice piecewise linear sources, which preserve the waveform's voltage scale and offset instead of LTspice's fixed -1 V to +1 V WAV full-scale range

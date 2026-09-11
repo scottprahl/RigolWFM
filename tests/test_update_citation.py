@@ -6,6 +6,7 @@ because it could not read a version that carries a type annotation.
 """
 
 import importlib.util
+import re
 from pathlib import Path
 
 import pytest
@@ -62,3 +63,23 @@ def test_reports_a_missing_version_clearly(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     with pytest.raises(RuntimeError, match="Could not find"):
         module.get_code_version()
+
+
+# The five things the release script rewrites in README.rst.  They are repeated
+# here on purpose: the script finds the citation block by pattern, so a reformat
+# that still reads correctly to a human can leave it silently un-updated, which
+# is how the block in this README came to be missing in the first place.
+_README_PATTERNS = {
+    "prose year": r"Prahl,\s*S\.\s*\(\d{4}\)\.",
+    "prose version": r"\(Version [^)]+\)",
+    "bibtex key": r"@software\{[A-Za-z0-9_]+_\d{4}\s*,",
+    "bibtex year": r"year\s*=\s*\{\d{4}\s*\},",
+    "bibtex version": r"version\s*=\s*\{[^}]+\s*\},",
+}
+
+
+@pytest.mark.parametrize("name, pattern", sorted(_README_PATTERNS.items()))
+def test_readme_citation_block_is_shaped_the_way_the_release_script_expects(name, pattern):
+    """Each field the release script updates must be findable in README.rst."""
+    readme = (ROOT / "README.rst").read_text(encoding="utf-8")
+    assert re.search(pattern, readme), f"the release script would not update the {name}"

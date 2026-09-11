@@ -224,6 +224,27 @@ This has been a bit of an adventure.  In the process of nailing down the basic f
 * Siglent's waveform format PDF and vendor reference parsers
 * SMASH toolbox vendor importers for Tektronix, LeCroy, and Yokogawa formats
 
+Citation
+--------
+
+If you use ``RigolWFM`` in academic, instructional, or applied technical work, please cite:
+
+Prahl, S. (2026). *RigolWFM: a python module with parser for Rigol oscilloscope .wfm binary files* (Version 1.6.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.8411558
+
+BibTeX:
+
+.. code-block:: bibtex
+
+    @software{prahl_rigolwfm_2026,
+      author  = {Scott Prahl},
+      title   = {{RigolWFM}: A Python library for reading oscilloscope waveform files},
+      url     = {https://github.com/scottprahl/RigolWFM},
+      doi     = {10.5281/zenodo.8411558},
+      year    = {2026},
+      version = {1.6.0},
+      publisher = {Zenodo}
+    }
+
 License
 -------
     BSD 3-clause -- see the file ``LICENSE`` for details.

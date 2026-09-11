@@ -155,10 +155,11 @@ def main() -> None:
         )
 
         # 3. BibTeX key:
-        #    @software{ofiber_prahl_2025,
-        # Make this generic over the repo name: "<whatever>_prahl_YYYY"
+        #    @software{prahl_rigolwfm_2026,
+        # The order of the name and the author varies between these projects,
+        # so match any key that ends in the year rather than assuming one.
         text = re.sub(
-            r"(@software\{[A-Za-z0-9_]+_prahl_)(\d{4})(\s*,)",
+            r"(@software\{[A-Za-z0-9_]+_)(\d{4})(\s*,)",
             lambda m: f"{m.group(1)}{year}{m.group(3)}",
             text,
         )
