@@ -7,16 +7,6 @@ Changelog
 *    add ``--trim DURATION`` to keep only a window around the point the scope was displaying, accepting SI prefixes such as ``1ms`` or ``200us``
 *    trim logic traces with the analog channels so a trimmed export stays aligned
 *    plot logic traces for captures that have no analog channel, instead of writing an empty figure
-*    Tektronix - read FastFrame ``.wfm`` captures, which were previously rejected outright, and add ``--frame N`` to pick one of the frames
-*    Tektronix - decode digital ``.wfm`` captures into one logic trace per line instead of scaling the packed bits as a voltage
-*    Tektronix - split IQ ``.wfm`` captures into separate ``I`` and ``Q`` traces instead of returning the interleaved pairs as one trace of twice the length
-*    Tektronix - report the center frequency, span, RBW and window of an IQ capture in ``wfmconvert info``
-*    ``wfmview`` - port the Tektronix fixes so the viewer stops rejecting real ``.wfm`` files, and decodes digital, IQ and FastFrame captures as the library does
-*    ``wfmview`` - add PWL export and report IQ acquisition parameters in the INFO export
-*    Tektronix - read the ``tekmeta!`` block, which names the digital lines and carries IQ and label metadata
-*    Tektronix - fix ``.wfm`` parsing to expect the leading ``:`` in the eight-byte version string (``:WFM#003``), which no real instrument file could get past before
-*    Tektronix - fix the time axis to stop counting the curve buffer precharge twice, which shifted ``t=0`` by 32 samples on files that have one
-*    Tektronix - add real ``.wfm`` captures as fixtures and check them against Tektronix's own reader
 *    Siglent - fix V4.0 voltage conversion: subtract ``vert_offset`` and apply the probe factor (verified against SDS814X HD captures of known levels)
 *    Siglent - report V4.0 volts/div with the probe factor applied so it matches the scaled data
 *    Siglent - read the unit descriptor so a channel in amps display mode reports amps instead of volts
@@ -27,6 +17,17 @@ Changelog
 *    Siglent - label the ``wfmview`` vertical axis Voltage / Current / Power from the channel unit, and leave it unlabeled when channels disagree
 *    Siglent - add the V4.0 math and zoom fields to ``ksy/siglent_v4_bin.ksy``
 *    Siglent - add SDS814X HD captures as test fixtures
+*    Tektronix - read FastFrame ``.wfm`` captures, which were previously rejected outright, and add ``--frame N`` to pick one of the frames
+*    Tektronix - decode digital ``.wfm`` captures into one logic trace per line instead of scaling the packed bits as a voltage
+*    Tektronix - split IQ ``.wfm`` captures into separate ``I`` and ``Q`` traces instead of returning the interleaved pairs as one trace of twice the length
+*    Tektronix - report the center frequency, span, RBW and window of an IQ capture in ``wfmconvert info``
+*    Tektronix - read the ``tekmeta!`` block, which names the digital lines and carries IQ and label metadata
+*    Tektronix - fix ``.wfm`` parsing to expect the leading ``:`` in the eight-byte version string (``:WFM#003``), which no real instrument file could get past before
+*    Tektronix - fix the time axis to stop counting the curve buffer precharge twice, which shifted ``t=0`` by 32 samples on files that have one
+*    Tektronix - add real ``.wfm`` captures as fixtures and check them against Tektronix's own reader
+*    ``wfmview`` - port the Tektronix fixes so the viewer stops rejecting real ``.wfm`` files, and decodes digital, IQ and FastFrame captures as the library does
+*    ``wfmview`` - ``make web-deploy`` now regenerates the JavaScript parsers and runs the viewer tests first, so a stale parser cannot be published
+*    ``wfmview`` - add PWL export and report IQ acquisition parameters in the INFO export
 
 1.5.0 (2026-04-05)
 ------------------

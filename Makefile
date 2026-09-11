@@ -86,7 +86,8 @@ help:
 	@echo "  lite-clean     - Remove JupyterLite build artifacts"
 	@echo ""
 	@echo "Web Viewer Targets:"
-	@echo "  web-deploy     - Deploy $(WEB_DIR) to $(PAGES_BRANCH)"
+	@echo "  web-check      - Regenerate JS parsers and run the viewer tests"
+	@echo "  web-deploy     - Deploy $(WEB_DIR) to $(PAGES_BRANCH) (runs web-check first)"
 	@echo ""
 	@echo "Cleanup Targets:"
 	@echo "  clean          - Remove generated test/build/doc artifacts"
@@ -246,9 +247,16 @@ lite-deploy:
 			echo "Deployed to https://$(GITHUB_USER).github.io/$(PACKAGE)/"; \
 		fi
 
+.PHONY: web-check
+web-check: $(JS_STAMP)
+	@$(RUN) pytest $(PYTEST_OPTS) tests/test_wfmview.py
+
 .PHONY: web-deploy
-web-deploy:
+web-deploy: web-check
 	@test -f "$(WEB_DIR)/index.html" || { echo "Missing $(WEB_DIR)/index.html"; exit 1; }
+	@if ! git diff --quiet -- "$(WEB_DIR)" || ! git diff --quiet --cached -- "$(WEB_DIR)"; then \
+		echo "Warning: $(WEB_DIR) has uncommitted changes; deploying them anyway."; \
+	fi
 	@if ! git show-ref --verify --quiet refs/heads/$(PAGES_BRANCH); then \
 		CURRENT=$$(git branch --show-current); \
 		git switch --orphan $(PAGES_BRANCH); \

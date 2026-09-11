@@ -65,6 +65,10 @@ When changing a format, check all four layers:
 3. `wfmview/app.js` — the viewer's own detection and normalization
 4. `wfmview/index.html` — only if an export or UI control is involved
 
+`make web-check` regenerates the JavaScript parsers and runs the viewer tests;
+`make web-deploy` runs it first, so a stale parser cannot reach the published
+site.
+
 Verify the two agree on real fixtures rather than assuming; the node harness
 pattern in `tests/test_wfmview.py` can load `app.js` and parse a fixture so the
 numbers can be compared directly against the library's.
