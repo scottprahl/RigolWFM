@@ -871,6 +871,30 @@ function buildInfoHeaderText(result, filename, includeSerial) {
         return channelListLabel(ch);
     }).join(', ') + ']\n\n';
 
+    if (result.iqInfo && Object.keys(result.iqInfo).length) {
+        var iqFields = [
+            ['IQ_centerFrequency', 'Center Freq', 'Hz'],
+            ['IQ_span', 'Span', 'Hz'],
+            ['IQ_rbw', 'RBW', 'Hz'],
+            ['IQ_sampleRate', 'Sample Rate', 'Hz'],
+            ['IQ_fftLength', 'FFT Length', ''],
+            ['IQ_windowType', 'Window', ''],
+        ];
+        s += '    IQ:\n';
+        for (var iqi = 0; iqi < iqFields.length; iqi++) {
+            var key = iqFields[iqi][0];
+            if (!Object.prototype.hasOwnProperty.call(result.iqInfo, key)) {
+                continue;
+            }
+            var value = result.iqInfo[key];
+            var shown = (iqFields[iqi][2] && typeof value === 'number')
+                ? fmtSI(value, iqFields[iqi][2])
+                : String(value);
+            s += '        ' + (iqFields[iqi][1] + '             ').slice(0, 13) + '= ' + shown + '\n';
+        }
+        s += '\n';
+    }
+
     var levels = derivedLevels(result);
     if (result.triggerInfo || levels.length) {
         s += '    Trigger:\n';
@@ -1832,6 +1856,10 @@ function parseTek(buffer) {
                 secondsPerPoint: tScale,
             });
         }
+        var iqInfo = {};
+        Object.keys(tekMeta).forEach(function(key) {
+            if (key.indexOf('IQ_') === 0) { iqInfo[key] = tekMeta[key]; }
+        });
         return {
             format: 'Tektronix WFM',
             fileModel: label,
@@ -1839,6 +1867,7 @@ function parseTek(buffer) {
             parserModel: parserModel,
             firmware: 'unknown',
             triggerInfo: null,
+            iqInfo: iqInfo,
             channels: iqChannels,
         };
     }
@@ -5303,6 +5332,49 @@ function doExportCSV() {
     triggerDownload(csvText, currentFilename + '.csv', 'text/csv');
 }
 
+function pwlFloat(value) {
+    // Seven significant digits, as Wfm.pwl() writes with "%.7g".
+    if (!Number.isFinite(value)) {
+        return String(value);
+    }
+    return Number.parseFloat(value.toPrecision(7)).toString();
+}
+
+function buildExportPWLText(entry) {
+    // Mirrors Wfm.pwl(): a headerless, tab-separated table of time/voltage
+    // pairs for one trace, shifted so the first sample sits at t=0.
+    var chs = getVisibleChannelsForEntry(entry).filter(function(c) {
+        return c.kind !== 'digital' && c.times && c.times.length;
+    });
+    if (!chs.length) {
+        return '';
+    }
+    if (chs.length > 1) {
+        return null;  // a PWL source drives one node
+    }
+
+    var ch = chs[0];
+    var t0 = ch.times[0];
+    var rows = [];
+    for (var i = 0; i < ch.times.length; i++) {
+        rows.push(pwlFloat(ch.times[i] - t0) + '\t' + pwlFloat(ch.volts[i]));
+    }
+    return rows.join('\n') + '\n';
+}
+
+function doExportPWL() {
+    var active = getActiveEntry();
+    var pwlText = buildExportPWLText(active);
+    if (pwlText === null) {
+        showError('PWL holds one waveform; hide the other channels and export again.');
+        return;
+    }
+    if (!pwlText) {
+        return;
+    }
+    triggerDownload(pwlText, currentFilename + '.pwl', 'text/plain');
+}
+
 function doExportNPZ() {
     var active = getActiveEntry();
     var archive = buildExportNPZArchive(active);
@@ -6156,6 +6228,10 @@ exportModal.addEventListener('click', function(e) {
 
 document.getElementById('exp-csv').addEventListener('click', function() {
     doExportCSV();
+    exportModal.classList.remove('open');
+});
+document.getElementById('exp-pwl').addEventListener('click', function() {
+    doExportPWL();
     exportModal.classList.remove('open');
 });
 document.getElementById('exp-npz').addEventListener('click', function() {

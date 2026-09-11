@@ -77,6 +77,7 @@ def test_wfmview_export_modal_lists_formats_alphabetically():
         "exp-mat",
         "exp-npz",
         "exp-png",
+        "exp-pwl",
         "exp-sigrok",
         "exp-svg",
         "exp-wav",

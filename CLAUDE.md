@@ -37,6 +37,38 @@ make html          # Build Sphinx documentation
 make rcheck
 ```
 
+## Graphify
+
+Ignore graphify for this repository: it has not been analyzed, so there is no
+knowledge graph to query. Treat questions about the codebase as ordinary
+questions and answer them by reading the code. The stray `graphify-out/`
+directory in the working tree is not a usable index.
+
+## Keeping the browser viewer in sync
+
+**`wfmview/app.js` is a second, hand-written implementation of the same
+formats.** It does not import the Python code — it re-implements detection,
+scaling, and normalization in JavaScript against the Kaitai parsers that
+`make js` generates. Any change to how a format is detected, decoded, scaled,
+or exported must be made in both places, or the viewer silently disagrees with
+the library or stops recognizing files altogether.
+
+This has bitten the project repeatedly: Tektronix `.wfm` support was fixed in
+`RigolWFM/tek.py` while `app.js` kept looking for `WFM#` at the wrong offset,
+so the deployed viewer rejected every real Tektronix file as "not a supported
+file type".
+
+When changing a format, check all four layers:
+
+1. `ksy/*.ksy` — the binary layout, then `make all` **and** `make js`
+2. `RigolWFM/*.py` — the Python adapter
+3. `wfmview/app.js` — the viewer's own detection and normalization
+4. `wfmview/index.html` — only if an export or UI control is involved
+
+Verify the two agree on real fixtures rather than assuming; the node harness
+pattern in `tests/test_wfmview.py` can load `app.js` and parse a fixture so the
+numbers can be compared directly against the library's.
+
 ## Architecture
 
 **Entry points:**
@@ -67,6 +99,8 @@ make rcheck
 3. Add a `channel.py` method for the new family
 4. Register the model strings in `wfm.py`
 5. Add snapshot tests in `tests/`
+6. Run `make js` and teach `wfmview/app.js` to detect and normalize the format
+   (see "Keeping the browser viewer in sync" above)
 
 ## Testing Approach
 

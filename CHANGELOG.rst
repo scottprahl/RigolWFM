@@ -11,6 +11,8 @@ Changelog
 *    Tektronix - decode digital ``.wfm`` captures into one logic trace per line instead of scaling the packed bits as a voltage
 *    Tektronix - split IQ ``.wfm`` captures into separate ``I`` and ``Q`` traces instead of returning the interleaved pairs as one trace of twice the length
 *    Tektronix - report the center frequency, span, RBW and window of an IQ capture in ``wfmconvert info``
+*    ``wfmview`` - port the Tektronix fixes so the viewer stops rejecting real ``.wfm`` files, and decodes digital, IQ and FastFrame captures as the library does
+*    ``wfmview`` - add PWL export and report IQ acquisition parameters in the INFO export
 *    Tektronix - read the ``tekmeta!`` block, which names the digital lines and carries IQ and label metadata
 *    Tektronix - fix ``.wfm`` parsing to expect the leading ``:`` in the eight-byte version string (``:WFM#003``), which no real instrument file could get past before
 *    Tektronix - fix the time axis to stop counting the curve buffer precharge twice, which shifted ``t=0`` by 32 samples on files that have one
