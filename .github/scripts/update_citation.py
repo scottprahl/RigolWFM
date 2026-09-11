@@ -64,7 +64,9 @@ def get_code_version() -> str:
         raise FileNotFoundError(f"{init_path} not found; cannot read __version__")
 
     content = init_path.read_text(encoding="utf-8")
-    m = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", content)
+    # `__version__: str = "1.2.3"` is as valid as `__version__ = "1.2.3"`,
+    # and this package annotates it, so allow the annotation.
+    m = re.search(r"__version__\s*(?::[^=\n]+)?=\s*['\"]([^'\"]+)['\"]", content)
     if not m:
         raise RuntimeError(f"Could not find __version__ = 'x.y.z' in {init_path}")
     ver = m.group(1).strip()
@@ -180,8 +182,12 @@ def main() -> None:
         if text != original_text:
             readme_path.write_text(text, encoding="utf-8")
             print(f"README.rst citation block updated → version: {version}, year: {year}")
-        else:
+        elif "@software{" in original_text or "Prahl, S. (" in original_text:
             print("README.rst citation block already up to date.")
+        else:
+            # Saying "already up to date" about a block that is not there reads
+            # as success and hides a README that silently stopped being updated.
+            print("README.rst has no citation block; nothing to update.")
 
 
 if __name__ == "__main__":
