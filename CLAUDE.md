@@ -72,7 +72,9 @@ The viewer has tests on both sides of the language boundary:
   New viewer logic belongs here.
 - `tests/test_wfmview.py` — static checks on `index.html`, and the
   cross-language cases where the point is that Python can read what the viewer
-  wrote (CSV, NPZ, MAT, sigrok).
+  wrote (NPZ, MAT, sigrok).  Those call `wfmview/tests/emit.js`, which produces
+  the artifact; the Python side only verifies it. No JavaScript belongs in this
+  file.
 
 `make web-check` runs both after regenerating the parsers, and `make
 web-deploy` runs it first, so a stale parser cannot reach the published site.

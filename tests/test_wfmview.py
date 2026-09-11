@@ -7,7 +7,6 @@ import re
 import shutil
 import struct
 import subprocess
-import textwrap
 import zipfile
 from typing import cast
 
@@ -27,6 +26,23 @@ def _viewer_script_paths() -> list[Path]:
     """Return local JS assets referenced by the viewer index page."""
     text = _INDEX.read_text(encoding="utf-8")
     return [(_ROOT / "wfmview" / match.group(1)) for match in _SCRIPT_RE.finditer(text)]
+
+
+_EMIT_SCRIPT = _ROOT / "wfmview" / "tests" / "emit.js"
+
+
+def _emit(what: str) -> subprocess.CompletedProcess:
+    """Run the viewer's export emitter and return its captured output.
+
+    The JavaScript that builds these artifacts lives in
+    ``wfmview/tests/emit.js``; what belongs on this side is checking that
+    NumPy, the MAT reader and ``zipfile`` can read what it wrote.
+    """
+    return subprocess.run(
+        ["node", str(_EMIT_SCRIPT), what],
+        check=True,
+        capture_output=True,
+    )
 
 
 def _load_npz_arrays(source: io.BytesIO) -> dict[str, npt.NDArray[np.generic]]:
@@ -94,121 +110,8 @@ def test_wfmview_javascript_is_syntax_valid(path: Path):
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
 def test_wfmview_npz_export_builds_real_mixed_archive():
     """Viewer NPZ export should write real NumPy arrays for mixed traces."""
-    script = textwrap.dedent(f"""
-        const fs = require('fs');
-        const vm = require('vm');
+    result = _emit("npz")
 
-        function makeClassList() {{
-            return {{
-                add() {{}},
-                remove() {{}},
-                toggle() {{}},
-                contains() {{ return false; }},
-            }};
-        }}
-
-        function makeElement() {{
-            return {{
-                checked: false,
-                disabled: false,
-                innerHTML: '',
-                textContent: '',
-                value: '',
-                dataset: {{}},
-                style: {{}},
-                classList: makeClassList(),
-                addEventListener() {{}},
-                removeEventListener() {{}},
-                appendChild() {{}},
-                removeChild() {{}},
-                setAttribute() {{}},
-                getAttribute() {{ return null; }},
-                getContext() {{
-                    return {{
-                        fillRect() {{}},
-                        beginPath() {{}},
-                        moveTo() {{}},
-                        lineTo() {{}},
-                        stroke() {{}},
-                        fillText() {{}},
-                        measureText() {{ return {{ width: 0 }}; }},
-                        save() {{}},
-                        restore() {{}},
-                        clearRect() {{}},
-                        arc() {{}},
-                        closePath() {{}},
-                        setLineDash() {{}},
-                    }};
-                }},
-                getBoundingClientRect() {{
-                    return {{ left: 0, top: 0, right: 800, bottom: 480, width: 800, height: 480 }};
-                }},
-                closest() {{ return null; }},
-                click() {{}},
-                width: 800,
-                height: 480,
-                offsetWidth: 800,
-                offsetHeight: 480,
-                clientWidth: 800,
-                clientHeight: 480,
-            }};
-        }}
-
-        global.document = {{
-            getElementById() {{ return makeElement(); }},
-            createElement() {{ return makeElement(); }},
-            addEventListener() {{}},
-            removeEventListener() {{}},
-            body: {{
-                classList: makeClassList(),
-                appendChild() {{}},
-                removeChild() {{}},
-            }},
-        }};
-        global.window = {{
-            addEventListener() {{}},
-            removeEventListener() {{}},
-            innerHeight: 800,
-            URL: {{
-                createObjectURL() {{ return 'blob:test'; }},
-                revokeObjectURL() {{}},
-            }},
-        }};
-        global.FileReader = function FileReader() {{}};
-
-        vm.runInThisContext(fs.readFileSync({json.dumps(str(_APP))}, 'utf8'), {{ filename: 'app.js' }});
-
-        const entry = {{
-            result: {{
-                channels: [
-                    {{
-                        name: 'CH1',
-                        times: Float64Array.from([0, 1e-6, 2e-6]),
-                        volts: Float64Array.from([0.25, -0.5, 0.75]),
-                        voltPerDiv: 1e-3,
-                        timeScale: 1e-6,
-                    }},
-                    {{
-                        name: 'D6',
-                        kind: 'digital',
-                        times: Float64Array.from([0, 1e-6, 2e-6]),
-                        volts: Float64Array.from([0, 1, 0]),
-                        voltPerDiv: 0.25,
-                        timeScale: 1e-6,
-                    }},
-                ],
-            }},
-            channelEnabled: [true, true],
-        }};
-
-        const archive = buildExportNPZArchive(entry);
-        if (!archive) {{
-            throw new Error('Expected mixed entry to produce an NPZ archive.');
-        }}
-        process.stdout.write(Buffer.from(archive));
-        """)
-
-    result = subprocess.run(["node", "-e", script], check=True, stdout=subprocess.PIPE)
     arrays = _load_npz_arrays(io.BytesIO(result.stdout))
     assert set(arrays) == {"time", "start", "increment", "CH1", "D6"}
     assert arrays["CH1"].dtype == np.dtype(np.float64)
@@ -222,121 +125,8 @@ def test_wfmview_npz_export_builds_real_mixed_archive():
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
 def test_wfmview_mat_export_builds_real_mixed_file():
     """Viewer MAT export should write MATLAB arrays for mixed traces."""
-    script = textwrap.dedent(f"""
-        const fs = require('fs');
-        const vm = require('vm');
+    result = _emit("mat")
 
-        function makeClassList() {{
-            return {{
-                add() {{}},
-                remove() {{}},
-                toggle() {{}},
-                contains() {{ return false; }},
-            }};
-        }}
-
-        function makeElement() {{
-            return {{
-                checked: false,
-                disabled: false,
-                innerHTML: '',
-                textContent: '',
-                value: '',
-                dataset: {{}},
-                style: {{}},
-                classList: makeClassList(),
-                addEventListener() {{}},
-                removeEventListener() {{}},
-                appendChild() {{}},
-                removeChild() {{}},
-                setAttribute() {{}},
-                getAttribute() {{ return null; }},
-                getContext() {{
-                    return {{
-                        fillRect() {{}},
-                        beginPath() {{}},
-                        moveTo() {{}},
-                        lineTo() {{}},
-                        stroke() {{}},
-                        fillText() {{}},
-                        measureText() {{ return {{ width: 0 }}; }},
-                        save() {{}},
-                        restore() {{}},
-                        clearRect() {{}},
-                        arc() {{}},
-                        closePath() {{}},
-                        setLineDash() {{}},
-                    }};
-                }},
-                getBoundingClientRect() {{
-                    return {{ left: 0, top: 0, right: 800, bottom: 480, width: 800, height: 480 }};
-                }},
-                closest() {{ return null; }},
-                click() {{}},
-                width: 800,
-                height: 480,
-                offsetWidth: 800,
-                offsetHeight: 480,
-                clientWidth: 800,
-                clientHeight: 480,
-            }};
-        }}
-
-        global.document = {{
-            getElementById() {{ return makeElement(); }},
-            createElement() {{ return makeElement(); }},
-            addEventListener() {{}},
-            removeEventListener() {{}},
-            body: {{
-                classList: makeClassList(),
-                appendChild() {{}},
-                removeChild() {{}},
-            }},
-        }};
-        global.window = {{
-            addEventListener() {{}},
-            removeEventListener() {{}},
-            innerHeight: 800,
-            URL: {{
-                createObjectURL() {{ return 'blob:test'; }},
-                revokeObjectURL() {{}},
-            }},
-        }};
-        global.FileReader = function FileReader() {{}};
-
-        vm.runInThisContext(fs.readFileSync({json.dumps(str(_APP))}, 'utf8'), {{ filename: 'app.js' }});
-
-        const entry = {{
-            result: {{
-                channels: [
-                    {{
-                        name: 'CH1',
-                        times: Float64Array.from([0, 1e-6, 2e-6]),
-                        volts: Float64Array.from([0.25, -0.5, 0.75]),
-                        voltPerDiv: 1e-3,
-                        timeScale: 1e-6,
-                    }},
-                    {{
-                        name: 'D6',
-                        kind: 'digital',
-                        times: Float64Array.from([0, 1e-6, 2e-6]),
-                        volts: Float64Array.from([0, 1, 0]),
-                        voltPerDiv: 0.25,
-                        timeScale: 1e-6,
-                    }},
-                ],
-            }},
-            channelEnabled: [true, true],
-        }};
-
-        const payload = buildExportMATPayload(entry);
-        if (!payload) {{
-            throw new Error('Expected mixed entry to produce a MAT file.');
-        }}
-        process.stdout.write(Buffer.from(payload));
-        """)
-
-    result = subprocess.run(["node", "-e", script], check=True, stdout=subprocess.PIPE)
     arrays = load_simple_mat_v5(result.stdout)
     assert set(arrays) == {"time", "start", "increment", "CH1", "D6"}
     assert arrays["CH1"].tolist() == pytest.approx([0.25, -0.5, 0.75])
@@ -348,129 +138,8 @@ def test_wfmview_mat_export_builds_real_mixed_file():
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
 def test_wfmview_npz_and_mat_exports_download_expected_files():
     """The NPZ and MAT export actions should download the right file types."""
-    script = textwrap.dedent(f"""
-        const fs = require('fs');
-        const vm = require('vm');
+    result = _emit("downloads")
 
-        function makeClassList() {{
-            return {{
-                add() {{}},
-                remove() {{}},
-                toggle() {{}},
-                contains() {{ return false; }},
-            }};
-        }}
-
-        function makeElement() {{
-            return {{
-                checked: false,
-                disabled: false,
-                innerHTML: '',
-                textContent: '',
-                value: '',
-                dataset: {{}},
-                style: {{}},
-                classList: makeClassList(),
-                addEventListener() {{}},
-                removeEventListener() {{}},
-                appendChild() {{}},
-                removeChild() {{}},
-                setAttribute() {{}},
-                getAttribute() {{ return null; }},
-                getContext() {{
-                    return {{
-                        fillRect() {{}},
-                        beginPath() {{}},
-                        moveTo() {{}},
-                        lineTo() {{}},
-                        stroke() {{}},
-                        fillText() {{}},
-                        measureText() {{ return {{ width: 0 }}; }},
-                        save() {{}},
-                        restore() {{}},
-                        clearRect() {{}},
-                        arc() {{}},
-                        closePath() {{}},
-                        setLineDash() {{}},
-                    }};
-                }},
-                getBoundingClientRect() {{
-                    return {{ left: 0, top: 0, right: 800, bottom: 480, width: 800, height: 480 }};
-                }},
-                closest() {{ return null; }},
-                click() {{}},
-                width: 800,
-                height: 480,
-                offsetWidth: 800,
-                offsetHeight: 480,
-                clientWidth: 800,
-                clientHeight: 480,
-            }};
-        }}
-
-        global.document = {{
-            getElementById() {{ return makeElement(); }},
-            createElement() {{ return makeElement(); }},
-            addEventListener() {{}},
-            removeEventListener() {{}},
-            body: {{
-                classList: makeClassList(),
-                appendChild() {{}},
-                removeChild() {{}},
-            }},
-        }};
-        global.window = {{
-            addEventListener() {{}},
-            removeEventListener() {{}},
-            innerHeight: 800,
-            URL: {{
-                createObjectURL() {{ return 'blob:test'; }},
-                revokeObjectURL() {{}},
-            }},
-        }};
-        global.FileReader = function FileReader() {{}};
-
-        vm.runInThisContext(fs.readFileSync({json.dumps(str(_APP))}, 'utf8'), {{ filename: 'app.js' }});
-
-        loadedFiles = [{{
-            id: 'file-1',
-            stem: 'scope-shot',
-            filename: 'scope-shot.wfm',
-            result: {{
-                channels: [
-                    {{
-                        name: 'CH1',
-                        times: Float64Array.from([0, 1e-6]),
-                        volts: Float64Array.from([0.1, 0.2]),
-                        voltPerDiv: 1e-3,
-                        timeScale: 1e-6,
-                    }},
-                    {{
-                        name: 'D6',
-                        kind: 'digital',
-                        times: Float64Array.from([0, 1e-6]),
-                        volts: Float64Array.from([0, 1]),
-                        voltPerDiv: 0.25,
-                        timeScale: 1e-6,
-                    }},
-                ],
-            }},
-            channelEnabled: [true, true],
-        }}];
-        activeFileId = 'file-1';
-        currentFilename = 'scope-shot';
-
-        const captures = [];
-        triggerDownload = function(data, filename, mime) {{
-            captures.push({{ filename, mime, bytes: Array.from(data.slice(0, 4)) }});
-        }};
-
-        doExportNPZ();
-        doExportMAT();
-        process.stdout.write(JSON.stringify(captures));
-        """)
-
-    result = subprocess.run(["node", "-e", script], check=True, stdout=subprocess.PIPE, text=True)
     captures = json.loads(result.stdout)
 
     assert captures[0]["filename"] == "scope-shot.npz"
@@ -485,121 +154,8 @@ def test_wfmview_npz_and_mat_exports_download_expected_files():
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
 def test_wfmview_sigrok_export_builds_real_mixed_session_archive():
     """Viewer SR export should build a real sigrok session for mixed traces."""
-    script = textwrap.dedent(f"""
-        const fs = require('fs');
-        const vm = require('vm');
+    result = _emit("sigrok-mixed")
 
-        function makeClassList() {{
-            return {{
-                add() {{}},
-                remove() {{}},
-                toggle() {{}},
-                contains() {{ return false; }},
-            }};
-        }}
-
-        function makeElement() {{
-            return {{
-                checked: false,
-                disabled: false,
-                innerHTML: '',
-                textContent: '',
-                value: '',
-                dataset: {{}},
-                style: {{}},
-                classList: makeClassList(),
-                addEventListener() {{}},
-                removeEventListener() {{}},
-                appendChild() {{}},
-                removeChild() {{}},
-                setAttribute() {{}},
-                getAttribute() {{ return null; }},
-                getContext() {{
-                    return {{
-                        fillRect() {{}},
-                        beginPath() {{}},
-                        moveTo() {{}},
-                        lineTo() {{}},
-                        stroke() {{}},
-                        fillText() {{}},
-                        measureText() {{ return {{ width: 0 }}; }},
-                        save() {{}},
-                        restore() {{}},
-                        clearRect() {{}},
-                        arc() {{}},
-                        closePath() {{}},
-                        setLineDash() {{}},
-                    }};
-                }},
-                getBoundingClientRect() {{
-                    return {{ left: 0, top: 0, right: 800, bottom: 480, width: 800, height: 480 }};
-                }},
-                closest() {{ return null; }},
-                click() {{}},
-                width: 800,
-                height: 480,
-                offsetWidth: 800,
-                offsetHeight: 480,
-                clientWidth: 800,
-                clientHeight: 480,
-            }};
-        }}
-
-        global.document = {{
-            getElementById() {{ return makeElement(); }},
-            createElement() {{ return makeElement(); }},
-            addEventListener() {{}},
-            removeEventListener() {{}},
-            body: {{
-                classList: makeClassList(),
-                appendChild() {{}},
-                removeChild() {{}},
-            }},
-        }};
-        global.window = {{
-            addEventListener() {{}},
-            removeEventListener() {{}},
-            innerHeight: 800,
-            URL: {{
-                createObjectURL() {{ return 'blob:test'; }},
-                revokeObjectURL() {{}},
-            }},
-        }};
-        global.FileReader = function FileReader() {{}};
-
-        vm.runInThisContext(fs.readFileSync({json.dumps(str(_APP))}, 'utf8'), {{ filename: 'app.js' }});
-
-        const entry = {{
-            result: {{
-                channels: [
-                    {{
-                        name: 'CH1',
-                        times: Float64Array.from([0, 1e-6, 2e-6]),
-                        volts: Float64Array.from([0.25, -0.5, 0.75]),
-                        voltPerDiv: 1e-3,
-                        timeScale: 1e-6,
-                    }},
-                    {{
-                        name: 'D6',
-                        kind: 'digital',
-                        times: Float64Array.from([0, 1e-6, 2e-6]),
-                        volts: Float64Array.from([0, 1, 0]),
-                        voltPerDiv: 0.25,
-                        timeScale: 1e-6,
-                    }},
-                ],
-            }},
-            channelEnabled: [true, true],
-        }};
-
-        const archive = buildExportSigrokArchive(entry);
-        if (!archive) {{
-            throw new Error('Expected mixed entry to produce an SR archive.');
-        }}
-        process.stdout.write(Buffer.from(archive));
-        """)
-
-    result = subprocess.run(["node", "-e", script], check=True, stdout=subprocess.PIPE)
     with zipfile.ZipFile(io.BytesIO(result.stdout)) as archive:
         assert archive.namelist() == ["version", "metadata", "logic-1-1", "analog-1-2-1"]
         assert archive.read("version") == b"2"
@@ -623,114 +179,8 @@ def test_wfmview_sigrok_export_builds_real_mixed_session_archive():
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
 def test_wfmview_sigrok_export_builds_real_logic_only_session_archive():
     """Viewer SR export should write logic-only captures as named probes."""
-    script = textwrap.dedent(f"""
-        const fs = require('fs');
-        const vm = require('vm');
+    result = _emit("sigrok-logic")
 
-        function makeClassList() {{
-            return {{
-                add() {{}},
-                remove() {{}},
-                toggle() {{}},
-                contains() {{ return false; }},
-            }};
-        }}
-
-        function makeElement() {{
-            return {{
-                checked: false,
-                disabled: false,
-                innerHTML: '',
-                textContent: '',
-                value: '',
-                dataset: {{}},
-                style: {{}},
-                classList: makeClassList(),
-                addEventListener() {{}},
-                removeEventListener() {{}},
-                appendChild() {{}},
-                removeChild() {{}},
-                setAttribute() {{}},
-                getAttribute() {{ return null; }},
-                getContext() {{
-                    return {{
-                        fillRect() {{}},
-                        beginPath() {{}},
-                        moveTo() {{}},
-                        lineTo() {{}},
-                        stroke() {{}},
-                        fillText() {{}},
-                        measureText() {{ return {{ width: 0 }}; }},
-                        save() {{}},
-                        restore() {{}},
-                        clearRect() {{}},
-                        arc() {{}},
-                        closePath() {{}},
-                        setLineDash() {{}},
-                    }};
-                }},
-                getBoundingClientRect() {{
-                    return {{ left: 0, top: 0, right: 800, bottom: 480, width: 800, height: 480 }};
-                }},
-                closest() {{ return null; }},
-                click() {{}},
-                width: 800,
-                height: 480,
-                offsetWidth: 800,
-                offsetHeight: 480,
-                clientWidth: 800,
-                clientHeight: 480,
-            }};
-        }}
-
-        global.document = {{
-            getElementById() {{ return makeElement(); }},
-            createElement() {{ return makeElement(); }},
-            addEventListener() {{}},
-            removeEventListener() {{}},
-            body: {{
-                classList: makeClassList(),
-                appendChild() {{}},
-                removeChild() {{}},
-            }},
-        }};
-        global.window = {{
-            addEventListener() {{}},
-            removeEventListener() {{}},
-            innerHeight: 800,
-            URL: {{
-                createObjectURL() {{ return 'blob:test'; }},
-                revokeObjectURL() {{}},
-            }},
-        }};
-        global.FileReader = function FileReader() {{}};
-
-        vm.runInThisContext(fs.readFileSync({json.dumps(str(_APP))}, 'utf8'), {{ filename: 'app.js' }});
-
-        const entry = {{
-            result: {{
-                channels: [
-                    {{
-                        name: 'D6',
-                        kind: 'digital',
-                        times: Float64Array.from([0.001, 0.002, 0.003]),
-                        volts: Float64Array.from([0, 1, 1]),
-                        voltPerDiv: 0.25,
-                        timeScale: 0.001,
-                    }},
-                ],
-            }},
-            channelEnabled: [true],
-        }};
-
-        const archive = buildExportSigrokArchive(entry);
-        if (!archive) {{
-            throw new Error('Expected logic-only entry to produce an SR archive.');
-        }}
-        process.stdout.write(Buffer.from(archive));
-        """)
-
-    result = subprocess.run(["node", "-e", script], check=True, stdout=subprocess.PIPE)
     with zipfile.ZipFile(io.BytesIO(result.stdout)) as archive:
         assert archive.namelist() == ["version", "metadata", "logic-1-1"]
 
