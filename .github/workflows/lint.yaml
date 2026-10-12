@@ -15,7 +15,7 @@ jobs:
 
     env:
       # Pin the interpreter so results match `make` locally.  mypy analyses the
-      # package as 3.12 (see [tool.mypy]); ruff still holds it to the 3.10 floor
+      # package as 3.12 (see [tool.mypy]); ruff still holds it to the 3.11 floor
       # in requires-python, so the older syntax rules are covered either way.
       UV_PYTHON: '3.12'
 

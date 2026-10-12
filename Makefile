@@ -3,7 +3,7 @@ PACKAGE_DIR     := RigolWFM
 GITHUB_USER     := scottprahl
 REPO_NAME       := $(notdir $(CURDIR))
 
-PY_VERSION      ?= 3.14
+PY_VERSION      ?= 3.15
 UV              ?= uv
 RUN             := $(UV) run --extra dev
 RUN_DOCS        := $(UV) run --extra docs
